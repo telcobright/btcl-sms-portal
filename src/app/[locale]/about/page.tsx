@@ -125,20 +125,20 @@ const useAboutPageData = (locale: string) => {
     },
     {
       year: '2010',
-      event: getLocalizedText(locale, 'SMS Gateway Launch', 'এসএমএস গেটওয়ে চালু'),
+      event: getLocalizedText(locale, 'Enterprise Services Launch', 'এন্টারপ্রাইজ সেবা চালু'),
       description: getLocalizedText(
           locale,
-          'Introduced first enterprise SMS solutions',
-          'প্রথম এন্টারপ্রাইজ এসএমএস সমাধান চালু'
+          'Introduced SMS Gateway and PBX solutions for businesses',
+          'ব্যবসার জন্য এসএমএস গেটওয়ে এবং PBX সমাধান চালু'
       ),
     },
     {
       year: '2018',
-      event: getLocalizedText(locale, 'Bulk SMS Service Expansion', 'বাল্ক এসএমএস সেবা সম্প্রসারণ'),
+      event: getLocalizedText(locale, 'Communication Suite Expansion', 'যোগাযোগ সমাধান সম্প্রসারণ'),
       description: getLocalizedText(
           locale,
-          'Scaled services nationwide with enhanced features',
-          'উন্নত বৈশিষ্ট্য সহ দেশব্যাপী সেবা সম্প্রসারণ'
+          'Launched Contact Center and Voice Broadcast services',
+          'কন্টাক্ট সেন্টার এবং ভয়েস ব্রডকাস্ট সেবা চালু'
       ),
     },
     {
@@ -146,21 +146,21 @@ const useAboutPageData = (locale: string) => {
       event: getLocalizedText(locale, 'Modern Platform Launch', 'আধুনিক প্ল্যাটফর্ম চালু'),
       description: getLocalizedText(
           locale,
-          'Next-generation API and dashboard platform',
-          'নতুন প্রজন্মের API এবং ড্যাশবোর্ড প্ল্যাটফর্ম'
+          'Unified platform for all communication services with next-gen API',
+          'নতুন প্রজন্মের API সহ সকল যোগাযোগ সেবার একীভূত প্ল্যাটফর্ম'
       ),
     },
   ]
 
   const stats: Stat[] = [
     {
-      number: '1M+',
-      label: getLocalizedText(locale, 'Messages Sent Daily', 'দৈনিক বার্তা প্রেরণ'),
+      number: '10M+',
+      label: getLocalizedText(locale, 'Messages/Calls Daily', 'দৈনিক বার্তা/কল'),
       icon: '📱',
     },
     {
       number: '5000+',
-      label: getLocalizedText(locale, 'Active Businesses', 'সক্রিয় ব্যবসা'),
+      label: getLocalizedText(locale, 'Enterprise Clients', 'এন্টারপ্রাইজ ক্লায়েন্ট'),
       icon: '🏢',
     },
     {
@@ -239,11 +239,11 @@ const useAboutPageData = (locale: string) => {
     },
     {
       name: getLocalizedText(locale, 'Ahmed Hassan', 'আহমেদ হাসান'),
-      position: getLocalizedText(locale, 'Head of SMS Services', 'এসএমএস সেবা বিভাগের প্রধান'),
+      position: getLocalizedText(locale, 'Head of Enterprise Services', 'এন্টারপ্রাইজ সেবা বিভাগের প্রধান'),
       bio: getLocalizedText(
           locale,
-          'Ensuring reliable and efficient bulk SMS delivery with focus on customer satisfaction.',
-          'গ্রাহক সন্তুষ্টির উপর মনোনিবেশ করে নির্ভরযোগ্য ও দক্ষ বাল্ক এসএমএস সরবরাহ নিশ্চিতকরণ।'
+          'Overseeing delivery excellence across SMS, Contact Center, PBX, and Voice Broadcast services with unwavering focus on customer satisfaction.',
+          'গ্রাহক সন্তুষ্টির উপর অবিচল মনোনিবেশ সহ এসএমএস, কন্টাক্ট সেন্টার, PBX এবং ভয়েস ব্রডকাস্ট সেবায় শ্রেষ্ঠত্ব তদারকি।'
       ),
       initial: 'A',
     },
@@ -305,8 +305,8 @@ function HeroSection({ locale }: { locale: string }) {
             <p className="mx-auto max-w-4xl text-xl leading-relaxed text-green-100/90 md:text-2xl">
               {getLocalizedText(
                   locale,
-                  'Leading Bangladesh\'s telecommunications infrastructure since 1989, now bringing you the most reliable bulk SMS service in the country.',
-                  '১৯৮৯ সাল থেকে বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, এখন দেশের সবচেয়ে নির্ভরযোগ্য বাল্ক এসএমএস সেবা প্রদান করছি।'
+                  'Leading Bangladesh\'s telecommunications infrastructure since 1989, now delivering enterprise-grade communication solutions including Bulk SMS, Hosted Contact Center, PBX, and Voice Broadcast services.',
+                  '১৯৮৯ সাল থেকে বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, এখন বাল্ক এসএমএস, হোস্টেড কন্টাক্ট সেন্টার, PBX এবং ভয়েস ব্রডকাস্ট সহ এন্টারপ্রাইজ-গ্রেড যোগাযোগ সমাধান প্রদান করছি।'
               )}
             </p>
 
@@ -360,8 +360,8 @@ function CompanyOverviewSection({ locale }: { locale: string }) {
                 <p>
                   {getLocalizedText(
                       locale,
-                      'Our bulk SMS service represents the latest in our commitment to digital transformation, offering businesses a reliable, secure, and cost-effective way to communicate with their customers.',
-                      'আমাদের বাল্ক এসএমএস সেবা ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকারের সর্বশেষ প্রতিনিধিত্ব করে, ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী যোগাযোগের সুবিধা প্রদান করে।'
+                      'Our comprehensive suite of enterprise communication services represents our commitment to digital transformation. From Bulk SMS and Voice Broadcast to Hosted Contact Centers and PBX solutions, we offer businesses reliable, secure, and cost-effective ways to connect with their customers and streamline operations.',
+                      'আমাদের এন্টারপ্রাইজ যোগাযোগ সেবার ব্যাপক পরিসর ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকার প্রতিনিধিত্ব করে। বাল্ক এসএমএস ও ভয়েস ব্রডকাস্ট থেকে হোস্টেড কন্টাক্ট সেন্টার এবং PBX সমাধান পর্যন্ত, আমরা ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে সংযোগ এবং কার্যক্রম সুগম করার জন্য নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী উপায় প্রদান করি।'
                   )}
                 </p>
               </div>

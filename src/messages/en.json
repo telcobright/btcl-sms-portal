@@ -11,14 +11,35 @@
   },
   "home": {
     "hero": {
-      "title": "BTCL Bulk SMS Service",
-      "subtitle": "Reach millions of customers instantly with Bangladesh's most reliable SMS gateway",
-      "description": "Send promotional messages, alerts, and notifications to your customers with our enterprise-grade bulk SMS service. Trusted by thousands of businesses across Bangladesh.",
+      "title": "BTCL Enterprise Communication Solutions",
+      "subtitle": "Empower your business with Bangladesh's leading telecommunications provider",
+      "description": "From bulk SMS to hosted contact centers, PBX systems, and voice broadcast — we deliver enterprise-grade communication solutions trusted by thousands nationwide.",
       "cta": "Get Started Today",
-      "learn_more": "Learn More"
+      "learn_more": "Explore Services"
+    },
+    "services": {
+      "title": "Our Services",
+      "subtitle": "Complete Communication Suite",
+      "description": "Discover our comprehensive range of enterprise communication solutions",
+      "bulk_sms": {
+        "title": "Bulk SMS Service",
+        "description": "Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway."
+      },
+      "contact_center": {
+        "title": "Hosted Contact Center",
+        "description": "Cloud-based contact center solution with omnichannel support, IVR, call routing, and advanced analytics."
+      },
+      "hosted_pbx": {
+        "title": "Hosted PBX",
+        "description": "Enterprise phone system in the cloud with advanced call management, voicemail, and unified communications."
+      },
+      "voice_broadcast": {
+        "title": "Voice Broadcast Service",
+        "description": "Deliver pre-recorded voice messages to thousands simultaneously for announcements, alerts, and campaigns."
+      }
     },
     "features": {
-      "title": "Why Choose BTCL SMS?",
+      "title": "Why Choose BTCL?",
       "reliable": {
         "title": "99.9% Uptime",
         "description": "Industry-leading reliability with redundant infrastructure"

@@ -6,7 +6,5 @@ export default function RootLayout({
 }: {
   children: ReactNode
 }) {
-  // Root layout just passes children through
-  // The [locale] layout handles the HTML structure
   return children
 }

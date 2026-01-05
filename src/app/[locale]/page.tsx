@@ -235,7 +235,7 @@ export default async function HomePage({ params }: HomePageProps) {
 function HeroSection({ locale, t }: { locale: string; t: any }) {
   return (
       <section
-          className="relative flex min-h-screen items-center overflow-hidden bg-cover bg-center bg-no-repeat"
+          className="relative flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat min-h-[50vh]"
           style={{ backgroundImage: "url('/herobg.png')" }}
       >
         {/* Gradient Overlay */}
@@ -248,79 +248,47 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
           <div className="absolute left-1/4 top-1/2 h-16 w-16 animate-pulse rounded-full bg-purple-400/10 blur-xl delay-500" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="text-center">
             {/* Badge/Announcement */}
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/90 backdrop-blur-sm transition-all duration-300 hover:bg-white/15">
-              <span className="text-green-400">✨</span>
-              <span>New features available now</span>
-              <span className="text-green-400">📈</span>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-base text-white/90 backdrop-blur-sm transition-all duration-300 hover:bg-white/15">
+              <span className="text-green-400 text-xl">✨</span>
+              <span>Enterprise Communication Solutions</span>
             </div>
 
             {/* Main Heading */}
-            <h1 className="mb-8 text-5xl font-bold leading-tight text-white md:text-6xl lg:text-7xl">
+            <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl xl:text-7xl">
             <span className="block bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
-              BTCL Enterprise
+              BTCL Enterprise Services
             </span>
-              <span className="block bg-gradient-to-r from-green-200 via-white to-green-200 bg-clip-text text-transparent">
-                Communication Solutions
-              </span>
             </h1>
 
             {/* Description */}
-            <p className="mx-auto mb-12 max-w-3xl text-lg leading-relaxed text-green-100/80 md:text-xl">
-              Empower your business with Bangladesh's leading telecommunications provider. From bulk SMS
-              to hosted contact centers, PBX systems, and voice broadcast — we deliver enterprise-grade
-              communication solutions trusted by thousands nationwide.
+            <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed text-green-100/80 md:text-xl lg:text-2xl">
+              Bangladesh's leading telecommunications provider delivering enterprise-grade communication solutions
             </p>
 
             {/* CTA Buttons */}
-            <div className="mb-24 flex flex-col items-center justify-center gap-6 sm:flex-row">
+            <div className="mb-4 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href={`/${locale}/register`} className="group">
                 <Button
-                    size="lg"
-                    className="transform rounded-xl border-0 bg-gradient-to-r from-green-500 to-green-600 px-8 py-4 text-lg font-semibold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:from-green-600 hover:to-green-700 hover:shadow-green-500/25"
+                    className="transform rounded-lg border-0 bg-gradient-to-r from-green-500 to-green-600 px-8 py-4 text-base md:text-lg font-semibold text-white shadow-xl transition-all duration-300 hover:scale-105 hover:from-green-600 hover:to-green-700"
                 >
                   <span>{t('home.hero.cta')}</span>
-                  <span className="ml-2 transition-transform duration-200 group-hover:translate-x-1">
-                  →
-                </span>
+                  <span className="ml-2 transition-transform duration-200 group-hover:translate-x-1">→</span>
                 </Button>
               </Link>
 
               <Link href={`/${locale}/services`} className="group">
                 <Button
                     variant="outline"
-                    size="lg"
-                    className="transform rounded-xl border-2 border-white/30 bg-white/5 px-8 py-4 text-lg font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-white/50 hover:bg-white/10"
+                    className="transform rounded-lg border-2 border-white/30 bg-white/5 px-8 py-4 text-base md:text-lg font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-white/50 hover:bg-white/10"
                 >
-                <span className="mr-2 transition-transform duration-200 group-hover:scale-110">
-                  ▶
-                </span>
+                  <span className="mr-2 transition-transform duration-200 group-hover:scale-110">▶</span>
                   <span>{t('home.hero.learn_more')}</span>
                 </Button>
               </Link>
             </div>
-
-            {/* Stats Section */}
-            <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-3">
-              {HERO_STATS.map((stat, index) => (
-                  <div
-                      key={index}
-                      className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-sm transition-all duration-300 hover:bg-white/15"
-                  >
-                    <div className="mb-2 text-3xl font-bold text-white">{stat.value}</div>
-                    <div className="text-sm text-green-100">{stat.label}</div>
-                  </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 transform animate-bounce">
-          <div className="flex h-10 w-6 justify-center rounded-full border-2 border-white/40">
-            <div className="mt-2 h-3 w-1 animate-pulse rounded-full bg-white/60" />
           </div>
         </div>
       </section>
@@ -330,18 +298,18 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
 // Services Showcase Section Component
 function ServicesShowcaseSection({ services, locale }: { services: Service[]; locale: string }) {
   return (
-      <section className="bg-gradient-to-b from-gray-50 to-white py-24">
+      <section className="bg-gradient-to-b from-gray-50 to-white py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="mb-16 text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-green-100 px-5 py-2 text-sm font-semibold text-green-700">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-1.5 text-sm font-semibold text-green-700">
               <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
               {locale === 'en' ? 'Our Services' : 'আমাদের সেবাসমূহ'}
             </div>
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {locale === 'en' ? 'Complete Communication Suite' : 'সম্পূর্ণ যোগাযোগ সমাধান'}
             </h2>
-            <p className="mx-auto max-w-3xl text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {locale === 'en'
                 ? 'Discover our comprehensive range of enterprise communication solutions designed to power your business'
                 : 'আপনার ব্যবসা পরিচালনার জন্য ডিজাইন করা এন্টারপ্রাইজ যোগাযোগ সমাধানের আমাদের বিস্তৃত পরিসর আবিষ্কার করুন'}
@@ -349,19 +317,18 @@ function ServicesShowcaseSection({ services, locale }: { services: Service[]; lo
           </div>
 
           {/* Services Grid */}
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {services.map((service, index) => (
                 <ServiceCard key={service.id} service={service} index={index} />
             ))}
           </div>
 
           {/* View All Services CTA */}
-          <div className="mt-16 text-center">
+          <div className="mt-10 text-center">
             <Link href={`/${locale}/services`}>
               <Button
-                  size="lg"
                   variant="outline"
-                  className="transform rounded-xl border-2 border-green-600 px-8 py-4 text-lg font-semibold text-green-600 transition-all duration-300 hover:scale-105 hover:bg-green-600 hover:text-white"
+                  className="transform rounded-lg border-2 border-green-600 px-6 py-2.5 text-sm font-semibold text-green-600 transition-all duration-300 hover:scale-105 hover:bg-green-600 hover:text-white"
               >
                 {locale === 'en' ? 'Explore All Services' : 'সকল সেবা দেখুন'}
                 <span className="ml-2">→</span>
@@ -390,36 +357,39 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
   return (
       <Link href={service.href}>
         <Card className="group h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
-          <CardHeader className="pb-4">
-            <div className="mb-6 flex items-start justify-between">
-              <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r ${service.color} text-4xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}>
+          <CardHeader className="pb-3">
+            <div className="mb-4 flex items-start justify-between">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r ${service.color} text-3xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}>
                 {service.icon}
               </div>
-              <div className={`rounded-full bg-gradient-to-r ${service.color} px-3 py-1 text-xs font-semibold text-white shadow-sm`}>
+              <div className={`rounded-full bg-gradient-to-r ${service.color} px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm`}>
                 {index === 0 ? 'Popular' : 'Enterprise'}
               </div>
             </div>
-            <CardTitle className="mb-3 text-2xl font-bold">{service.title}</CardTitle>
-            <CardDescription className="text-sm leading-relaxed text-gray-600">
+            <CardTitle className="mb-2 text-lg font-bold">{service.title}</CardTitle>
+            <CardDescription className="text-xs leading-relaxed text-gray-600">
               {service.description}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-6 space-y-2.5">
-              {service.features.map((feature, featureIndex) => (
-                  <div key={featureIndex} className="flex items-start gap-2.5">
-                    <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${colors.bg}`}>
-                      <svg className={`h-3 w-3 ${colors.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mb-4 space-y-1.5">
+              {service.features.slice(0, 4).map((feature, featureIndex) => (
+                  <div key={featureIndex} className="flex items-start gap-2">
+                    <div className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full ${colors.bg}`}>
+                      <svg className={`h-2.5 w-2.5 ${colors.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <span className="text-xs font-medium text-gray-700 leading-tight">{feature}</span>
+                    <span className="text-[11px] font-medium text-gray-700 leading-tight">{feature}</span>
                   </div>
               ))}
+              {service.features.length > 4 && (
+                <div className="pt-1 text-[10px] text-gray-500">+{service.features.length - 4} more features</div>
+              )}
             </div>
-            <div className={`mt-6 flex items-center gap-2 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-4`}>
+            <div className={`mt-4 flex items-center gap-2 text-xs font-bold ${colors.text} transition-all duration-300 group-hover:gap-3`}>
               Learn More
-              <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -467,32 +437,110 @@ function PricingPreviewSection({
   locale: string
   t: any
 }) {
+  const servicePricing = [
+    {
+      id: 'bulk-sms',
+      icon: '📱',
+      name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস',
+      price: '৳0.30',
+      unit: locale === 'en' ? '/SMS' : '/এসএমএস',
+      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
+      features: [
+        locale === 'en' ? '99.9% delivery rate' : '৯৯.৯% ডেলিভারি হার',
+        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
+        locale === 'en' ? 'API integration' : 'API ইন্টিগ্রেশন',
+      ],
+      color: 'from-blue-500 to-blue-600',
+    },
+    {
+      id: 'contact-center',
+      icon: '🎧',
+      name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার',
+      price: '৳15,000',
+      unit: locale === 'en' ? '/month' : '/মাস',
+      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
+      features: [
+        locale === 'en' ? 'WebRTC browser calling' : 'WebRTC ব্রাউজার কলিং',
+        locale === 'en' ? 'Integrated CRM' : 'ইন্টিগ্রেটেড CRM',
+        locale === 'en' ? '5 users included' : '৫ ব্যবহারকারী অন্তর্ভুক্ত',
+      ],
+      color: 'from-purple-500 to-purple-600',
+    },
+    {
+      id: 'hosted-pbx',
+      icon: '☎️',
+      name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
+      price: '৳8,000',
+      unit: locale === 'en' ? '/month' : '/মাস',
+      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
+      features: [
+        locale === 'en' ? '10 extensions' : '১০ এক্সটেনশন',
+        locale === 'en' ? 'Advanced IVR' : 'উন্নত IVR',
+        locale === 'en' ? 'Call recording' : 'কল রেকর্ডিং',
+      ],
+      color: 'from-green-500 to-green-600',
+    },
+    {
+      id: 'voice-broadcast',
+      icon: '📢',
+      name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট',
+      price: '৳1.00',
+      unit: locale === 'en' ? '/minute' : '/মিনিট',
+      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
+      features: [
+        locale === 'en' ? 'Text-to-speech' : 'টেক্সট-টু-স্পিচ',
+        locale === 'en' ? 'Smart scheduling' : 'স্মার্ট সময়সূচী',
+        locale === 'en' ? 'Campaign analytics' : 'ক্যাম্পেইন বিশ্লেষণ',
+      ],
+      color: 'from-orange-500 to-orange-600',
+    },
+  ]
+
   return (
       <section className="py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section Title */}
-          <div className="mb-20 flex flex-col lg:flex-row lg:items-center lg:justify-between">
-            <div className="mb-8 lg:mb-0">
-              <h2 className="mb-4 text-4xl font-bold text-gray-900">{t('home.pricing.title')}</h2>
-              <p className="max-w-2xl text-xl text-gray-600">{t('home.pricing.subtitle')}</p>
-            </div>
-            <div className="flex-shrink-0">
-              <Link href={`/${locale}/pricing`}>
-                <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-xl border-2 px-8 py-3 text-lg font-semibold transition-colors hover:bg-green-200 hover:text-btcl-primary"
-                >
-                  View All Plans
-                </Button>
-              </Link>
-            </div>
+          <div className="mb-20 text-center">
+            <h2 className="mb-4 text-4xl font-bold text-gray-900">{t('home.pricing.title')}</h2>
+            <p className="mx-auto max-w-2xl text-xl text-gray-600">{t('home.pricing.subtitle')}</p>
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {pricingPlans.map((pkg) => (
-                <PricingCard key={pkg.id} pkg={pkg} locale={locale} />
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {servicePricing.map((service) => (
+                <div
+                    key={service.id}
+                    className="group relative rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                >
+                  <div className="mb-6 text-center">
+                    <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r ${service.color} text-4xl transition-all duration-300 group-hover:scale-110`}>
+                      {service.icon}
+                    </div>
+                    <h3 className="mb-2 text-2xl font-bold text-gray-900">{service.name}</h3>
+                    <div className="mb-2 text-sm text-gray-500">{service.description}</div>
+                    <div className="mb-4">
+                      <span className="text-3xl font-bold text-gray-900">{service.price}</span>
+                      <span className="text-lg text-gray-600">{service.unit}</span>
+                    </div>
+                  </div>
+
+                  <div className="mb-6 space-y-3">
+                    {service.features.map((feature, index) => (
+                        <div key={index} className="flex items-start">
+                          <svg className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm text-gray-600">{feature}</span>
+                        </div>
+                    ))}
+                  </div>
+
+                  <Link href={`/${locale}/pricing`}>
+                    <Button className={`w-full rounded-xl bg-gradient-to-r ${service.color} py-3 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
+                      {locale === 'en' ? 'View Plans' : 'প্ল্যান দেখুন'}
+                    </Button>
+                  </Link>
+                </div>
             ))}
           </div>
 

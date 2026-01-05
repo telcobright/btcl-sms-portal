@@ -1,559 +1,428 @@
-import React from 'react';
+'use client'
+
+import React, { useState } from 'react';
 import {Footer} from "@/components/layout/Footer";
 import {Header} from "@/components/layout/Header";
 import {Button} from "@/components/ui/Button";
 import Link from "next/link";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/Card";
 
-const PricingPage = async ({ params }: { params: Promise<{ locale: string }> }) => {
-  const { locale } = await params
-  // const packages = [
-  //   {
-  //     id: 'small',
-  //     name: 'Small Business',
-  //     sms: 20000,
-  //     rate: 0.32,
-  //     validity: 30,
-  //     popular: false,
-  //     features: [
-  //       'Basic API Access',
-  //       'Email Support',
-  //       'Standard Delivery',
-  //       'Basic Reports',
-  //       'Single Sender ID'
-  //     ]
-  //   },
-  //   {
-  //     id: 'medium',
-  //     name: 'Medium Business',
-  //     sms: 50000,
-  //     rate: 0.30,
-  //     validity: 60,
-  //     popular: true,
-  //     features: [
-  //       'Advanced API',
-  //       'Priority Support',
-  //       'Fast Delivery',
-  //       'Custom Sender ID',
-  //       'Detailed Analytics',
-  //       'Multiple Projects'
-  //     ]
-  //   },
-  //   {
-  //     id: 'large',
-  //     name: 'Large Business',
-  //     sms: 100000,
-  //     rate: 0.28,
-  //     validity: 90,
-  //     popular: false,
-  //     features: [
-  //       'Premium API',
-  //       '24/7 Phone Support',
-  //       'Instant Delivery',
-  //       'Multiple Sender IDs',
-  //       'Advanced Analytics',
-  //       'Dedicated Manager',
-  //       'Priority Routing'
-  //     ]
-  //   }
-  // ];
-  const packages = [
+const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
+  const [selectedService, setSelectedService] = useState('bulk-sms')
+  const [locale, setLocale] = React.useState('en')
+
+  React.useEffect(() => {
+    params.then(p => setLocale(p.locale))
+  }, [params])
+
+  const services = [
+    { id: 'bulk-sms', name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস', icon: '📱', color: 'blue' },
+    { id: 'contact-center', name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার', icon: '🎧', color: 'purple' },
+    { id: 'hosted-pbx', name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX', icon: '☎️', color: 'green' },
+    { id: 'voice-broadcast', name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট', icon: '📢', color: 'orange' },
+  ]
+
+  // SMS Pricing
+  const smsPackages = [
     {
       id: 'small',
-      name: 'Small Business',
+      name: locale === 'en' ? 'Small Business' : 'ছোট ব্যবসা',
       sms: 20000,
       rate: 0.32,
       validity: 30,
       popular: false,
       features: [
-        'Basic API Access',
-        'Email Support',
-        'Standard Delivery',
-        'Basic Reports',
-        'Single Sender ID',
-      ],
+        locale === 'en' ? 'Basic API Access' : 'বেসিক API অ্যাক্সেস',
+        locale === 'en' ? 'Email Support' : 'ইমেইল সাপোর্ট',
+        locale === 'en' ? 'Standard Delivery' : 'স্ট্যান্ডার্ড ডেলিভারি',
+        locale === 'en' ? 'Basic Reports' : 'বেসিক রিপোর্ট',
+        locale === 'en' ? 'Single Sender ID' : 'একক প্রেরক ID'
+      ]
     },
     {
       id: 'medium',
-      name: 'Medium Business',
+      name: locale === 'en' ? 'Medium Business' : 'মাঝারি ব্যবসা',
       sms: 50000,
       rate: 0.30,
       validity: 60,
       popular: true,
       features: [
-        'Advanced API',
-        'Priority Support',
-        'Fast Delivery',
-        'Custom Sender ID',
-        'Detailed Analytics',
-        'Multiple Projects',
-      ],
+        locale === 'en' ? 'Advanced API' : 'অ্যাডভান্সড API',
+        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট',
+        locale === 'en' ? 'Fast Delivery' : 'দ্রুত ডেলিভারি',
+        locale === 'en' ? 'Custom Sender ID' : 'কাস্টম প্রেরক ID',
+        locale === 'en' ? 'Detailed Analytics' : 'বিস্তারিত অ্যানালিটিক্স',
+        locale === 'en' ? 'Multiple Projects' : 'একাধিক প্রকল্প'
+      ]
     },
     {
       id: 'large',
-      name: 'Large Business',
+      name: locale === 'en' ? 'Large Business' : 'বড় ব্যবসা',
       sms: 100000,
       rate: 0.28,
       validity: 90,
       popular: false,
       features: [
-        'Premium API',
-        '24/7 Phone Support',
-        'Instant Delivery',
-        'Multiple Sender IDs',
-        'Advanced Analytics',
-        'Dedicated Manager',
-        'Priority Routing',
-      ],
-    },
-  ];
+        locale === 'en' ? 'Premium API' : 'প্রিমিয়াম API',
+        locale === 'en' ? '24/7 Phone Support' : '২৪/৭ ফোন সাপোর্ট',
+        locale === 'en' ? 'Instant Delivery' : 'তাৎক্ষণিক ডেলিভারি',
+        locale === 'en' ? 'Multiple Sender IDs' : 'একাধিক প্রেরক ID',
+        locale === 'en' ? 'Advanced Analytics' : 'উন্নত অ্যানালিটিক্স',
+        locale === 'en' ? 'Dedicated Manager' : 'ডেডিকেটেড ম্যানেজার',
+        locale === 'en' ? 'Priority Routing' : 'অগ্রাধিকার রাউটিং'
+      ]
+    }
+  ]
 
-  const calculateTotal = (sms: number, rate: number): string => {
-    return (sms * rate).toLocaleString();
-  };
+  // Contact Center Pricing
+  const contactCenterPackages = [
+    {
+      id: 'starter',
+      name: locale === 'en' ? 'Starter' : 'স্টার্টার',
+      users: 5,
+      price: 15000,
+      popular: false,
+      features: [
+        locale === 'en' ? '5 Agent Seats' : '৫টি এজেন্ট সিট',
+        locale === 'en' ? 'WebRTC Browser Calling' : 'WebRTC ব্রাউজার কলিং',
+        locale === 'en' ? 'Basic CRM Features' : 'বেসিক CRM বৈশিষ্ট্য',
+        locale === 'en' ? 'Email Integration' : 'ইমেইল ইন্টিগ্রেশন',
+        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং'
+      ]
+    },
+    {
+      id: 'professional',
+      name: locale === 'en' ? 'Professional' : 'প্রফেশনাল',
+      users: 15,
+      price: 35000,
+      popular: true,
+      features: [
+        locale === 'en' ? '15 Agent Seats' : '১৫টি এজেন্ট সিট',
+        locale === 'en' ? 'WebRTC Browser Calling' : 'WebRTC ব্রাউজার কলিং',
+        locale === 'en' ? 'Full CRM Suite' : 'সম্পূর্ণ CRM স্যুইট',
+        locale === 'en' ? 'Campaign Management' : 'ক্যাম্পেইন ম্যানেজমেন্ট',
+        locale === 'en' ? 'Advanced Reporting' : 'উন্নত রিপোর্টিং',
+        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট'
+      ]
+    },
+    {
+      id: 'enterprise',
+      name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ',
+      users: locale === 'en' ? 'Unlimited' : 'সীমাহীন',
+      price: locale === 'en' ? 'Custom' : 'কাস্টম',
+      popular: false,
+      features: [
+        locale === 'en' ? 'Unlimited Agent Seats' : 'সীমাহীন এজেন্ট সিট',
+        locale === 'en' ? 'WebRTC Browser Calling' : 'WebRTC ব্রাউজার কলিং',
+        locale === 'en' ? 'Enterprise CRM' : 'এন্টারপ্রাইজ CRM',
+        locale === 'en' ? 'Custom Integrations' : 'কাস্টম ইন্টিগ্রেশন',
+        locale === 'en' ? 'Dedicated Support' : 'ডেডিকেটেড সাপোর্ট',
+        locale === 'en' ? 'SLA Guarantee' : 'SLA গ্যারান্টি'
+      ]
+    }
+  ]
+
+  // Hosted PBX Pricing
+  const pbxPackages = [
+    {
+      id: 'basic',
+      name: locale === 'en' ? 'Basic' : 'বেসিক',
+      extensions: 10,
+      price: 8000,
+      popular: false,
+      features: [
+        locale === 'en' ? '10 SIP Extensions' : '১০টি SIP এক্সটেনশন',
+        locale === 'en' ? 'Voicemail to Email' : 'ভয়েসমেল টু ইমেইল',
+        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
+        locale === 'en' ? 'Basic IVR' : 'বেসিক IVR',
+        locale === 'en' ? 'Web Management' : 'ওয়েব ম্যানেজমেন্ট'
+      ]
+    },
+    {
+      id: 'business',
+      name: locale === 'en' ? 'Business' : 'বিজনেস',
+      extensions: 25,
+      price: 18000,
+      popular: true,
+      features: [
+        locale === 'en' ? '25 SIP Extensions' : '২৫টি SIP এক্সটেনশন',
+        locale === 'en' ? 'Advanced IVR System' : 'উন্নত IVR সিস্টেম',
+        locale === 'en' ? 'Conference Rooms' : 'কনফারেন্স রুম',
+        locale === 'en' ? 'Call Queues' : 'কল সারি',
+        locale === 'en' ? 'Time Conditions' : 'সময় শর্ত',
+        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট'
+      ]
+    },
+    {
+      id: 'corporate',
+      name: locale === 'en' ? 'Corporate' : 'কর্পোরেট',
+      extensions: locale === 'en' ? 'Unlimited' : 'সীমাহীন',
+      price: locale === 'en' ? 'Custom' : 'কাস্টম',
+      popular: false,
+      features: [
+        locale === 'en' ? 'Unlimited Extensions' : 'সীমাহীন এক্সটেনশন',
+        locale === 'en' ? 'Enterprise Features' : 'এন্টারপ্রাইজ বৈশিষ্ট্য',
+        locale === 'en' ? 'Hot Desking' : 'হট ডেস্কিং',
+        locale === 'en' ? 'Fax Server' : 'ফ্যাক্স সার্ভার',
+        locale === 'en' ? '24/7 Support' : '২৪/৭ সাপোর্ট',
+        locale === 'en' ? 'Dedicated Account Manager' : 'ডেডিকেটেড অ্যাকাউন্ট ম্যানেজার'
+      ]
+    }
+  ]
+
+  // Voice Broadcast Pricing
+  const voiceBroadcastPackages = [
+    {
+      id: 'starter',
+      name: locale === 'en' ? 'Starter' : 'স্টার্টার',
+      minutes: 5000,
+      rate: 1.2,
+      popular: false,
+      features: [
+        locale === 'en' ? '5,000 Call Minutes' : '৫,০০০ কল মিনিট',
+        locale === 'en' ? 'Text-to-Speech' : 'টেক্সট-টু-স্পিচ',
+        locale === 'en' ? 'Basic Scheduling' : 'বেসিক সময়সূচী',
+        locale === 'en' ? 'Delivery Reports' : 'ডেলিভারি রিপোর্ট',
+        locale === 'en' ? 'Email Support' : 'ইমেইল সাপোর্ট'
+      ]
+    },
+    {
+      id: 'growth',
+      name: locale === 'en' ? 'Growth' : 'গ্রোথ',
+      minutes: 15000,
+      rate: 1.0,
+      popular: true,
+      features: [
+        locale === 'en' ? '15,000 Call Minutes' : '১৫,০০০ কল মিনিট',
+        locale === 'en' ? 'Text-to-Speech & Audio Upload' : 'টেক্সট-টু-স্পিচ ও অডিও আপলোড',
+        locale === 'en' ? 'Advanced Scheduling' : 'উন্নত সময়সূচী',
+        locale === 'en' ? 'Detailed Analytics' : 'বিস্তারিত বিশ্লেষণ',
+        locale === 'en' ? 'Retry Logic' : 'পুনঃচেষ্টা লজিক',
+        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট'
+      ]
+    },
+    {
+      id: 'enterprise',
+      name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ',
+      minutes: 50000,
+      rate: 0.8,
+      popular: false,
+      features: [
+        locale === 'en' ? '50,000+ Call Minutes' : '৫০,০০০+ কল মিনিট',
+        locale === 'en' ? 'All Features Included' : 'সব বৈশিষ্ট্য অন্তর্ভুক্ত',
+        locale === 'en' ? 'API Access' : 'API অ্যাক্সেস',
+        locale === 'en' ? 'Custom Integration' : 'কাস্টম ইন্টিগ্রেশন',
+        locale === 'en' ? '24/7 Support' : '২৪/৭ সাপোর্ট',
+        locale === 'en' ? 'Dedicated Manager' : 'ডেডিকেটেড ম্যানেজার'
+      ]
+    }
+  ]
+
+  const getCurrentPackages = () => {
+    switch (selectedService) {
+      case 'bulk-sms': return smsPackages
+      case 'contact-center': return contactCenterPackages
+      case 'hosted-pbx': return pbxPackages
+      case 'voice-broadcast': return voiceBroadcastPackages
+      default: return smsPackages
+    }
+  }
+
+  const getServiceColor = (color: string) => {
+    const colors: { [key: string]: string } = {
+      blue: 'from-blue-500 to-blue-600',
+      purple: 'from-purple-500 to-purple-600',
+      green: 'from-green-500 to-green-600',
+      orange: 'from-orange-500 to-orange-600'
+    }
+    return colors[color] || colors.blue
+  }
 
   return (
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
         <Header />
 
         {/* Hero Section */}
-        <div className="py-20 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(135deg, #00A651 0%, #008A43 100%)'}}>
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Left Content */}
-              <div className="text-left">
-                <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                  A2P SMS Pricing
-                </h1>
-                <p className="text-xl text-green-100 mb-8 max-w-lg">
-                  Application-to-Person SMS pricing with volume discounts. Choose the perfect plan for your business needs.
-                </p>
+        <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-btcl-primary via-green-600 to-btcl-secondary">
+          <div className="max-w-7xl mx-auto text-center">
+            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+              {locale === 'en' ? 'Service Pricing' : 'সেবা মূল্য'}
+            </h1>
+            <p className="text-xl text-green-100 mb-8 max-w-3xl mx-auto">
+              {locale === 'en'
+                ? 'Transparent pricing for all our enterprise communication services. Choose the plan that fits your business needs.'
+                : 'আমাদের সমস্ত এন্টারপ্রাইজ যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
+            </p>
+          </div>
+        </div>
 
-                {/* Feature Pills */}
-                <div className="flex flex-wrap gap-4 mb-8">
-                  <div className="flex items-center bg-green-600 bg-opacity-30 backdrop-blur-sm border border-green-400 rounded-full px-4 py-2 text-white">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-sm font-medium">No Setup Fees</span>
-                  </div>
-                  <div className="flex items-center bg-green-600 bg-opacity-30 backdrop-blur-sm border border-green-400 rounded-full px-4 py-2 text-white">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-sm font-medium">Instant Activation</span>
-                  </div>
-                  <div className="flex items-center bg-green-600 bg-opacity-30 backdrop-blur-sm border border-green-400 rounded-full px-4 py-2 text-white">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-sm font-medium">Cancel Anytime</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Illustration */}
-              <div className="relative lg:ml-8">
-                <div className="relative">
-                  {/* Phone/Device Frame */}
-                  <div className="relative bg-gray-800 rounded-3xl p-1 shadow-2xl transform rotate-6 hover:rotate-3 transition-transform duration-500">
-                    <div className="bg-white rounded-2xl overflow-hidden">
-                      {/* Phone Header */}
-                      <div className="bg-green-500 px-4 py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-white rounded-full opacity-80"></div>
-                          <div className="w-2 h-2 bg-white rounded-full opacity-60"></div>
-                          <div className="w-2 h-2 bg-white rounded-full opacity-40"></div>
-                        </div>
-                        <div className="text-white text-sm font-medium">MESSAGES</div>
-                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                          </svg>
-                        </div>
-                      </div>
-
-                      {/* Messages Content */}
-                      <div className="p-4 bg-gray-50 h-64 space-y-3">
-                        {/* Incoming Message Bubble */}
-                        <div className="flex justify-start">
-                          <div className="max-w-xs bg-white rounded-2xl rounded-bl-sm px-4 py-2 shadow-sm">
-                            <div className="text-xs text-gray-600 mb-1">Your OTP Code</div>
-                            <div className="text-sm text-gray-800">123456 is your verification code</div>
-                          </div>
-                        </div>
-
-                        {/* Outgoing Message Bubble */}
-                        <div className="flex justify-end">
-                          <div className="max-w-xs bg-green-500 rounded-2xl rounded-br-sm px-4 py-2 shadow-sm">
-                            <div className="text-sm text-white">Thank you!</div>
-                          </div>
-                        </div>
-
-                        {/* Another Incoming Message */}
-                        <div className="flex justify-start">
-                          <div className="max-w-xs bg-white rounded-2xl rounded-bl-sm px-4 py-2 shadow-sm">
-                            <div className="text-xs text-gray-600 mb-1">Promotion Alert</div>
-                            <div className="text-sm text-gray-800">50% off on your next purchase!</div>
-                          </div>
-                        </div>
-
-                        {/* Typing Indicator */}
-                        <div className="flex justify-start">
-                          <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Floating Elements */}
-                  <div className="absolute -top-4 -left-4 w-16 h-16 bg-green-400 bg-opacity-20 rounded-full animate-pulse"></div>
-                  <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-green-300 bg-opacity-15 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-                  <div className="absolute top-1/2 -right-8 w-12 h-12 bg-white bg-opacity-10 rounded-full animate-bounce" style={{animationDelay: '2s'}}></div>
-
-                  {/* Message Icons */}
-                  <div className="absolute -top-8 right-4 bg-white rounded-full p-2 shadow-lg animate-bounce" style={{animationDelay: '0.5s'}}>
-                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                    </svg>
-                  </div>
-
-                  <div className="absolute bottom-4 -left-6 bg-white rounded-full p-2 shadow-lg animate-bounce" style={{animationDelay: '1.5s'}}>
-                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+        {/* Service Selector */}
+        <div className="py-12 bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap justify-center gap-4">
+              {services.map((service) => (
+                <button
+                  key={service.id}
+                  onClick={() => setSelectedService(service.id)}
+                  className={`flex items-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 ${
+                    selectedService === service.id
+                      ? `bg-gradient-to-r ${getServiceColor(service.color)} text-white shadow-lg scale-105`
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="text-2xl">{service.icon}</span>
+                  <span>{service.name}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Pricing Cards */}
-        <div className="py-32">
+        <div className="py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Popular A2P SMS Packages
+                {locale === 'en' ? 'Choose Your Plan' : 'আপনার পরিকল্পনা চয়ন করুন'}
               </h2>
               <p className="text-xl text-gray-600">
-                Reliable A2P SMS bundles at great rates. (Excluding 15% VAT)
+                {selectedService === 'bulk-sms' && (locale === 'en' ? '(Excluding 15% VAT)' : '(১৫% ভ্যাট বাদে)')}
+                {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
+                {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
+                {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per minute pricing' : 'প্রতি মিনিট মূল্য')}
               </p>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  id: 'small',
-                  name: locale === 'en' ? 'Small Business' : 'ছোট ব্যবসা',
-                  sms: 20000,
-                  rate: 0.32,
-                  validity: 30,
-                  popular: false,
-                  features: [
-                    locale === 'en' ? 'Basic API Access' : 'বেসিক API অ্যাক্সেস',
-                    locale === 'en' ? 'Email Support' : 'ইমেইল সাপোর্ট',
-                    locale === 'en' ? 'Standard Delivery' : 'স্ট্যান্ডার্ড ডেলিভারি',
-                    locale === 'en' ? 'Basic Reports' : 'বেসিক রিপোর্ট',
-                    locale === 'en' ? 'Single Sender ID' : 'একক প্রেরক ID'
-                  ]
-                },
-                {
-                  id: 'medium',
-                  name: locale === 'en' ? 'Medium Business' : 'মাঝারি ব্যবসা',
-                  sms: 50000,
-                  rate: 0.30,
-                  validity: 60,
-                  popular: true,
-                  features: [
-                    locale === 'en' ? 'Advanced API' : 'অ্যাডভান্সড API',
-                    locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট',
-                    locale === 'en' ? 'Fast Delivery' : 'দ্রুত ডেলিভারি',
-                    locale === 'en' ? 'Custom Sender ID' : 'কাস্টম প্রেরক ID',
-                    locale === 'en' ? 'Detailed Analytics' : 'বিস্তারিত অ্যানালিটিক্স',
-                    locale === 'en' ? 'Multiple Projects' : 'একাধিক প্রকল্প'
-                  ]
-                },
-                {
-                  id: 'large',
-                  name: locale === 'en' ? 'Large Business' : 'বড় ব্যবসা',
-                  sms: 100000,
-                  rate: 0.28,
-                  validity: 90,
-                  popular: false,
-                  features: [
-                    locale === 'en' ? 'Premium API' : 'প্রিমিয়াম API',
-                    locale === 'en' ? '24/7 Phone Support' : '২৪/৭ ফোন সাপোর্ট',
-                    locale === 'en' ? 'Instant Delivery' : 'তাৎক্ষণিক ডেলিভারি',
-                    locale === 'en' ? 'Multiple Sender IDs' : 'একাধিক প্রেরক ID',
-                    locale === 'en' ? 'Advanced Analytics' : 'উন্নত অ্যানালিটিক্স',
-                    locale === 'en' ? 'Dedicated Manager' : 'ডেডিকেটেড ম্যানেজার',
-                    locale === 'en' ? 'Priority Routing' : 'অগ্রাধিকার রাউটিং'
-                  ]
-                }
-              ].map((pkg) => (
-                  <div key={pkg.id}
-                       className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>
-                    {pkg.popular && (
-                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                          <div
-                              className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
-                            {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
-                          </div>
-                        </div>
-                    )}
-
-                    <div className="px-8 py-8">
-                      <div className="text-center mb-4">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-6">{pkg.name}</h3>
-                        <div className="mb-4">
-                          <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
-                          <span className="text-gray-600 text-lg">/SMS</span>
-                        </div>
-                        <div className="text-sm text-gray-500 mb-6 font-medium">
-                          {locale === 'en' ? 'Total:' : 'মোট:'} ৳{(pkg.sms * pkg.rate).toLocaleString()}
-                        </div>
-                        <div className="text-sm text-gray-500 space-y-2 bg-gray-50 rounded-xl p-4">
-                          <div className="flex items-center justify-center">
-                            <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path
-                                  d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-                            </svg>
-                            {pkg.sms.toLocaleString()} SMS
-                          </div>
-                          <div className="flex items-center justify-center">
-                            <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                                    clipRule="evenodd"/>
-                            </svg>
-                            {pkg.validity} {locale === 'en' ? 'days validity' : 'দিন মেয়াদ'}
-                          </div>
-                        </div>
+              {getCurrentPackages().map((pkg: any) => (
+                <div key={pkg.id}
+                     className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>
+                  {pkg.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
+                        {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
                       </div>
+                    </div>
+                  )}
 
+                  <div className="px-8 py-8">
+                    <div className="text-center mb-6">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">{pkg.name}</h3>
                       <div className="mb-4">
-                        < Link href={`/${locale}/packages/${pkg.id}/purchase`}>
-                          <Button
-                              className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                                  pkg.popular
-                                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
-                                      : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
-                              }`}
-                          >
-                            {locale === 'en' ? 'Get Started' : 'শুরু করুন'}
-                          </Button>
-                        </Link>
-                      </div>
-
-                      <div className="space-y-3">
-                        {pkg.features.map((feature, index) => (
-                            <div key={index} className="flex items-start">
-                              <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor"
-                                   viewBox="0 0 20 20">
-                                <path fillRule="evenodd"
-                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                      clipRule="evenodd"/>
-                              </svg>
-                              <span className="text-gray-700 text-sm font-medium">{feature}</span>
+                        {selectedService === 'bulk-sms' && (
+                          <>
+                            <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
+                            <span className="text-gray-600 text-lg">/SMS</span>
+                            <div className="text-sm text-gray-500 mt-2">
+                              {locale === 'en' ? 'Total:' : 'মোট:'} ৳{(pkg.sms * pkg.rate).toLocaleString()}
                             </div>
-                        ))}
+                            <div className="text-sm text-gray-500">
+                              {pkg.sms.toLocaleString()} SMS • {pkg.validity} {locale === 'en' ? 'days' : 'দিন'}
+                            </div>
+                          </>
+                        )}
+                        {selectedService === 'contact-center' && (
+                          <>
+                            <span className="text-4xl font-bold text-gray-900">
+                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
+                            </span>
+                            <span className="text-gray-600 text-lg">/month</span>
+                            <div className="text-sm text-gray-500 mt-2">
+                              {typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}
+                            </div>
+                          </>
+                        )}
+                        {selectedService === 'hosted-pbx' && (
+                          <>
+                            <span className="text-4xl font-bold text-gray-900">
+                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
+                            </span>
+                            <span className="text-gray-600 text-lg">/month</span>
+                            <div className="text-sm text-gray-500 mt-2">
+                              {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
+                            </div>
+                          </>
+                        )}
+                        {selectedService === 'voice-broadcast' && (
+                          <>
+                            <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
+                            <span className="text-gray-600 text-lg">/min</span>
+                            <div className="text-sm text-gray-500 mt-2">
+                              {locale === 'en' ? 'Total:' : 'মোট:'} ৳{(pkg.minutes * pkg.rate).toLocaleString()}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {pkg.minutes.toLocaleString()} {locale === 'en' ? 'minutes' : 'মিনিট'}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
-                  </div>
-              ))}
-            </div>
 
-            <div className="text-center mt-12">
-              <div className="inline-flex items-center bg-yellow-50 border border-yellow-200 rounded-xl px-8 py-4">
-                <svg className="w-6 h-6 text-yellow-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"/>
-                </svg>
-                <span className="text-yellow-800 font-semibold text-lg">
-                {locale === 'en' ? '15% VAT will be added to all prices' : 'সকল মূল্যে ১৫% ভ্যাট যোগ হবে'}
-              </span>
-              </div>
-            </div>
-          </div>
-        </div>
+                    <div className="mb-6">
+                      <Link href={`/${locale}/contact`}>
+                        <Button
+                          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                            pkg.popular
+                              ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
+                              : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
+                          }`}
+                        >
+                          {typeof pkg.price === 'string' || typeof pkg.extensions === 'string'
+                            ? (locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ')
+                            : (locale === 'en' ? 'Get Started' : 'শুরু করুন')}
+                        </Button>
+                      </Link>
+                    </div>
 
-        {/* Pricing Table Section */}
-        <div className="py-20 bg-white">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                A2P SMS Rate Card
-              </h2>
-              <p className="text-xl text-gray-600">
-                Volume-based pricing structure (Excluding 15% VAT)
-              </p>
-            </div>
-
-            <div className="overflow-hidden bg-white rounded-2xl shadow-xl border border-gray-200">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead style={{background: 'linear-gradient(135deg, #00A651 0%, #008A43 100%)'}}
-                         className="text-white">
-                  <tr>
-                    <th className="text-left p-6 font-semibold text-lg">SN</th>
-                    <th className="text-left p-6 font-semibold text-lg">Description</th>
-                    <th className="text-left p-6 font-semibold text-lg">Number of SMS</th>
-                    <th className="text-right p-6 font-semibold text-lg">Rate (Taka/SMS)</th>
-                  </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="p-6 font-semibold text-gray-900">1</td>
-                    <td className="p-6 text-gray-700">Application to Person (A2P) SMS</td>
-                    <td className="p-6 text-gray-700 font-medium">1 - 20,000</td>
-                    <td className="p-6 text-right font-bold text-lg" style={{color: '#00A651'}}>৳ 0.32</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 transition-colors bg-green-50">
-                    <td className="p-6 font-semibold text-gray-900">2</td>
-                    <td className="p-6 text-gray-700">Application to Person (A2P) SMS</td>
-                    <td className="p-6 text-gray-700 font-medium">20,001 - 50,000</td>
-                    <td className="p-6 text-right font-bold text-lg" style={{color: '#00A651'}}>৳ 0.30</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="p-6 font-semibold text-gray-900">3</td>
-                    <td className="p-6 text-gray-700">Application to Person (A2P) SMS</td>
-                    <td className="p-6 text-gray-700 font-medium">50,001 - 100,000</td>
-                    <td className="p-6 text-right font-bold text-lg" style={{color: '#00A651'}}>৳ 0.28</td>
-                  </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600">
-                  <strong>Note:</strong> Prices exclude 15% VAT. Contact us for enterprise pricing above 100,000 SMS.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-
-        {/* Package Benefits */}
-        <section className="py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                {locale === 'en' ? 'Why Choose Our Packages?' : 'কেন আমাদের প্যাকেজ বেছে নেবেন?'}
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card>
-                <CardHeader>
-                  <div className="w-12 h-12 bg-btcl-primary rounded-lg flex items-center justify-center mb-4">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <CardTitle>
-                    {locale === 'en' ? 'Instant Activation' : 'তাৎক্ষণিক সক্রিয়করণ'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">
-                    {locale === 'en'
-                        ? 'Your package is activated immediately after payment, so you can start sending SMS right away.'
-                        : 'পেমেন্টের পরপরই আপনার প্যাকেজ সক্রিয় হয়ে যায়, তাই আপনি সঙ্গে সঙ্গে এসএমএস পাঠানো শুরু করতে পারেন।'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="w-12 h-12 bg-btcl-primary rounded-lg flex items-center justify-center mb-4">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <CardTitle>
-                    {locale === 'en' ? 'No Hidden Fees' : 'কোনো লুকানো ফি নেই'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">
-                    {locale === 'en'
-                        ? 'What you see is what you pay. No setup fees, no monthly charges, no surprises in your bill.'
-                        : 'আপনি যা দেখছেন তাই পরিশোধ করবেন। কোনো সেটআপ ফি নেই, মাসিক চার্জ নেই, আপনার বিলে কোনো সারপ্রাইজ নেই।'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="w-12 h-12 bg-btcl-primary rounded-lg flex items-center justify-center mb-4">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </div>
-                  <CardTitle>
-                    {locale === 'en' ? 'Flexible Payment' : 'নমনীয় পেমেন্ট'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">
-                    {locale === 'en'
-                        ? 'Pay securely through multiple payment methods including mobile banking, cards, and bank transfers.'
-                        : 'মোবাইল ব্যাংকিং, কার্ড এবং ব্যাংক ট্রান্সফার সহ একাধিক পেমেন্ট পদ্ধতির মাধ্যমে নিরাপদে পেমেন্ট করুন।'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <div className="py-20 bg-gray-50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Frequently Asked Questions
-              </h2>
-              <p className="text-xl text-gray-600">Everything you need to know about our pricing</p>
-            </div>
-
-            <div className="space-y-6">
-              {[
-                {
-                  question: 'Can I upgrade my plan anytime?',
-                  answer: 'Yes, you can upgrade your plan at any time. The remaining SMS balance and validity will be adjusted accordingly and you\'ll only pay the difference.'
-                },
-                {
-                  question: 'What happens to unused SMS?',
-                  answer: 'Unused SMS credits expire at the end of the validity period. We recommend monitoring your usage and purchasing appropriate packages.'
-                },
-                {
-                  question: 'Is there any setup fee?',
-                  answer: 'No, there are no setup fees. You only pay for the SMS package you choose and can start sending messages immediately after purchase.'
-                }
-              ].map((faq, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">{faq.question}</h3>
-                      <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                    <div className="space-y-3">
+                      {pkg.features.map((feature: string, index: number) => (
+                        <div key={index} className="flex items-start">
+                          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                          </svg>
+                          <span className="text-gray-700 text-sm font-medium">{feature}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                </div>
               ))}
             </div>
+
+            {selectedService === 'bulk-sms' && (
+              <div className="text-center mt-12">
+                <div className="inline-flex items-center bg-yellow-50 border border-yellow-200 rounded-xl px-8 py-4">
+                  <svg className="w-6 h-6 text-yellow-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                  </svg>
+                  <span className="text-yellow-800 font-semibold text-lg">
+                    {locale === 'en' ? '15% VAT will be added to all prices' : 'সকল মূল্যে ১৫% ভ্যাট যোগ হবে'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Contact CTA */}
+        <div className="py-16 bg-gradient-to-r from-btcl-primary to-green-700">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              {locale === 'en' ? 'Need a Custom Plan?' : 'কাস্টম পরিকল্পনা প্রয়োজন?'}
+            </h2>
+            <p className="text-xl text-green-100 mb-8">
+              {locale === 'en'
+                ? 'Contact our sales team for enterprise pricing and custom solutions tailored to your specific requirements.'
+                : 'আপনার নির্দিষ্ট প্রয়োজনীয়তার জন্য এন্টারপ্রাইজ মূল্য এবং কাস্টম সমাধানের জন্য আমাদের সেলস টিমের সাথে যোগাযোগ করুন।'}
+            </p>
+            <Link href={`/${locale}/contact`}>
+              <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl">
+                {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         <Footer />
       </div>
   );

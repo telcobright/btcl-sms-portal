@@ -43,8 +43,7 @@ export function Footer() {
                 <p className="text-lg md:text-xl text-green-50 mb-8 leading-relaxed max-w-lg">
                   {locale === 'en'
                       ? 'Choose your plan and start sending A2P SMS within minutes. No setup fees, no long-term contracts.'
-                      : 'আপনার প্যাকেজ নির্বাচন করুন এবং কয়েক মিনিটের মধ্যে এ২পি এসএমএস পাঠানো শুরু করুন। কোনো সেটআপ ফি নেই, দীর্ঘমেয়াদী চুক্তি নেই।'
-                  }
+                      : 'আপনার প্যাকেজ নির্বাচন করুন এবং কয়েক মিনিটের মধ্যে এ২পি এসএমএস পাঠানো শুরু করুন। কোনো সেটআপ ফি নেই, দীর্ঘমেয়াদী চুক্তি নেই।'}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link

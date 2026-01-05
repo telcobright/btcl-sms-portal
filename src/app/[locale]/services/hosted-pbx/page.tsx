@@ -17,45 +17,87 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
   const features = [
     {
       icon: '📱',
-      title: locale === 'en' ? 'Virtual Extensions' : 'ভার্চুয়াল এক্সটেনশন',
+      title: locale === 'en' ? 'Extension Management' : 'এক্সটেনশন ম্যানেজমেন্ট',
       description: locale === 'en'
-        ? 'Unlimited extensions for your team members with customizable settings'
-        : 'কাস্টমাইজযোগ্য সেটিংস সহ আপনার টিম সদস্যদের জন্য সীমাহীন এক্সটেনশন',
+        ? 'Unlimited SIP extensions with individual settings, call forwarding, voicemail, and do not disturb features'
+        : 'স্বতন্ত্র সেটিংস, কল ফরওয়ার্ডিং, ভয়েসমেল এবং ডিস্টার্ব করবেন না বৈশিষ্ট্য সহ সীমাহীন SIP এক্সটেনশন',
     },
     {
-      icon: '🔄',
-      title: locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
+      icon: '🎯',
+      title: locale === 'en' ? 'Interactive IVR System' : 'ইন্টারঅ্যাক্টিভ IVR সিস্টেম',
       description: locale === 'en'
-        ? 'Smart call forwarding based on time, availability, and custom rules'
-        : 'সময়, প্রাপ্যতা এবং কাস্টম নিয়মের উপর ভিত্তি করে স্মার্ট কল ফরওয়ার্ডিং',
+        ? 'Multi-level IVR menus with time-based routing, holiday schedules, and custom announcements'
+        : 'সময়-ভিত্তিক রাউটিং, ছুটির সময়সূচী এবং কাস্টম ঘোষণা সহ মাল্টি-লেভেল IVR মেনু',
     },
     {
-      icon: '🎥',
-      title: locale === 'en' ? 'Video Conferencing' : 'ভিডিও কনফারেন্সিং',
+      icon: '👥',
+      title: locale === 'en' ? 'Ring Groups & Queues' : 'রিং গ্রুপ ও সারি',
       description: locale === 'en'
-        ? 'HD video and audio conferencing with screen sharing capabilities'
-        : 'স্ক্রিন শেয়ারিং ক্ষমতা সহ HD ভিডিও এবং অডিও কনফারেন্সিং',
+        ? 'Create ring groups with sequential, simultaneous, or round-robin strategies. Advanced call queue management'
+        : 'ক্রমিক, একযোগে বা রাউন্ড-রবিন কৌশল সহ রিং গ্রুপ তৈরি করুন। উন্নত কল সারি ব্যবস্থাপনা',
     },
     {
       icon: '📧',
       title: locale === 'en' ? 'Voicemail to Email' : 'ভয়েসমেল টু ইমেইল',
       description: locale === 'en'
-        ? 'Receive voicemails as email attachments with transcription'
-        : 'ট্রান্সক্রিপশন সহ ইমেইল সংযুক্তি হিসাবে ভয়েসমেল গ্রহণ করুন',
+        ? 'Automatic voicemail delivery to email with audio file attachments and optional transcription'
+        : 'অডিও ফাইল সংযুক্তি এবং ঐচ্ছিক ট্রান্সক্রিপশন সহ ইমেইলে স্বয়ংক্রিয় ভয়েসমেল ডেলিভারি',
     },
     {
-      icon: '💼',
-      title: locale === 'en' ? 'Auto-Attendant' : 'অটো-এটেন্ডেন্ট',
+      icon: '🎙️',
+      title: locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
       description: locale === 'en'
-        ? 'Professional automated receptionist with customizable greetings'
-        : 'কাস্টমাইজযোগ্য শুভেচ্ছা সহ পেশাদার স্বয়ংক্রিয় রিসেপশনিস্ট',
+        ? 'Record all calls or specific extensions with secure storage and web-based playback interface'
+        : 'নিরাপদ স্টোরেজ এবং ওয়েব-ভিত্তিক প্লেব্যাক ইন্টারফেস সহ সব কল বা নির্দিষ্ট এক্সটেনশন রেকর্ড করুন',
     },
     {
-      icon: '📊',
-      title: locale === 'en' ? 'Call Analytics' : 'কল বিশ্লেষণ',
+      icon: '🎤',
+      title: locale === 'en' ? 'Conference Rooms' : 'কনফারেন্স রুম',
       description: locale === 'en'
-        ? 'Detailed reports on call volumes, durations, and patterns'
-        : 'কল ভলিউম, সময়কাল এবং প্যাটার্ন সম্পর্কে বিস্তারিত রিপোর্ট',
+        ? 'Audio conference bridges with PIN protection, moderator controls, and recording capabilities'
+        : 'PIN সুরক্ষা, মডারেটর নিয়ন্ত্রণ এবং রেকর্ডিং ক্ষমতা সহ অডিও কনফারেন্স ব্রিজ',
+    },
+    {
+      icon: '⏰',
+      title: locale === 'en' ? 'Time Conditions' : 'সময় শর্ত',
+      description: locale === 'en'
+        ? 'Route calls based on business hours, holidays, and special schedules with custom routing rules'
+        : 'ব্যবসায়িক ঘন্টা, ছুটির দিন এবং কাস্টম রাউটিং নিয়ম সহ বিশেষ সময়সূচীর উপর ভিত্তি করে কল রুট করুন',
+    },
+    {
+      icon: '🌐',
+      title: locale === 'en' ? 'Web-Based Management' : 'ওয়েব-ভিত্তিক ম্যানেজমেন্ট',
+      description: locale === 'en'
+        ? 'Manage your entire phone system through an intuitive web interface from anywhere'
+        : 'যেকোনো জায়গা থেকে একটি স্বজ্ঞাত ওয়েব ইন্টারফেসের মাধ্যমে আপনার সম্পূর্ণ ফোন সিস্টেম পরিচালনা করুন',
+    },
+    {
+      icon: '📞',
+      title: locale === 'en' ? 'Hot Desking' : 'হট ডেস্কিং',
+      description: locale === 'en'
+        ? 'Allow users to log in and out of phones, making any device their personal extension'
+        : 'ব্যবহারকারীদের ফোনে লগ ইন এবং লগ আউট করতে দিন, যেকোনো ডিভাইসকে তাদের ব্যক্তিগত এক্সটেনশন তৈরি করুন',
+    },
+    {
+      icon: '🔍',
+      title: locale === 'en' ? 'Call Detail Records' : 'কল বিস্তারিত রেকর্ড',
+      description: locale === 'en'
+        ? 'Comprehensive CDR reports with filtering, export options, and detailed call analytics'
+        : 'ফিল্টারিং, এক্সপোর্ট অপশন এবং বিস্তারিত কল বিশ্লেষণ সহ ব্যাপক CDR রিপোর্ট',
+    },
+    {
+      icon: '🎵',
+      title: locale === 'en' ? 'Music on Hold' : 'হোল্ডে সংগীত',
+      description: locale === 'en'
+        ? 'Upload custom music or announcements for callers on hold with multiple playlist support'
+        : 'একাধিক প্লেলিস্ট সাপোর্ট সহ হোল্ডে থাকা কলকারীদের জন্য কাস্টম সংগীত বা ঘোষণা আপলোড করুন',
+    },
+    {
+      icon: '📠',
+      title: locale === 'en' ? 'Virtual Fax Server' : 'ভার্চুয়াল ফ্যাক্স সার্ভার',
+      description: locale === 'en'
+        ? 'Send and receive faxes through email with automatic PDF conversion and archiving'
+        : 'স্বয়ংক্রিয় PDF রূপান্তর এবং সংরক্ষণাগার সহ ইমেইলের মাধ্যমে ফ্যাক্স পাঠান এবং গ্রহণ করুন',
     },
   ]
 
@@ -87,8 +129,8 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
 
             <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-green-100/90 md:text-2xl">
               {locale === 'en'
-                ? 'Enterprise phone system in the cloud with advanced call management, unified communications, and seamless integration with your business tools.'
-                : 'উন্নত কল ম্যানেজমেন্ট, ইউনিফাইড কমিউনিকেশন এবং আপনার ব্যবসায়িক সরঞ্জামের সাথে নিরবচ্ছিন্ন সংযোগ সহ ক্লাউডে এন্টারপ্রাইজ ফোন সিস্টেম।'}
+                ? 'Full-featured cloud PBX with unlimited extensions, advanced IVR, call queues, conferencing, recording, and comprehensive management tools. No hardware required.'
+                : 'সীমাহীন এক্সটেনশন, উন্নত IVR, কল সারি, কনফারেন্সিং, রেকর্ডিং এবং ব্যাপক ব্যবস্থাপনা সরঞ্জাম সহ সম্পূর্ণ-বৈশিষ্ট্যযুক্ত ক্লাউড PBX। কোন হার্ডওয়্যার প্রয়োজন নেই।'}
             </p>
 
             <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
@@ -97,7 +139,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
                   size="lg"
                   className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-green-600 shadow-2xl transition-all duration-300 hover:scale-105"
                 >
-                  {locale === 'en' ? 'Start Free Trial' : 'বিনামূল্যে ট্রায়াল শুরু করুন'}
+                  {locale === 'en' ? 'Request Demo' : 'ডেমো অনুরোধ করুন'}
                 </Button>
               </Link>
 
@@ -120,16 +162,16 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-20 text-center">
             <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
-              {locale === 'en' ? 'Advanced PBX Features' : 'উন্নত PBX বৈশিষ্ট্য'}
+              {locale === 'en' ? 'Enterprise-Grade PBX Features' : 'এন্টারপ্রাইজ-গ্রেড PBX বৈশিষ্ট্য'}
             </h2>
             <p className="text-xl text-gray-600">
               {locale === 'en'
-                ? 'Professional phone system features for businesses of all sizes'
-                : 'সব আকারের ব্যবসার জন্য পেশাদার ফোন সিস্টেম বৈশিষ্ট্য'}
+                ? 'Complete unified communications platform with advanced call management and collaboration tools'
+                : 'উন্নত কল ব্যবস্থাপনা এবং সহযোগিতা সরঞ্জাম সহ সম্পূর্ণ ইউনিফাইড কমিউনিকেশন প্ল্যাটফর্ম'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {features.map((feature, index) => (
               <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
                 <CardHeader>
@@ -154,19 +196,19 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
             <h2 className="mb-6 text-4xl font-bold md:text-5xl">
-              {locale === 'en' ? 'Upgrade Your Business Phone System' : 'আপনার ব্যবসায়িক ফোন সিস্টেম আপগ্রেড করুন'}
+              {locale === 'en' ? 'Transform Your Business Communications' : 'আপনার ব্যবসায়িক যোগাযোগ রূপান্তরিত করুন'}
             </h2>
             <p className="mb-10 text-xl text-green-100">
               {locale === 'en'
-                ? 'Switch to cloud-based PBX and enjoy enterprise features without the hardware'
-                : 'ক্লাউড-ভিত্তিক PBX-এ স্যুইচ করুন এবং হার্ডওয়্যার ছাড়াই এন্টারপ্রাইজ বৈশিষ্ট্য উপভোগ করুন'}
+                ? 'Experience enterprise-grade telephony with unlimited extensions, advanced features, and no hardware investment required'
+                : 'সীমাহীন এক্সটেনশন, উন্নত বৈশিষ্ট্য এবং কোন হার্ডওয়্যার বিনিয়োগ প্রয়োজন ছাড়াই এন্টারপ্রাইজ-গ্রেড টেলিফোনি অভিজ্ঞতা নিন'}
             </p>
             <Link href={`/${locale}/register`}>
               <Button
                 size="lg"
                 className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-green-600 shadow-2xl transition-all duration-300 hover:scale-105"
               >
-                {locale === 'en' ? 'Get Started Now' : 'এখনই শুরু করুন'}
+                {locale === 'en' ? 'Request a Demo' : 'ডেমো অনুরোধ করুন'}
               </Button>
             </Link>
           </div>

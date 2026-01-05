@@ -206,7 +206,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-green-600 to-btcl-secondary py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 py-24">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -222,12 +222,12 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             </div>
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              <span className="block bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
                 {locale === 'en' ? 'BTCL Bulk SMS Service' : 'বিটিসিএল বাল্ক এসএমএস সেবা'}
               </span>
             </h1>
 
-            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-green-100/90 md:text-2xl">
+            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-blue-100/90 md:text-2xl">
               {locale === 'en'
                 ? 'Reach millions instantly with Bangladesh\'s most reliable SMS gateway. Send promotional messages, alerts, and notifications with 99.9% delivery rate.'
                 : 'বাংলাদেশের সবচেয়ে নির্ভরযোগ্য এসএমএস গেটওয়ে দিয়ে লাখো মানুষের কাছে তাৎক্ষণিকভাবে পৌঁছান। ৯৯.৯% ডেলিভারি হার সহ প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান।'}
@@ -237,7 +237,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
               <Link href={`/${locale}/register`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-green-600 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-white/25"
+                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-blue-600 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-white/25"
                 >
                   {locale === 'en' ? 'Get Started Free' : 'বিনামূল্যে শুরু করুন'}
                 </Button>
@@ -275,7 +275,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             {features.map((feature, index) => (
               <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
                 <CardHeader>
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-4xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-4xl transition-all duration-300 group-hover:scale-110">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
@@ -311,7 +311,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             {smsServiceTypes.map((service, index) => (
               <Card key={index} className="group h-full transition-all duration-300 hover:scale-105 hover:shadow-xl">
                 <CardHeader className="pb-4">
-                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-4xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-4xl transition-all duration-300 group-hover:scale-110">
                     {service.icon}
                   </div>
                   <CardTitle className="text-2xl">{service.title}</CardTitle>
@@ -321,8 +321,8 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
                   <ul className="space-y-3">
                     {service.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100">
-                          <span className="text-sm text-green-600">✓</span>
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100">
+                          <span className="text-sm text-blue-600">✓</span>
                         </div>
                         <span className="text-gray-700">{feature}</span>
                       </li>
@@ -356,7 +356,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
               <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
                 <CardHeader>
                   <div className="mb-4 flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-2xl">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-2xl">
                       {feature.icon}
                     </div>
                     <CardTitle className="text-xl">{feature.title}</CardTitle>
@@ -393,7 +393,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20">
                   {spec.icon}
                 </div>
-                <div className="mb-2 text-4xl font-bold text-green-400 md:text-5xl">{spec.value}</div>
+                <div className="mb-2 text-4xl font-bold text-blue-400 md:text-5xl">{spec.value}</div>
                 <div className="text-lg text-gray-300">{spec.label}</div>
                 {spec.description && <div className="mt-1 text-sm text-gray-400">{spec.description}</div>}
               </div>

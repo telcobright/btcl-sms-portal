@@ -433,6 +433,40 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
         </div>
       </section>
 
+      {/* CTA Section */}
+      <section className="bg-gradient-to-r from-blue-600 to-blue-700 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-white">
+            <h2 className="mb-6 text-4xl font-bold md:text-5xl">
+              {locale === 'en' ? 'Ready to get started?' : 'শুরু করতে প্রস্তুত?'}
+            </h2>
+            <p className="mb-10 text-xl text-blue-100">
+              {locale === 'en'
+                ? 'Choose your plan and start sending A2P SMS within minutes. No setup fees, no long-term contracts.'
+                : 'আপনার প্ল্যান নির্বাচন করুন এবং মিনিটের মধ্যে A2P SMS পাঠানো শুরু করুন। কোন সেটআপ ফি নেই, দীর্ঘমেয়াদী চুক্তি নেই।'}
+            </p>
+            <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
+              <Link href={`/${locale}/pricing`}>
+                <Button
+                  size="lg"
+                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-blue-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                >
+                  {locale === 'en' ? 'Purchase Package Today' : 'আজই প্যাকেজ কিনুন'}
+                </Button>
+              </Link>
+              <Link href={`/${locale}/contact`}>
+                <Button
+                  size="lg"
+                  className="transform rounded-xl border-2 border-white bg-transparent px-8 py-4 text-lg font-semibold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-white/10"
+                >
+                  {locale === 'en' ? 'Talk to Sales' : 'সেলসের সাথে কথা বলুন'}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   )

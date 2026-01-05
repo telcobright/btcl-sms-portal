@@ -202,7 +202,8 @@ export default async function ContactPage({ params }: ContactPageProps) {
         <Header />
 
         <HeroSection locale={locale} />
-        <ContactFormSection locale={locale} supportChannels={supportChannels} offices={offices} />
+        <ContactFormSection locale={locale} supportChannels={supportChannels} />
+        <OfficeLocationsFullSection offices={offices} locale={locale} />
         <FAQSection faqs={faqs} locale={locale} />
 
         <Footer />
@@ -276,11 +277,9 @@ function HeroSection({ locale }: { locale: string }) {
 function ContactFormSection({
                               locale,
                               supportChannels,
-                              offices,
                             }: {
   locale: string
   supportChannels: SupportChannel[]
-  offices: Office[]
 }) {
   return (
       <section className="py-24">
@@ -292,7 +291,6 @@ function ContactFormSection({
             {/* Contact Information */}
             <div className="space-y-12">
               <SupportChannelsSection supportChannels={supportChannels} locale={locale} />
-              <OfficeLocationsSection offices={offices} locale={locale} />
             </div>
           </div>
         </div>
@@ -481,25 +479,36 @@ function SupportChannelCard({ channel }: { channel: SupportChannel }) {
   )
 }
 
-// Office Locations Section Component
-function OfficeLocationsSection({ offices, locale }: { offices: Office[]; locale: string }) {
+// Office Locations Full Section Component
+function OfficeLocationsFullSection({ offices, locale }: { offices: Office[]; locale: string }) {
   return (
-      <div>
-        <div className="mb-8">
-        <span className="inline-flex items-center gap-2 rounded-full bg-purple-100 px-4 py-2 text-sm font-semibold text-purple-700">
-          <span className="h-2 w-2 rounded-full bg-purple-500" />
-          {getLocalizedText(locale, 'Office Locations', 'অফিসের অবস্থান')}
-        </span>
+      <section className="bg-gray-50 py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-16 text-center">
+            <div className="mb-8">
+              <span className="inline-flex items-center gap-2 rounded-full bg-purple-100 px-4 py-2 text-sm font-semibold text-purple-700">
+                <span className="h-2 w-2 rounded-full bg-purple-500" />
+                {getLocalizedText(locale, 'Office Locations', 'অফিসের অবস্থান')}
+              </span>
+            </div>
+            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+              {getLocalizedText(locale, 'Visit Our Offices', 'আমাদের অফিস ভিজিট করুন')}
+            </h2>
+            <p className="mx-auto max-w-2xl text-xl text-gray-600">
+              {getLocalizedText(
+                locale,
+                'Find us at our locations across Bangladesh. We\'re here to serve you better.',
+                'বাংলাদেশ জুড়ে আমাদের অবস্থানে আমাদের খুঁজুন। আমরা আপনাকে আরও ভালভাবে সেবা দিতে এখানে আছি।'
+              )}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-12">
+            {offices.map((office, index) => (
+                <OfficeCard key={index} office={office} />
+            ))}
+          </div>
         </div>
-        <h2 className="mb-8 text-3xl font-bold text-gray-900">
-          {getLocalizedText(locale, 'Visit Our Offices', 'আমাদের অফিস ভিজিট করুন')}
-        </h2>
-        <div className="space-y-6">
-          {offices.map((office, index) => (
-              <OfficeCard key={index} office={office} />
-          ))}
-        </div>
-      </div>
+      </section>
   )
 }
 

@@ -13,6 +13,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { FEATURE_FLAGS, API_BASE_URL, NID_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // Country list with codes
 const countries = [
@@ -280,9 +281,25 @@ export default function RegisterPage() {
       const email = verificationForm.getValues('email');
       const companyName = verificationForm.getValues('companyName');
 
-      // First, validate the partner data
+      // Store company name in localStorage
+      if (companyName) {
+        localStorage.setItem('companyName', companyName);
+        console.log('Company name saved to localStorage:', companyName);
+      }
+
+      // Check if OTP verification is enabled
+      if (!FEATURE_FLAGS.OTP_VERIFICATION_ENABLED) {
+        // Skip OTP verification
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setOtpSent(true);
+        startTimer(300);
+        toast.success('OTP verification skipped (disabled in config)');
+        return;
+      }
+
+      // OTP verification is enabled - proceed with actual validation and OTP sending
       console.log('Validating partner data...');
-      const validateResponse = await fetch('https://a2psms.btcliptelephony.gov.bd/FREESWITCHREST/admin/DashBoard/partner/validate', {
+      const validateResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.validate}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -299,7 +316,6 @@ export default function RegisterPage() {
 
       // Check for validation errors
       if (!validateResponse.ok || validateData === false) {
-        // Handle specific error messages
         if (validateData.errorCode === '400 BAD_REQUEST') {
           if (validateData.message === 'Telephone number already exists') {
             verificationForm.setError('phone', {
@@ -324,21 +340,13 @@ export default function RegisterPage() {
             return;
           }
         }
-        // Generic error if validation failed but no specific message
         toast.error('Validation failed. Please check your information.');
         setIsSubmitting(false);
         return;
       }
 
-      // If validation passed (response is true), proceed with OTP
+      // If validation passed, send actual OTP
       console.log('Validation successful, sending OTP...');
-
-      // Store company name in localStorage when sending OTP
-      if (companyName) {
-        localStorage.setItem('companyName', companyName);
-        console.log('Company name saved to localStorage:', companyName);
-      }
-
       const response = await sendOtp(phone);
       console.log('OTP sent:', response);
       setOtpSent(true);
@@ -356,6 +364,20 @@ export default function RegisterPage() {
     try {
       setIsSubmitting(true);
       const { phone, otp, email } = verificationForm.getValues();
+
+      // Check if OTP verification is enabled
+      if (!FEATURE_FLAGS.OTP_VERIFICATION_ENABLED) {
+        // Skip OTP verification
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setVerifiedPhone(phone);
+        setVerifiedEmail(email);
+        setOtpVerified(true);
+        toast.success('OTP verification skipped (disabled in config)');
+        setStep(2);
+        return;
+      }
+
+      // OTP verification is enabled - proceed with actual verification
       const response = await verifyOtp(phone, otp);
 
       // Check if OTP verification was successful
@@ -364,9 +386,9 @@ export default function RegisterPage() {
         console.log('OTP verified:', response);
         setVerifiedPhone(phone);
         setVerifiedEmail(email);
-        setOtpVerified(true); // Set OTP as verified
+        setOtpVerified(true);
         toast.success('Phone number verified successfully!');
-        setStep(2); // Move to NID verification step
+        setStep(2);
       } else {
         throw new Error('OTP verification failed');
       }
@@ -380,6 +402,15 @@ export default function RegisterPage() {
 
   const resendOtp = async () => {
     try {
+      // Check if OTP verification is enabled
+      if (!FEATURE_FLAGS.OTP_VERIFICATION_ENABLED) {
+        // Skip OTP resending
+        startTimer(300);
+        toast.success('OTP resend skipped (disabled in config)');
+        return;
+      }
+
+      // OTP verification is enabled - proceed with actual resend
       const phone = verificationForm.getValues('phone');
       const response = await sendOtp(phone);
       console.log('OTP resent:', response);
@@ -394,6 +425,22 @@ export default function RegisterPage() {
   const handleNidVerification = async () => {
     try {
       setIsVerifyingNid(true);
+
+      // Check if NID verification is enabled
+      if (!FEATURE_FLAGS.NID_VERIFICATION_ENABLED) {
+        // Skip NID verification
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setNidVerified(true);
+        setNidVerificationFailed(false);
+        setNidVerificationData({ status: true });
+        // Move to next step after showing success
+        setTimeout(() => {
+          setStep(3);
+        }, 2000);
+        return;
+      }
+
+      // NID verification is enabled - proceed with actual verification
       const { fullName, dateOfBirth, nidNumber, nidDigitType } = personalInfoForm.getValues();
 
       // Build the verification payload
@@ -412,7 +459,7 @@ export default function RegisterPage() {
 
       // Wait for 5 seconds minimum to show the loader
       const [response] = await Promise.all([
-        fetch('https://a2psms.btcliptelephony.gov.bd/NID/api/v1/nid/verify', {
+        fetch(`${NID_BASE_URL}${API_ENDPOINTS.nid.verify}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

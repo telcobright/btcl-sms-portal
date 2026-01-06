@@ -3,17 +3,60 @@
  * Centralized configuration for all API endpoints
  */
 
-// Base URLs
-export const API_BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/FREESWITCHREST';
-export const BULK_SMS_PORTAL_URL = 'https://a2psms.btcliptelephony.gov.bd:4000/';
+// ============================================
+// COMMON ROOT URL - Change this single value to switch environments
+// ============================================
+export const ROOT_URL = 'http://localhost:8001';
+// For production, use: 'https://a2psms.btcliptelephony.gov.bd'
+
+// ============================================
+// Service Base URLs (derived from ROOT_URL)
+// ============================================
+export const API_BASE_URL = `${ROOT_URL}/FREESWITCHREST`;
+export const AUTH_BASE_URL = `${ROOT_URL}/AUTHENTICATION`;
+export const NID_BASE_URL = `${ROOT_URL}/NID`;
+export const BULK_SMS_PORTAL_URL = `${ROOT_URL}:4000/`;
+
+// Feature Flags
+/**
+ * Toggle verification features on/off
+ * Set to true to enable, false to skip verification (for testing)
+ */
+export const FEATURE_FLAGS = {
+  /** Enable/Disable OTP verification during registration */
+  OTP_VERIFICATION_ENABLED: false,
+
+  /** Enable/Disable NID verification during registration */
+  NID_VERIFICATION_ENABLED: false,
+} as const;
 
 // API Endpoints
 export const API_ENDPOINTS = {
+  // OTP endpoints
+  otp: {
+    send: '/otp/send',
+    verify: '/otp/varify',
+  },
+
+  // Authentication endpoints
+  auth: {
+    login: '/auth/login',
+    register: '/auth/register',
+  },
+
   // Partner endpoints
   partner: {
+    validate: '/admin/DashBoard/partner/validate',
+    createPartner: '/partner/create-partner',
+    partnerDocuments: '/partner/partner-documents',
     getPartner: '/partner/get-partner',
     getPartnerExtra: '/partner/get-partner-extra',
     getPartnerDocument: '/partner/get-partner-document',
+  },
+
+  // NID endpoints
+  nid: {
+    verify: '/api/v1/nid/verify',
   },
 
   // Package endpoints
@@ -24,6 +67,11 @@ export const API_ENDPOINTS = {
   // User/Dashboard endpoints
   user: {
     getTopupBalanceForUser: '/user/DashBoard/getTopupBalanceForUser',
+  },
+
+  // Payment endpoints
+  payment: {
+    sslInitiate: '/api/payment/ssl/initiate/',
   },
 } as const;
 

@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/AUTHENTICATION';
+import { AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 export interface LoginResponse {
     token: string;
@@ -33,7 +32,7 @@ export interface RegisterResponse {
 export const loginUser = async (payload: LoginPayload): Promise<LoginResponse> => {
     try {
         const response = await axios.post<LoginResponse>(
-            `${BASE_URL}/auth/login`,
+            `${AUTH_BASE_URL}${API_ENDPOINTS.auth.login}`,
             payload
         );
         return response.data;
@@ -48,7 +47,7 @@ export const registerUser = async (payload: RegisterPayload): Promise<RegisterRe
         console.log('Registering user with payload:', payload);
 
         const response = await axios.post<RegisterResponse>(
-            `${BASE_URL}/auth/register`,
+            `${AUTH_BASE_URL}${API_ENDPOINTS.auth.register}`,
             payload
         );
 

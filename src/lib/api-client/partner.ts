@@ -1,14 +1,12 @@
 import axios from 'axios';
-
-const BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/FREESWITCHREST';
-const AUTH_BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/AUTHENTICATION';
+import { API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
 export const sendOtp = async (phoneNumber: string): Promise<{ message: string }> => {
   try {
     const response = await axios.post(
-      `${BASE_URL}/otp/send`,
+      `${API_BASE_URL}${API_ENDPOINTS.otp.send}`,
       { id: phoneNumber },
       {
         headers: {
@@ -25,7 +23,7 @@ export const sendOtp = async (phoneNumber: string): Promise<{ message: string }>
 export const verifyOtp = async (phoneNumber: string, otp: string): Promise<{ message: string }> => {
   try {
     const response = await axios.post(
-      `${BASE_URL}/otp/varify`,
+      `${API_BASE_URL}${API_ENDPOINTS.otp.verify}`,
       {
         phoneNumber: phoneNumber.replace('+', ''),
         otp,
@@ -43,7 +41,7 @@ export const verifyOtp = async (phoneNumber: string, otp: string): Promise<{ mes
     try {
       // Retry with alternative key names (id + code)
       const response = await axios.post(
-        `${BASE_URL}/otp/varify`,
+        `${API_BASE_URL}${API_ENDPOINTS.otp.verify}`,
         {
           id: phoneNumber,
           code: otp,
@@ -153,7 +151,7 @@ export const createPartner = async (payload: {
 }): Promise<CreatePartnerResponse> => {
   try {
     const response = await axios.post<CreatePartnerResponse>(
-      `${BASE_URL}/partner/create-partner`,
+      `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`,
       payload,
       {
         headers: {
@@ -205,7 +203,7 @@ export const loginPartner = async (email: string, password: string): Promise<Log
     };
 
     const response = await axios.post<LoginResponse>(
-      `${AUTH_BASE_URL}/auth/login`,
+      `${AUTH_BASE_URL}${API_ENDPOINTS.auth.login}`,
       loginPayload,
       {
         headers: {
@@ -231,7 +229,7 @@ export const loginPartner = async (email: string, password: string): Promise<Log
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        url: `${AUTH_BASE_URL}/auth/login`,
+        url: `${AUTH_BASE_URL}${API_ENDPOINTS.auth.login}`,
       });
 
       if (error.response?.status === 401) {
@@ -300,7 +298,7 @@ export const addPartnerDetails = async (
 
     // Send API request
     const response = await axios.post<AddPartnerDetailsResponse>(
-      `${BASE_URL}/partner/partner-documents`,
+      `${API_BASE_URL}${API_ENDPOINTS.partner.partnerDocuments}`,
       formData,
       {
         headers: {
@@ -344,7 +342,7 @@ export const getPartnerDocuments = async (
   authToken: string
 ): Promise<any> => {
   try {
-    const response = await axios.get(`${BASE_URL}/partner/partner-documents`, {
+    const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.partner.partnerDocuments}`, {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },

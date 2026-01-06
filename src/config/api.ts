@@ -6,7 +6,7 @@
 // ============================================
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
-export const ROOT_URL = 'http://localhost:8001';
+export const ROOT_URL = 'https://a2psms.btcliptelephony.gov.bd';
 // For production, use: 'https://a2psms.btcliptelephony.gov.bd'
 
 // ============================================
@@ -24,10 +24,10 @@ export const BULK_SMS_PORTAL_URL = `${ROOT_URL}:4000/`;
  */
 export const FEATURE_FLAGS = {
   /** Enable/Disable OTP verification during registration */
-  OTP_VERIFICATION_ENABLED: false,
+  OTP_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable NID verification during registration */
-  NID_VERIFICATION_ENABLED: false,
+  NID_VERIFICATION_ENABLED: true,
 } as const;
 
 // API Endpoints

@@ -6,10 +6,33 @@ import {Header} from "@/components/layout/Header";
 import {Button} from "@/components/ui/Button";
 import Link from "next/link";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/Card";
+import CheckoutModal from "@/components/checkout/CheckoutModal";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [selectedService, setSelectedService] = useState('bulk-sms')
   const [locale, setLocale] = React.useState('en')
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [selectedPackage, setSelectedPackage] = useState<any>(null)
+  const router = useRouter()
+
+  const isLoggedIn = () => {
+    if (typeof window !== 'undefined') {
+      return !!localStorage.getItem('authToken')
+    }
+    return false
+  }
+
+  const handleBuyNow = (pkg: any) => {
+    if (!isLoggedIn()) {
+      toast.error(locale === 'en' ? 'Please login to purchase' : 'কেনার জন্য অনুগ্রহ করে লগইন করুন')
+      router.push(`/${locale}/login`)
+      return
+    }
+    setSelectedPackage(pkg)
+    setIsCheckoutOpen(true)
+  }
 
   React.useEffect(() => {
     params.then(p => setLocale(p.locale))
@@ -360,19 +383,32 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     </div>
 
                     <div className="mb-6">
-                      <Link href={`/${locale}/contact`}>
+                      {selectedService === 'hosted-pbx' && typeof pkg.price === 'number' ? (
                         <Button
+                          onClick={() => handleBuyNow(pkg)}
                           className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
                             pkg.popular
                               ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
                               : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
                           }`}
                         >
-                          {typeof pkg.price === 'string' || typeof pkg.extensions === 'string'
-                            ? (locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ')
-                            : (locale === 'en' ? 'Get Started' : 'শুরু করুন')}
+                          {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
                         </Button>
-                      </Link>
+                      ) : (
+                        <Link href={`/${locale}/contact`}>
+                          <Button
+                            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                              pkg.popular
+                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
+                                : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
+                            }`}
+                          >
+                            {typeof pkg.price === 'string' || typeof pkg.extensions === 'string'
+                              ? (locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ')
+                              : (locale === 'en' ? 'Get Started' : 'শুরু করুন')}
+                          </Button>
+                        </Link>
+                      )}
                     </div>
 
                     <div className="space-y-3">
@@ -425,6 +461,20 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         </div>
 
         <Footer />
+
+        {/* Checkout Modal */}
+        {selectedPackage && (
+          <CheckoutModal
+            pkg={selectedPackage}
+            isOpen={isCheckoutOpen}
+            onClose={() => {
+              setIsCheckoutOpen(false);
+              setSelectedPackage(null);
+            }}
+            serviceType="hosted-pbx"
+            locale={locale}
+          />
+        )}
       </div>
   );
 };

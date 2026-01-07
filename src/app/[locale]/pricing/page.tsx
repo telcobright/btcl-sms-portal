@@ -77,47 +77,20 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // Contact Center Pricing
   const contactCenterPackages = [
     {
-      id: 'starter',
-      name: locale === 'en' ? 'Starter' : 'স্টার্টার',
-      users: 5,
-      price: 15000,
-      popular: false,
-      features: [
-        locale === 'en' ? '5 Agent Seats' : '৫টি এজেন্ট সিট',
-        locale === 'en' ? 'WebRTC Browser Calling' : 'WebRTC ব্রাউজার কলিং',
-        locale === 'en' ? 'Basic CRM Features' : 'বেসিক CRM বৈশিষ্ট্য',
-        locale === 'en' ? 'Email Integration' : 'ইমেইল ইন্টিগ্রেশন',
-        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং'
-      ]
-    },
-    {
-      id: 'professional',
-      name: locale === 'en' ? 'Professional' : 'প্রফেশনাল',
-      users: 15,
-      price: 35000,
+      id: 'basic',
+      name: locale === 'en' ? 'Basic' : 'বেসিক',
+      users: locale === 'en' ? 'Per Agent' : 'প্রতি এজেন্ট',
+      price: 8500,
       popular: true,
       features: [
-        locale === 'en' ? '15 Agent Seats' : '১৫টি এজেন্ট সিট',
-        locale === 'en' ? 'WebRTC Browser Calling' : 'WebRTC ব্রাউজার কলিং',
-        locale === 'en' ? 'Full CRM Suite' : 'সম্পূর্ণ CRM স্যুইট',
-        locale === 'en' ? 'Campaign Management' : 'ক্যাম্পেইন ম্যানেজমেন্ট',
-        locale === 'en' ? 'Advanced Reporting' : 'উন্নত রিপোর্টিং',
-        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট'
-      ]
-    },
-    {
-      id: 'enterprise',
-      name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ',
-      users: locale === 'en' ? 'Unlimited' : 'সীমাহীন',
-      price: locale === 'en' ? 'Custom' : 'কাস্টম',
-      popular: false,
-      features: [
-        locale === 'en' ? 'Unlimited Agent Seats' : 'সীমাহীন এজেন্ট সিট',
-        locale === 'en' ? 'WebRTC Browser Calling' : 'WebRTC ব্রাউজার কলিং',
-        locale === 'en' ? 'Enterprise CRM' : 'এন্টারপ্রাইজ CRM',
-        locale === 'en' ? 'Custom Integrations' : 'কাস্টম ইন্টিগ্রেশন',
-        locale === 'en' ? 'Dedicated Support' : 'ডেডিকেটেড সাপোর্ট',
-        locale === 'en' ? 'SLA Guarantee' : 'SLA গ্যারান্টি'
+        locale === 'en' ? 'Audio Call' : 'অডিও কল',
+        locale === 'en' ? 'Social Media Integration' : 'সোশ্যাল মিডিয়া ইন্টিগ্রেশন',
+        locale === 'en' ? 'SMS' : 'এসএমএস',
+        locale === 'en' ? 'Chat' : 'চ্যাট',
+        locale === 'en' ? 'IVR' : 'IVR',
+        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
+        locale === 'en' ? 'ACD (Automatic Call Distribution)' : 'ACD (স্বয়ংক্রিয় কল ডিস্ট্রিবিউশন)',
+        locale === 'en' ? 'Reporting' : 'রিপোর্টিং'
       ]
     }
   ]
@@ -125,47 +98,75 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // Hosted PBX Pricing
   const pbxPackages = [
     {
-      id: 'basic',
-      name: locale === 'en' ? 'Basic' : 'বেসিক',
+      id: 'bronze',
+      name: locale === 'en' ? 'Bronze' : 'ব্রোঞ্জ',
       extensions: 10,
-      price: 8000,
+      callChannels: 5,
+      ivr: 2,
+      freeTalktime: 500,
+      callCharge: 0.45,
+      price: 1200,
       popular: false,
       features: [
-        locale === 'en' ? '10 SIP Extensions' : '১০টি SIP এক্সটেনশন',
-        locale === 'en' ? 'Voicemail to Email' : 'ভয়েসমেল টু ইমেইল',
+        locale === 'en' ? '10 Extensions' : '১০টি এক্সটেনশন',
+        locale === 'en' ? '5 Call Channels' : '৫টি কল চ্যানেল',
+        locale === 'en' ? '2 IVR' : '২টি IVR',
+        locale === 'en' ? '500 Minutes Free Talktime' : '৫০০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
+        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
+        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
+        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
+        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
         locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
-        locale === 'en' ? 'Basic IVR' : 'বেসিক IVR',
-        locale === 'en' ? 'Web Management' : 'ওয়েব ম্যানেজমেন্ট'
+        locale === 'en' ? '৳0.45/min Call Charge' : '৳০.৪৫/মিনিট কল চার্জ'
       ]
     },
     {
-      id: 'business',
-      name: locale === 'en' ? 'Business' : 'বিজনেস',
-      extensions: 25,
-      price: 18000,
+      id: 'silver',
+      name: locale === 'en' ? 'Silver' : 'সিলভার',
+      extensions: 30,
+      callChannels: 7,
+      ivr: 5,
+      freeTalktime: 1000,
+      callCharge: 0.40,
+      price: 2500,
       popular: true,
       features: [
-        locale === 'en' ? '25 SIP Extensions' : '২৫টি SIP এক্সটেনশন',
-        locale === 'en' ? 'Advanced IVR System' : 'উন্নত IVR সিস্টেম',
-        locale === 'en' ? 'Conference Rooms' : 'কনফারেন্স রুম',
-        locale === 'en' ? 'Call Queues' : 'কল সারি',
-        locale === 'en' ? 'Time Conditions' : 'সময় শর্ত',
-        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট'
+        locale === 'en' ? '30 Extensions' : '৩০টি এক্সটেনশন',
+        locale === 'en' ? '7 Call Channels' : '৭টি কল চ্যানেল',
+        locale === 'en' ? '5 IVR' : '৫টি IVR',
+        locale === 'en' ? '1000 Minutes Free Talktime' : '১০০০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
+        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
+        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
+        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
+        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
+        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
+        locale === 'en' ? '৳0.40/min Call Charge' : '৳০.৪০/মিনিট কল চার্জ'
       ]
     },
     {
-      id: 'corporate',
-      name: locale === 'en' ? 'Corporate' : 'কর্পোরেট',
-      extensions: locale === 'en' ? 'Unlimited' : 'সীমাহীন',
-      price: locale === 'en' ? 'Custom' : 'কাস্টম',
+      id: 'gold',
+      name: locale === 'en' ? 'Gold' : 'গোল্ড',
+      extensions: locale === 'en' ? 'Up to 100' : '১০০ পর্যন্ত',
+      callChannels: 15,
+      ivr: 10,
+      freeTalktime: 3000,
+      callCharge: 0.35,
+      price: 4500,
       popular: false,
       features: [
-        locale === 'en' ? 'Unlimited Extensions' : 'সীমাহীন এক্সটেনশন',
-        locale === 'en' ? 'Enterprise Features' : 'এন্টারপ্রাইজ বৈশিষ্ট্য',
-        locale === 'en' ? 'Hot Desking' : 'হট ডেস্কিং',
-        locale === 'en' ? 'Fax Server' : 'ফ্যাক্স সার্ভার',
-        locale === 'en' ? '24/7 Support' : '২৪/৭ সাপোর্ট',
-        locale === 'en' ? 'Dedicated Account Manager' : 'ডেডিকেটেড অ্যাকাউন্ট ম্যানেজার'
+        locale === 'en' ? 'Up to 100 Extensions*' : '১০০টি পর্যন্ত এক্সটেনশন*',
+        locale === 'en' ? '15 Call Channels' : '১৫টি কল চ্যানেল',
+        locale === 'en' ? '10 IVR' : '১০টি IVR',
+        locale === 'en' ? '3000 Minutes Free Talktime' : '৩০০০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
+        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
+        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
+        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
+        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
+        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
+        locale === 'en' ? '৳0.35/min Call Charge' : '৳০.৩৫/মিনিট কল চার্জ'
       ]
     }
   ]

@@ -6,7 +6,7 @@
 // ============================================
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
-export const ROOT_URL = 'https://a2psms.btcliptelephony.gov.bd';
+export const ROOT_URL = 'http://localhost:8001';
 // For production, use: 'https://a2psms.btcliptelephony.gov.bd'
 
 // ============================================
@@ -16,6 +16,7 @@ export const API_BASE_URL = `${ROOT_URL}/FREESWITCHREST`;
 export const AUTH_BASE_URL = `${ROOT_URL}/AUTHENTICATION`;
 export const NID_BASE_URL = `${ROOT_URL}/NID`;
 export const BULK_SMS_PORTAL_URL = `${ROOT_URL}:4000/`;
+export const PAYMENT_BASE_URL = 'http://localhost:8081';
 
 // Feature Flags
 /**
@@ -24,10 +25,13 @@ export const BULK_SMS_PORTAL_URL = `${ROOT_URL}:4000/`;
  */
 export const FEATURE_FLAGS = {
   /** Enable/Disable OTP verification during registration */
-  OTP_VERIFICATION_ENABLED: true,
+  OTP_VERIFICATION_ENABLED: false,
 
   /** Enable/Disable NID verification during registration */
-  NID_VERIFICATION_ENABLED: true,
+  NID_VERIFICATION_ENABLED: false,
+
+  /** Enable/Disable SSLCommerz payment */
+  PAYMENT_ENABLED: true,
 } as const;
 
 // API Endpoints
@@ -67,11 +71,18 @@ export const API_ENDPOINTS = {
   // User/Dashboard endpoints
   user: {
     getTopupBalanceForUser: '/user/DashBoard/getTopupBalanceForUser',
+    getUserByEmail: '/getUserByEmail',
+    editUser: '/editUser',
   },
 
   // Payment endpoints
   payment: {
-    sslInitiate: '/api/payment/ssl/initiate/',
+    sslInitiate: '/api/payment/ssl/initiate',
+  },
+
+  // Domain/PBX endpoints
+  domain: {
+    create: '/api/v1/domains/create',
   },
 } as const;
 

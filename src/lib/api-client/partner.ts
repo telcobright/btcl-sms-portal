@@ -360,3 +360,171 @@ export const getPartnerDocuments = async (
     throw error;
   }
 };
+
+// ---------------------- GET PARTNER BY ID ----------------------
+
+export interface PartnerData {
+  idPartner: number;
+  partnerName: string;
+  alternateNameInvoice: string;
+  alternateNameOther: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  telephone: string;
+  email: string;
+  customerPrePaid: number;
+  partnerType: number;
+  date1: string;
+  callSrcId: number;
+  defaultCurrency: number;
+  invoiceAddress: string;
+  vatRegistrationNo: string;
+  paymentAdvice: string | null;
+  userPassword: string | null;
+}
+
+export const getPartnerById = async (idPartner: number, authToken: string): Promise<PartnerData> => {
+  try {
+    const response = await axios.post<PartnerData>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.getPartner}`,
+      { idPartner },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Get Partner By ID error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+// ---------------------- CREATE DOMAIN (PBX) ----------------------
+
+export interface CreateDomainPayload {
+  domainName: string;
+  enabled: boolean;
+  description: string;
+}
+
+export interface CreateDomainResponse {
+  domainUuid: string;
+  domainName: string;
+  enabled: boolean;
+  description: string;
+  message?: string;
+}
+
+export const createDomain = async (
+  payload: CreateDomainPayload,
+  authToken: string
+): Promise<CreateDomainResponse> => {
+  try {
+    const response = await axios.post<CreateDomainResponse>(
+      `${API_BASE_URL}${API_ENDPOINTS.domain.create}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Create Domain error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+// ---------------------- GET USER BY EMAIL ----------------------
+
+export interface UserData {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdOn: string;
+  phoneNo: string;
+  userStatus: string;
+  resellerDbName: string | null;
+  webTokens: string | null;
+  idPartner: number;
+  authRoles: { id: number; name: string; description: string }[];
+  accessRules: string | null;
+}
+
+export const getUserByEmail = async (email: string, authToken: string): Promise<UserData> => {
+  try {
+    const response = await axios.post<UserData>(
+      `${AUTH_BASE_URL}${API_ENDPOINTS.user.getUserByEmail}`,
+      { email },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Get User By Email error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+// ---------------------- EDIT USER (UPDATE PBX UUID) ----------------------
+
+export interface EditUserPayload {
+  id: number;
+  pbxUuid: string;
+}
+
+export const editUser = async (
+  payload: EditUserPayload,
+  authToken: string
+): Promise<any> => {
+  try {
+    const response = await axios.post(
+      `${AUTH_BASE_URL}${API_ENDPOINTS.user.editUser}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Edit User error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};

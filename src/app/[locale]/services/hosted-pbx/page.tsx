@@ -203,12 +203,12 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
                 ? 'Experience enterprise-grade telephony with unlimited extensions, advanced features, and no hardware investment required'
                 : 'সীমাহীন এক্সটেনশন, উন্নত বৈশিষ্ট্য এবং কোন হার্ডওয়্যার বিনিয়োগ প্রয়োজন ছাড়াই এন্টারপ্রাইজ-গ্রেড টেলিফোনি অভিজ্ঞতা নিন'}
             </p>
-            <Link href={`/${locale}/register`}>
+            <Link href={`/${locale}/pricing`}>
               <Button
                 size="lg"
                 className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-green-600 shadow-2xl transition-all duration-300 hover:scale-105"
               >
-                {locale === 'en' ? 'Request a Demo' : 'ডেমো অনুরোধ করুন'}
+                {locale === 'en' ? 'Purchase Now' : 'এখনই কিনুন'}
               </Button>
             </Link>
           </div>

@@ -1,10 +1,10 @@
 // lib/api-client/payment.ts
 import axios from 'axios';
-import { AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { PAYMENT_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 export const initiateSSLCommerzPayment = async (payload: any) => {
     try {
-        const response = await axios.post(`${AUTH_BASE_URL}${API_ENDPOINTS.payment.sslInitiate}`, payload);
+        const response = await axios.post(`${PAYMENT_BASE_URL}${API_ENDPOINTS.payment.sslInitiate}`, payload);
         return response.data;
     } catch (error) {
         console.error('SSLCommerz Payment Error:', error);

@@ -263,8 +263,6 @@ export default function LoginPage() {
         const newErrors: any = {}
         if (!formData.email.trim()) {
             newErrors.email = 'Email is required'
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid'
         }
         if (!formData.password) {
             newErrors.password = 'Password is required'
@@ -378,7 +376,7 @@ export default function LoginPage() {
 
                                 <Input
                                     label={t('auth.login.email')}
-                                    type="email"
+                                    type="text"
                                     value={formData.email}
                                     onChange={(e) => handleInputChange('email', e.target.value)}
                                     error={errors.email as string}

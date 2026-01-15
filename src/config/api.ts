@@ -6,7 +6,8 @@
 // ============================================
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
-export const ROOT_URL = 'https://a2psms.btcliptelephony.gov.bd';
+// export const ROOT_URL = 'http://localhost:8001';
+export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
 // For production, use: 'https://a2psms.btcliptelephony.gov.bd'
 
 // ============================================

@@ -116,6 +116,16 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
         }
     };
 
+    // Map package string ID to integer ID
+    const getPackageIdInt = (packageId: string): number => {
+        const packageIdMap: { [key: string]: number } = {
+            'bronze': 12,
+            'silver': 13,
+            'gold': 14,
+        };
+        return packageIdMap[packageId] || 12;
+    };
+
     const handleCheckout = async () => {
         if (!selectedPayment) {
             toast.error(locale === 'en' ? 'Please select a payment method.' : 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন।');
@@ -144,23 +154,31 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 return;
             }
 
+            // Get partner details for customer info
+            toast.loading(locale === 'en' ? 'Preparing payment...' : 'পেমেন্ট প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
+            const partnerData = await getPartnerById(partnerId, authToken);
+            toast.dismiss('payment-prep');
+
             const productName = serviceType === 'hosted-pbx' ? `Hosted PBX - ${pkg.name}` : pkg.name;
             const productCategory = serviceType === 'hosted-pbx' ? 'Hosted PBX' : 'SMS';
 
+            // Clean phone number (remove + if present)
+            const cleanPhone = partnerData.telephone?.replace('+', '') || '';
+
             const payload = {
-                idPackage: pkg.id,
+                idPackage: getPackageIdInt(pkg.id),
                 idPartner: partnerId,
-                cusName: formData.fullName,
-                cusEmail: formData.email,
-                cusAdd1: formData.streetAddress,
-                cusCity: formData.city,
-                cusPostcode: formData.zipCode,
-                cusCountry: 'Bangladesh',
-                cusPhone: formData.phone,
+                cusName: partnerData.partnerName || partnerData.alternateNameInvoice,
+                cusEmail: partnerData.email,
+                cusAdd1: partnerData.address1 || partnerData.city,
+                cusCity: partnerData.city,
+                cusPostcode: partnerData.postalCode,
+                cusCountry: partnerData.country || 'Bangladesh',
+                cusPhone: cleanPhone,
                 productName: productName,
                 productCategory: productCategory,
                 productType: serviceType,
-                topupNumber: '',
+                topupNumber: cleanPhone,
                 countryTopup: 'Bangladesh',
                 purchaseDate: null,
                 status: 'ACTIVE',
@@ -176,10 +194,15 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 validity: serviceType === 'hosted-pbx' ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000),
             };
 
-            const response = await initiateSSLCommerzPayment(payload);
-            const redirectUrl = response.redirectUrl || response.GatewayPageURL;
+            console.log('Payment payload:', payload);
 
-            if (redirectUrl) {
+            const response = await initiateSSLCommerzPayment(payload);
+            console.log('Payment response:', response);
+
+            // Get redirect URL from response
+            const redirectUrl = response.redirectUrl || response.GatewayPageURL || response;
+
+            if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
                 // For real payment, the provisioning should happen after payment callback
                 // Store the service type in session for callback handling
                 if (serviceType === 'hosted-pbx') {

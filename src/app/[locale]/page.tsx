@@ -55,44 +55,8 @@ export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params
   const t = await getTranslations()
 
-  // Services data
+  // Services data (SMS service hidden) - Order: Hosted PBX, Voice Broadcast, Contact Center
   const services: Service[] = [
-    {
-      id: 'bulk-sms',
-      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
-      description: locale === 'en'
-        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
-        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
-      icon: '📱',
-      features: [
-        locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
-        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
-        locale === 'en' ? 'RESTful API integration' : 'RESTful API ইন্টিগ্রেশন',
-        locale === 'en' ? 'Real-time delivery reports' : 'রিয়েল-টাইম ডেলিভারি রিপোর্ট',
-        locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
-        locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
-      ],
-      color: 'from-blue-500 to-blue-600',
-      href: `/${locale}/services/bulk-sms`,
-    },
-    {
-      id: 'contact-center',
-      title: locale === 'en' ? 'Hosted Contact Center' : 'হোস্টেড কন্টাক্ট সেন্টার',
-      description: locale === 'en'
-        ? 'Cloud-based contact center solution with omnichannel support, IVR, intelligent call routing, and advanced analytics. Scale your customer service operations effortlessly.'
-        : 'ক্লাউড-ভিত্তিক কন্টাক্ট সেন্টার সমাধান যাতে রয়েছে অমনিচ্যানেল সাপোর্ট, IVR, বুদ্ধিমান কল রাউটিং এবং উন্নত বিশ্লেষণ। আপনার গ্রাহক সেবা কার্যক্রম সহজে স্কেল করুন।',
-      icon: '🎧',
-      features: [
-        locale === 'en' ? 'Omnichannel support (voice, chat, email)' : 'অমনিচ্যানেল সাপোর্ট (ভয়েস, চ্যাট, ইমেইল)',
-        locale === 'en' ? 'Interactive IVR system' : 'ইন্টারঅ্যাক্টিভ IVR সিস্টেম',
-        locale === 'en' ? 'Intelligent call routing' : 'বুদ্ধিমান কল রাউটিং',
-        locale === 'en' ? 'Real-time dashboards & analytics' : 'রিয়েল-টাইম ড্যাশবোর্ড ও বিশ্লেষণ',
-        locale === 'en' ? 'Call recording & quality monitoring' : 'কল রেকর্ডিং ও মান নিরীক্ষণ',
-        locale === 'en' ? 'Agent performance tracking' : 'এজেন্ট কর্মক্ষমতা ট্র্যাকিং',
-      ],
-      color: 'from-purple-500 to-purple-600',
-      href: `/${locale}/services/contact-center`,
-    },
     {
       id: 'hosted-pbx',
       title: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
@@ -128,6 +92,24 @@ export default async function HomePage({ params }: HomePageProps) {
       ],
       color: 'from-orange-500 to-orange-600',
       href: `/${locale}/services/voice-broadcast`,
+    },
+    {
+      id: 'contact-center',
+      title: locale === 'en' ? 'Hosted Contact Center' : 'হোস্টেড কন্টাক্ট সেন্টার',
+      description: locale === 'en'
+        ? 'Cloud-based contact center solution with omnichannel support, IVR, intelligent call routing, and advanced analytics. Scale your customer service operations effortlessly.'
+        : 'ক্লাউড-ভিত্তিক কন্টাক্ট সেন্টার সমাধান যাতে রয়েছে অমনিচ্যানেল সাপোর্ট, IVR, বুদ্ধিমান কল রাউটিং এবং উন্নত বিশ্লেষণ। আপনার গ্রাহক সেবা কার্যক্রম সহজে স্কেল করুন।',
+      icon: '🎧',
+      features: [
+        locale === 'en' ? 'Omnichannel support (voice, chat, email)' : 'অমনিচ্যানেল সাপোর্ট (ভয়েস, চ্যাট, ইমেইল)',
+        locale === 'en' ? 'Interactive IVR system' : 'ইন্টারঅ্যাক্টিভ IVR সিস্টেম',
+        locale === 'en' ? 'Intelligent call routing' : 'বুদ্ধিমান কল রাউটিং',
+        locale === 'en' ? 'Real-time dashboards & analytics' : 'রিয়েল-টাইম ড্যাশবোর্ড ও বিশ্লেষণ',
+        locale === 'en' ? 'Call recording & quality monitoring' : 'কল রেকর্ডিং ও মান নিরীক্ষণ',
+        locale === 'en' ? 'Agent performance tracking' : 'এজেন্ট কর্মক্ষমতা ট্র্যাকিং',
+      ],
+      color: 'from-purple-500 to-purple-600',
+      href: `/${locale}/services/contact-center`,
     },
   ]
 
@@ -317,7 +299,7 @@ function ServicesShowcaseSection({ services, locale }: { services: Service[]; lo
           </div>
 
           {/* Services Grid */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {services.map((service, index) => (
                 <ServiceCard key={service.id} service={service} index={index} />
             ))}
@@ -363,7 +345,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
                 {service.icon}
               </div>
               <div className={`rounded-full bg-gradient-to-r ${service.color} px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm`}>
-                {index === 0 ? 'Popular' : 'Enterprise'}
+                Enterprise
               </div>
             </div>
             <CardTitle className="mb-2 text-lg font-bold">{service.title}</CardTitle>
@@ -437,40 +419,13 @@ function PricingPreviewSection({
   locale: string
   t: any
 }) {
+  // Pricing data (SMS service hidden) - Order: Hosted PBX, Voice Broadcast, Contact Center
   const servicePricing = [
-    {
-      id: 'bulk-sms',
-      icon: '📱',
-      name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস',
-      price: '৳0.30',
-      unit: locale === 'en' ? '/SMS' : '/এসএমএস',
-      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
-      features: [
-        locale === 'en' ? '99.9% delivery rate' : '৯৯.৯% ডেলিভারি হার',
-        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
-        locale === 'en' ? 'API integration' : 'API ইন্টিগ্রেশন',
-      ],
-      color: 'from-blue-500 to-blue-600',
-    },
-    {
-      id: 'contact-center',
-      icon: '🎧',
-      name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার',
-      price: '৳15,000',
-      unit: locale === 'en' ? '/month' : '/মাস',
-      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
-      features: [
-        locale === 'en' ? 'WebRTC browser calling' : 'WebRTC ব্রাউজার কলিং',
-        locale === 'en' ? 'Integrated CRM' : 'ইন্টিগ্রেটেড CRM',
-        locale === 'en' ? '5 users included' : '৫ ব্যবহারকারী অন্তর্ভুক্ত',
-      ],
-      color: 'from-purple-500 to-purple-600',
-    },
     {
       id: 'hosted-pbx',
       icon: '☎️',
       name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
-      price: '৳8,000',
+      price: '৳1,200',
       unit: locale === 'en' ? '/month' : '/মাস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [
@@ -494,6 +449,20 @@ function PricingPreviewSection({
       ],
       color: 'from-orange-500 to-orange-600',
     },
+    {
+      id: 'contact-center',
+      icon: '🎧',
+      name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার',
+      price: '৳8,500',
+      unit: locale === 'en' ? '/agent/month' : '/এজেন্ট/মাস',
+      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
+      features: [
+        locale === 'en' ? 'Omnichannel support' : 'অমনিচ্যানেল সাপোর্ট',
+        locale === 'en' ? 'IVR & ACD' : 'IVR ও ACD',
+        locale === 'en' ? 'Call recording' : 'কল রেকর্ডিং',
+      ],
+      color: 'from-purple-500 to-purple-600',
+    },
   ]
 
   return (
@@ -506,7 +475,7 @@ function PricingPreviewSection({
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {servicePricing.map((service) => (
                 <div
                     key={service.id}

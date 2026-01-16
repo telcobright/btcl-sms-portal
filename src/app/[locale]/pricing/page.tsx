@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
-  const [selectedService, setSelectedService] = useState('bulk-sms')
+  const [selectedService, setSelectedService] = useState('hosted-pbx')
   const [locale, setLocale] = React.useState('en')
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState<any>(null)
@@ -38,63 +38,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     params.then(p => setLocale(p.locale))
   }, [params])
 
+  // Services (SMS hidden)
   const services = [
-    { id: 'bulk-sms', name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস', icon: '📱', color: 'blue' },
-    { id: 'contact-center', name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার', icon: '🎧', color: 'purple' },
     { id: 'hosted-pbx', name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX', icon: '☎️', color: 'green' },
     { id: 'voice-broadcast', name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট', icon: '📢', color: 'orange' },
-  ]
-
-  // SMS Pricing
-  const smsPackages = [
-    {
-      id: 'small',
-      name: locale === 'en' ? 'Small Business' : 'ছোট ব্যবসা',
-      sms: 20000,
-      rate: 0.32,
-      validity: 30,
-      popular: false,
-      features: [
-        locale === 'en' ? 'Basic API Access' : 'বেসিক API অ্যাক্সেস',
-        locale === 'en' ? 'Email Support' : 'ইমেইল সাপোর্ট',
-        locale === 'en' ? 'Standard Delivery' : 'স্ট্যান্ডার্ড ডেলিভারি',
-        locale === 'en' ? 'Basic Reports' : 'বেসিক রিপোর্ট',
-        locale === 'en' ? 'Single Sender ID' : 'একক প্রেরক ID'
-      ]
-    },
-    {
-      id: 'medium',
-      name: locale === 'en' ? 'Medium Business' : 'মাঝারি ব্যবসা',
-      sms: 50000,
-      rate: 0.30,
-      validity: 60,
-      popular: true,
-      features: [
-        locale === 'en' ? 'Advanced API' : 'অ্যাডভান্সড API',
-        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট',
-        locale === 'en' ? 'Fast Delivery' : 'দ্রুত ডেলিভারি',
-        locale === 'en' ? 'Custom Sender ID' : 'কাস্টম প্রেরক ID',
-        locale === 'en' ? 'Detailed Analytics' : 'বিস্তারিত অ্যানালিটিক্স',
-        locale === 'en' ? 'Multiple Projects' : 'একাধিক প্রকল্প'
-      ]
-    },
-    {
-      id: 'large',
-      name: locale === 'en' ? 'Large Business' : 'বড় ব্যবসা',
-      sms: 100000,
-      rate: 0.28,
-      validity: 90,
-      popular: false,
-      features: [
-        locale === 'en' ? 'Premium API' : 'প্রিমিয়াম API',
-        locale === 'en' ? '24/7 Phone Support' : '২৪/৭ ফোন সাপোর্ট',
-        locale === 'en' ? 'Instant Delivery' : 'তাৎক্ষণিক ডেলিভারি',
-        locale === 'en' ? 'Multiple Sender IDs' : 'একাধিক প্রেরক ID',
-        locale === 'en' ? 'Advanced Analytics' : 'উন্নত অ্যানালিটিক্স',
-        locale === 'en' ? 'Dedicated Manager' : 'ডেডিকেটেড ম্যানেজার',
-        locale === 'en' ? 'Priority Routing' : 'অগ্রাধিকার রাউটিং'
-      ]
-    }
+    { id: 'contact-center', name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার', icon: '🎧', color: 'purple' },
   ]
 
   // Contact Center Pricing
@@ -244,11 +192,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
   const getCurrentPackages = () => {
     switch (selectedService) {
-      case 'bulk-sms': return smsPackages
-      case 'contact-center': return contactCenterPackages
       case 'hosted-pbx': return pbxPackages
       case 'voice-broadcast': return voiceBroadcastPackages
-      default: return smsPackages
+      case 'contact-center': return contactCenterPackages
+      default: return pbxPackages
     }
   }
 
@@ -310,10 +257,9 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 {locale === 'en' ? 'Choose Your Plan' : 'আপনার পরিকল্পনা চয়ন করুন'}
               </h2>
               <p className="text-xl text-gray-600">
-                {selectedService === 'bulk-sms' && (locale === 'en' ? '(Excluding 15% VAT)' : '(১৫% ভ্যাট বাদে)')}
-                {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
                 {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
                 {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per minute pricing' : 'প্রতি মিনিট মূল্য')}
+                {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
               </p>
             </div>
 
@@ -333,18 +279,6 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     <div className="text-center mb-6">
                       <h3 className="text-2xl font-bold text-gray-900 mb-4">{pkg.name}</h3>
                       <div className="mb-4">
-                        {selectedService === 'bulk-sms' && (
-                          <>
-                            <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
-                            <span className="text-gray-600 text-lg">/SMS</span>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {locale === 'en' ? 'Total:' : 'মোট:'} ৳{(pkg.sms * pkg.rate).toLocaleString()}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {pkg.sms.toLocaleString()} SMS • {pkg.validity} {locale === 'en' ? 'days' : 'দিন'}
-                            </div>
-                          </>
-                        )}
                         {selectedService === 'contact-center' && (
                           <>
                             <span className="text-4xl font-bold text-gray-900">
@@ -426,18 +360,6 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               ))}
             </div>
 
-            {selectedService === 'bulk-sms' && (
-              <div className="text-center mt-12">
-                <div className="inline-flex items-center bg-yellow-50 border border-yellow-200 rounded-xl px-8 py-4">
-                  <svg className="w-6 h-6 text-yellow-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                  </svg>
-                  <span className="text-yellow-800 font-semibold text-lg">
-                    {locale === 'en' ? '15% VAT will be added to all prices' : 'সকল মূল্যে ১৫% ভ্যাট যোগ হবে'}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

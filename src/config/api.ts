@@ -6,8 +6,8 @@
 // ============================================
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
-// export const ROOT_URL = 'http://localhost:8001';
-export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
+export const ROOT_URL = 'http://localhost:8001';
+// export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
 // For production, use: 'https://a2psms.btcliptelephony.gov.bd'
 
 // ============================================
@@ -77,9 +77,12 @@ export const API_ENDPOINTS = {
     editUser: '/editUser',
   },
 
-  // Payment endpoints
+  // Payment endpoints (service-specific)
   payment: {
-    sslInitiate: '/api/payment/ssl/initiate',
+    sslInitiate: '/api/payment/ssl/initiate', // Generic fallback
+    pbxInitiate: '/api/payment/ssl/pbx/initiate', // Hosted PBX
+    vbsInitiate: '/api/payment/ssl/vbs/initiate', // Voice Broadcast
+    ccInitiate: '/api/payment/ssl/cc/initiate', // Contact Center
   },
 
   // Domain/PBX endpoints

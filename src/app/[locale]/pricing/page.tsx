@@ -149,6 +149,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       name: locale === 'en' ? 'Starter' : 'স্টার্টার',
       minutes: 5000,
       rate: 1.2,
+      price: 6000, // 5000 * 1.2
       popular: false,
       features: [
         locale === 'en' ? '5,000 Call Minutes' : '৫,০০০ কল মিনিট',
@@ -163,6 +164,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       name: locale === 'en' ? 'Growth' : 'গ্রোথ',
       minutes: 15000,
       rate: 1.0,
+      price: 15000, // 15000 * 1.0
       popular: true,
       features: [
         locale === 'en' ? '15,000 Call Minutes' : '১৫,০০০ কল মিনিট',
@@ -178,6 +180,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ',
       minutes: 50000,
       rate: 0.8,
+      price: 40000, // 50000 * 0.8
       popular: false,
       features: [
         locale === 'en' ? '50,000+ Call Minutes' : '৫০,০০০+ কল মিনিট',
@@ -317,7 +320,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     </div>
 
                     <div className="mb-6">
-                      {selectedService === 'hosted-pbx' && typeof pkg.price === 'number' ? (
+                      {typeof pkg.price === 'number' ? (
                         <Button
                           onClick={() => handleBuyNow(pkg)}
                           className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
@@ -337,9 +340,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                                 : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
                             }`}
                           >
-                            {typeof pkg.price === 'string' || typeof pkg.extensions === 'string'
-                              ? (locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ')
-                              : (locale === 'en' ? 'Get Started' : 'শুরু করুন')}
+                            {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
                           </Button>
                         </Link>
                       )}
@@ -393,7 +394,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               setIsCheckoutOpen(false);
               setSelectedPackage(null);
             }}
-            serviceType="hosted-pbx"
+            serviceType={selectedService}
             locale={locale}
           />
         )}

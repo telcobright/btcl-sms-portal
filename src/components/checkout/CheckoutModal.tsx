@@ -159,8 +159,20 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             const partnerData = await getPartnerById(partnerId, authToken);
             toast.dismiss('payment-prep');
 
-            const productName = serviceType === 'hosted-pbx' ? `Hosted PBX - ${pkg.name}` : pkg.name;
-            const productCategory = serviceType === 'hosted-pbx' ? 'Hosted PBX' : 'SMS';
+            // Set product name and category based on service type
+            const getProductDetails = () => {
+                switch (serviceType) {
+                    case 'hosted-pbx':
+                        return { name: `Hosted PBX - ${pkg.name}`, category: 'Hosted PBX' };
+                    case 'voice-broadcast':
+                        return { name: `Voice Broadcast - ${pkg.name}`, category: 'Voice Broadcast' };
+                    case 'contact-center':
+                        return { name: `Contact Center - ${pkg.name}`, category: 'Contact Center' };
+                    default:
+                        return { name: pkg.name, category: 'SMS' };
+                }
+            };
+            const { name: productName, category: productCategory } = getProductDetails();
 
             // Clean phone number (remove + if present)
             const cleanPhone = partnerData.telephone?.replace('+', '') || '';
@@ -182,7 +194,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 countryTopup: 'Bangladesh',
                 purchaseDate: null,
                 status: 'ACTIVE',
-                autoRenewalStatus: serviceType === 'hosted-pbx',
+                autoRenewalStatus: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType),
                 price: pkg.price,
                 vat: 0,
                 ait: 0,
@@ -191,12 +203,13 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 currency: 'BDT',
                 paid: 1,
                 total: pkg.price,
-                validity: serviceType === 'hosted-pbx' ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000),
+                validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType) ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000), // 30 days in seconds
             };
 
             console.log('Payment payload:', payload);
+            console.log('Service type:', serviceType);
 
-            const response = await initiateSSLCommerzPayment(payload);
+            const response = await initiateSSLCommerzPayment(payload, serviceType);
             console.log('Payment response:', response);
 
             // Get redirect URL from response
@@ -204,10 +217,14 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
 
             if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
                 // For real payment, the provisioning should happen after payment callback
-                // Store the service type in session for callback handling
-                if (serviceType === 'hosted-pbx') {
-                    sessionStorage.setItem('pendingPbxProvision', JSON.stringify({ partnerId, email }));
-                }
+                // Store the service type and data in session for callback handling
+                sessionStorage.setItem('pendingServiceProvision', JSON.stringify({
+                    serviceType,
+                    partnerId,
+                    email,
+                    packageId: pkg.id,
+                    packageName: pkg.name
+                }));
                 window.location.href = redirectUrl;
             } else {
                 toast.error(locale === 'en' ? 'Payment URL not received. Please try again.' : 'পেমেন্ট URL পাওয়া যায়নি। আবার চেষ্টা করুন।');

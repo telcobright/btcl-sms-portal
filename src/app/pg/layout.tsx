@@ -1,7 +1,4 @@
-import { Inter } from 'next/font/google'
 import '@/app/globals.css'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
     title: 'Payment Status - BTCL SMS',
@@ -18,7 +15,7 @@ export default function PgLayout({
             <head>
                 <link rel="icon" href="/fabicon.png" />
             </head>
-            <body className={inter.className}>
+            <body className="font-sans">
                 {children}
             </body>
         </html>

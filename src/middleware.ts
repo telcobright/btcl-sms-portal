@@ -1,6 +1,7 @@
 import createMiddleware from 'next-intl/middleware';
+import { NextRequest, NextResponse } from 'next/server';
 
-export default createMiddleware({
+const intlMiddleware = createMiddleware({
   // A list of all locales that are supported
   locales: ['en', 'bn'],
 
@@ -8,7 +9,17 @@ export default createMiddleware({
   defaultLocale: 'en'
 });
 
+export default function middleware(request: NextRequest) {
+  // Skip next-intl for /pg routes (payment callback pages)
+  const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith('/pg')) {
+    return NextResponse.next();
+  }
+
+  return intlMiddleware(request);
+}
+
 export const config = {
-  // Match only internationalized pathnames
-  matcher: ['/', '/(bn|en)/:path*']
+  // Match internationalized pathnames and /pg routes
+  matcher: ['/', '/(bn|en)/:path*', '/pg/:path*']
 };

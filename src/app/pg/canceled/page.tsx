@@ -94,7 +94,7 @@ function CanceledContent() {
                             {/* Action Buttons */}
                             <div className="mt-6 space-y-3">
                                 <Link
-                                    href="/en/packages"
+                                    href="/en/pricing"
                                     className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
                                 >
                                     View Packages

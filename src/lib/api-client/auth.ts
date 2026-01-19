@@ -2,16 +2,26 @@ import axios from 'axios';
 import { AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
 import toast from 'react-hot-toast';
 
-// Setup axios interceptor for handling 401/403 errors (expired/invalid token)
+// Setup axios interceptor for handling 401 errors (expired/invalid token)
+// Note: Only handle 401 (Unauthorized) for session expiry, not 403 (Forbidden)
+// 403 errors should be handled by individual API calls as they may indicate permission issues
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
         const status = error.response?.status;
+        const errorMessage = error.response?.data?.message || '';
 
-        // Handle both 401 (Unauthorized) and 403 (Forbidden) as token expiration
-        if (status === 401 || status === 403) {
-            // Token expired or invalid
-            if (typeof window !== 'undefined') {
+        // Only auto-logout for 401 errors that indicate actual token expiration
+        // Skip logout for API-specific authorization errors
+        if (status === 401) {
+            // Check if this is a token expiration error (not just an API permission error)
+            const isTokenExpired =
+                errorMessage.toLowerCase().includes('expired') ||
+                errorMessage.toLowerCase().includes('invalid token') ||
+                errorMessage.toLowerCase().includes('jwt') ||
+                errorMessage.toLowerCase().includes('unauthorized');
+
+            if (isTokenExpired && typeof window !== 'undefined') {
                 const currentPath = window.location.pathname;
                 // Don't show toast or redirect if already on login page
                 if (!currentPath.includes('/login')) {

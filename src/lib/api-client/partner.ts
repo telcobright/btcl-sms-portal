@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { API_BASE_URL, API_BASE_URL_SECONDARY, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
@@ -150,15 +150,35 @@ export const createPartner = async (payload: {
     callSrcId: number
 }): Promise<CreatePartnerResponse> => {
   try {
-    const response = await axios.post<CreatePartnerResponse>(
-      `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`,
-      payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    // Call both endpoints simultaneously
+    const primaryUrl = `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
+    const secondaryUrl = `${API_BASE_URL_SECONDARY}${API_ENDPOINTS.partner.createPartner}`;
+
+    console.log('Creating partner on both endpoints:', { primaryUrl, secondaryUrl });
+
+    // Make both API calls simultaneously
+    const [primaryResponse, secondaryResponse] = await Promise.allSettled([
+      axios.post<CreatePartnerResponse>(primaryUrl, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      axios.post<CreatePartnerResponse>(secondaryUrl, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ]);
+
+    // Log secondary endpoint result (for debugging)
+    if (secondaryResponse.status === 'fulfilled') {
+      console.log('✅ Secondary endpoint (without port) partner created:', secondaryResponse.value.data);
+    } else {
+      console.warn('⚠️ Secondary endpoint (without port) failed:', secondaryResponse.reason?.message);
+    }
+
+    // Use primary endpoint response
+    if (primaryResponse.status === 'rejected') {
+      throw primaryResponse.reason;
+    }
+
+    const response = primaryResponse.value;
 
     if (!response.data) {
       throw new Error('No response data received from create partner API');

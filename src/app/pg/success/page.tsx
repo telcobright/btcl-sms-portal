@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
-import { API_BASE_URL, API_ENDPOINTS } from '@/config/api'
+import { VBS_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api'
 import toast, { Toaster } from 'react-hot-toast'
 
 interface PendingProvision {
@@ -57,7 +57,7 @@ function SuccessContent() {
 
             console.log('Voice Broadcast purchase payload:', payload);
 
-            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
+            const response = await fetch(`${VBS_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -75,6 +75,61 @@ function SuccessContent() {
             return { success: true, data };
         } catch (error) {
             console.error('Voice Broadcast purchase failed:', error);
+            return { success: false, error };
+        }
+    };
+
+    // Purchase Hosted PBX package
+    const purchaseHostedPbx = async (authToken: string, partnerId: number, packageId: number, price: number) => {
+        try {
+            // Calculate VAT (15% of price)
+            const vat = Math.round(price * 0.15);
+            const total = price + vat;
+
+            // Calculate expiry date (30 days from now)
+            const validity = 2592000; // 30 days in seconds
+            const expiryDate = new Date(Date.now() + validity * 1000).toISOString().slice(0, 19);
+
+            const payload = {
+                idPackage: packageId,
+                idPartner: partnerId,
+                purchaseDate: null,
+                status: 'ACTIVE',
+                paid: total,
+                autoRenewalStatus: true,
+                price: price,
+                vat: vat,
+                ait: 0,
+                priority: 1,
+                discount: 0,
+                onSelectPriority: -1,
+                expiryDate: expiryDate,
+                total: total,
+                expireDate: null,
+                currency: null,
+                validity: validity,
+            };
+
+            console.log('Hosted PBX purchase payload:', payload);
+
+            const response = await fetch(`${PBX_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to purchase Hosted PBX package');
+            }
+
+            const data = await response.json();
+            console.log('Hosted PBX purchase response:', data);
+            return { success: true, data };
+        } catch (error) {
+            console.error('Hosted PBX purchase failed:', error);
             return { success: false, error };
         }
     };
@@ -110,6 +165,28 @@ function SuccessContent() {
                         toast.success('Voice Broadcast package activated successfully!', { id: 'vbs-purchase' });
                     } else {
                         toast.error('Voice Broadcast activation failed. Please contact support.', { id: 'vbs-purchase' });
+                    }
+
+                    setProvisionComplete(true);
+                    setProvisioning(false);
+                }
+
+                // Handle Hosted PBX purchase
+                if (provision.serviceType === 'hosted-pbx') {
+                    setProvisioning(true);
+                    toast.loading('Activating your Hosted PBX package...', { id: 'pbx-purchase' });
+
+                    const result = await purchaseHostedPbx(
+                        authToken,
+                        provision.partnerId,
+                        provision.packageIdInt,
+                        provision.price
+                    );
+
+                    if (result.success) {
+                        toast.success('Hosted PBX package activated successfully!', { id: 'pbx-purchase' });
+                    } else {
+                        toast.error('Hosted PBX activation failed. Please contact support.', { id: 'pbx-purchase' });
                     }
 
                     setProvisionComplete(true);

@@ -9,6 +9,13 @@
 // export const ROOT_URL = 'http://localhost:8001';
 export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
 // For production, use: 'https://a2psms.btcliptelephony.gov.bd'
+export const VBS_BASE_URL = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
+
+// Hosted PBX specific base URL
+export const PBX_BASE_URL = 'https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST';
+
+// Secondary API URL for partner creation (without port)
+export const API_BASE_URL_SECONDARY = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
 
 // ============================================
 // Service Base URLs (derived from ROOT_URL)
@@ -20,6 +27,7 @@ export const BULK_SMS_PORTAL_URL = `${ROOT_URL}:4000/`;
 export const PAYMENT_BASE_URL = `${ROOT_URL}`;
 // export const PAYMENT_BASE_URL = 'http://localhost:8081';
 
+// Voice Broadcast specific base URL
 // Feature Flags
 /**
  * Toggle verification features on/off
@@ -33,7 +41,7 @@ export const FEATURE_FLAGS = {
   NID_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable SSLCommerz payment */
-  PAYMENT_ENABLED: true,
+  PAYMENT_ENABLED: false,
 } as const;
 
 // API Endpoints

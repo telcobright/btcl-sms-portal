@@ -8,7 +8,7 @@ import { initiateSSLCommerzPayment } from '@/lib/api-client/payment';
 import { getPartnerById, createDomain, getUserByEmail, editUser } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
-import { FEATURE_FLAGS, API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface DecodedToken {
     idPartner: number;
@@ -152,7 +152,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
 
             console.log('Voice Broadcast purchase payload:', payload);
 
-            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
+            const response = await fetch(`${VBS_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -183,6 +183,78 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                     ? 'Voice Broadcast activation failed. Please contact support.'
                     : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
                 { id: 'vbs-purchase' }
+            );
+            return { success: false, error };
+        }
+    };
+
+    // Purchase Hosted PBX package after successful payment
+    const purchaseHostedPbx = async (authToken: string, partnerId: number, packageId: number, price: number) => {
+        try {
+            console.log('Starting Hosted PBX package purchase...');
+            toast.loading(locale === 'en' ? 'Activating your Hosted PBX package...' : 'আপনার হোস্টেড PBX প্যাকেজ সক্রিয় হচ্ছে...', { id: 'pbx-purchase' });
+
+            // Calculate VAT (15% of price)
+            const vat = Math.round(price * 0.15);
+            const total = price + vat;
+
+            // Calculate expiry date (30 days from now)
+            const validity = 2592000; // 30 days in seconds
+            const expiryDate = new Date(Date.now() + validity * 1000).toISOString().slice(0, 19);
+
+            const payload = {
+                idPackage: packageId,
+                idPartner: partnerId,
+                purchaseDate: null,
+                status: 'ACTIVE',
+                paid: total,
+                autoRenewalStatus: true,
+                price: price,
+                vat: vat,
+                ait: 0,
+                priority: 1,
+                discount: 0,
+                onSelectPriority: -1,
+                expiryDate: expiryDate,
+                total: total,
+                expireDate: null,
+                currency: null,
+                validity: validity,
+            };
+
+            console.log('Hosted PBX purchase payload:', payload);
+
+            const response = await fetch(`${PBX_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to purchase Hosted PBX package');
+            }
+
+            const data = await response.json();
+            console.log('Hosted PBX purchase response:', data);
+
+            toast.success(
+                locale === 'en'
+                    ? 'Hosted PBX package activated successfully!'
+                    : 'হোস্টেড PBX প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
+                { id: 'pbx-purchase' }
+            );
+
+            return { success: true, data };
+        } catch (error) {
+            console.error('Hosted PBX purchase failed:', error);
+            toast.error(
+                locale === 'en'
+                    ? 'Hosted PBX activation failed. Please contact support.'
+                    : 'হোস্টেড PBX সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
+                { id: 'pbx-purchase' }
             );
             return { success: false, error };
         }
@@ -227,9 +299,11 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
 
-                // Provision Hosted PBX domain after successful purchase
+                // Provision Hosted PBX domain and purchase package after successful purchase
                 if (serviceType === 'hosted-pbx' && email) {
                     await provisionHostedPbx(authToken, partnerId, email);
+                    const packageId = getPackageIdInt(pkg.id, serviceType);
+                    await purchaseHostedPbx(authToken, partnerId, packageId, pkg.price);
                 }
 
                 // Purchase Voice Broadcast package after successful purchase

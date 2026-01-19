@@ -288,7 +288,7 @@ export const addPartnerDetails = async (
       tradeLicenseNumber: payload.tradeLicenseNumber ?? '',
       tin: payload.tin ?? '',
       taxReturnDate: payload.taxReturnDate ?? '',
-      countryCode: payload.contryCode ?? '',
+      countryCode: payload.contryCode || 'BD',
     };
 
     Object.entries(textFields).forEach(([key, value]) => {
@@ -466,6 +466,49 @@ export const createDomain = async (
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Create Domain error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+// ---------------------- CREATE ROUTE ----------------------
+
+export interface CreateRoutePayload {
+  routeName: string;
+  description: string;
+  field5: string;
+  zone: string;
+  nationalOrInternational: number;
+  field4: number;
+  switchId: number;
+  idPartner: number;
+  metaData: {
+    sipProfileName: string;
+  };
+}
+
+export const createRoute = async (
+  payload: CreateRoutePayload,
+  authToken: string
+): Promise<any> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.route.create}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Create Route error:', {
         status: error.response?.status,
         data: error.response?.data,
       });

@@ -51,7 +51,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       id: 'basic',
       name: locale === 'en' ? 'Basic' : 'বেসিক',
       users: locale === 'en' ? 'Per Agent' : 'প্রতি এজেন্ট',
-      price: 8500,
+      price: 8.5,
       popular: true,
       features: [
         locale === 'en' ? 'Audio Call' : 'অডিও কল',
@@ -76,7 +76,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ivr: 2,
       freeTalktime: 500,
       callCharge: 0.45,
-      price: 1200,
+      price: 12,
       popular: false,
       features: [
         locale === 'en' ? '10 Extensions' : '১০টি এক্সটেনশন',
@@ -100,7 +100,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ivr: 5,
       freeTalktime: 1000,
       callCharge: 0.40,
-      price: 2500,
+      price: 25,
       popular: true,
       features: [
         locale === 'en' ? '30 Extensions' : '৩০টি এক্সটেনশন',
@@ -124,7 +124,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ivr: 10,
       freeTalktime: 3000,
       callCharge: 0.35,
-      price: 4500,
+      price: 45,
       popular: false,
       features: [
         locale === 'en' ? 'Up to 100 Extensions*' : '১০০টি পর্যন্ত এক্সটেনশন*',
@@ -149,7 +149,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       name: locale === 'en' ? 'Basic' : 'বেসিক',
       messages: '1-20,000',
       rate: 0.90,
-      price: 18000,
+      price: 18,
       popular: false,
       features: [
         locale === 'en' ? '1 - 20,000 VB Messages' : '১ - ২০,০০০ ভিবি মেসেজ',
@@ -165,7 +165,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড',
       messages: '20,001-50,000',
       rate: 0.80,
-      price: 40000,
+      price: 40,
       popular: true,
       features: [
         locale === 'en' ? '20,001 - 50,000 VB Messages' : '২০,০০১ - ৫০,০০০ ভিবি মেসেজ',
@@ -181,7 +181,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ',
       messages: '50,000+',
       rate: 0.60,
-      price: 60000,
+      price: 60,
       popular: false,
       features: [
         locale === 'en' ? '50,000+ VB Messages' : '৫০,০০০+ ভিবি মেসেজ',

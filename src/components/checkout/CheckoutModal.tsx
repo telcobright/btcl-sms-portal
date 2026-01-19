@@ -5,7 +5,7 @@ import { useState } from 'react';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
 import { initiateSSLCommerzPayment } from '@/lib/api-client/payment';
-import { getPartnerById, createDomain, getUserByEmail, editUser } from '@/lib/api-client/partner';
+import { getPartnerById, createDomain, createRoute, getUserByEmail, editUser } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
 import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
@@ -69,10 +69,18 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             const partnerName = partnerData.partnerName;
             console.log('Partner name:', partnerName);
 
+            // Generate domain name based on partner name words
+            // If 1 word: use partnerName.btcliptelephony.gov.bd
+            // If more than 1 word: use firstWord.btcliptelephony.gov.bd
+            const words = partnerName.trim().split(/\s+/);
+            const domainPrefix = words.length === 1 ? words[0].toLowerCase() : words[0].toLowerCase();
+            const domainName = `${domainPrefix}.btcliptelephony.gov.bd`;
+            console.log('Generated domain name:', domainName);
+
             // Step 2: Create domain
             const domainResponse = await createDomain(
                 {
-                    domainName: partnerName,
+                    domainName: domainName,
                     enabled: true,
                     description: partnerName,
                 },
@@ -81,12 +89,32 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             console.log('Domain created:', domainResponse);
             const domainUuid = domainResponse.domainUuid;
 
-            // Step 3: Get user by email to get user id
+            // Step 3: Create route for the domain
+            console.log('Creating route for domain:', domainPrefix);
+            const routeResponse = await createRoute(
+                {
+                    routeName: domainPrefix,
+                    description: domainPrefix,
+                    field5: domainPrefix,
+                    zone: 'dhaka',
+                    nationalOrInternational: 1,
+                    field4: 5,
+                    switchId: 1,
+                    idPartner: partnerId,
+                    metaData: {
+                        sipProfileName: '',
+                    },
+                },
+                authToken
+            );
+            console.log('Route created:', routeResponse);
+
+            // Step 4: Get user by email to get user id
             const userData = await getUserByEmail(email, authToken);
             console.log('User data:', userData);
             const userId = userData.id;
 
-            // Step 4: Edit user to add domainUuid
+            // Step 5: Edit user to add domainUuid
             await editUser(
                 {
                     id: userId,

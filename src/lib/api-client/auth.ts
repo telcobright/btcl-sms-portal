@@ -2,11 +2,14 @@ import axios from 'axios';
 import { AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
 import toast from 'react-hot-toast';
 
-// Setup axios interceptor for handling 401 errors (expired/invalid token)
+// Setup axios interceptor for handling 401/403 errors (expired/invalid token)
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const status = error.response?.status;
+
+        // Handle both 401 (Unauthorized) and 403 (Forbidden) as token expiration
+        if (status === 401 || status === 403) {
             // Token expired or invalid
             if (typeof window !== 'undefined') {
                 const currentPath = window.location.pathname;
@@ -17,7 +20,7 @@ axios.interceptors.response.use(
 
                     toast.error('Session expired. Please login again.', {
                         duration: 5000,
-                        id: 'session-expired-401'
+                        id: 'session-expired'
                     });
 
                     // Redirect to login

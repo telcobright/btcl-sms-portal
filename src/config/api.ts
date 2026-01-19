@@ -6,8 +6,8 @@
 // ============================================
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
-// export const ROOT_URL = 'http://localhost:8001';
-export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
+export const ROOT_URL = 'http://localhost:8001';
+// export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
 // For production, use: 'https://a2psms.btcliptelephony.gov.bd'
 
 // ============================================
@@ -17,8 +17,8 @@ export const API_BASE_URL = `${ROOT_URL}/FREESWITCHREST`;
 export const AUTH_BASE_URL = `${ROOT_URL}/AUTHENTICATION`;
 export const NID_BASE_URL = `${ROOT_URL}/NID`;
 export const BULK_SMS_PORTAL_URL = `${ROOT_URL}:4000/`;
-export const PAYMENT_BASE_URL = `${ROOT_URL}`;
-// export const PAYMENT_BASE_URL = 'http://localhost:8081';
+// export const PAYMENT_BASE_URL = `${ROOT_URL}`;
+export const PAYMENT_BASE_URL = 'http://localhost:8081';
 
 // Feature Flags
 /**

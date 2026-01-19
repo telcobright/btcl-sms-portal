@@ -1,5 +1,34 @@
 import axios from 'axios';
 import { AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import toast from 'react-hot-toast';
+
+// Setup axios interceptor for handling 401 errors (expired/invalid token)
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid
+            if (typeof window !== 'undefined') {
+                const currentPath = window.location.pathname;
+                // Don't show toast or redirect if already on login page
+                if (!currentPath.includes('/login')) {
+                    localStorage.removeItem('authToken');
+                    delete axios.defaults.headers.common['Authorization'];
+
+                    toast.error('Session expired. Please login again.', {
+                        duration: 5000,
+                        id: 'session-expired-401'
+                    });
+
+                    // Redirect to login
+                    const locale = currentPath.startsWith('/bn') ? 'bn' : 'en';
+                    window.location.href = `/${locale}/login`;
+                }
+            }
+        }
+        return Promise.reject(error);
+    }
+);
 
 export interface LoginResponse {
     token: string;

@@ -53,7 +53,7 @@ export default function CheckoutForm({
 }) {
   const [loading, setLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
-  const paymentMethods = ['MasterCard', 'VISA', 'SSLcommerz', 'Bkash', 'Nagad'];
+  const paymentMethods = ['SSLcommerz', 'Nagad'];
 
   // Fetch partner data on component mount
   useEffect(() => {
@@ -207,7 +207,7 @@ export default function CheckoutForm({
       {/* Payment Methods */}
       <fieldset className="space-y-4">
         <legend className="block text-lg font-semibold text-btcl-primary">3. Payment method</legend>
-        <div className="grid grid-cols-4 gap-4 mt-2">
+        <div className="grid grid-cols-2 gap-4 mt-2">
           {paymentMethods.map((method) => {
             const isSelected = selectedPayment === method;
             return (

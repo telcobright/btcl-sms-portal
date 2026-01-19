@@ -268,7 +268,7 @@ export const addPartnerDetails = async (
       tradeLicenseNumber: payload.tradeLicenseNumber ?? '',
       tin: payload.tin ?? '',
       taxReturnDate: payload.taxReturnDate ?? '',
-      countryCode: payload.countryCode ?? '',
+      countryCode: payload.contryCode ?? '',
     };
 
     Object.entries(textFields).forEach(([key, value]) => {

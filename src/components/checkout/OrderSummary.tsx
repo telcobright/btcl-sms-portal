@@ -103,6 +103,10 @@ export default function OrderSummary({
           <span>{locale === 'en' ? 'Subtotal' : 'সাবটোটাল'}</span>
           <span>৳{pkg.price.toLocaleString()}</span>
         </div>
+        <div className="flex justify-between text-btcl-gray-600">
+          <span>{locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}</span>
+          <span>৳{Math.round(pkg.price * 0.15).toLocaleString()}</span>
+        </div>
         {serviceType === 'hosted-pbx' && (
           <div className="flex justify-between text-btcl-gray-600">
             <span>{locale === 'en' ? 'Billing' : 'বিলিং'}</span>
@@ -113,7 +117,7 @@ export default function OrderSummary({
         <div className="flex justify-between font-bold text-lg">
           <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
           <span className="text-btcl-primary">
-            ৳{pkg.price.toLocaleString()}
+            ৳{(pkg.price + Math.round(pkg.price * 0.15)).toLocaleString()}
           </span>
         </div>
         {serviceType === 'hosted-pbx' && pkg.callCharge && (

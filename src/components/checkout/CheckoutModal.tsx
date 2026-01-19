@@ -8,7 +8,7 @@ import { initiateSSLCommerzPayment } from '@/lib/api-client/payment';
 import { getPartnerById, createDomain, getUserByEmail, editUser } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
-import { FEATURE_FLAGS } from '@/config/api';
+import { FEATURE_FLAGS, API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface DecodedToken {
     idPartner: number;
@@ -116,14 +116,96 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
         }
     };
 
-    // Map package string ID to integer ID
-    const getPackageIdInt = (packageId: string): number => {
-        const packageIdMap: { [key: string]: number } = {
-            'bronze': 12,
-            'silver': 13,
-            'gold': 14,
+    // Purchase Voice Broadcast package after successful payment
+    const purchaseVoiceBroadcast = async (authToken: string, partnerId: number, packageId: number, price: number) => {
+        try {
+            console.log('Starting Voice Broadcast package purchase...');
+            toast.loading(locale === 'en' ? 'Activating your Voice Broadcast package...' : 'আপনার ভয়েস ব্রডকাস্ট প্যাকেজ সক্রিয় হচ্ছে...', { id: 'vbs-purchase' });
+
+            // Calculate VAT (15% of price)
+            const vat = Math.round(price * 0.15);
+            const total = price + vat;
+
+            // Calculate expiry date (30 days from now)
+            const validity = 2592000; // 30 days in seconds
+            const expiryDate = new Date(Date.now() + validity * 1000).toISOString().slice(0, 19);
+
+            const payload = {
+                idPackage: packageId,
+                idPartner: partnerId,
+                purchaseDate: null,
+                status: 'ACTIVE',
+                paid: total,
+                autoRenewalStatus: true,
+                price: price,
+                vat: vat,
+                ait: 0,
+                priority: 1,
+                discount: 0,
+                onSelectPriority: -1,
+                expiryDate: expiryDate,
+                total: total,
+                expireDate: null,
+                currency: null,
+                validity: validity,
+            };
+
+            console.log('Voice Broadcast purchase payload:', payload);
+
+            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to purchase Voice Broadcast package');
+            }
+
+            const data = await response.json();
+            console.log('Voice Broadcast purchase response:', data);
+
+            toast.success(
+                locale === 'en'
+                    ? 'Voice Broadcast package activated successfully!'
+                    : 'ভয়েস ব্রডকাস্ট প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
+                { id: 'vbs-purchase' }
+            );
+
+            return { success: true, data };
+        } catch (error) {
+            console.error('Voice Broadcast purchase failed:', error);
+            toast.error(
+                locale === 'en'
+                    ? 'Voice Broadcast activation failed. Please contact support.'
+                    : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
+                { id: 'vbs-purchase' }
+            );
+            return { success: false, error };
+        }
+    };
+
+    // Map package string ID to integer ID based on service type
+    const getPackageIdInt = (packageId: string, service: string): number => {
+        const packageIdMap: { [key: string]: { [key: string]: number } } = {
+            'hosted-pbx': {
+                'bronze': 9132,
+                'silver': 9133,
+                'gold': 9134,
+            },
+            'voice-broadcast': {
+                'basic': 9135,
+                'standard': 9136,
+                'enterprise': 9137,
+            },
+            'contact-center': {
+                'basic': 9138,
+            },
         };
-        return packageIdMap[packageId] || 12;
+        return packageIdMap[service]?.[packageId] || 9132;
     };
 
     const handleCheckout = async () => {
@@ -148,6 +230,12 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 // Provision Hosted PBX domain after successful purchase
                 if (serviceType === 'hosted-pbx' && email) {
                     await provisionHostedPbx(authToken, partnerId, email);
+                }
+
+                // Purchase Voice Broadcast package after successful purchase
+                if (serviceType === 'voice-broadcast') {
+                    const packageId = getPackageIdInt(pkg.id, serviceType);
+                    await purchaseVoiceBroadcast(authToken, partnerId, packageId, pkg.price);
                 }
 
                 onClose();
@@ -177,8 +265,12 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             // Clean phone number (remove + if present)
             const cleanPhone = partnerData.telephone?.replace('+', '') || '';
 
+            // Calculate VAT (15% of price) and total
+            const vatAmount = Math.round(pkg.price * 0.15);
+            const totalAmount = pkg.price + vatAmount;
+
             const payload = {
-                idPackage: getPackageIdInt(pkg.id),
+                idPackage: getPackageIdInt(pkg.id, serviceType),
                 idPartner: partnerId,
                 cusName: partnerData.partnerName || partnerData.alternateNameInvoice,
                 cusEmail: partnerData.email,
@@ -196,13 +288,13 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 status: 'ACTIVE',
                 autoRenewalStatus: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType),
                 price: pkg.price,
-                vat: 0,
+                vat: vatAmount,
                 ait: 0,
                 priority: 2,
                 discount: 0,
                 currency: 'BDT',
                 paid: 1,
-                total: pkg.price,
+                total: totalAmount,
                 validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType) ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000), // 30 days in seconds
             };
 
@@ -223,7 +315,9 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                     partnerId,
                     email,
                     packageId: pkg.id,
-                    packageName: pkg.name
+                    packageIdInt: getPackageIdInt(pkg.id, serviceType),
+                    packageName: pkg.name,
+                    price: pkg.price
                 }));
                 window.location.href = redirectUrl;
             } else {

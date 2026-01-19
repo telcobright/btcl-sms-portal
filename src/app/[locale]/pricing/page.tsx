@@ -142,17 +142,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
   ]
 
-  // Voice Broadcast Pricing
+  // Voice Broadcast Pricing (per VB message)
   const voiceBroadcastPackages = [
     {
-      id: 'starter',
-      name: locale === 'en' ? 'Starter' : 'স্টার্টার',
-      minutes: 5000,
-      rate: 1.2,
-      price: 6000, // 5000 * 1.2
+      id: 'basic',
+      name: locale === 'en' ? 'Basic' : 'বেসিক',
+      messages: '1-20,000',
+      rate: 0.90,
+      price: 18000,
       popular: false,
       features: [
-        locale === 'en' ? '5,000 Call Minutes' : '৫,০০০ কল মিনিট',
+        locale === 'en' ? '1 - 20,000 VB Messages' : '১ - ২০,০০০ ভিবি মেসেজ',
+        locale === 'en' ? '৳0.90 per message' : '৳০.৯০ প্রতি মেসেজ',
         locale === 'en' ? 'Text-to-Speech' : 'টেক্সট-টু-স্পিচ',
         locale === 'en' ? 'Basic Scheduling' : 'বেসিক সময়সূচী',
         locale === 'en' ? 'Delivery Reports' : 'ডেলিভারি রিপোর্ট',
@@ -160,30 +161,31 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ]
     },
     {
-      id: 'growth',
-      name: locale === 'en' ? 'Growth' : 'গ্রোথ',
-      minutes: 15000,
-      rate: 1.0,
-      price: 15000, // 15000 * 1.0
+      id: 'standard',
+      name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড',
+      messages: '20,001-50,000',
+      rate: 0.80,
+      price: 40000,
       popular: true,
       features: [
-        locale === 'en' ? '15,000 Call Minutes' : '১৫,০০০ কল মিনিট',
+        locale === 'en' ? '20,001 - 50,000 VB Messages' : '২০,০০১ - ৫০,০০০ ভিবি মেসেজ',
+        locale === 'en' ? '৳0.80 per message' : '৳০.৮০ প্রতি মেসেজ',
         locale === 'en' ? 'Text-to-Speech & Audio Upload' : 'টেক্সট-টু-স্পিচ ও অডিও আপলোড',
         locale === 'en' ? 'Advanced Scheduling' : 'উন্নত সময়সূচী',
         locale === 'en' ? 'Detailed Analytics' : 'বিস্তারিত বিশ্লেষণ',
-        locale === 'en' ? 'Retry Logic' : 'পুনঃচেষ্টা লজিক',
         locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট'
       ]
     },
     {
       id: 'enterprise',
       name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ',
-      minutes: 50000,
-      rate: 0.8,
-      price: 40000, // 50000 * 0.8
+      messages: '50,000+',
+      rate: 0.60,
+      price: 60000,
       popular: false,
       features: [
-        locale === 'en' ? '50,000+ Call Minutes' : '৫০,০০০+ কল মিনিট',
+        locale === 'en' ? '50,000+ VB Messages' : '৫০,০০০+ ভিবি মেসেজ',
+        locale === 'en' ? '৳0.60 per message' : '৳০.৬০ প্রতি মেসেজ',
         locale === 'en' ? 'All Features Included' : 'সব বৈশিষ্ট্য অন্তর্ভুক্ত',
         locale === 'en' ? 'API Access' : 'API অ্যাক্সেস',
         locale === 'en' ? 'Custom Integration' : 'কাস্টম ইন্টিগ্রেশন',
@@ -261,7 +263,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               </h2>
               <p className="text-xl text-gray-600">
                 {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
-                {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per minute pricing' : 'প্রতি মিনিট মূল্য')}
+                {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per message pricing' : 'প্রতি মেসেজ মূল্য')}
                 {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
               </p>
             </div>
@@ -307,12 +309,9 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                         {selectedService === 'voice-broadcast' && (
                           <>
                             <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
-                            <span className="text-gray-600 text-lg">/min</span>
+                            <span className="text-gray-600 text-lg">/{locale === 'en' ? 'message' : 'মেসেজ'}</span>
                             <div className="text-sm text-gray-500 mt-2">
-                              {locale === 'en' ? 'Total:' : 'মোট:'} ৳{(pkg.minutes * pkg.rate).toLocaleString()}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {pkg.minutes.toLocaleString()} {locale === 'en' ? 'minutes' : 'মিনিট'}
+                              {pkg.messages} {locale === 'en' ? 'VB Messages' : 'ভিবি মেসেজ'}
                             </div>
                           </>
                         )}

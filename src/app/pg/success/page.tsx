@@ -3,15 +3,134 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { API_BASE_URL, API_ENDPOINTS } from '@/config/api'
+import toast, { Toaster } from 'react-hot-toast'
+
+interface PendingProvision {
+    serviceType: string;
+    partnerId: number;
+    email: string;
+    packageId: string;
+    packageIdInt: number;
+    packageName: string;
+    price: number;
+}
 
 function SuccessContent() {
     const searchParams = useSearchParams()
     const transactionId = searchParams.get('tran_id') || searchParams.get('tranId')
     const amount = searchParams.get('amount')
+    const [provisioning, setProvisioning] = useState(false)
+    const [provisionComplete, setProvisionComplete] = useState(false)
+
+    // Purchase Voice Broadcast package
+    const purchaseVoiceBroadcast = async (authToken: string, partnerId: number, packageId: number, price: number) => {
+        try {
+            // Calculate VAT (15% of price)
+            const vat = Math.round(price * 0.15);
+            const total = price + vat;
+
+            // Calculate expiry date (30 days from now)
+            const validity = 2592000; // 30 days in seconds
+            const expiryDate = new Date(Date.now() + validity * 1000).toISOString().slice(0, 19);
+
+            const payload = {
+                idPackage: packageId,
+                idPartner: partnerId,
+                purchaseDate: null,
+                status: 'ACTIVE',
+                paid: total,
+                autoRenewalStatus: true,
+                price: price,
+                vat: vat,
+                ait: 0,
+                priority: 1,
+                discount: 0,
+                onSelectPriority: -1,
+                expiryDate: expiryDate,
+                total: total,
+                expireDate: null,
+                currency: null,
+                validity: validity,
+            };
+
+            console.log('Voice Broadcast purchase payload:', payload);
+
+            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to purchase Voice Broadcast package');
+            }
+
+            const data = await response.json();
+            console.log('Voice Broadcast purchase response:', data);
+            return { success: true, data };
+        } catch (error) {
+            console.error('Voice Broadcast purchase failed:', error);
+            return { success: false, error };
+        }
+    };
+
+    // Handle pending service provision after successful payment
+    useEffect(() => {
+        const handlePendingProvision = async () => {
+            const pendingData = sessionStorage.getItem('pendingServiceProvision');
+            if (!pendingData) return;
+
+            try {
+                const provision: PendingProvision = JSON.parse(pendingData);
+                const authToken = localStorage.getItem('authToken');
+
+                if (!authToken) {
+                    console.error('No auth token found for provisioning');
+                    return;
+                }
+
+                // Handle Voice Broadcast purchase
+                if (provision.serviceType === 'voice-broadcast') {
+                    setProvisioning(true);
+                    toast.loading('Activating your Voice Broadcast package...', { id: 'vbs-purchase' });
+
+                    const result = await purchaseVoiceBroadcast(
+                        authToken,
+                        provision.partnerId,
+                        provision.packageIdInt,
+                        provision.price
+                    );
+
+                    if (result.success) {
+                        toast.success('Voice Broadcast package activated successfully!', { id: 'vbs-purchase' });
+                    } else {
+                        toast.error('Voice Broadcast activation failed. Please contact support.', { id: 'vbs-purchase' });
+                    }
+
+                    setProvisionComplete(true);
+                    setProvisioning(false);
+                }
+
+                // Clear the pending provision data
+                sessionStorage.removeItem('pendingServiceProvision');
+            } catch (error) {
+                console.error('Error processing pending provision:', error);
+                setProvisioning(false);
+            }
+        };
+
+        handlePendingProvision();
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Toaster position="top-center" />
+
             {/* Header */}
             <header className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,8 +198,10 @@ function SuccessContent() {
 
                             <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
                                 <p className="text-sm text-green-800">
-                                    A confirmation email has been sent to your registered email address.
-                                    Your purchased package will be activated shortly.
+                                    {provisioning
+                                        ? 'Activating your package, please wait...'
+                                        : 'A confirmation email has been sent to your registered email address. Your purchased package will be activated shortly.'
+                                    }
                                 </p>
                             </div>
 

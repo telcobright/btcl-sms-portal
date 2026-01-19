@@ -1254,23 +1254,7 @@ export default function RegisterPage() {
                       <Controller
                         name="password"
                         control={personalInfoForm.control}
-                        rules={{
-                          required: 'Password is required',
-                          minLength: {
-                            value: 8,
-                            message: 'Password must be at least 8 characters',
-                          },
-                          validate: {
-                            hasLowercase: (value) =>
-                              /[a-z]/.test(value) ||
-                              'Must contain lowercase letter',
-                            hasUppercase: (value) =>
-                              /[A-Z]/.test(value) ||
-                              'Must contain uppercase letter',
-                            hasNumber: (value) =>
-                              /[0-9]/.test(value) || 'Must contain number',
-                          },
-                        }}
+                        rules={{}}
                         render={({ field, fieldState }) => (
                           <>
                             <div className="relative">
@@ -1317,12 +1301,7 @@ export default function RegisterPage() {
                       <Controller
                         name="confirmPassword"
                         control={personalInfoForm.control}
-                        rules={{
-                          required: 'Please confirm your password',
-                          validate: (value) =>
-                            value === personalInfoForm.watch('password') ||
-                            'Passwords do not match',
-                        }}
+                        rules={{}}
                         render={({ field, fieldState }) => (
                           <>
                             <div className="relative">

@@ -27,43 +27,8 @@ const getLocalizedText = (locale: string, enText: string, bnText: string): strin
 export default async function ServicesPage({ params }: ServicesPageProps) {
   const { locale } = await params
 
+  // Services (SMS hidden) - Order: Hosted PBX, Voice Broadcast, Contact Center
   const services: Service[] = [
-    {
-      id: 'bulk-sms',
-      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
-      description: locale === 'en'
-        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
-        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
-      icon: '📱',
-      features: [
-        locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
-        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
-        locale === 'en' ? 'RESTful API integration' : 'RESTful API ইন্টিগ্রেশন',
-        locale === 'en' ? 'Real-time delivery reports' : 'রিয়েল-টাইম ডেলিভারি রিপোর্ট',
-        locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
-        locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
-      ],
-      color: 'from-blue-500 to-blue-600',
-      href: `/${locale}/services/bulk-sms`,
-    },
-    {
-      id: 'contact-center',
-      title: locale === 'en' ? 'Hosted Contact Center' : 'হোস্টেড কন্টাক্ট সেন্টার',
-      description: locale === 'en'
-        ? 'Cloud-based contact center solution with omnichannel support, IVR, intelligent call routing, and advanced analytics. Scale your customer service operations effortlessly.'
-        : 'ক্লাউড-ভিত্তিক কন্টাক্ট সেন্টার সমাধান যাতে রয়েছে অমনিচ্যানেল সাপোর্ট, IVR, বুদ্ধিমান কল রাউটিং এবং উন্নত বিশ্লেষণ। আপনার গ্রাহক সেবা কার্যক্রম সহজে স্কেল করুন।',
-      icon: '🎧',
-      features: [
-        locale === 'en' ? 'Omnichannel support (voice, chat, email)' : 'অমনিচ্যানেল সাপোর্ট (ভয়েস, চ্যাট, ইমেইল)',
-        locale === 'en' ? 'Interactive IVR system' : 'ইন্টারঅ্যাক্টিভ IVR সিস্টেম',
-        locale === 'en' ? 'Intelligent call routing' : 'বুদ্ধিমান কল রাউটিং',
-        locale === 'en' ? 'Real-time dashboards & analytics' : 'রিয়েল-টাইম ড্যাশবোর্ড ও বিশ্লেষণ',
-        locale === 'en' ? 'Call recording & quality monitoring' : 'কল রেকর্ডিং ও মান নিরীক্ষণ',
-        locale === 'en' ? 'Agent performance tracking' : 'এজেন্ট কর্মক্ষমতা ট্র্যাকিং',
-      ],
-      color: 'from-purple-500 to-purple-600',
-      href: `/${locale}/services/contact-center`,
-    },
     {
       id: 'hosted-pbx',
       title: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
@@ -99,6 +64,24 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       ],
       color: 'from-orange-500 to-orange-600',
       href: `/${locale}/services/voice-broadcast`,
+    },
+    {
+      id: 'contact-center',
+      title: locale === 'en' ? 'Hosted Contact Center' : 'হোস্টেড কন্টাক্ট সেন্টার',
+      description: locale === 'en'
+        ? 'Cloud-based contact center solution with omnichannel support, IVR, intelligent call routing, and advanced analytics. Scale your customer service operations effortlessly.'
+        : 'ক্লাউড-ভিত্তিক কন্টাক্ট সেন্টার সমাধান যাতে রয়েছে অমনিচ্যানেল সাপোর্ট, IVR, বুদ্ধিমান কল রাউটিং এবং উন্নত বিশ্লেষণ। আপনার গ্রাহক সেবা কার্যক্রম সহজে স্কেল করুন।',
+      icon: '🎧',
+      features: [
+        locale === 'en' ? 'Omnichannel support (voice, chat, email)' : 'অমনিচ্যানেল সাপোর্ট (ভয়েস, চ্যাট, ইমেইল)',
+        locale === 'en' ? 'Interactive IVR system' : 'ইন্টারঅ্যাক্টিভ IVR সিস্টেম',
+        locale === 'en' ? 'Intelligent call routing' : 'বুদ্ধিমান কল রাউটিং',
+        locale === 'en' ? 'Real-time dashboards & analytics' : 'রিয়েল-টাইম ড্যাশবোর্ড ও বিশ্লেষণ',
+        locale === 'en' ? 'Call recording & quality monitoring' : 'কল রেকর্ডিং ও মান নিরীক্ষণ',
+        locale === 'en' ? 'Agent performance tracking' : 'এজেন্ট কর্মক্ষমতা ট্র্যাকিং',
+      ],
+      color: 'from-purple-500 to-purple-600',
+      href: `/${locale}/services/contact-center`,
     },
   ]
 
@@ -168,7 +151,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {services.map((service, index) => (
               <ServiceCard key={service.id} service={service} index={index} />
             ))}
@@ -204,7 +187,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
               {service.icon}
             </div>
             <div className={`rounded-full bg-gradient-to-r ${service.color} px-3 py-1 text-xs font-semibold text-white shadow-sm`}>
-              {index === 0 ? 'Popular' : 'Enterprise'}
+              Enterprise
             </div>
           </div>
           <CardTitle className="mb-3 text-2xl font-bold">{service.title}</CardTitle>

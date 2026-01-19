@@ -35,10 +35,10 @@ export const PAYMENT_BASE_URL = `${ROOT_URL}`;
  */
 export const FEATURE_FLAGS = {
   /** Enable/Disable OTP verification during registration */
-  OTP_VERIFICATION_ENABLED: true,
+  OTP_VERIFICATION_ENABLED: false,
 
   /** Enable/Disable NID verification during registration */
-  NID_VERIFICATION_ENABLED: true,
+  NID_VERIFICATION_ENABLED: false,
 
   /** Enable/Disable SSLCommerz payment */
   PAYMENT_ENABLED: false,

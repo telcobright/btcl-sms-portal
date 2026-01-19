@@ -555,12 +555,12 @@ export default function RegisterPage() {
       console.log('\n🔵 STEP 3: Logging in to get JWT token...');
       console.log('Login credentials:', {
         email: verifiedEmail,
-        passwordLength: 8,
+        passwordLength: personalInfoData.password.length,
       });
 
       const loginResponse = await loginPartner(
         verifiedEmail,
-        '11111111'
+        personalInfoData.password
       );
 
       const jwtToken = loginResponse.token;

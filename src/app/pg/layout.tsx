@@ -11,11 +11,11 @@ export default function PgLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <head>
                 <link rel="icon" href="/fabicon.png" />
             </head>
-            <body className="font-sans">
+            <body className="font-sans" suppressHydrationWarning>
                 {children}
             </body>
         </html>

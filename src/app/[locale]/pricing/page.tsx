@@ -76,7 +76,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ivr: 2,
       freeTalktime: 500,
       callCharge: 0.45,
-      price: 12,
+      price: 2,
       popular: false,
       features: [
         locale === 'en' ? '10 Extensions' : '১০টি এক্সটেনশন',

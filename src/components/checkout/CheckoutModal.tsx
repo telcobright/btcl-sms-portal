@@ -299,12 +299,6 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             return { success: true, data };
         } catch (error) {
             console.error('Hosted PBX purchase failed:', error);
-            toast.error(
-                locale === 'en'
-                    ? 'Hosted PBX activation failed. Please contact support.'
-                    : 'হোস্টেড PBX সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
-                { id: 'pbx-purchase' }
-            );
             return { success: false, error };
         }
     };

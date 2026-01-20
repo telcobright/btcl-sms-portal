@@ -185,8 +185,6 @@ function SuccessContent() {
 
                     if (result.success) {
                         toast.success('Hosted PBX package activated successfully!', { id: 'pbx-purchase' });
-                    } else {
-                        toast.error('Hosted PBX activation failed. Please contact support.', { id: 'pbx-purchase' });
                     }
 
                     setProvisionComplete(true);

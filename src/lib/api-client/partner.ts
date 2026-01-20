@@ -474,6 +474,48 @@ export const createDomain = async (
   }
 };
 
+// ---------------------- CREATE GATEWAY ----------------------
+
+export interface CreateGatewayPayload {
+  domainUuid: string;
+  gateway: string;
+  proxy: string;
+  fromDomain: string;
+  profile: string;
+  context: string;
+  register: string;
+  callerIdInFrom: string;
+  enabled: string;
+  action: string;
+}
+
+export const createGateway = async (
+  payload: CreateGatewayPayload,
+  authToken: string
+): Promise<any> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.gateway.create}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Create Gateway error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
 // ---------------------- CREATE ROUTE ----------------------
 
 export interface CreateRoutePayload {

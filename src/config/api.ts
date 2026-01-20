@@ -99,6 +99,11 @@ export const API_ENDPOINTS = {
     create: '/api/v1/domains/create',
   },
 
+  // Gateway endpoints
+  gateway: {
+    create: '/api/v1/gateways/create',
+  },
+
   // Route endpoints
   route: {
     create: '/route/create-route',

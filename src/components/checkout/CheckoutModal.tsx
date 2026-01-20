@@ -5,7 +5,7 @@ import { useState } from 'react';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
 import { initiateSSLCommerzPayment } from '@/lib/api-client/payment';
-import { getPartnerById, createDomain, createRoute, getUserByEmail, editUser } from '@/lib/api-client/partner';
+import { getPartnerById, createDomain, createGateway, createRoute, getUserByEmail, editUser } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
 import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
@@ -91,7 +91,26 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             console.log('Domain created:', domainResponse);
             const domainUuid = domainResponse.domainUuid;
 
-            // Step 3: Create route for the domain
+            // Step 3: Create gateway for the domain
+            console.log('Creating gateway for domain:', domainName);
+            const gatewayResponse = await createGateway(
+                {
+                    domainUuid: domainUuid,
+                    gateway: 'Cat',
+                    proxy: '192.168.24.101:5060',
+                    fromDomain: domainName,
+                    profile: 'external',
+                    context: 'public',
+                    register: 'false',
+                    callerIdInFrom: 'true',
+                    enabled: 'true',
+                    action: 'start',
+                },
+                authToken
+            );
+            console.log('Gateway created:', gatewayResponse);
+
+            // Step 4: Create route for the domain
             console.log('Creating route for domain:', domainName);
             const routeResponse = await createRoute(
                 {
@@ -111,12 +130,12 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             );
             console.log('Route created:', routeResponse);
 
-            // Step 4: Get user by email to get user id
+            // Step 5: Get user by email to get user id
             const userData = await getUserByEmail(email, authToken);
             console.log('User data:', userData);
             const userId = userData.id;
 
-            // Step 5: Edit user to add domainUuid
+            // Step 6: Edit user to add domainUuid
             await editUser(
                 {
                     id: userId,

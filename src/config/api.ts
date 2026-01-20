@@ -41,7 +41,7 @@ export const FEATURE_FLAGS = {
   NID_VERIFICATION_ENABLED: false,
 
   /** Enable/Disable SSLCommerz payment */
-  PAYMENT_ENABLED: false,
+  PAYMENT_ENABLED: true,
 } as const;
 
 // API Endpoints

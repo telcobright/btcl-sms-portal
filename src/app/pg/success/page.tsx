@@ -4,8 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
-import { VBS_BASE_URL, PBX_BASE_URL, API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api'
-import toast, { Toaster } from 'react-hot-toast'
+import { Toaster } from 'react-hot-toast'
 
 interface PendingProvision {
     serviceType: string;
@@ -21,182 +20,23 @@ function SuccessContent() {
     const searchParams = useSearchParams()
     const transactionId = searchParams.get('tran_id') || searchParams.get('tranId')
     const amount = searchParams.get('amount')
-    const [provisioning, setProvisioning] = useState(false)
-    const [showPbxSuccess, setShowPbxSuccess] = useState(false)
-    const [showVbsSuccess, setShowVbsSuccess] = useState(false)
+    const [serviceType, setServiceType] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState('')
 
-    // API helper function
-    const apiCall = async (url: string, method: string, body: any, authToken: string) => {
-        const response = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-            },
-            body: JSON.stringify(body),
-        });
-        if (!response.ok) throw new Error(`API call failed: ${response.status}`);
-        return response.json();
-    };
-
-    // Purchase package helper
-    const purchasePackage = async (baseUrl: string, authToken: string, partnerId: number, packageId: number, price: number) => {
-        const vat = Math.round(price * 0.15);
-        const total = price + vat;
-        const validity = 2592000;
-        const expiryDate = new Date(Date.now() + validity * 1000).toISOString().slice(0, 19);
-
-        const payload = {
-            idPackage: packageId,
-            idPartner: partnerId,
-            purchaseDate: null,
-            status: 'ACTIVE',
-            paid: total,
-            autoRenewalStatus: true,
-            price: price,
-            vat: vat,
-            ait: 0,
-            priority: 1,
-            discount: 0,
-            onSelectPriority: -1,
-            expiryDate: expiryDate,
-            total: total,
-            expireDate: null,
-            currency: null,
-            validity: validity,
-        };
-
-        return apiCall(`${baseUrl}${API_ENDPOINTS.package.purchasePackage}`, 'POST', payload, authToken);
-    };
-
-    // Provision Hosted PBX
-    const provisionHostedPbx = async (authToken: string, partnerId: number, email: string) => {
-        try {
-            toast.loading('Creating your PBX domain...', { id: 'pbx-provision' });
-
-            // Get partner details
-            const partnerData = await apiCall(
-                `${API_BASE_URL}${API_ENDPOINTS.partner.getPartner}`,
-                'POST',
-                { idPartner: partnerId },
-                authToken
-            );
-            const partnerName = partnerData.partnerName;
-            const words = partnerName.trim().split(/\s+/);
-            const domainName = `${words[0].toLowerCase()}.btcliptelephony.gov.bd`;
-
-            // Create domain
-            const domainResponse = await apiCall(
-                `${API_BASE_URL}${API_ENDPOINTS.domain.create}`,
-                'POST',
-                { domainName, enabled: true, description: partnerName },
-                authToken
-            );
-            const domainUuid = domainResponse.domainUuid;
-
-            // Create gateway
-            await apiCall(
-                `${API_BASE_URL}${API_ENDPOINTS.gateway.create}`,
-                'POST',
-                {
-                    domainUuid,
-                    gateway: 'Cat',
-                    proxy: '192.168.24.101:5060',
-                    fromDomain: domainName,
-                    profile: 'external',
-                    context: 'public',
-                    register: 'false',
-                    callerIdInFrom: 'true',
-                    enabled: 'true',
-                    action: 'start',
-                },
-                authToken
-            );
-
-            // Create route
-            await apiCall(
-                `${API_BASE_URL}${API_ENDPOINTS.route.create}`,
-                'POST',
-                {
-                    routeName: domainName,
-                    description: domainName,
-                    field5: domainName,
-                    zone: 'dhaka',
-                    nationalOrInternational: 1,
-                    field4: 5,
-                    switchId: 1,
-                    idPartner: partnerId,
-                    metaData: { sipProfileName: '' },
-                },
-                authToken
-            );
-
-            // Get user and update with PBX UUID
-            const userData = await apiCall(
-                `${AUTH_BASE_URL}${API_ENDPOINTS.user.getUserByEmail}`,
-                'POST',
-                { email },
-                authToken
-            );
-            await apiCall(
-                `${AUTH_BASE_URL}${API_ENDPOINTS.user.editUser}`,
-                'POST',
-                { id: userData.id, pbxUuid: domainUuid },
-                authToken
-            );
-
-            toast.success('PBX domain created successfully!', { id: 'pbx-provision' });
-            return { success: true };
-        } catch (error) {
-            console.error('PBX provisioning failed:', error);
-            toast.error('PBX domain creation failed.', { id: 'pbx-provision' });
-            return { success: false };
-        }
-    };
-
     useEffect(() => {
-        const handleProvision = async () => {
-            const pendingData = sessionStorage.getItem('pendingServiceProvision');
-            if (!pendingData) return;
-
+        // Read pending provision data to determine service type
+        const pendingData = sessionStorage.getItem('pendingServiceProvision');
+        if (pendingData) {
             const provision: PendingProvision = JSON.parse(pendingData);
-            const authToken = localStorage.getItem('authToken');
-            if (!authToken) return;
-
-            setProvisioning(true);
-
-            try {
-                if (provision.serviceType === 'voice-broadcast') {
-                    toast.loading('Activating Voice Broadcast...', { id: 'vbs' });
-                    await purchasePackage(VBS_BASE_URL, authToken, provision.partnerId, provision.packageIdInt, provision.price);
-                    toast.success('Voice Broadcast activated!', { id: 'vbs' });
-                    setUserEmail(provision.email);
-                    setShowVbsSuccess(true);
-                }
-
-                if (provision.serviceType === 'hosted-pbx') {
-                    await provisionHostedPbx(authToken, provision.partnerId, provision.email);
-                    toast.loading('Activating Hosted PBX...', { id: 'pbx' });
-                    await purchasePackage(PBX_BASE_URL, authToken, provision.partnerId, provision.packageIdInt, provision.price);
-                    toast.success('Hosted PBX activated!', { id: 'pbx' });
-                    setUserEmail(provision.email);
-                    setShowPbxSuccess(true);
-                }
-
-                sessionStorage.removeItem('pendingServiceProvision');
-            } catch (error) {
-                console.error('Provision error:', error);
-            }
-
-            setProvisioning(false);
-        };
-
-        handleProvision();
+            setServiceType(provision.serviceType);
+            setUserEmail(provision.email);
+            // Clear the session storage
+            sessionStorage.removeItem('pendingServiceProvision');
+        }
     }, []);
 
     // PBX Success Page
-    if (showPbxSuccess) {
+    if (serviceType === 'hosted-pbx') {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Toaster position="top-center" />
@@ -259,7 +99,7 @@ function SuccessContent() {
     }
 
     // VBS Success Page
-    if (showVbsSuccess) {
+    if (serviceType === 'voice-broadcast') {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Toaster position="top-center" />
@@ -369,9 +209,7 @@ function SuccessContent() {
                             </div>
                             <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
                                 <p className="text-sm text-green-800">
-                                    {provisioning
-                                        ? 'Activating your package, please wait...'
-                                        : 'A confirmation email has been sent to your registered email address.'}
+                                    A confirmation email has been sent to your registered email address.
                                 </p>
                             </div>
                             <div className="mt-6 space-y-3">

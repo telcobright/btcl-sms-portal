@@ -30,6 +30,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
     const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+    const [showVbsSuccessPopup, setShowVbsSuccessPopup] = useState(false);
     const [successEmail, setSuccessEmail] = useState('');
 
     const handleFormChange = (data: typeof formData) => {
@@ -342,23 +343,20 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
 
-                // Provision Hosted PBX domain and purchase package after successful purchase
+                // Show success popup for Hosted PBX
                 if (serviceType === 'hosted-pbx' && email) {
-                    await provisionHostedPbx(authToken, partnerId, email);
-                    const packageId = getPackageIdInt(pkg.id, serviceType);
-                    await purchaseHostedPbx(authToken, partnerId, packageId, pkg.price);
-
-                    // Show success popup with credentials
                     setSuccessEmail(email);
                     setShowSuccessPopup(true);
                     setLoading(false);
                     return;
                 }
 
-                // Purchase Voice Broadcast package after successful purchase
-                if (serviceType === 'voice-broadcast') {
-                    const packageId = getPackageIdInt(pkg.id, serviceType);
-                    await purchaseVoiceBroadcast(authToken, partnerId, packageId, pkg.price);
+                // Show success popup for Voice Broadcast
+                if (serviceType === 'voice-broadcast' && email) {
+                    setSuccessEmail(email);
+                    setShowVbsSuccessPopup(true);
+                    setLoading(false);
+                    return;
                 }
 
                 onClose();
@@ -456,6 +454,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
 
     const handleCloseSuccessPopup = () => {
         setShowSuccessPopup(false);
+        setShowVbsSuccessPopup(false);
         onClose();
     };
 
@@ -530,6 +529,104 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                                     className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
                                 >
                                     {locale === 'en' ? 'Go to PBX Portal' : 'PBX পোর্টালে যান'} →
+                                </a>
+                            </div>
+
+                            {/* Note */}
+                            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                <p className="text-xs text-amber-800">
+                                    <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
+                                    {locale === 'en'
+                                        ? 'Please change your password after first login for security.'
+                                        : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
+                                </p>
+                            </div>
+
+                            {/* Close Button */}
+                            <button
+                                onClick={handleCloseSuccessPopup}
+                                className="w-full mt-4 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                            >
+                                {locale === 'en' ? 'Close' : 'বন্ধ করুন'}
+                            </button>
+                        </div>
+                    </Dialog.Panel>
+                </div>
+            </Dialog>
+        );
+    }
+
+    // Success Popup for Voice Broadcast
+    if (showVbsSuccessPopup) {
+        return (
+            <Dialog open={isOpen} onClose={handleCloseSuccessPopup} className="relative z-50 font-bengali">
+                <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
+
+                <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
+                    <Dialog.Panel className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        {/* Success Header */}
+                        <div className="bg-gradient-to-r from-[#00A651] to-[#004225] px-6 py-8 text-center">
+                            <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+                                <svg
+                                    className="w-12 h-12 text-[#00A651]"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={3}
+                                        d="M5 13l4 4L19 7"
+                                    />
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-white">
+                                {locale === 'en' ? 'Congratulations!' : 'অভিনন্দন!'}
+                            </h2>
+                            <p className="text-green-100 mt-2">
+                                {locale === 'en'
+                                    ? 'Your Voice Broadcast is ready!'
+                                    : 'আপনার ভয়েস ব্রডকাস্ট প্রস্তুত!'}
+                            </p>
+                        </div>
+
+                        {/* Credentials Section */}
+                        <div className="px-6 py-6">
+                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                    <svg className="w-5 h-5 mr-2 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                    </svg>
+                                    {locale === 'en' ? 'Your Login Credentials' : 'আপনার লগইন তথ্য'}
+                                </h3>
+
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                        <span className="text-gray-600">{locale === 'en' ? 'Email' : 'ইমেইল'}</span>
+                                        <span className="font-semibold text-gray-900">{successEmail}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                        <span className="text-gray-600">{locale === 'en' ? 'Password' : 'পাসওয়ার্ড'}</span>
+                                        <span className="font-mono font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded">11111111</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Portal Link */}
+                            <div className="mt-6">
+                                <p className="text-sm text-gray-600 mb-3 text-center">
+                                    {locale === 'en'
+                                        ? 'Access your Voice Broadcast Portal:'
+                                        : 'আপনার ভয়েস ব্রডকাস্ট পোর্টালে প্রবেশ করুন:'}
+                                </p>
+                                <a
+                                    href="https://vbs.btcliptelephony.gov.bd/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                                >
+                                    {locale === 'en' ? 'Go to VBS Portal' : 'VBS পোর্টালে যান'} →
                                 </a>
                             </div>
 

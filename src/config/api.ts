@@ -77,6 +77,7 @@ export const API_ENDPOINTS = {
   package: {
     getPurchaseForPartner: '/package/getPurchaseForPartner',
     purchasePackage: '/package/purchase-package',
+    getAllPurchasePartnerWise: '/package/get-all-purchase-partner-wise',
   },
 
   // User/Dashboard endpoints

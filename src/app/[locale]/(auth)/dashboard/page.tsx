@@ -157,6 +157,20 @@ interface PurchaseForPartner {
   packageAccounts: PackageAccount[];
 }
 
+interface PurchaseHistory {
+  id: number;
+  idPackage: number;
+  idPartner: number;
+  packageName: string;
+  partnerName: string;
+  purchaseDate: string;
+  expireDate: string;
+  price: number;
+  vat: number;
+  ait: number;
+  status: string;
+}
+
 interface ActivePackageDetails {
   packageName: string | null;
   unit: string;
@@ -299,6 +313,21 @@ export default function Dashboard() {
     name: string;
   } | null>(null);
   const [partnerID, setPartnerID] = useState<string | null>(null);
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
+
+  // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
+  const isPrepaid = partnerData?.customerPrePaid === 1;
+  const paymentType = isPrepaid ? 'Prepaid' : 'Postpaid';
+
+  // Calculate invoice due date (1st of next month for postpaid)
+  const getInvoiceDueDate = (purchaseDate: string | null): Date | null => {
+    if (isPrepaid) return null;
+    const date = purchaseDate ? new Date(purchaseDate) : new Date();
+    const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+    return nextMonth;
+  };
 
   console.log('purchaseForPartner', purchaseForPartner);
 
@@ -315,6 +344,7 @@ export default function Dashboard() {
           setPartnerID(String(idPartner));
           fetchUserData(idPartner);
           fetchPurchaseForPartner(idPartner);
+          fetchPurchaseHistory(idPartner);
         }
       } catch (error) {
         console.error('Error decoding token:', error);
@@ -349,16 +379,17 @@ export default function Dashboard() {
         throw new Error('Failed to fetch partner details');
       }
 
-      const partnerData: PartnerData = await response.json();
+      const fetchedPartnerData: PartnerData = await response.json();
+      setPartnerData(fetchedPartnerData);
 
       // Map API response to UserData
       const basicUserData: UserData = {
-        firstName: partnerData.partnerName || '',
+        firstName: fetchedPartnerData.partnerName || '',
         lastName: '',
-        email: partnerData.email || '',
-        phone: partnerData.telephone || '',
+        email: fetchedPartnerData.email || '',
+        phone: fetchedPartnerData.telephone || '',
         password: password,
-        partnerId: partnerData.idPartner,
+        partnerId: fetchedPartnerData.idPartner,
       };
 
       setUserData(basicUserData);
@@ -390,13 +421,14 @@ export default function Dashboard() {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch partner data');
+        console.warn('Partner extra API returned non-OK status:', response.status);
+        return;
       }
 
       const data: PartnerExtra = await response.json();
       setPartnerExtra(data);
     } catch (err) {
-      console.error('Error fetching partner extra:', err);
+      console.warn('Error fetching partner extra (non-critical):', err);
     }
   };
 
@@ -452,6 +484,231 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error('Error fetching partner extra:', err);
+    }
+  };
+
+  const fetchPurchaseHistory = async (partnerId: number) => {
+    try {
+      setLoadingInvoices(true);
+      const authToken = localStorage.getItem('authToken');
+
+      const response = await fetch(
+        buildApiUrl(API_ENDPOINTS.package.getAllPurchasePartnerWise),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            page: 0,
+            size: 20,
+            idPartner: partnerId
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch purchase history');
+      }
+
+      const data = await response.json();
+      const purchaseList = Array.isArray(data) ? data : (data.content || data.data || data.purchases || data.list || []);
+      setPurchaseHistory(purchaseList);
+    } catch (err) {
+      console.error('Error fetching purchase history:', err);
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
+
+  // Generate and download invoice as PDF
+  const handleDownloadInvoice = (purchase: PurchaseHistory) => {
+    const invoiceId = `INV-${purchase.id || '00000'}`;
+    const pkgName = purchase.packageName || 'Package';
+    const partnerName = purchase.partnerName || 'Customer';
+    const purchaseDate = purchase.purchaseDate;
+    const expireDate = purchase.expireDate;
+    const amount = purchase.price || 0;
+    const vat = purchase.vat || 0;
+    const ait = purchase.ait || 0;
+    const total = amount + vat + ait;
+    const status = purchase.status || 'ACTIVE';
+    const invoiceDueDate = getInvoiceDueDate(purchaseDate);
+
+    const formatDate = (dateStr: string | null) => {
+      if (!dateStr) return '-';
+      return new Date(dateStr).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    };
+
+    const formatDateObj = (date: Date | null) => {
+      if (!date) return '-';
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    };
+
+    // Create invoice HTML
+    const invoiceHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Invoice ${invoiceId}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+          .invoice { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #067a3e, #045a2e); color: white; padding: 30px; }
+          .header h1 { font-size: 28px; margin-bottom: 5px; }
+          .header p { opacity: 0.9; }
+          .company-info { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 20px; }
+          .company-info div { font-size: 14px; }
+          .content { padding: 30px; }
+          .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }
+          .invoice-meta h2 { color: #067a3e; font-size: 20px; margin-bottom: 2px; }
+          .invoice-meta .details { text-align: right; }
+          .invoice-meta .details p { margin: 2px 0; color: #666; font-size: 13px; }
+          .invoice-meta .details strong { color: #333; }
+          .bill-to { margin-bottom: 15px; }
+          .bill-to h3 { color: #333; margin-bottom: 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+          .bill-to p { color: #666; }
+          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .items-table th { background: #f8f9fa; padding: 15px; text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #e0e0e0; }
+          .items-table td { padding: 15px; border-bottom: 1px solid #f0f0f0; color: #555; }
+          .items-table .amount { text-align: right; }
+          .totals { margin-left: auto; width: 300px; }
+          .totals .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+          .totals .row.total { border-bottom: none; border-top: 2px solid #067a3e; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #067a3e; }
+          .status { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+          .status.paid { background: #d4edda; color: #155724; }
+          .status.pending { background: #fff3cd; color: #856404; }
+          .status.active { background: #d4edda; color: #155724; }
+          .status.expired { background: #f8d7da; color: #721c24; }
+          .payment-type { display: inline-block; padding: 6px 12px; border-radius: 15px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+          .payment-type.prepaid { background: #dbeafe; color: #1e40af; }
+          .payment-type.postpaid { background: #f3e8ff; color: #7c3aed; }
+          .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; color: #666; font-size: 12px; }
+          .footer p { margin: 5px 0; }
+          @media print {
+            body { background: white; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            .invoice { box-shadow: none; }
+            .header { background: linear-gradient(135deg, #067a3e, #045a2e) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .status { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .items-table th { background: #f8f9fa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .footer { background: #f8f9fa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .payment-type { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice">
+          <div class="header">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <img src="${window.location.origin}/btcllogo.png" alt="BTCL Logo" style="height: 60px; width: auto;" onerror="this.style.display='none'" />
+              <div style="text-align: right;">
+                <h1 style="margin: 0;">BTCL SMS Portal</h1>
+                <p style="margin: 0;">Bangladesh Telecommunications Company Limited</p>
+              </div>
+            </div>
+            <div class="company-info">
+              <div>
+                <p>Telesales Building, 37/E, Eskaton Garden</p>
+                <p>Dhaka-1000, Bangladesh</p>
+                <p>Phone: +880-2-4831115000</p>
+              </div>
+              <div style="text-align: right;">
+                <p>Email: mdoffice@btcl.gov.bd</p>
+                <p>Website: www.btcl.gov.bd</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="content">
+            <div class="invoice-meta">
+              <div>
+                <h2>INVOICE <span class="payment-type ${isPrepaid ? 'prepaid' : 'postpaid'}">${paymentType}</span></h2>
+                <p style="color: #067a3e; font-weight: 600; font-size: 18px;">${invoiceId}</p>
+              </div>
+              <div class="details">
+                <p><strong>Invoice Date:</strong> ${formatDate(purchaseDate)}</p>
+                <p><strong>Package Expire Date:</strong> ${formatDate(expireDate)}</p>
+                ${!isPrepaid ? `<p><strong>Invoice Due Date:</strong> ${formatDateObj(invoiceDueDate)}</p>` : ''}
+              </div>
+            </div>
+
+            <div class="bill-to">
+              <h3>Bill To</h3>
+              <p><strong>${partnerName}</strong></p>
+            </div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Purchase Date</th>
+                  <th>Package Expire Date</th>
+                  ${!isPrepaid ? '<th>Invoice Due Date</th>' : ''}
+                  <th>Status</th>
+                  <th class="amount">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>${pkgName}</strong><br>
+                    <span style="color: #888; font-size: 13px;">SMS Package Subscription</span>
+                  </td>
+                  <td>${formatDate(purchaseDate)}</td>
+                  <td>${formatDate(expireDate)}</td>
+                  ${!isPrepaid ? `<td>${formatDateObj(invoiceDueDate)}</td>` : ''}
+                  <td><span class="status ${status.toLowerCase()}">${status}</span></td>
+                  <td class="amount">৳${amount.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="totals">
+              <div class="row">
+                <span>Subtotal</span>
+                <span>৳${amount.toLocaleString()}</span>
+              </div>
+              ${vat > 0 ? `<div class="row"><span>VAT</span><span>৳${vat.toLocaleString()}</span></div>` : ''}
+              ${ait > 0 ? `<div class="row"><span>AIT</span><span>৳${ait.toLocaleString()}</span></div>` : ''}
+              <div class="row total">
+                <span>Total</span>
+                <span>৳${total.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p><strong>Thank you for choosing BTCL SMS Portal!</strong></p>
+            <p>For any queries, please contact our support team at mdoffice@btcl.gov.bd</p>
+            <p style="margin-top: 10px; color: #999;">This is a computer-generated invoice and does not require a signature.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Open in new window for printing/saving as PDF
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(invoiceHTML);
+      printWindow.document.close();
+      printWindow.focus();
+
+      // Auto-trigger print dialog after a short delay
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
     }
   };
 
@@ -1393,6 +1650,146 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Invoice History */}
+        <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Invoice History</h3>
+          </div>
+
+          {loadingInvoices ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-[#067a3e] animate-spin" />
+            </div>
+          ) : purchaseHistory && purchaseHistory.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Invoice ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Package</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Customer Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Purchase Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Package Expire Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Invoice Due Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {purchaseHistory.map((purchase, index) => {
+                    const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
+                    const pkgName = purchase.packageName || 'Package';
+                    const purchaseDate = purchase.purchaseDate;
+                    const expireDate = purchase.expireDate;
+                    const amount = purchase.price || 0;
+                    const vat = purchase.vat || 0;
+                    const total = amount + vat;
+                    const status = purchase.status || 'ACTIVE';
+                    const invoiceDueDate = getInvoiceDueDate(purchaseDate);
+
+                    return (
+                      <tr key={purchase.id || index} className="hover:bg-gradient-to-r hover:from-green-50/80 hover:to-green-50/40 transition-all duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-mono font-medium text-[#067a3e]">{invoiceId}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{pkgName}</p>
+                            {purchase.partnerName && (
+                              <p className="text-xs text-gray-500">{purchase.partnerName}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                            isPrepaid
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {paymentType}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-700">
+                            {purchaseDate ? new Date(purchaseDate).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            }) : '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-700">
+                            {expireDate ? new Date(expireDate).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            }) : '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-700">
+                            {invoiceDueDate ? invoiceDueDate.toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            }) : '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">৳{total.toLocaleString()}</p>
+                            {vat > 0 && (
+                              <p className="text-xs text-gray-500">incl. VAT ৳{vat.toLocaleString()}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span
+                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                              status === 'ACTIVE' || status === 'active'
+                                ? 'bg-green-100 text-green-700'
+                                : status === 'EXPIRED' || status === 'expired'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <button
+                            onClick={() => handleDownloadInvoice(purchase)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            title="Download Invoice"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-lg font-medium mb-2">No invoices found</p>
+              <p className="text-sm">Your purchase history will appear here</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

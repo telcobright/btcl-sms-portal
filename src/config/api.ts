@@ -93,7 +93,7 @@ export const API_ENDPOINTS = {
     pbxInitiate: '/api/payment/ssl/pbx/initiate', // Hosted PBX
     vbsInitiate: '/api/payment/ssl/vbs/initiate', // Voice Broadcast
     ccInitiate: '/api/payment/ssl/cc/initiate', // Contact Center
-    unifiedPurchase: '/api/unified/purchase', // Unified purchase (handles both payment gateway & direct purchase)
+    unifiedPurchase: '/api/payment/unified/purchase', // Unified purchase (handles both payment gateway & direct purchase)
   },
 
   // Domain/PBX endpoints

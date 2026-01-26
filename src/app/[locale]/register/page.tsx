@@ -11,7 +11,7 @@ import {
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { FEATURE_FLAGS, API_BASE_URL, NID_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
@@ -43,6 +43,7 @@ type PersonalInfo = {
 };
 
 type OtherInfo = {
+  customerType: 'prepaid' | 'postpaid';
   address1: string;
   address2?: string;
   address3: string;
@@ -81,13 +82,14 @@ export default function RegisterPage() {
   const [nidVerificationFailed, setNidVerificationFailed] = useState(false);
   const [isVerifyingNid, setIsVerifyingNid] = useState(false);
   const [nidVerificationData, setNidVerificationData] = useState<any>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const router = useRouter();
   const { checkAuth } = useAuth();
 
   // Form hooks for each step
   const verificationForm = useForm<VerificationInfo>({
-    mode: 'onBlur',
+    mode: 'onChange',
     defaultValues: {
       companyName: '',
       email: '',
@@ -97,7 +99,7 @@ export default function RegisterPage() {
   });
 
   const personalInfoForm = useForm<PersonalInfo>({
-    mode: 'onBlur',
+    mode: 'onChange',
     defaultValues: {
       fullName: '',
       alternateNameOther: '',
@@ -112,8 +114,9 @@ export default function RegisterPage() {
   });
 
   const otherInfoForm = useForm<OtherInfo>({
-    mode: 'onBlur',
+    mode: 'onChange',
     defaultValues: {
+      customerType: 'prepaid',
       address1: '',
       address2: '',
       address3: '',
@@ -146,6 +149,10 @@ export default function RegisterPage() {
   const {
     formState: { isValid: isOtherInfoValid },
   } = otherInfoForm;
+
+  // Watch specific form fields
+  const watchedNidDigitType = useWatch({ control: personalInfoForm.control, name: 'nidDigitType' });
+  const watchedCustomerType = useWatch({ control: otherInfoForm.control, name: 'customerType' });
 
   // Watch verification form fields for Send OTP button
   useEffect(() => {
@@ -514,6 +521,9 @@ export default function RegisterPage() {
         const fullName = personalInfoData.fullName;
       // 2. First call: create partner (NO TOKEN REQUIRED)
       console.log('\n🔵 STEP 2: Creating partner account...');
+        // Set customerPrePaid based on customer type selection
+        const customerPrePaidValue = otherInfoData.customerType === 'prepaid' ? 1 : 2;
+
         const partnerPayload = {
             partnerName: companyName,
             alternateNameOther: personalInfoData.alternateNameOther || fullName,
@@ -529,7 +539,7 @@ export default function RegisterPage() {
             country: otherInfoData.country,
             vatRegistrationNo: otherInfoData.tinNumber || 'N/A',
             invoiceAddress: otherInfoData.address1,
-            customerPrePaid: 1,
+            customerPrePaid: customerPrePaidValue,
             partnerType: 3,
             defaultCurrency: 1,
             callSrcId: 2,
@@ -627,10 +637,10 @@ export default function RegisterPage() {
 
         checkAuth();
         toast.success(
-          'Registration completed successfully! You are now logged in.'
+          'Registration completed successfully!'
         );
-        console.log('✅ Registration complete! Redirecting to dashboard...');
-        router.push(`/${locale}/dashboard`);
+        console.log('✅ Registration complete! Showing success popup...');
+        setShowSuccessPopup(true);
       } catch (loginError) {
         console.error('⚠️ Auto login failed:', loginError);
         // Still show success message but redirect to login page
@@ -655,6 +665,49 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex flex-col items-center">
+              <div className="bg-green-500 rounded-full p-4 mb-4">
+                <svg
+                  className="w-16 h-16 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-green-600 mb-2 text-center">
+                Registration Successful!
+              </h3>
+              <p className="text-gray-600 text-center mb-2">
+                Your account has been created successfully.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-6 w-full">
+                <p className="text-amber-800 text-sm text-center">
+                  <strong>Important:</strong> Please change your default password after logging in for security.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push(`/${locale}/dashboard`)}
+                className="bg-[#00A651] text-white px-6 py-3 rounded-md hover:bg-[#008f44] transition w-full font-medium"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="min-h-screen bg-gray-50 py-10">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
           {/* Title */}
@@ -1118,7 +1171,7 @@ export default function RegisterPage() {
                         </div>
                       )}
                     />
-                    {personalInfoForm.watch('nidDigitType') === '17' && (
+                    {watchedNidDigitType === '17' && (
                       <p className="text-blue-600 text-sm mt-2">
                         💡 Please add birth year with the NID number to match 17 digits
                       </p>
@@ -1135,7 +1188,7 @@ export default function RegisterPage() {
                       rules={{
                         required: 'NID number is required',
                         validate: (value) => {
-                          const digitType = personalInfoForm.watch('nidDigitType');
+                          const digitType = watchedNidDigitType;
                           if (digitType === '10' && value.length !== 10) {
                             return 'NID must be exactly 10 digits';
                           }
@@ -1154,11 +1207,11 @@ export default function RegisterPage() {
                             type="text"
                             {...field}
                             placeholder={
-                              personalInfoForm.watch('nidDigitType') === '10'
+                              watchedNidDigitType === '10'
                                 ? 'Enter 10-digit NID'
                                 : 'Enter 17-digit NID'
                             }
-                            maxLength={personalInfoForm.watch('nidDigitType') === '10' ? 10 : 17}
+                            maxLength={watchedNidDigitType === '10' ? 10 : 17}
                             className={`w-full px-3 py-2 border ${
                               fieldState.error
                                 ? 'border-red-500'
@@ -1274,6 +1327,51 @@ export default function RegisterPage() {
               onSubmit={otherInfoForm.handleSubmit(handleOtherInfoSubmit)}
               className="space-y-6"
             >
+              {/* Customer Type Selection */}
+              <div className="mb-6">
+                <label className="block text-black font-medium mb-2">
+                  Customer Type
+                </label>
+                <Controller
+                  name="customerType"
+                  control={otherInfoForm.control}
+                  render={({ field }) => (
+                    <div className="flex gap-6">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          {...field}
+                          value="prepaid"
+                          checked={field.value === 'prepaid'}
+                          onChange={() => field.onChange('prepaid')}
+                          className="mr-2"
+                        />
+                        <span className="text-black">Prepaid</span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          {...field}
+                          value="postpaid"
+                          checked={field.value === 'postpaid'}
+                          onChange={() => field.onChange('postpaid')}
+                          className="mr-2"
+                        />
+                        <span className="text-black">Postpaid</span>
+                      </label>
+                    </div>
+                  )}
+                />
+                {/* T&C Note for Postpaid */}
+                {watchedCustomerType === 'postpaid' && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <p className="text-amber-800 text-sm">
+                      <strong>Note:</strong> T&C applied for postpaid customers. Credit limits and payment terms will be discussed after registration.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-black font-medium mb-1">
@@ -1612,23 +1710,6 @@ export default function RegisterPage() {
 
                 <div className="mt-4">
                   <label className="block text-black font-medium mb-1">
-                    Upload Joint Stock Registration Documents (Optional)
-                  </label>
-                  <Controller
-                    name="jointStockFile"
-                    control={otherInfoForm.control}
-                    render={({ field: { onChange } }) => (
-                      <input
-                        type="file"
-                        onChange={(e) => onChange(e.target.files?.[0] || null)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
-                      />
-                    )}
-                  />
-                </div>
-
-                <div className="mt-4">
-                  <label className="block text-black font-medium mb-1">
                     Upload BTRC Registration (Optional)
                   </label>
                   <Controller
@@ -1661,22 +1742,6 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                <div className="mt-4">
-                  <label className="block text-black font-medium mb-1">
-                    Upload SLA (Optional)
-                  </label>
-                  <Controller
-                    name="slaFile"
-                    control={otherInfoForm.control}
-                    render={({ field: { onChange } }) => (
-                      <input
-                        type="file"
-                        onChange={(e) => onChange(e.target.files?.[0] || null)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
-                      />
-                    )}
-                  />
-                </div>
               </div>
 
               <Controller

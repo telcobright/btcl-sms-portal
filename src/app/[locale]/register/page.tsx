@@ -715,7 +715,7 @@ export default function RegisterPage() {
             <h1 className="text-2xl font-bold text-black">
               {step === 1 && 'Verify Your Phone Number'}
               {step === 2 && 'Verify Your NID'}
-              {step === 3 && 'Upload Your Documents'}
+              {step === 3 && 'Upload Your Documents and Additional Data'}
             </h1>
             <p className="text-gray-600">
               Please provide your information to get started
@@ -1366,7 +1366,7 @@ export default function RegisterPage() {
                 {watchedCustomerType === 'postpaid' && (
                   <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
                     <p className="text-amber-800 text-sm">
-                      <strong>Note:</strong> T&C applied for postpaid customers. Credit limits and payment terms will be discussed after registration.
+                      <strong>Note:</strong> T&C applies to postpaid customers. Postpaid billing is applicable only for Hosted PBX purchases. All other services will remain prepaid.
                     </p>
                   </div>
                 )}

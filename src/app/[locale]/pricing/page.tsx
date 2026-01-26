@@ -383,7 +383,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {pbxPackages.map((pkg) => {
-                        const credit = pkg.price * 6;
+                        const priceWithVat = Math.round(pkg.price * 1.15);
+                        const credit = priceWithVat * 6;
                         return (
                           <div key={pkg.id} className="bg-white rounded-lg p-4 border border-blue-100">
                             <span className="font-bold text-gray-900">{pkg.name}:</span>

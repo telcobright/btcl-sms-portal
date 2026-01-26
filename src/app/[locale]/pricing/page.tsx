@@ -382,18 +382,16 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                         : 'আপনি যদি পোস্টপেইড বিলিং বেছে নেন, আপনি আপনার প্যাকেজ অনুযায়ী মাসিক ক্রেডিট পাবেন:'}
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-white rounded-lg p-4 border border-blue-100">
-                        <span className="font-bold text-gray-900">{locale === 'en' ? 'Bronze' : 'ব্রোঞ্জ'}:</span>
-                        <span className="ml-2 text-blue-700 font-semibold">৳5,000 {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 border border-blue-100">
-                        <span className="font-bold text-gray-900">{locale === 'en' ? 'Silver' : 'সিলভার'}:</span>
-                        <span className="ml-2 text-blue-700 font-semibold">৳10,000 {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 border border-blue-100">
-                        <span className="font-bold text-gray-900">{locale === 'en' ? 'Gold' : 'গোল্ড'}:</span>
-                        <span className="ml-2 text-blue-700 font-semibold">৳20,000 {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
-                      </div>
+                      {pbxPackages.map((pkg) => {
+                        const extCount = typeof pkg.extensions === 'number' ? pkg.extensions : 100;
+                        const credit = extCount * pkg.price * 6;
+                        return (
+                          <div key={pkg.id} className="bg-white rounded-lg p-4 border border-blue-100">
+                            <span className="font-bold text-gray-900">{pkg.name}:</span>
+                            <span className="ml-2 text-blue-700 font-semibold">৳{credit.toLocaleString()} {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                     <p className="text-sm text-blue-600 mt-3">
                       {locale === 'en'

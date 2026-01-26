@@ -1,10 +1,10 @@
 'use client';
 
 import { Dialog } from '@headlessui/react';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
-import { initiateSSLCommerzPayment } from '@/lib/api-client/payment';
+import { initiateSSLCommerzPayment, unifiedPurchase } from '@/lib/api-client/payment';
 import { getPartnerById, createDomain, createGateway, createRoute, getUserByEmail, editUser } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
@@ -32,6 +32,48 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [showVbsSuccessPopup, setShowVbsSuccessPopup] = useState(false);
     const [successEmail, setSuccessEmail] = useState('');
+    const [userHasPbx, setUserHasPbx] = useState(false);
+    const [purchasedPackageName, setPurchasedPackageName] = useState('');
+    const [customerPrePaid, setCustomerPrePaid] = useState<number | null>(null);
+    const [partnerDataLoading, setPartnerDataLoading] = useState(true);
+
+    // Fetch partner data to get customerPrePaid when modal opens
+    useEffect(() => {
+        const fetchPartnerPrePaidStatus = async () => {
+            if (!isOpen) return;
+
+            try {
+                setPartnerDataLoading(true);
+                const { partnerId, authToken } = getTokenData();
+
+                if (!partnerId || !authToken) {
+                    setCustomerPrePaid(1); // Default to payment gateway
+                    setPartnerDataLoading(false);
+                    return;
+                }
+
+                const partnerData = await getPartnerById(partnerId, authToken);
+                const prePaidValue = partnerData.customerPrePaid || 1;
+                setCustomerPrePaid(prePaidValue);
+
+                // Auto-select SSLCommerz if customerPrePaid is 1
+                if (prePaidValue === 1) {
+                    setSelectedPayment('SSLcommerz');
+                }
+                // If customerPrePaid is 2, no payment method needed but set a placeholder
+                if (prePaidValue === 2) {
+                    setSelectedPayment('direct');
+                }
+            } catch (error) {
+                console.error('Failed to fetch partner prePaid status:', error);
+                setCustomerPrePaid(1); // Default to payment gateway on error
+            } finally {
+                setPartnerDataLoading(false);
+            }
+        };
+
+        fetchPartnerPrePaidStatus();
+    }, [isOpen]);
 
     const handleFormChange = (data: typeof formData) => {
         setFormData(data);
@@ -325,7 +367,8 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
     };
 
     const handleCheckout = async () => {
-        if (!selectedPayment) {
+        // Only require payment method if customerPrePaid is 1 (payment gateway)
+        if (customerPrePaid === 1 && !selectedPayment) {
             toast.error(locale === 'en' ? 'Please select a payment method.' : 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন।');
             return;
         }
@@ -345,7 +388,15 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
 
                 // Show success popup for Hosted PBX
                 if (serviceType === 'hosted-pbx' && email) {
+                    // Check if user already has PBX
+                    try {
+                        const userData = await getUserByEmail(email, authToken!);
+                        setUserHasPbx(!!userData?.pbxUuid);
+                    } catch (e) {
+                        setUserHasPbx(false);
+                    }
                     setSuccessEmail(email);
+                    setPurchasedPackageName(pkg.name);
                     setShowSuccessPopup(true);
                     setLoading(false);
                     return;
@@ -363,10 +414,14 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 return;
             }
 
-            // Get partner details for customer info
-            toast.loading(locale === 'en' ? 'Preparing payment...' : 'পেমেন্ট প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
+            // Get partner details for customer info and customerPrePaid value
+            toast.loading(locale === 'en' ? 'Preparing purchase...' : 'ক্রয় প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
             const partnerData = await getPartnerById(partnerId, authToken);
             toast.dismiss('payment-prep');
+
+            // Get customerPrePaid from partner data (1 = payment gateway, 2 = direct purchase)
+            const customerPrePaid = partnerData.customerPrePaid || 1;
+            console.log('Customer PrePaid type:', customerPrePaid);
 
             // Set product name and category based on service type
             const getProductDetails = () => {
@@ -419,34 +474,72 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType) ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000), // 30 days in seconds
             };
 
-            console.log('Payment payload:', payload);
+            console.log('Unified Purchase payload:', payload);
             console.log('Service type:', serviceType);
+            console.log('Customer PrePaid:', customerPrePaid);
 
-            const response = await initiateSSLCommerzPayment(payload, serviceType);
-            console.log('Payment response:', response);
+            // Call unified purchase API
+            const response = await unifiedPurchase(payload, serviceType, customerPrePaid);
+            console.log('Unified Purchase response:', response);
 
-            // Get redirect URL from response
-            const redirectUrl = response.redirectUrl || response.GatewayPageURL || response;
+            // customerPrePaid = 1: Payment gateway initiated, redirect to payment URL
+            if (customerPrePaid === 1) {
+                const redirectUrl = response.redirectUrl || response.GatewayPageURL || response;
 
-            if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
-                // For real payment, the provisioning should happen after payment callback
-                // Store the service type and data in session for callback handling
-                sessionStorage.setItem('pendingServiceProvision', JSON.stringify({
-                    serviceType,
-                    partnerId,
-                    email,
-                    packageId: pkg.id,
-                    packageIdInt: getPackageIdInt(pkg.id, serviceType),
-                    packageName: pkg.name,
-                    price: pkg.price
-                }));
-                window.location.href = redirectUrl;
-            } else {
-                toast.error(locale === 'en' ? 'Payment URL not received. Please try again.' : 'পেমেন্ট URL পাওয়া যায়নি। আবার চেষ্টা করুন।');
+                if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
+                    // Store the service type and data in session for callback handling
+                    sessionStorage.setItem('pendingServiceProvision', JSON.stringify({
+                        serviceType,
+                        partnerId,
+                        email,
+                        packageId: pkg.id,
+                        packageIdInt: getPackageIdInt(pkg.id, serviceType),
+                        packageName: pkg.name,
+                        price: pkg.price
+                    }));
+                    window.location.href = redirectUrl;
+                } else {
+                    toast.error(locale === 'en' ? 'Payment URL not received. Please try again.' : 'পেমেন্ট URL পাওয়া যায়নি। আবার চেষ্টা করুন।');
+                }
+            }
+            // customerPrePaid = 2: Direct purchase completed (no payment gateway)
+            else if (customerPrePaid === 2) {
+                if (response.status === 'SUCCESS') {
+                    toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
+
+                    // Show success popup for Hosted PBX
+                    if (serviceType === 'hosted-pbx' && email) {
+                        // Check if user already has PBX
+                        try {
+                            const userData = await getUserByEmail(email, authToken);
+                            setUserHasPbx(!!userData?.pbxUuid);
+                        } catch (e) {
+                            setUserHasPbx(false);
+                        }
+                        setSuccessEmail(email);
+                        setPurchasedPackageName(pkg.name);
+                        setShowSuccessPopup(true);
+                        setLoading(false);
+                        return;
+                    }
+
+                    // Show success popup for Voice Broadcast
+                    if (serviceType === 'voice-broadcast' && email) {
+                        setSuccessEmail(email);
+                        setPurchasedPackageName(pkg.name);
+                        setShowVbsSuccessPopup(true);
+                        setLoading(false);
+                        return;
+                    }
+
+                    onClose();
+                } else {
+                    toast.error(response.message || (locale === 'en' ? 'Purchase failed. Please try again.' : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।'));
+                }
             }
         } catch (error) {
-            console.error('Payment initiation failed:', error);
-            toast.error(locale === 'en' ? 'Payment initiation failed.' : 'পেমেন্ট শুরু করতে ব্যর্থ।');
+            console.error('Purchase failed:', error);
+            toast.error(locale === 'en' ? 'Purchase failed. Please try again.' : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।');
         } finally {
             setLoading(false);
         }
@@ -488,31 +581,53 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                             </h2>
                             <p className="text-green-100 mt-2">
                                 {locale === 'en'
-                                    ? 'Your Hosted PBX is ready!'
-                                    : 'আপনার হোস্টেড PBX প্রস্তুত!'}
+                                    ? (userHasPbx ? 'Package purchased successfully!' : 'Your Hosted PBX is ready!')
+                                    : (userHasPbx ? 'প্যাকেজ সফলভাবে ক্রয় হয়েছে!' : 'আপনার হোস্টেড PBX প্রস্তুত!')}
                             </p>
                         </div>
 
-                        {/* Credentials Section */}
+                        {/* Package Details or Credentials Section */}
                         <div className="px-6 py-6">
                             <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                    <svg className="w-5 h-5 mr-2 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                    </svg>
-                                    {locale === 'en' ? 'Your Login Credentials' : 'আপনার লগইন তথ্য'}
-                                </h3>
-
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">{locale === 'en' ? 'Email' : 'ইমেইল'}</span>
-                                        <span className="font-semibold text-gray-900">{successEmail}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">{locale === 'en' ? 'Password' : 'পাসওয়ার্ড'}</span>
-                                        <span className="font-mono font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded">11111111</span>
-                                    </div>
-                                </div>
+                                {userHasPbx ? (
+                                    <>
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                            <svg className="w-5 h-5 mr-2 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            {locale === 'en' ? 'Package Purchased' : 'প্যাকেজ ক্রয় হয়েছে'}
+                                        </h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                                <span className="text-gray-600">{locale === 'en' ? 'Package' : 'প্যাকেজ'}</span>
+                                                <span className="font-semibold text-[#00A651]">{purchasedPackageName}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                                <span className="text-gray-600">{locale === 'en' ? 'Status' : 'স্ট্যাটাস'}</span>
+                                                <span className="font-semibold text-green-600">{locale === 'en' ? 'Active' : 'সক্রিয়'}</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                            <svg className="w-5 h-5 mr-2 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                            </svg>
+                                            {locale === 'en' ? 'Your Login Credentials' : 'আপনার লগইন তথ্য'}
+                                        </h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                                <span className="text-gray-600">{locale === 'en' ? 'Email' : 'ইমেইল'}</span>
+                                                <span className="font-semibold text-gray-900">{successEmail}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                                <span className="text-gray-600">{locale === 'en' ? 'Password' : 'পাসওয়ার্ড'}</span>
+                                                <span className="font-mono font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded">11111111</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Portal Link */}
@@ -532,15 +647,17 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                                 </a>
                             </div>
 
-                            {/* Note */}
-                            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                <p className="text-xs text-amber-800">
-                                    <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
-                                    {locale === 'en'
-                                        ? 'Please change your password after first login for security.'
-                                        : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
-                                </p>
-                            </div>
+                            {/* Note - only show for new users */}
+                            {!userHasPbx && (
+                                <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                    <p className="text-xs text-amber-800">
+                                        <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
+                                        {locale === 'en'
+                                            ? 'Please change your password after first login for security.'
+                                            : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Close Button */}
                             <button
@@ -679,6 +796,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                             onFormChange={handleFormChange}
                             selectedPayment={selectedPayment}
                             onSelectPayment={handleSelectPayment}
+                            customerPrePaid={customerPrePaid}
                         />
                     </div>
                     <div className="w-full md:w-[380px]">

@@ -77,6 +77,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       freeTalktime: 500,
       callCharge: 0.45,
       price: 12,
+      postpaidCredit: 5000,
       popular: false,
       features: [
         locale === 'en' ? '10 Extensions' : '১০টি এক্সটেনশন',
@@ -101,6 +102,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       freeTalktime: 1000,
       callCharge: 0.40,
       price: 25,
+      postpaidCredit: 10000,
       popular: true,
       features: [
         locale === 'en' ? '30 Extensions' : '৩০টি এক্সটেনশন',
@@ -125,6 +127,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       freeTalktime: 3000,
       callCharge: 0.35,
       price: 45,
+      postpaidCredit: 20000,
       popular: false,
       features: [
         locale === 'en' ? 'Up to 100 Extensions*' : '১০০টি পর্যন্ত এক্সটেনশন*',
@@ -359,6 +362,48 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 </div>
               ))}
             </div>
+
+            {/* Postpaid Credit Note - Only show for Hosted PBX */}
+            {selectedService === 'hosted-pbx' && (
+              <div className="mt-10 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <h4 className="text-lg font-semibold text-blue-900 mb-2">
+                      {locale === 'en' ? 'NB: Postpaid Credit Limits' : 'বিঃদ্রঃ পোস্টপেইড ক্রেডিট সীমা'}
+                    </h4>
+                    <p className="text-blue-800 mb-3">
+                      {locale === 'en'
+                        ? 'If you choose Postpaid billing, you will receive monthly credit based on your package:'
+                        : 'আপনি যদি পোস্টপেইড বিলিং বেছে নেন, আপনি আপনার প্যাকেজ অনুযায়ী মাসিক ক্রেডিট পাবেন:'}
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-white rounded-lg p-4 border border-blue-100">
+                        <span className="font-bold text-gray-900">{locale === 'en' ? 'Bronze' : 'ব্রোঞ্জ'}:</span>
+                        <span className="ml-2 text-blue-700 font-semibold">৳5,000 {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 border border-blue-100">
+                        <span className="font-bold text-gray-900">{locale === 'en' ? 'Silver' : 'সিলভার'}:</span>
+                        <span className="ml-2 text-blue-700 font-semibold">৳10,000 {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 border border-blue-100">
+                        <span className="font-bold text-gray-900">{locale === 'en' ? 'Gold' : 'গোল্ড'}:</span>
+                        <span className="ml-2 text-blue-700 font-semibold">৳20,000 {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-blue-600 mt-3">
+                      {locale === 'en'
+                        ? '* T&C Applied. Credit limit subject to verification and approval.'
+                        : '* শর্ত প্রযোজ্য। ক্রেডিট সীমা যাচাই ও অনুমোদন সাপেক্ষে।'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
         </div>

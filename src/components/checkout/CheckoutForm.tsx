@@ -38,6 +38,7 @@ export default function CheckoutForm({
   onFormChange,
   selectedPayment,
   onSelectPayment,
+  customerPrePaid,
 }: {
   formData: {
     fullName: string;
@@ -50,10 +51,12 @@ export default function CheckoutForm({
   onFormChange: (data: any) => void;
   selectedPayment: string | null;
   onSelectPayment: (method: string) => void;
+  customerPrePaid: number | null;
 }) {
   const [loading, setLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
-  const paymentMethods = ['SSLcommerz', 'Nagad'];
+  // Only show SSLcommerz when customerPrePaid is 1
+  const paymentMethods = ['SSLcommerz'];
 
   // Fetch partner data on component mount
   useEffect(() => {
@@ -204,36 +207,55 @@ export default function CheckoutForm({
         </div>
       </fieldset>
 
-      {/* Payment Methods */}
-      <fieldset className="space-y-4">
-        <legend className="block text-lg font-semibold text-btcl-primary">3. Payment method</legend>
-        <div className="grid grid-cols-2 gap-4 mt-2">
-          {paymentMethods.map((method) => {
-            const isSelected = selectedPayment === method;
-            return (
-              <button
-                key={method}
-                type="button"
-                onClick={() => onSelectPayment(method)}
-                className={`
-                  rounded-md py-2 text-center font-semibold
-                  transition-colors duration-300
-                  border
-                  ${
-                    isSelected
-                      ? 'bg-btcl-primary border-btcl-primary text-white'
-                      : 'bg-white border-btcl-gray-300 text-btcl-gray-700 hover:bg-btcl-primary hover:text-white'
-                  }
-                `}
-                aria-pressed={isSelected}
-                aria-label={method}
-              >
-                {method}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
+      {/* Payment Methods - Only show if customerPrePaid is 1 (payment gateway required) */}
+      {customerPrePaid === 1 && (
+        <fieldset className="space-y-4">
+          <legend className="block text-lg font-semibold text-btcl-primary">3. Payment method</legend>
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            {paymentMethods.map((method) => {
+              const isSelected = selectedPayment === method;
+              return (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => onSelectPayment(method)}
+                  className={`
+                    rounded-md py-2 text-center font-semibold
+                    transition-colors duration-300
+                    border
+                    ${
+                      isSelected
+                        ? 'bg-btcl-primary border-btcl-primary text-white'
+                        : 'bg-white border-btcl-gray-300 text-btcl-gray-700 hover:bg-btcl-primary hover:text-white'
+                    }
+                  `}
+                  aria-pressed={isSelected}
+                  aria-label={method}
+                >
+                  {method}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {/* Direct Purchase Notice - Show if customerPrePaid is 2 */}
+      {customerPrePaid === 2 && (
+        <fieldset className="space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-green-800 font-medium">Postpaid Account</span>
+            </div>
+            <p className="text-green-700 text-sm mt-2">
+              Your account is set up for postpaid billing. No payment required at checkout.
+            </p>
+          </div>
+        </fieldset>
+      )}
     </form>
   );
 }

@@ -574,6 +574,7 @@ export interface UserData {
   idPartner: number;
   authRoles: { id: number; name: string; description: string }[];
   accessRules: string | null;
+  pbxUuid?: string | null;
 }
 
 export const getUserByEmail = async (email: string, authToken: string): Promise<UserData> => {

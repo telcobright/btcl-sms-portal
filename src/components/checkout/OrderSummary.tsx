@@ -44,13 +44,23 @@ export default function OrderSummary({
       case 'hosted-pbx':
         return `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}`;
       case 'contact-center':
-        return `${pkg.users} ${locale === 'en' ? 'Agents' : 'এজেন্ট'}`;
+        return `${pkg.quantity || 1} ${locale === 'en' ? 'Agent(s)' : 'এজেন্ট'}`;
       case 'voice-broadcast':
         return `${pkg.minutes?.toLocaleString()} ${locale === 'en' ? 'Minutes' : 'মিনিট'}`;
       default:
         return `${pkg.sms?.toLocaleString()} SMS`;
     }
   };
+
+  // Get the base price (for CC, use totalPrice if quantity > 1)
+  const getBasePrice = () => {
+    if (serviceType === 'contact-center' && pkg.totalPrice) {
+      return pkg.totalPrice;
+    }
+    return pkg.price;
+  };
+
+  const basePrice = getBasePrice();
 
   return (
     <div className="bg-btcl-gray-50 p-6 rounded-xl shadow-card text-btcl-gray-900">
@@ -99,15 +109,22 @@ export default function OrderSummary({
       )}
 
       <div className="space-y-3 text-sm">
+        {/* Show quantity for Contact Center */}
+        {serviceType === 'contact-center' && pkg.quantity > 1 && (
+          <div className="flex justify-between">
+            <span>{locale === 'en' ? 'Unit Price' : 'একক মূল্য'}</span>
+            <span>৳{pkg.price.toLocaleString()} × {pkg.quantity}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span>{locale === 'en' ? 'Subtotal' : 'সাবটোটাল'}</span>
-          <span>৳{pkg.price.toLocaleString()}</span>
+          <span>৳{basePrice.toLocaleString()}</span>
         </div>
         <div className="flex justify-between text-btcl-gray-600">
           <span>{locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}</span>
-          <span>৳{Math.round(pkg.price * 0.15).toLocaleString()}</span>
+          <span>৳{Math.round(basePrice * 0.15).toLocaleString()}</span>
         </div>
-        {serviceType === 'hosted-pbx' && (
+        {(serviceType === 'hosted-pbx' || serviceType === 'contact-center') && (
           <div className="flex justify-between text-btcl-gray-600">
             <span>{locale === 'en' ? 'Billing' : 'বিলিং'}</span>
             <span>{locale === 'en' ? 'Monthly' : 'মাসিক'}</span>
@@ -117,7 +134,7 @@ export default function OrderSummary({
         <div className="flex justify-between font-bold text-lg">
           <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
           <span className="text-btcl-primary">
-            ৳{(pkg.price + Math.round(pkg.price * 0.15)).toLocaleString()}
+            ৳{(basePrice + Math.round(basePrice * 0.15)).toLocaleString()}
           </span>
         </div>
         {serviceType === 'hosted-pbx' && pkg.callCharge && (

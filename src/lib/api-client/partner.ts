@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, API_BASE_URL_SECONDARY, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { API_BASE_URL, API_BASE_URL_SECONDARY, HCC_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
@@ -150,18 +150,22 @@ export const createPartner = async (payload: {
     callSrcId: number
 }): Promise<CreatePartnerResponse> => {
   try {
-    // Call both endpoints simultaneously
+    // Call all three endpoints simultaneously
     const primaryUrl = `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
     const secondaryUrl = `${API_BASE_URL_SECONDARY}${API_ENDPOINTS.partner.createPartner}`;
+    const hccUrl = `${HCC_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
 
-    console.log('Creating partner on both endpoints:', { primaryUrl, secondaryUrl });
+    console.log('Creating partner on all endpoints:', { primaryUrl, secondaryUrl, hccUrl });
 
-    // Make both API calls simultaneously
-    const [primaryResponse, secondaryResponse] = await Promise.allSettled([
+    // Make all API calls simultaneously
+    const [primaryResponse, secondaryResponse, hccResponse] = await Promise.allSettled([
       axios.post<CreatePartnerResponse>(primaryUrl, payload, {
         headers: { 'Content-Type': 'application/json' },
       }),
       axios.post<CreatePartnerResponse>(secondaryUrl, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      axios.post<CreatePartnerResponse>(hccUrl, payload, {
         headers: { 'Content-Type': 'application/json' },
       }),
     ]);
@@ -171,6 +175,13 @@ export const createPartner = async (payload: {
       console.log('✅ Secondary endpoint (without port) partner created:', secondaryResponse.value.data);
     } else {
       console.warn('⚠️ Secondary endpoint (without port) failed:', secondaryResponse.reason?.message);
+    }
+
+    // Log HCC endpoint result (for debugging)
+    if (hccResponse.status === 'fulfilled') {
+      console.log('✅ HCC endpoint partner created:', hccResponse.value.data);
+    } else {
+      console.warn('⚠️ HCC endpoint failed:', hccResponse.reason?.message);
     }
 
     // Use primary endpoint response

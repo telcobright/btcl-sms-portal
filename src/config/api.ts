@@ -8,7 +8,7 @@
 // ============================================
 // export const ROOT_URL = 'http://localhost:8001';
 export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
-// For production, use: 'https://a2psms.btcliptelephony.gov.bd'
+
 export const VBS_BASE_URL = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
 
 // Hosted PBX specific base URL
@@ -16,6 +16,9 @@ export const PBX_BASE_URL = 'https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHR
 
 // Secondary API URL for partner creation (without port)
 export const API_BASE_URL_SECONDARY = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
+
+// HCC API Base URL for partner creation
+export const HCC_BASE_URL = 'https://hcc.btcliptelephony.gov.bd/FREESWITCHREST';
 
 // ============================================
 // Service Base URLs (derived from ROOT_URL)

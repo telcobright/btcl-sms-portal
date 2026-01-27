@@ -1683,7 +1683,9 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {purchaseHistory.map((purchase, index) => {
+                  {purchaseHistory
+                    .filter((purchase) => isPrepaid || purchase.packageName !== 'TopUp')
+                    .map((purchase, index) => {
                     const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
                     const pkgName = purchase.packageName || 'Package';
                     const purchaseDate = purchase.purchaseDate;

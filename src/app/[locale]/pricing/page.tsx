@@ -271,7 +271,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className={`grid gap-8 ${selectedService === 'contact-center' ? 'grid-cols-1 md:grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}>
               {getCurrentPackages().map((pkg: any) => (
                 <div key={pkg.id}
                      className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>

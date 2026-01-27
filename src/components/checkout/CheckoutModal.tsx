@@ -36,6 +36,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
     const [purchasedPackageName, setPurchasedPackageName] = useState('');
     const [customerPrePaid, setCustomerPrePaid] = useState<number | null>(null);
     const [partnerDataLoading, setPartnerDataLoading] = useState(true);
+    const [agentCount, setAgentCount] = useState(1);
 
     // Fetch partner data to get customerPrePaid when modal opens
     useEffect(() => {
@@ -441,9 +442,13 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             // Clean phone number (remove + if present)
             const cleanPhone = partnerData.telephone?.replace('+', '') || '';
 
+            // For Contact Center, calculate price based on agentCount state
+            const basePrice = (serviceType === 'contact-center') ? (pkg.price * agentCount) : pkg.price;
+            const quantity = (serviceType === 'contact-center') ? agentCount : 1;
+
             // Calculate VAT (15% of price) and total
-            const vatAmount = Math.round(pkg.price * 0.15);
-            const totalAmount = pkg.price + vatAmount;
+            const vatAmount = Math.round(basePrice * 0.15);
+            const totalAmount = basePrice + vatAmount;
 
             const payload = {
                 idPackage: getPackageIdInt(pkg.id, serviceType),
@@ -463,7 +468,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 purchaseDate: null,
                 status: 'ACTIVE',
                 autoRenewalStatus: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType),
-                price: pkg.price,
+                price: basePrice,
                 vat: vatAmount,
                 ait: 0,
                 priority: 2,
@@ -472,6 +477,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 paid: 1,
                 total: totalAmount,
                 validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType) ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000), // 30 days in seconds
+                ...(serviceType === 'contact-center' && { quantity: quantity }), // Include quantity for CC
             };
 
             console.log('Unified Purchase payload:', payload);
@@ -800,8 +806,43 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                         />
                     </div>
                     <div className="w-full md:w-[380px]">
+                        {/* Agent Quantity Selector for Contact Center */}
+                        {serviceType === 'contact-center' && (
+                            <div className="bg-white rounded-xl shadow-md p-6 mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                    {locale === 'en' ? 'Select Number of Agents' : 'এজেন্ট সংখ্যা নির্বাচন করুন'}
+                                </h3>
+                                <div className="flex items-center justify-center gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAgentCount(prev => Math.max(1, prev - 1))}
+                                        className="w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-2xl transition-colors flex items-center justify-center"
+                                    >
+                                        -
+                                    </button>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={agentCount}
+                                        onChange={(e) => setAgentCount(Math.max(1, parseInt(e.target.value) || 1))}
+                                        className="w-20 text-center text-2xl font-bold border border-gray-300 rounded-lg py-2"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setAgentCount(prev => prev + 1)}
+                                        className="w-12 h-12 rounded-full bg-[#00A651] hover:bg-[#008f44] text-white font-bold text-2xl transition-colors flex items-center justify-center"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <div className="mt-4 text-center">
+                                    <span className="text-gray-600">{locale === 'en' ? 'Price per agent:' : 'প্রতি এজেন্ট মূল্য:'} </span>
+                                    <span className="font-semibold">৳{pkg?.price?.toLocaleString() || 0}/month</span>
+                                </div>
+                            </div>
+                        )}
                         <OrderSummary
-                            pkg={pkg}
+                            pkg={serviceType === 'contact-center' ? { ...pkg, quantity: agentCount, totalPrice: (pkg?.price || 0) * agentCount } : pkg}
                             onCheckout={handleCheckout}
                             loading={loading}
                             serviceType={serviceType}

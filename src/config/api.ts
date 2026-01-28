@@ -90,29 +90,11 @@ export const API_ENDPOINTS = {
     editUser: '/editUser',
   },
 
-  // Payment endpoints (service-specific)
+  // Payment endpoints
   payment: {
-    sslInitiate: '/api/payment/ssl/initiate', // Generic fallback
-    pbxInitiate: '/api/payment/ssl/pbx/initiate', // Hosted PBX
-    vbsInitiate: '/api/payment/ssl/vbs/initiate', // Voice Broadcast
-    ccInitiate: '/api/payment/ssl/cc/initiate', // Contact Center
     unifiedPurchase: '/api/payment/unified/purchase', // Unified purchase (handles both payment gateway & direct purchase)
   },
 
-  // Domain/PBX endpoints
-  domain: {
-    create: '/api/v1/domains/create',
-  },
-
-  // Gateway endpoints
-  gateway: {
-    create: '/api/v1/gateways/create',
-  },
-
-  // Route endpoints
-  route: {
-    create: '/route/create-route',
-  },
 } as const;
 
 // Helper function to build full API URL

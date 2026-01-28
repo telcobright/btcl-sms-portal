@@ -4,8 +4,8 @@ import { Dialog } from '@headlessui/react';
 import React, { useState, useEffect } from 'react';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
-import { initiateSSLCommerzPayment, unifiedPurchase } from '@/lib/api-client/payment';
-import { getPartnerById, createDomain, createGateway, createRoute, getUserByEmail, editUser } from '@/lib/api-client/partner';
+import { unifiedPurchase } from '@/lib/api-client/payment';
+import { getPartnerById, getUserByEmail, editUser } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
 import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
@@ -101,112 +101,6 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
 
     const getPartnerId = (): number | null => {
         return getTokenData().partnerId;
-    };
-
-    // Provision Hosted PBX domain after successful purchase
-    const provisionHostedPbx = async (authToken: string, partnerId: number, email: string) => {
-        try {
-            console.log('Starting Hosted PBX provisioning...');
-
-            // Step 1: Get partner details to get partnerName
-            toast.loading(locale === 'en' ? 'Creating your PBX domain...' : 'আপনার PBX ডোমেইন তৈরি হচ্ছে...', { id: 'pbx-provision' });
-
-            const partnerData = await getPartnerById(partnerId, authToken);
-            const partnerName = partnerData.partnerName;
-            console.log('Partner name:', partnerName);
-
-            // Generate domain name based on partner name words
-            // If 1 word: use partnerName.btcliptelephony.gov.bd
-            // If more than 1 word: use firstWord.btcliptelephony.gov.bd
-            const words = partnerName.trim().split(/\s+/);
-            const domainPrefix = words.length === 1 ? words[0].toLowerCase() : words[0].toLowerCase();
-            const domainName = `${domainPrefix}.btcliptelephony.gov.bd`;
-            console.log('Generated domain name:', domainName);
-
-            // Step 2: Create domain
-            const domainResponse = await createDomain(
-                {
-                    domainName: domainName,
-                    enabled: true,
-                    description: partnerName,
-                },
-                authToken
-            );
-            console.log('Domain created:', domainResponse);
-            const domainUuid = domainResponse.domainUuid;
-
-            // Step 3: Create gateway for the domain
-            console.log('Creating gateway for domain:', domainName);
-            const gatewayResponse = await createGateway(
-                {
-                    domainUuid: domainUuid,
-                    gateway: 'Cat',
-                    proxy: '192.168.24.101:5060',
-                    fromDomain: domainName,
-                    profile: 'external',
-                    context: 'public',
-                    register: 'false',
-                    callerIdInFrom: 'true',
-                    enabled: 'true',
-                    action: 'start',
-                },
-                authToken
-            );
-            console.log('Gateway created:', gatewayResponse);
-
-            // Step 4: Create route for the domain
-            console.log('Creating route for domain:', domainName);
-            const routeResponse = await createRoute(
-                {
-                    routeName: domainName,
-                    description: domainName,
-                    field5: domainName,
-                    zone: 'dhaka',
-                    nationalOrInternational: 1,
-                    field4: 5,
-                    switchId: 1,
-                    idPartner: partnerId,
-                    metaData: {
-                        sipProfileName: '',
-                    },
-                },
-                authToken
-            );
-            console.log('Route created:', routeResponse);
-
-            // Step 5: Get user by email to get user id
-            const userData = await getUserByEmail(email, authToken);
-            console.log('User data:', userData);
-            const userId = userData.id;
-
-            // Step 6: Edit user to add domainUuid
-            await editUser(
-                {
-                    id: userId,
-                    pbxUuid: domainUuid,
-                },
-                authToken
-            );
-            console.log('User updated with PBX UUID');
-
-            toast.success(
-                locale === 'en'
-                    ? 'Hosted PBX domain created successfully!'
-                    : 'হোস্টেড PBX ডোমেইন সফলভাবে তৈরি হয়েছে!',
-                { id: 'pbx-provision' }
-            );
-
-            return { success: true, domainUuid };
-        } catch (error) {
-            console.error('PBX provisioning failed:', error);
-            toast.error(
-                locale === 'en'
-                    ? 'PBX domain creation failed. Please contact support.'
-                    : 'PBX ডোমেইন তৈরি ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
-                { id: 'pbx-provision' }
-            );
-            return { success: false, error };
-        }
     };
 
     // Purchase Voice Broadcast package after successful payment

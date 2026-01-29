@@ -636,10 +636,16 @@ export default function RegisterPage() {
         localStorage.removeItem('companyName');
 
         checkAuth();
+
+        // Store customer type for routing after popup
+        const customerType = otherInfoData.customerType;
+        localStorage.setItem('customerType', customerType);
+
         toast.success(
           'Registration completed successfully!'
         );
         console.log('✅ Registration complete! Showing success popup...');
+        console.log('📋 Customer type:', customerType);
         setShowSuccessPopup(true);
       } catch (loginError) {
         console.error('⚠️ Auto login failed:', loginError);
@@ -692,16 +698,33 @@ export default function RegisterPage() {
               <p className="text-gray-600 text-center mb-2">
                 Your account has been created successfully.
               </p>
+              {otherInfoForm.getValues('customerType') === 'postpaid' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 w-full">
+                  <p className="text-blue-800 text-sm text-center">
+                    <strong>Note:</strong> Your postpaid account is under review. Our team will verify your documents within 24-48 business hours.
+                  </p>
+                </div>
+              )}
               <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-6 w-full">
                 <p className="text-amber-800 text-sm text-center">
                   <strong>Important:</strong> Please change your default password after logging in for security.
                 </p>
               </div>
               <button
-                onClick={() => router.push(`/${locale}/dashboard`)}
+                onClick={() => {
+                  const customerType = localStorage.getItem('customerType');
+                  // Prepaid customers go to dashboard, postpaid go to pending page
+                  if (customerType === 'prepaid') {
+                    router.push(`/${locale}/dashboard`);
+                  } else {
+                    router.push(`/${locale}/postpaid-pending`);
+                  }
+                  // Clean up
+                  localStorage.removeItem('customerType');
+                }}
                 className="bg-[#00A651] text-white px-6 py-3 rounded-md hover:bg-[#008f44] transition w-full font-medium"
               >
-                Go to Dashboard
+                {otherInfoForm.getValues('customerType') === 'prepaid' ? 'Go to Dashboard' : 'Continue'}
               </button>
             </div>
           </div>

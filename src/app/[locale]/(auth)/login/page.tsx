@@ -342,10 +342,24 @@ export default function LoginPage() {
             // Show success message
             toast.success('Login successful!')
 
-            console.log('🎉 Redirecting to dashboard...')
+            // Check customer type from decoded token
+            const customerPrePaid = decodedToken.customerPrePaid
+            console.log('🔍 Customer PrePaid value:', customerPrePaid)
 
-            // Redirect to dashboard
-            router.push(`/${locale}/dashboard`)
+            // Route based on customer type
+            // customerPrePaid = 1 means Prepaid -> route to payment/dashboard
+            // customerPrePaid = 2 means Postpaid -> route to postpaid-pending page
+            if (customerPrePaid === 1) {
+                console.log('🎉 Prepaid customer - Redirecting to dashboard...')
+                router.push(`/${locale}/dashboard`)
+            } else if (customerPrePaid === 2) {
+                console.log('🎉 Postpaid customer - Redirecting to postpaid-pending page...')
+                router.push(`/${locale}/postpaid-pending`)
+            } else {
+                // Default to dashboard if customer type is not set
+                console.log('🎉 Customer type not set - Redirecting to dashboard...')
+                router.push(`/${locale}/dashboard`)
+            }
         } catch (error: any) {
             console.error('❌ Login error:', error)
             const errorMessage = error.response?.data?.message || error.message || 'Invalid email or password. Please try again.'

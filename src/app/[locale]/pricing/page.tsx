@@ -34,6 +34,15 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     setIsCheckoutOpen(true)
   }
 
+  const handleApply = (pkg: any) => {
+    if (!isLoggedIn()) {
+      toast.error(locale === 'en' ? 'Please login to apply' : 'আবেদন করতে অনুগ্রহ করে লগইন করুন')
+      router.push(`/${locale}/login`)
+      return
+    }
+    toast.success(locale === 'en' ? `Application submitted for ${pkg.name} plan` : `${pkg.name} প্ল্যানের জন্য আবেদন জমা দেওয়া হয়েছে`)
+  }
+
   React.useEffect(() => {
     params.then(p => setLocale(p.locale))
   }, [params])
@@ -262,7 +271,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                {locale === 'en' ? 'Choose Your Plan' : 'আপনার পরিকল্পনা চয়ন করুন'}
+                {locale === 'en' ? 'Choose Your Prepaid Plan' : 'আপনার প্রিপেইড পরিকল্পনা চয়ন করুন'}
               </h2>
               <p className="text-xl text-gray-600">
                 {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
@@ -363,48 +372,139 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               ))}
             </div>
 
-            {/* Postpaid Credit Note - Only show for Hosted PBX */}
-            {selectedService === 'hosted-pbx' && (
-              <div className="mt-10 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                      {locale === 'en' ? 'NB: Postpaid Credit Limits' : 'বিঃদ্রঃ পোস্টপেইড ক্রেডিট সীমা'}
-                    </h4>
-                    <p className="text-blue-800 mb-3">
-                      {locale === 'en'
-                        ? 'If you choose Postpaid billing, you will receive monthly credit based on your package:'
-                        : 'আপনি যদি পোস্টপেইড বিলিং বেছে নেন, আপনি আপনার প্যাকেজ অনুযায়ী মাসিক ক্রেডিট পাবেন:'}
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {pbxPackages.map((pkg) => {
-                        const priceWithVat = Math.round(pkg.price * 1.15);
-                        const credit = priceWithVat * 6;
-                        return (
-                          <div key={pkg.id} className="bg-white rounded-lg p-4 border border-blue-100">
-                            <span className="font-bold text-gray-900">{pkg.name}:</span>
-                            <span className="ml-2 text-blue-700 font-semibold">৳{credit.toLocaleString()} {locale === 'en' ? 'BDT/month' : 'টাকা/মাস'}</span>
-                          </div>
-                        );
-                      })}
+          </div>
+        </div>
+
+        {/* Postpaid Plan Section - Hide for Voice Broadcast */}
+        {selectedService !== 'voice-broadcast' && (
+        <div className="py-20 bg-gray-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                {locale === 'en' ? 'Choose Your Postpaid Plan' : 'আপনার পোস্টপেইড পরিকল্পনা চয়ন করুন'}
+              </h2>
+              <p className="text-xl text-gray-600">
+                {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
+                {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per message pricing' : 'প্রতি মেসেজ মূল্য')}
+                {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
+              </p>
+            </div>
+
+            <div className={`grid gap-8 ${selectedService === 'contact-center' ? 'grid-cols-1 md:grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}>
+              {getCurrentPackages().map((pkg: any) => (
+                <div key={`apply-${pkg.id}`}
+                     className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>
+                  {pkg.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
+                        {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
+                      </div>
                     </div>
-                    <p className="text-sm text-blue-600 mt-3">
-                      {locale === 'en'
-                        ? '* T&C Applied. Credit limit subject to verification and approval.'
-                        : '* শর্ত প্রযোজ্য। ক্রেডিট সীমা যাচাই ও অনুমোদন সাপেক্ষে।'}
-                    </p>
+                  )}
+
+                  <div className="px-8 py-8">
+                    <div className="text-center mb-6">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">{pkg.name}</h3>
+                      <div className="mb-4">
+                        {selectedService === 'contact-center' && (
+                          <>
+                            <span className="text-4xl font-bold text-gray-900">
+                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
+                            </span>
+                            <span className="text-gray-600 text-lg">/month</span>
+                            <div className="text-sm text-gray-500 mt-2">
+                              {typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}
+                            </div>
+                            {/* Postpaid Credit Limit - Gold package * 6 + 15% VAT ceiling */}
+                            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+                              <div className="text-xs text-blue-600 font-medium mb-1">
+                                {locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}
+                              </div>
+                              <div className="text-lg font-bold text-blue-900">
+                                ৳{Math.ceil(45 * 1.15 * 6)}
+                                <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        {selectedService === 'hosted-pbx' && (
+                          <>
+                            <span className="text-4xl font-bold text-gray-900">
+                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
+                            </span>
+                            <span className="text-gray-600 text-lg">/month</span>
+                            <div className="text-sm text-gray-500 mt-2">
+                              {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
+                            </div>
+                            {/* Postpaid Credit Limit */}
+                            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+                              <div className="text-xs text-blue-600 font-medium mb-1">
+                                {locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}
+                              </div>
+                              <div className="text-lg font-bold text-blue-900">
+                                ৳{pkg.id === 'bronze' ? '84' : pkg.id === 'silver' ? '174' : '312'}
+                                <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        {selectedService === 'voice-broadcast' && (
+                          <>
+                            <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
+                            <span className="text-gray-600 text-lg">/{locale === 'en' ? 'message' : 'মেসেজ'}</span>
+                            <div className="text-sm text-gray-500 mt-2">
+                              {pkg.messages} {locale === 'en' ? 'VB Messages' : 'ভিবি মেসেজ'}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      {typeof pkg.price === 'number' ? (
+                        <Button
+                          onClick={() => handleApply(pkg)}
+                          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                            pkg.popular
+                              ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
+                              : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
+                          }`}
+                        >
+                          {locale === 'en' ? 'Apply' : 'আবেদন করুন'}
+                        </Button>
+                      ) : (
+                        <Link href={`/${locale}/contact`}>
+                          <Button
+                            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                              pkg.popular
+                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
+                                : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
+                            }`}
+                          >
+                            {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      {pkg.features.map((feature: string, index: number) => (
+                        <div key={index} className="flex items-start">
+                          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                          </svg>
+                          <span className="text-gray-700 text-sm font-medium">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
 
           </div>
         </div>
+        )}
 
         {/* Contact CTA */}
         <div className="py-16 bg-gradient-to-r from-btcl-primary to-green-700">

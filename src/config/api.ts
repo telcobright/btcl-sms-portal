@@ -21,6 +21,17 @@ export const API_BASE_URL_SECONDARY = 'https://vbs.btcliptelephony.gov.bd/FREESW
 export const HCC_BASE_URL = 'https://hcc.btcliptelephony.gov.bd/FREESWITCHREST';
 
 // ============================================
+// Service API Enable/Disable Flags
+// Controls which APIs are called during partner creation
+// ============================================
+export const SERVICE_API_FLAGS = {
+  VBS_ENABLED: true,       // VBS/Primary API (port 4000)
+  PBX_ENABLED: true,       // PBX uses same as VBS
+  SECONDARY_ENABLED: false, // Secondary API (without port)
+  HCC_ENABLED: false,      // HCC API
+} as const;
+
+// ============================================
 // Service Base URLs (derived from ROOT_URL)
 // ============================================
 export const API_BASE_URL = `${ROOT_URL}/FREESWITCHREST`;
@@ -38,10 +49,10 @@ export const PAYMENT_BASE_URL = `${ROOT_URL}`;
  */
 export const FEATURE_FLAGS = {
   /** Enable/Disable OTP verification during registration */
-  OTP_VERIFICATION_ENABLED: false,
+  OTP_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable NID verification during registration */
-  NID_VERIFICATION_ENABLED: false,
+  NID_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable SSLCommerz payment */
   PAYMENT_ENABLED: true,

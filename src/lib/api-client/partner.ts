@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, API_BASE_URL_SECONDARY, HCC_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { API_BASE_URL, API_BASE_URL_SECONDARY, HCC_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS, SERVICE_API_FLAGS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
@@ -150,46 +150,65 @@ export const createPartner = async (payload: {
     callSrcId: number
 }): Promise<CreatePartnerResponse> => {
   try {
-    // Call all three endpoints simultaneously
+    // Build API calls based on enabled service flags
+    const apiCalls: Promise<any>[] = [];
+    const apiNames: string[] = [];
+
     const primaryUrl = `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
     const secondaryUrl = `${API_BASE_URL_SECONDARY}${API_ENDPOINTS.partner.createPartner}`;
     const hccUrl = `${HCC_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
 
-    console.log('Creating partner on all endpoints:', { primaryUrl, secondaryUrl, hccUrl });
-
-    // Make all API calls simultaneously
-    const [primaryResponse, secondaryResponse, hccResponse] = await Promise.allSettled([
-      axios.post<CreatePartnerResponse>(primaryUrl, payload, {
-        headers: { 'Content-Type': 'application/json' },
-      }),
-      axios.post<CreatePartnerResponse>(secondaryUrl, payload, {
-        headers: { 'Content-Type': 'application/json' },
-      }),
-      axios.post<CreatePartnerResponse>(hccUrl, payload, {
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    ]);
-
-    // Log secondary endpoint result (for debugging)
-    if (secondaryResponse.status === 'fulfilled') {
-      console.log('✅ Secondary endpoint (without port) partner created:', secondaryResponse.value.data);
-    } else {
-      console.warn('⚠️ Secondary endpoint (without port) failed:', secondaryResponse.reason?.message);
+    // Primary/VBS API - always added first (required)
+    if (SERVICE_API_FLAGS.VBS_ENABLED) {
+      apiCalls.push(
+        axios.post<CreatePartnerResponse>(primaryUrl, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+      apiNames.push('VBS (Primary)');
     }
 
-    // Log HCC endpoint result (for debugging)
-    if (hccResponse.status === 'fulfilled') {
-      console.log('✅ HCC endpoint partner created:', hccResponse.value.data);
-    } else {
-      console.warn('⚠️ HCC endpoint failed:', hccResponse.reason?.message);
+    // Secondary API (without port)
+    if (SERVICE_API_FLAGS.SECONDARY_ENABLED) {
+      apiCalls.push(
+        axios.post<CreatePartnerResponse>(secondaryUrl, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+      apiNames.push('Secondary');
     }
 
-    // Use primary endpoint response
-    if (primaryResponse.status === 'rejected') {
-      throw primaryResponse.reason;
+    // HCC API
+    if (SERVICE_API_FLAGS.HCC_ENABLED) {
+      apiCalls.push(
+        axios.post<CreatePartnerResponse>(hccUrl, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+      apiNames.push('HCC');
     }
 
-    const response = primaryResponse.value;
+    console.log('Creating partner on enabled endpoints:', apiNames);
+
+    // Make enabled API calls simultaneously
+    const responses = await Promise.allSettled(apiCalls);
+
+    // Log results for each enabled API
+    responses.forEach((response, index) => {
+      if (response.status === 'fulfilled') {
+        console.log(`✅ ${apiNames[index]} partner created:`, response.value.data);
+      } else {
+        console.warn(`⚠️ ${apiNames[index]} failed:`, response.reason?.message);
+      }
+    });
+
+    // Use first successful response (VBS if enabled, otherwise first available)
+    const successfulResponse = responses.find(r => r.status === 'fulfilled');
+    if (!successfulResponse || successfulResponse.status !== 'fulfilled') {
+      throw new Error('All enabled API endpoints failed');
+    }
+
+    const response = successfulResponse.value;
 
     if (!response.data) {
       throw new Error('No response data received from create partner API');

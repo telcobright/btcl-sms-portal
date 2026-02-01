@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {Footer} from "@/components/layout/Footer";
 import {Header} from "@/components/layout/Header";
 import {Button} from "@/components/ui/Button";
@@ -9,12 +9,22 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import CheckoutModal from "@/components/checkout/CheckoutModal";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { PBX_BASE_URL } from "@/config/api";
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  idPartner?: number;
+  email?: string;
+  sub?: string;
+}
 
 const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [selectedService, setSelectedService] = useState('hosted-pbx')
   const [locale, setLocale] = React.useState('en')
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState<any>(null)
+  const [userType, setUserType] = useState<'prepaid' | 'postpaid' | null>(null)
+  const [isLoadingUserType, setIsLoadingUserType] = useState(true)
   const router = useRouter()
 
   const isLoggedIn = () => {
@@ -23,6 +33,60 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
     return false
   }
+
+  // Fetch user type from API by decoding JWT token
+  useEffect(() => {
+    const fetchUserType = async () => {
+      if (typeof window === 'undefined') {
+        setIsLoadingUserType(false)
+        return
+      }
+
+      const authToken = localStorage.getItem('authToken')
+      if (!authToken) {
+        setIsLoadingUserType(false)
+        return
+      }
+
+      try {
+        // Decode JWT token to get idPartner
+        const decodedToken = jwtDecode<DecodedToken>(authToken)
+        const idPartner = decodedToken?.idPartner
+
+        if (!idPartner) {
+          setIsLoadingUserType(false)
+          return
+        }
+
+        const response = await fetch(`${PBX_BASE_URL}/partner/get-partner`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ idPartner }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Partner data:', data)
+          // customerPrePaid: 1 = prepaid, 2 = postpaid
+          if (data.customerPrePaid === 1) {
+            setUserType('prepaid')
+          } else if (data.customerPrePaid === 2) {
+            setUserType('postpaid')
+          }
+        } else {
+          console.error('Failed to fetch partner data:', response.status)
+        }
+      } catch (e) {
+        console.error('Error fetching partner data:', e)
+      } finally {
+        setIsLoadingUserType(false)
+      }
+    }
+
+    fetchUserType()
+  }, [])
 
   const handleBuyNow = (pkg: any) => {
     if (!isLoggedIn()) {
@@ -266,7 +330,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           </div>
         </div>
 
-        {/* Pricing Cards */}
+        {/* Prepaid Pricing Cards - Show if loading, not logged in, OR if prepaid user */}
+        {(isLoadingUserType || userType === null || userType === 'prepaid') && (
         <div className="py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -374,9 +439,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
           </div>
         </div>
+        )}
 
-        {/* Postpaid Plan Section - Hide for Voice Broadcast */}
-        {selectedService !== 'voice-broadcast' && (
+        {/* Postpaid Plan Section - Show if loading, not logged in, OR if postpaid user, Hide for Voice Broadcast */}
+        {(isLoadingUserType || userType === null || userType === 'postpaid') && selectedService !== 'voice-broadcast' && (
         <div className="py-20 bg-gray-100">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">

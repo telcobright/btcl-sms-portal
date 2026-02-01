@@ -104,7 +104,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`)
       return
     }
-    toast.success(locale === 'en' ? `Application submitted for ${pkg.name} plan` : `${pkg.name} প্ল্যানের জন্য আবেদন জমা দেওয়া হয়েছে`)
+    setSelectedPackage(pkg)
+    setIsCheckoutOpen(true)
   }
 
   React.useEffect(() => {
@@ -330,8 +331,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           </div>
         </div>
 
-        {/* Prepaid Pricing Cards - Show if loading, not logged in, OR if prepaid user */}
-        {(isLoadingUserType || userType === null || userType === 'prepaid') && (
+        {/* Prepaid Pricing Cards - Show if loading, not logged in, prepaid user, OR Voice Broadcast (which is prepaid only) */}
+        {(isLoadingUserType || userType === null || userType === 'prepaid' || selectedService === 'voice-broadcast') && (
         <div className="py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">

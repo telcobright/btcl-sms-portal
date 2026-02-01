@@ -1108,6 +1108,17 @@ export default function Dashboard() {
               >
                 {accountStatus === 'active' ? 'Active' : 'Inactive'}
               </div>
+              {partnerData && (
+                <div
+                  className={`px-5 py-2.5 rounded-full text-sm font-bold shadow-sm ${
+                    isPrepaid
+                      ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-200'
+                      : 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 border border-purple-200'
+                  }`}
+                >
+                  {paymentType}
+                </div>
+              )}
             </div>
             <p className="text-gray-600 text-sm mt-4">
               {accountStatus === 'active'

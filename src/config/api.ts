@@ -9,26 +9,27 @@
 // export const ROOT_URL = 'http://localhost:8001';
 export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
 
+// VBS API Base URL (without port) - used for secondary partner creation
 export const VBS_BASE_URL = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
 
-// Hosted PBX specific base URL
+// Hosted PBX specific base URL (with port 4000)
 export const PBX_BASE_URL = 'https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST';
-
-// Secondary API URL for partner creation (without port)
-export const API_BASE_URL_SECONDARY = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
 
 // HCC API Base URL for partner creation
 export const HCC_BASE_URL = 'https://hcc.btcliptelephony.gov.bd/FREESWITCHREST';
+
+// A2P SMS API Base URL for partner creation
+export const A2P_BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/FREESWITCHREST';
 
 // ============================================
 // Service API Enable/Disable Flags
 // Controls which APIs are called during partner creation
 // ============================================
 export const SERVICE_API_FLAGS = {
-  VBS_ENABLED: true,       // VBS/Primary API (port 4000)
-  PBX_ENABLED: true,       // PBX uses same as VBS
-  SECONDARY_ENABLED: false, // Secondary API (without port)
-  HCC_ENABLED: false,      // HCC API
+  PRIMARY_ENABLED: true,   // Primary API - PBX_BASE_URL (port 4000)
+  VBS_ENABLED: true,       // VBS API - VBS_BASE_URL (without port)
+  HCC_ENABLED: true,       // HCC API - HCC_BASE_URL
+  A2P_ENABLED: true,       // A2P SMS API - A2P_BASE_URL
 } as const;
 
 // ============================================
@@ -37,7 +38,7 @@ export const SERVICE_API_FLAGS = {
 export const API_BASE_URL = `${ROOT_URL}/FREESWITCHREST`;
 export const AUTH_BASE_URL = `${ROOT_URL}/AUTHENTICATION`;
 export const NID_BASE_URL = `${ROOT_URL}/NID`;
-export const BULK_SMS_PORTAL_URL = `${ROOT_URL}:4000/`;
+export const BULK_SMS_PORTAL_URL = 'https://a2psms.btcliptelephony.gov.bd/';
 export const PAYMENT_BASE_URL = `${ROOT_URL}`;
 // export const PAYMENT_BASE_URL = 'http://localhost:8081';
 

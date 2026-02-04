@@ -122,7 +122,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // Contact Center Pricing
   const contactCenterPackages = [
     {
-      id: 'basic',
+      id: 9140,
       name: locale === 'en' ? 'Basic' : 'বেসিক',
       users: locale === 'en' ? 'Per Agent' : 'প্রতি এজেন্ট',
       price: 8.5,

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, API_BASE_URL_SECONDARY, HCC_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS, SERVICE_API_FLAGS } from '@/config/api';
+import { API_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, A2P_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS, SERVICE_API_FLAGS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
@@ -155,27 +155,28 @@ export const createPartner = async (payload: {
     const apiNames: string[] = [];
 
     const primaryUrl = `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
-    const secondaryUrl = `${API_BASE_URL_SECONDARY}${API_ENDPOINTS.partner.createPartner}`;
+    const vbsUrl = `${VBS_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
     const hccUrl = `${HCC_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
+    const a2pUrl = `${A2P_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
 
-    // Primary/VBS API - always added first (required)
-    if (SERVICE_API_FLAGS.VBS_ENABLED) {
+    // Primary API (port 4000)
+    if (SERVICE_API_FLAGS.PRIMARY_ENABLED) {
       apiCalls.push(
         axios.post<CreatePartnerResponse>(primaryUrl, payload, {
           headers: { 'Content-Type': 'application/json' },
         })
       );
-      apiNames.push('VBS (Primary)');
+      apiNames.push('Primary (PBX)');
     }
 
-    // Secondary API (without port)
-    if (SERVICE_API_FLAGS.SECONDARY_ENABLED) {
+    // VBS API (without port)
+    if (SERVICE_API_FLAGS.VBS_ENABLED) {
       apiCalls.push(
-        axios.post<CreatePartnerResponse>(secondaryUrl, payload, {
+        axios.post<CreatePartnerResponse>(vbsUrl, payload, {
           headers: { 'Content-Type': 'application/json' },
         })
       );
-      apiNames.push('Secondary');
+      apiNames.push('VBS');
     }
 
     // HCC API
@@ -186,6 +187,16 @@ export const createPartner = async (payload: {
         })
       );
       apiNames.push('HCC');
+    }
+
+    // A2P SMS API
+    if (SERVICE_API_FLAGS.A2P_ENABLED) {
+      apiCalls.push(
+        axios.post<CreatePartnerResponse>(a2pUrl, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+      apiNames.push('A2P SMS');
     }
 
     console.log('Creating partner on enabled endpoints:', apiNames);

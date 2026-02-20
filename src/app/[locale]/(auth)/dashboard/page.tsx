@@ -2,13 +2,10 @@
 
 import { Header } from '@/components/layout/Header';
 import {
-  Check,
   CheckCircle,
-  Copy,
   Download,
   ExternalLink,
   Eye,
-  EyeOff,
   Loader2,
   Maximize2,
   Package,
@@ -20,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { API_ENDPOINTS, buildApiUrl, BULK_SMS_PORTAL_URL } from '@/config/api';
+import { API_ENDPOINTS, buildApiUrl, BULK_SMS_PORTAL_URL, PBX_BASE_URL, VBS_BASE_URL, HCC_BASE_URL } from '@/config/api';
 
 // Mock packages data
 const packages = [
@@ -295,8 +292,6 @@ const ImageViewerModal = ({
 };
 
 export default function Dashboard() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [partnerExtra, setPartnerExtra] = useState<PartnerExtra | null>(null);
   const [loading, setLoading] = useState(true);
@@ -316,6 +311,11 @@ export default function Dashboard() {
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
+  const [validPortals, setValidPortals] = useState<{
+    pbx: boolean;
+    hcc: boolean;
+    vbs: boolean;
+  }>({ pbx: false, hcc: false, vbs: false });
 
   // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
   const isPrepaid = partnerData?.customerPrePaid === 1;
@@ -435,42 +435,93 @@ export default function Dashboard() {
   const fetchPurchaseForPartner = async (partnerId: number) => {
     try {
       const authToken = localStorage.getItem('authToken');
+      const endpoint = API_ENDPOINTS.package.getPurchaseForPartner;
 
-      const response = await fetch(
-        buildApiUrl(API_ENDPOINTS.package.getPurchaseForPartner),
-        {
+      // Define all three API endpoints to fetch from with service identifiers
+      const apiConfigs = [
+        { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },   // https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST/package/getPurchaseForPartner
+        { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },   // https://hcc.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
+        { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },   // https://vbs.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
+      ];
+
+      // Fetch from all three APIs in parallel
+      const fetchPromises = apiConfigs.map(({ url, service }) =>
+        fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({ idPartner: partnerId }),
-        }
+        }).then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch from ${url}`);
+          }
+          const data = await response.json();
+          return { service, data };
+        })
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch partner data');
-      }
+      // Use Promise.allSettled to get results from all APIs (even if some fail)
+      const results = await Promise.allSettled(fetchPromises);
 
-      const data = await response.json();
+      // Track which services have valid purchases
+      const portalsWithValidPurchase = { pbx: false, hcc: false, vbs: false };
 
-      if (Array.isArray(data) && data.length > 0) {
-        const firstItem = data[0];
-        setPurchaseForPartner({
-          packageAccounts: firstItem.packageAccounts || [],
-          purchaseDate: firstItem.purchaseDate ?? null,
-          expireDate: firstItem.expireDate ?? null,
+      // Combine all successful results
+      const allData: any[] = [];
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          const { service, data } = result.value;
+          if (Array.isArray(data) && data.length > 0) {
+            // Check if there are any valid packageAccounts
+            const hasValidPackages = data.some((item: any) =>
+              item.packageAccounts && Array.isArray(item.packageAccounts) && item.packageAccounts.length > 0
+            );
+            if (hasValidPackages) {
+              portalsWithValidPurchase[service] = true;
+            }
+            console.log(`Data from ${service.toUpperCase()}:`, data);
+            allData.push(...data);
+          }
+        } else if (result.status === 'rejected') {
+          console.warn(`API ${index + 1} failed:`, result.reason);
+        }
+      });
+
+      // Update valid portals state
+      setValidPortals(portalsWithValidPurchase);
+
+      if (allData.length > 0) {
+        // Combine all packageAccounts from all sources
+        const allPackageAccounts: PackageAccount[] = [];
+        let latestPurchaseDate: string | null = null;
+        let latestExpireDate: string | null = null;
+
+        allData.forEach((item: any) => {
+          if (item.packageAccounts && Array.isArray(item.packageAccounts)) {
+            allPackageAccounts.push(...item.packageAccounts);
+          }
+          // Use the latest purchase/expire dates
+          if (item.purchaseDate && (!latestPurchaseDate || new Date(item.purchaseDate) > new Date(latestPurchaseDate))) {
+            latestPurchaseDate = item.purchaseDate;
+          }
+          if (item.expireDate && (!latestExpireDate || new Date(item.expireDate) > new Date(latestExpireDate))) {
+            latestExpireDate = item.expireDate;
+          }
         });
 
-        // Extract all unique package names from all items
+        setPurchaseForPartner({
+          packageAccounts: allPackageAccounts,
+          purchaseDate: latestPurchaseDate,
+          expireDate: latestExpireDate,
+        });
+
+        // Extract all unique package names from combined data
         const packageNames: string[] = [];
-        data.forEach((item: any) => {
-          if (item.packageAccounts && Array.isArray(item.packageAccounts)) {
-            item.packageAccounts.forEach((account: any) => {
-              if (account.name && !packageNames.includes(account.name)) {
-                packageNames.push(account.name);
-              }
-            });
+        allPackageAccounts.forEach((account: PackageAccount) => {
+          if (account.name && !packageNames.includes(account.name)) {
+            packageNames.push(account.name);
           }
         });
         setAllPackages(packageNames);
@@ -483,7 +534,7 @@ export default function Dashboard() {
         setAllPackages([]);
       }
     } catch (err) {
-      console.error('Error fetching partner extra:', err);
+      console.error('Error fetching purchase data:', err);
     }
   };
 
@@ -969,16 +1020,6 @@ export default function Dashboard() {
     }
   };
 
-  const copyToClipboard = async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1151,92 +1192,83 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* API Credentials */}
-        <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">
-              Portal Credentials
-            </h3>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Username (Email)
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 px-4 py-3 bg-gradient-to-r from-gray-50 to-green-50/30 border-2 border-gray-200 rounded-lg font-mono text-sm text-gray-900 hover:border-green-300 transition-colors">
-                  {displayUserData.email}
-                </div>
-                <button
-                  onClick={() => copyToClipboard(displayUserData.email, 'email')}
-                  className="p-3 hover:bg-green-50 border-2 border-transparent hover:border-green-300 rounded-lg transition-all flex-shrink-0"
-                >
-                  {copiedField === 'email' ? (
-                    <Check className="w-5 h-5 text-[#067a3e]" />
-                  ) : (
-                    <Copy className="w-5 h-5 text-gray-600" />
-                  )}
-                </button>
+        {/* Service Portals */}
+        {(validPortals.pbx || validPortals.hcc || validPortals.vbs) && (
+          <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+                <ExternalLink className="w-6 h-6 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Service Portals
+              </h3>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* PBX Portal */}
+              {validPortals.pbx && (
+                <a
+                  href="https://hippbx.btcliptelephony.gov.bd:5174/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all group"
+                >
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">Hosted PBX Portal</h4>
+                    <p className="text-sm text-gray-600">Access your PBX dashboard</p>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-blue-500 group-hover:text-blue-700 transition-colors" />
+                </a>
+              )}
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 px-4 py-3 bg-gradient-to-r from-gray-50 to-green-50/30 border-2 border-gray-200 rounded-lg font-mono text-sm text-gray-900 hover:border-green-300 transition-colors">
-                  {showPassword ? displayUserData.password : '••••••••••••'}
-                </div>
-                <button
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="p-3 hover:bg-green-50 border-2 border-transparent hover:border-green-300 rounded-lg transition-all flex-shrink-0"
+              {/* HCC Portal */}
+              {validPortals.hcc && (
+                <a
+                  href={`https://hcc.btcliptelephony.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all group"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <Eye className="w-5 h-5 text-gray-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => copyToClipboard(displayUserData.password, 'password')}
-                  className="p-3 hover:bg-green-50 border-2 border-transparent hover:border-green-300 rounded-lg transition-all flex-shrink-0"
-                >
-                  {copiedField === 'password' ? (
-                    <Check className="w-5 h-5 text-[#067a3e]" />
-                  ) : (
-                    <Copy className="w-5 h-5 text-gray-600" />
-                  )}
-                </button>
-              </div>
-            </div>
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors">Contact Center Portal</h4>
+                    <p className="text-sm text-gray-600">Access your HCC dashboard</p>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" />
+                </a>
+              )}
 
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 mt-4">
-              <div className="flex">
-                <svg
-                  className="h-5 w-5 text-[#067a3e] flex-shrink-0 mt-0.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+              {/* VBS Portal */}
+              {validPortals.vbs && (
+                <a
+                  href="https://vbs.btcliptelephony.gov.bd/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all group"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p className="ml-3 text-sm text-[#067a3e] font-medium">
-                  Keep your credentials secure. Never share your password with
-                  anyone.
-                </p>
-              </div>
+                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors">Voice Broadcast Portal</h4>
+                    <p className="text-sm text-gray-600">Access your VBS dashboard</p>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-orange-500 group-hover:text-orange-700 transition-colors" />
+                </a>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Personal Information */}
         <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">

@@ -255,7 +255,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 'enterprise': 9137,
             },
             'contact-center': {
-                'basic': 9138,
+                'basic': 9140,
             },
         };
         return packageIdMap[service]?.[packageId] || 9132;

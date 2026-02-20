@@ -28,7 +28,7 @@ export const A2P_BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/FREESWITCHRES
 export const SERVICE_API_FLAGS = {
   PRIMARY_ENABLED: true,   // Primary API - PBX_BASE_URL (port 4000)
   VBS_ENABLED: true,       // VBS API - VBS_BASE_URL (without port)
-  HCC_ENABLED: false,       // HCC API - HCC_BASE_URL
+  HCC_ENABLED: true,       // HCC API - HCC_BASE_URL
   A2P_ENABLED: false,       // A2P SMS API - A2P_BASE_URL
 } as const;
 
@@ -53,7 +53,7 @@ export const FEATURE_FLAGS = {
   OTP_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable NID verification during registration */
-  NID_VERIFICATION_ENABLED: false,
+  NID_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable SSLCommerz payment */
   PAYMENT_ENABLED: true,

@@ -1193,82 +1193,134 @@ export default function Dashboard() {
         </div>
 
         {/* Service Portals */}
-        {(validPortals.pbx || validPortals.hcc || validPortals.vbs) && (
-          <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
-                <ExternalLink className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Service Portals
-              </h3>
+        <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+              <ExternalLink className="w-6 h-6 text-white" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* PBX Portal */}
-              {validPortals.pbx && (
-                <a
-                  href="https://hippbx.btcliptelephony.gov.bd:5174/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all group"
-                >
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">Hosted PBX Portal</h4>
-                    <p className="text-sm text-gray-600">Access your PBX dashboard</p>
-                  </div>
-                  <ExternalLink className="w-5 h-5 text-blue-500 group-hover:text-blue-700 transition-colors" />
-                </a>
-              )}
-
-              {/* HCC Portal */}
-              {validPortals.hcc && (
-                <a
-                  href={`https://hcc.btcliptelephony.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all group"
-                >
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors">Contact Center Portal</h4>
-                    <p className="text-sm text-gray-600">Access your HCC dashboard</p>
-                  </div>
-                  <ExternalLink className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" />
-                </a>
-              )}
-
-              {/* VBS Portal */}
-              {validPortals.vbs && (
-                <a
-                  href="https://vbs.btcliptelephony.gov.bd/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all group"
-                >
-                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors">Voice Broadcast Portal</h4>
-                    <p className="text-sm text-gray-600">Access your VBS dashboard</p>
-                  </div>
-                  <ExternalLink className="w-5 h-5 text-orange-500 group-hover:text-orange-700 transition-colors" />
-                </a>
-              )}
-            </div>
+            <h3 className="text-xl font-bold text-gray-900">
+              Service Portals
+            </h3>
           </div>
-        )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* PBX Portal */}
+            {validPortals.pbx ? (
+              <a
+                href="https://hippbx.btcliptelephony.gov.bd:5174/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">Hosted PBX Portal</h4>
+                  <p className="text-sm text-gray-600">Access your PBX dashboard</p>
+                </div>
+                <ExternalLink className="w-5 h-5 text-blue-500 group-hover:text-blue-700 transition-colors" />
+              </a>
+            ) : (
+              <a
+                href="/en/pricing"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-blue-400 hover:bg-blue-50 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-blue-500 group-hover:to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-500 group-hover:text-blue-700 transition-colors">Hosted PBX</h4>
+                  <p className="text-sm text-gray-400 group-hover:text-gray-600">No active package</p>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm">
+                  Buy Now
+                </span>
+              </a>
+            )}
+
+            {/* HCC Portal */}
+            {validPortals.hcc ? (
+              <a
+                href={`https://hcc.btcliptelephony.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors">Contact Center Portal</h4>
+                  <p className="text-sm text-gray-600">Access your HCC dashboard</p>
+                </div>
+                <ExternalLink className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" />
+              </a>
+            ) : (
+              <a
+                href="/en/pricing"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-purple-400 hover:bg-purple-50 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-purple-500 group-hover:to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-500 group-hover:text-purple-700 transition-colors">Contact Center</h4>
+                  <p className="text-sm text-gray-400 group-hover:text-gray-600">No active package</p>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-sm">
+                  Buy Now
+                </span>
+              </a>
+            )}
+
+            {/* VBS Portal */}
+            {validPortals.vbs ? (
+              <a
+                href="https://vbs.btcliptelephony.gov.bd/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors">Voice Broadcast Portal</h4>
+                  <p className="text-sm text-gray-600">Access your VBS dashboard</p>
+                </div>
+                <ExternalLink className="w-5 h-5 text-orange-500 group-hover:text-orange-700 transition-colors" />
+              </a>
+            ) : (
+              <a
+                href="/en/pricing"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-orange-400 hover:bg-orange-50 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-orange-500 group-hover:to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-500 group-hover:text-orange-700 transition-colors">Voice Broadcast</h4>
+                  <p className="text-sm text-gray-400 group-hover:text-gray-600">No active package</p>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-full shadow-sm">
+                  Buy Now
+                </span>
+              </a>
+            )}
+          </div>
+        </div>
 
         {/* Personal Information */}
         <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">

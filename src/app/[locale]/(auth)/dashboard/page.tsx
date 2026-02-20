@@ -542,10 +542,18 @@ export default function Dashboard() {
     try {
       setLoadingInvoices(true);
       const authToken = localStorage.getItem('authToken');
+      const endpoint = API_ENDPOINTS.package.getAllPurchasePartnerWise;
 
-      const response = await fetch(
-        buildApiUrl(API_ENDPOINTS.package.getAllPurchasePartnerWise),
-        {
+      // Define all three API endpoints to fetch from
+      const apiUrls = [
+        `${PBX_BASE_URL}${endpoint}`,   // https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST/package/get-all-purchase-partner-wise
+        `${HCC_BASE_URL}${endpoint}`,   // https://hcc.btcliptelephony.gov.bd/FREESWITCHREST/package/get-all-purchase-partner-wise
+        `${VBS_BASE_URL}${endpoint}`,   // https://vbs.btcliptelephony.gov.bd/FREESWITCHREST/package/get-all-purchase-partner-wise
+      ];
+
+      // Fetch from all three APIs in parallel
+      const fetchPromises = apiUrls.map((url) =>
+        fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -556,16 +564,49 @@ export default function Dashboard() {
             size: 20,
             idPartner: partnerId
           }),
-        }
+        }).then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch from ${url}`);
+          }
+          return response.json();
+        })
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch purchase history');
-      }
+      // Use Promise.allSettled to get results from all APIs (even if some fail)
+      const results = await Promise.allSettled(fetchPromises);
 
-      const data = await response.json();
-      const purchaseList = Array.isArray(data) ? data : (data.content || data.data || data.purchases || data.list || []);
-      setPurchaseHistory(purchaseList);
+      // Combine all successful results
+      const allPurchases: PurchaseHistory[] = [];
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          const data = result.value;
+          const purchaseList = Array.isArray(data) ? data : (data.content || data.data || data.purchases || data.list || []);
+          if (purchaseList.length > 0) {
+            console.log(`Purchase history from API ${index + 1}:`, purchaseList);
+            allPurchases.push(...purchaseList);
+          }
+        } else {
+          console.warn(`Purchase history API ${index + 1} failed:`, result.reason);
+        }
+      });
+
+      // Sort by purchase date (most recent first) and remove duplicates by id
+      const uniquePurchases = allPurchases.reduce((acc: PurchaseHistory[], current) => {
+        const exists = acc.find(item => item.id === current.id);
+        if (!exists) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+
+      // Sort by purchase date descending
+      uniquePurchases.sort((a, b) => {
+        const dateA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
+        const dateB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      setPurchaseHistory(uniquePurchases);
     } catch (err) {
       console.error('Error fetching purchase history:', err);
     } finally {

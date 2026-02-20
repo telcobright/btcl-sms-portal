@@ -316,6 +316,11 @@ export default function Dashboard() {
     hcc: boolean;
     vbs: boolean;
   }>({ pbx: false, hcc: false, vbs: false });
+  const [serviceHistory, setServiceHistory] = useState<{
+    pbx: boolean;
+    hcc: boolean;
+    vbs: boolean;
+  }>({ pbx: false, hcc: false, vbs: false });
 
   // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
   const isPrepaid = partnerData?.customerPrePaid === 1;
@@ -474,9 +479,11 @@ export default function Dashboard() {
         if (result.status === 'fulfilled') {
           const { service, data } = result.value;
           if (Array.isArray(data) && data.length > 0) {
-            // Check if there are any valid packageAccounts
+            // Check if there are any valid packageAccounts (excluding packageId 9999)
             const hasValidPackages = data.some((item: any) =>
-              item.packageAccounts && Array.isArray(item.packageAccounts) && item.packageAccounts.length > 0
+              item.packageAccounts &&
+              Array.isArray(item.packageAccounts) &&
+              item.packageAccounts.some((pkg: any) => pkg.packageId !== 9999)
             );
             if (hasValidPackages) {
               portalsWithValidPurchase[service] = true;
@@ -493,14 +500,18 @@ export default function Dashboard() {
       setValidPortals(portalsWithValidPurchase);
 
       if (allData.length > 0) {
-        // Combine all packageAccounts from all sources
+        // Combine all packageAccounts from all sources, filtering out idPackage 9999
         const allPackageAccounts: PackageAccount[] = [];
         let latestPurchaseDate: string | null = null;
         let latestExpireDate: string | null = null;
 
         allData.forEach((item: any) => {
           if (item.packageAccounts && Array.isArray(item.packageAccounts)) {
-            allPackageAccounts.push(...item.packageAccounts);
+            // Filter out packages with packageId 9999
+            const filteredAccounts = item.packageAccounts.filter(
+              (account: PackageAccount) => account.packageId !== 9999
+            );
+            allPackageAccounts.push(...filteredAccounts);
           }
           // Use the latest purchase/expire dates
           if (item.purchaseDate && (!latestPurchaseDate || new Date(item.purchaseDate) > new Date(latestPurchaseDate))) {
@@ -544,15 +555,15 @@ export default function Dashboard() {
       const authToken = localStorage.getItem('authToken');
       const endpoint = API_ENDPOINTS.package.getAllPurchasePartnerWise;
 
-      // Define all three API endpoints to fetch from
-      const apiUrls = [
-        `${PBX_BASE_URL}${endpoint}`,   // https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST/package/get-all-purchase-partner-wise
-        `${HCC_BASE_URL}${endpoint}`,   // https://hcc.btcliptelephony.gov.bd/FREESWITCHREST/package/get-all-purchase-partner-wise
-        `${VBS_BASE_URL}${endpoint}`,   // https://vbs.btcliptelephony.gov.bd/FREESWITCHREST/package/get-all-purchase-partner-wise
+      // Define all three API endpoints to fetch from with service identifiers
+      const apiConfigs = [
+        { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },
+        { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },
+        { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },
       ];
 
       // Fetch from all three APIs in parallel
-      const fetchPromises = apiUrls.map((url) =>
+      const fetchPromises = apiConfigs.map(({ url, service }) =>
         fetch(url, {
           method: 'POST',
           headers: {
@@ -568,30 +579,44 @@ export default function Dashboard() {
           if (!response.ok) {
             throw new Error(`Failed to fetch from ${url}`);
           }
-          return response.json();
+          const data = await response.json();
+          return { service, data };
         })
       );
 
       // Use Promise.allSettled to get results from all APIs (even if some fail)
       const results = await Promise.allSettled(fetchPromises);
 
+      // Track which services have purchase history
+      const historyByService = { pbx: false, hcc: false, vbs: false };
+
       // Combine all successful results
       const allPurchases: PurchaseHistory[] = [];
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          const data = result.value;
+          const { service, data } = result.value;
           const purchaseList = Array.isArray(data) ? data : (data.content || data.data || data.purchases || data.list || []);
-          if (purchaseList.length > 0) {
-            console.log(`Purchase history from API ${index + 1}:`, purchaseList);
-            allPurchases.push(...purchaseList);
+          // Filter out idPackage 9999 before checking
+          const filteredList = purchaseList.filter((p: PurchaseHistory) => p.idPackage !== 9999);
+          if (filteredList.length > 0) {
+            historyByService[service] = true;
+            console.log(`Purchase history from ${service.toUpperCase()}:`, filteredList);
+            allPurchases.push(...filteredList);
           }
         } else {
           console.warn(`Purchase history API ${index + 1} failed:`, result.reason);
         }
       });
 
-      // Sort by purchase date (most recent first) and remove duplicates by id
-      const uniquePurchases = allPurchases.reduce((acc: PurchaseHistory[], current) => {
+      // Update service history state
+      setServiceHistory(historyByService);
+
+      // Filter out idPackage 9999, remove duplicates by id, and sort
+      const filteredPurchases = allPurchases.filter(
+        (purchase) => purchase.idPackage !== 9999
+      );
+
+      const uniquePurchases = filteredPurchases.reduce((acc: PurchaseHistory[], current) => {
         const exists = acc.find(item => item.id === current.id);
         if (!exists) {
           acc.push(current);
@@ -1263,6 +1288,24 @@ export default function Dashboard() {
                 </div>
                 <ExternalLink className="w-5 h-5 text-blue-500 group-hover:text-blue-700 transition-colors" />
               </a>
+            ) : serviceHistory.pbx ? (
+              <a
+                href="/en/pricing"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">Hosted PBX</h4>
+                  <p className="text-sm text-amber-600">Package expired</p>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
+                  Renew Now
+                </span>
+              </a>
             ) : (
               <a
                 href="/en/pricing"
@@ -1302,6 +1345,24 @@ export default function Dashboard() {
                 </div>
                 <ExternalLink className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" />
               </a>
+            ) : serviceHistory.hcc ? (
+              <a
+                href="/en/pricing"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">Contact Center</h4>
+                  <p className="text-sm text-amber-600">Package expired</p>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
+                  Renew Now
+                </span>
+              </a>
             ) : (
               <a
                 href="/en/pricing"
@@ -1340,6 +1401,24 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-600">Access your VBS dashboard</p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-orange-500 group-hover:text-orange-700 transition-colors" />
+              </a>
+            ) : serviceHistory.vbs ? (
+              <a
+                href="/en/pricing"
+                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
+              >
+                <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">Voice Broadcast</h4>
+                  <p className="text-sm text-amber-600">Package expired</p>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
+                  Renew Now
+                </span>
               </a>
             ) : (
               <a

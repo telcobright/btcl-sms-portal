@@ -10,6 +10,7 @@ import {
   sendEmailOtp,
   verifyEmailOtp,
 } from '@/lib/api-client/partner';
+import { extractNidData, NidOcrResult } from '@/lib/nid-ocr';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -93,6 +94,11 @@ export default function RegisterPage() {
   const [isVerifyingNid, setIsVerifyingNid] = useState(false);
   const [nidVerificationData, setNidVerificationData] = useState<any>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  // OCR states
+  const [isExtractingOcr, setIsExtractingOcr] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrResult, setOcrResult] = useState<NidOcrResult | null>(null);
+  const [nidExtractedFromOcr, setNidExtractedFromOcr] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const router = useRouter();
   const { checkAuth } = useAuth();
@@ -169,21 +175,25 @@ export default function RegisterPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const subscription = verificationForm.watch((value) => {
-        if (!otpSent) {
-          // For Send OTP button
+        if (!emailOtpSent) {
+          // For Send Email OTP button
           const hasAllFields = !!(value.companyName && value.email && value.phone);
           const emailValid = !verificationForm.formState.errors.email;
           const phoneValid = !verificationForm.formState.errors.phone;
           setCanSendOtp(hasAllFields && emailValid && phoneValid);
-        } else {
-          // For Verify OTP button
-          const hasOtp = !!(value.otp);
-          setCanSendOtp(hasOtp);
+        } else if (!emailOtpVerified) {
+          // For Verify Email OTP button
+          const hasEmailOtp = !!(value.emailOtp);
+          setCanSendOtp(hasEmailOtp);
+        } else if (!phoneOtpVerified) {
+          // For Verify Phone OTP button
+          const hasPhoneOtp = !!(value.phoneOtp);
+          setCanSendOtp(hasPhoneOtp);
         }
       });
       return () => subscription.unsubscribe();
     }
-  }, [verificationForm, otpSent]);
+  }, [verificationForm, emailOtpSent, emailOtpVerified, phoneOtpVerified]);
 
   // Watch personal info form fields for Next Step button
   useEffect(() => {
@@ -562,6 +572,72 @@ export default function RegisterPage() {
   const handlePersonalInfoSubmit: SubmitHandler<PersonalInfo> = (data) => {
     console.log('Personal info submitted:', data);
     setStep(3);
+  };
+
+  // Handle NID front side upload and OCR extraction
+  const handleNidFrontUpload = async (file: File) => {
+    if (!file) return;
+
+    setIsExtractingOcr(true);
+    setOcrProgress(0);
+    setOcrResult(null);
+
+    try {
+      toast.loading('Extracting data from NID...', { id: 'ocr-loading' });
+
+      const result = await extractNidData(file, (progress) => {
+        setOcrProgress(progress);
+      });
+
+      setOcrResult(result);
+
+      if (result.success && result.data) {
+        // Auto-fill form fields with extracted data
+        if (result.data.name) {
+          personalInfoForm.setValue('fullName', result.data.name, { shouldValidate: true });
+          toast.success('Name extracted successfully!');
+        }
+
+        if (result.data.nidNumber) {
+          personalInfoForm.setValue('nidNumber', result.data.nidNumber, { shouldValidate: true });
+          if (result.data.nidDigitType) {
+            personalInfoForm.setValue('nidDigitType', result.data.nidDigitType, { shouldValidate: true });
+          }
+          setNidExtractedFromOcr(true);
+          toast.success('NID number extracted successfully!');
+        }
+
+        if (result.data.dateOfBirth) {
+          personalInfoForm.setValue('dateOfBirth', result.data.dateOfBirth, { shouldValidate: true });
+          toast.success('Date of birth extracted successfully!');
+        }
+
+        // Overall success message
+        const extractedFields = [
+          result.data.name && 'Name',
+          result.data.nidNumber && 'NID Number',
+          result.data.dateOfBirth && 'Date of Birth',
+        ].filter(Boolean);
+
+        if (extractedFields.length > 0) {
+          toast.dismiss('ocr-loading');
+          toast.success(`Extracted: ${extractedFields.join(', ')}`);
+        } else {
+          toast.dismiss('ocr-loading');
+          toast.error('Could not extract data. Please enter manually.');
+        }
+      } else {
+        toast.dismiss('ocr-loading');
+        toast.error('Failed to extract data. Please enter manually.');
+      }
+    } catch (error) {
+      console.error('OCR extraction error:', error);
+      toast.dismiss('ocr-loading');
+      toast.error('OCR extraction failed. Please enter data manually.');
+    } finally {
+      setIsExtractingOcr(false);
+      setOcrProgress(0);
+    }
   };
 
   // Updated registration flow
@@ -1362,6 +1438,7 @@ export default function RegisterPage() {
                           <input
                             type="text"
                             {...field}
+                            readOnly={nidExtractedFromOcr}
                             placeholder={
                               watchedNidDigitType === '10'
                                 ? 'Enter 10-digit NID'
@@ -1371,9 +1448,16 @@ export default function RegisterPage() {
                             className={`w-full px-3 py-2 border ${
                               fieldState.error
                                 ? 'border-red-500'
+                                : nidExtractedFromOcr
+                                ? 'border-green-500 bg-green-50'
                                 : 'border-gray-300'
-                            } rounded-md text-black`}
+                            } rounded-md text-black ${nidExtractedFromOcr ? 'cursor-not-allowed' : ''}`}
                           />
+                          {nidExtractedFromOcr && (
+                            <p className="text-green-600 text-sm mt-1">
+                              NID extracted from uploaded image
+                            </p>
+                          )}
                           {fieldState.error && (
                             <p className="text-red-500 text-sm mt-1">
                               {fieldState.error.message}
@@ -1398,16 +1482,48 @@ export default function RegisterPage() {
                           <>
                             <input
                               type="file"
-                              accept="image/*,.pdf"
-                              onChange={(e) =>
-                                onChange(e.target.files?.[0] || null)
-                              }
+                              accept="image/*"
+                              disabled={isExtractingOcr}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                onChange(file);
+                                // Trigger OCR extraction for image files
+                                if (file && file.type.startsWith('image/')) {
+                                  handleNidFrontUpload(file);
+                                }
+                              }}
                               className={`w-full px-3 py-2 border ${
                                 fieldState.error
                                   ? 'border-red-500'
                                   : 'border-gray-300'
-                              } rounded-md text-black`}
+                              } rounded-md text-black ${isExtractingOcr ? 'opacity-50' : ''}`}
                             />
+                            {isExtractingOcr && (
+                              <div className="mt-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00A651]"></div>
+                                  <span className="text-sm text-gray-600">
+                                    Extracting data... {ocrProgress}%
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                  <div
+                                    className="bg-[#00A651] h-1.5 rounded-full transition-all duration-300"
+                                    style={{ width: `${ocrProgress}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            )}
+                            {!isExtractingOcr && !fieldState.error && (
+                              <div className="mt-1 space-y-1">
+                                <p className="text-blue-600 text-xs">
+                                  Upload NID image to auto-fill Name, NID Number & DOB
+                                </p>
+                                <p className="text-gray-500 text-xs">
+                                  Accepted: JPG, PNG, JPEG (Max 5MB). Clear, well-lit photo recommended.
+                                </p>
+                              </div>
+                            )}
                             {fieldState.error && (
                               <p className="text-red-500 text-sm mt-1">
                                 {fieldState.error.message}

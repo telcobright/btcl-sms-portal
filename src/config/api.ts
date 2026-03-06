@@ -61,10 +61,16 @@ export const FEATURE_FLAGS = {
 
 // API Endpoints
 export const API_ENDPOINTS = {
-  // OTP endpoints
+  // OTP endpoints (Phone)
   otp: {
     send: '/otp/send',
     verify: '/otp/varify',
+  },
+
+  // Email OTP endpoints
+  emailOtp: {
+    send: '/otp/email/send',
+    verify: '/otp/email/verify',
   },
 
   // Authentication endpoints

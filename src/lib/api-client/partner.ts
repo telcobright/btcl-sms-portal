@@ -60,6 +60,59 @@ export const verifyOtp = async (phoneNumber: string, otp: string): Promise<{ mes
   }
 };
 
+// ---------------------- EMAIL OTP FUNCTIONS ----------------------
+
+export interface EmailOtpResponse {
+  success: boolean;
+  message: string;
+  expiresInSeconds?: number;
+  retryAfterSeconds?: number;
+}
+
+export const sendEmailOtp = async (
+  email: string,
+  purpose: 'login' | 'password_reset' | 'registration' = 'registration'
+): Promise<EmailOtpResponse> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.emailOtp.send}`,
+      { email, purpose },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      // Return the error response data for handling (e.g., rate limiting)
+      return error.response.data as EmailOtpResponse;
+    }
+    throw error;
+  }
+};
+
+export const verifyEmailOtp = async (email: string, otp: string): Promise<EmailOtpResponse> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.emailOtp.verify}`,
+      { email, otp },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      return error.response.data as EmailOtpResponse;
+    }
+    throw error;
+  }
+};
+
 // ---------------------- INTERFACES ----------------------
 
 export interface CreatePartnerPayload {

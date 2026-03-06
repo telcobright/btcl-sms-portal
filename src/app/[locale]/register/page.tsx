@@ -7,6 +7,8 @@ import {
   loginPartner,
   sendOtp,
   verifyOtp,
+  sendEmailOtp,
+  verifyEmailOtp,
 } from '@/lib/api-client/partner';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
@@ -27,7 +29,8 @@ type VerificationInfo = {
   companyName: string;
   email: string;
   phone: string;
-  otp: string;
+  emailOtp: string;
+  phoneOtp: string;
 };
 
 type PersonalInfo = {
@@ -72,6 +75,13 @@ export default function RegisterPage() {
   const [step, setStep] = useState<number>(1);
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Email OTP states
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtpVerified, setEmailOtpVerified] = useState(false);
+  // Phone OTP states
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtpVerified, setPhoneOtpVerified] = useState(false);
+  // Legacy states for compatibility
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [verifiedPhone, setVerifiedPhone] = useState('');
@@ -94,7 +104,8 @@ export default function RegisterPage() {
       companyName: '',
       email: '',
       phone: '',
-      otp: '',
+      emailOtp: '',
+      phoneOtp: '',
     },
   });
 
@@ -242,14 +253,21 @@ export default function RegisterPage() {
 
   const handleNext = async () => {
     if (step === 1) {
-      const isValid = await verificationForm.trigger();
+      const isValid = await verificationForm.trigger(['companyName', 'email', 'phone']);
       if (isValid) {
-        // If OTP hasn't been sent yet, send it
-        if (!otpSent) {
-          await handleSendOtp();
-        } else {
-          // If OTP has been sent, verify it
-          await handleVerifyOtp();
+        // Sequential flow: Email OTP first, then Phone OTP
+        if (!emailOtpSent) {
+          // Step 1a: Send email OTP
+          await handleSendEmailOtp();
+        } else if (!emailOtpVerified) {
+          // Step 1b: Verify email OTP
+          await handleVerifyEmailOtp();
+        } else if (!phoneOtpSent) {
+          // Step 1c: Send phone OTP
+          await handleSendPhoneOtp();
+        } else if (!phoneOtpVerified) {
+          // Step 1d: Verify phone OTP
+          await handleVerifyPhoneOtp();
         }
       }
     } else if (step === 2) {
@@ -275,7 +293,8 @@ export default function RegisterPage() {
     if (step > 1) setStep((prev) => prev - 1);
   };
 
-  const handleSendOtp = async () => {
+  // Send Email OTP (Step 1a)
+  const handleSendEmailOtp = async () => {
     try {
       setIsSubmitting(true);
       const phone = verificationForm.getValues('phone');
@@ -290,21 +309,24 @@ export default function RegisterPage() {
 
       // Check if OTP verification is enabled
       if (!FEATURE_FLAGS.OTP_VERIFICATION_ENABLED) {
-        // Skip OTP verification
         await new Promise(resolve => setTimeout(resolve, 1000));
-        setOtpSent(true);
-        startTimer(300);
+        setEmailOtpSent(true);
+        setEmailOtpVerified(true);
+        setPhoneOtpSent(true);
+        setPhoneOtpVerified(true);
+        setVerifiedEmail(email);
+        setVerifiedPhone(phone);
+        setOtpVerified(true);
         toast.success('OTP verification skipped (disabled in config)');
+        setStep(2);
         return;
       }
 
-      // OTP verification is enabled - proceed with actual validation and OTP sending
+      // Validate partner data first
       console.log('Validating partner data...');
       const validateResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.validate}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           partnerName: companyName,
           telephone: phone,
@@ -315,108 +337,146 @@ export default function RegisterPage() {
       const validateData = await validateResponse.json();
       console.log('Validation response:', validateData);
 
-      // Check for validation errors
       if (!validateResponse.ok || validateData === false) {
         if (validateData.errorCode === '400 BAD_REQUEST') {
           if (validateData.message === 'Telephone number already exists') {
-            verificationForm.setError('phone', {
-              type: 'manual',
-              message: 'Telephone number already exists',
-            });
-            setIsSubmitting(false);
-            return;
+            verificationForm.setError('phone', { type: 'manual', message: 'Telephone number already exists' });
           } else if (validateData.message === 'Email already exists') {
-            verificationForm.setError('email', {
-              type: 'manual',
-              message: 'Email already exists',
-            });
-            setIsSubmitting(false);
-            return;
+            verificationForm.setError('email', { type: 'manual', message: 'Email already exists' });
           } else if (validateData.message === 'Partner Name already exists') {
-            verificationForm.setError('companyName', {
-              type: 'manual',
-              message: 'Company Name already exists',
-            });
-            setIsSubmitting(false);
-            return;
+            verificationForm.setError('companyName', { type: 'manual', message: 'Company Name already exists' });
           }
+        } else {
+          toast.error('Validation failed. Please check your information.');
         }
-        toast.error('Validation failed. Please check your information.');
         setIsSubmitting(false);
         return;
       }
 
-      // If validation passed, send actual OTP
-      console.log('Validation successful, sending OTP...');
-      const response = await sendOtp(phone);
-      console.log('OTP sent:', response);
-      setOtpSent(true);
-      startTimer(300);
-      toast.success('OTP sent successfully!');
+      // Send email OTP
+      console.log('Validation successful, sending email OTP...');
+      const response = await sendEmailOtp(email, 'registration');
+      console.log('Email OTP response:', response);
+
+      if (response.success) {
+        setEmailOtpSent(true);
+        startTimer(300);
+        toast.success('OTP sent to your email successfully!');
+      } else {
+        if (response.retryAfterSeconds) {
+          toast.error(`Please wait ${response.retryAfterSeconds} seconds before requesting another OTP`);
+        } else {
+          toast.error(response.message || 'Failed to send email OTP');
+        }
+      }
     } catch (error) {
-      console.error('Failed to send OTP:', error);
-      toast.error('Failed to send OTP. Please try again.');
+      console.error('Failed to send email OTP:', error);
+      toast.error('Failed to send email OTP. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleVerifyOtp = async () => {
+  // Verify Email OTP (Step 1b)
+  const handleVerifyEmailOtp = async () => {
     try {
       setIsSubmitting(true);
-      const { phone, otp, email } = verificationForm.getValues();
+      const { email, emailOtp } = verificationForm.getValues();
 
-      // Check if OTP verification is enabled
-      if (!FEATURE_FLAGS.OTP_VERIFICATION_ENABLED) {
-        // Skip OTP verification
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setVerifiedPhone(phone);
+      const response = await verifyEmailOtp(email, emailOtp);
+
+      if (response.success) {
+        console.log('Email OTP verified:', response);
+        setEmailOtpVerified(true);
         setVerifiedEmail(email);
-        setOtpVerified(true);
-        toast.success('OTP verification skipped (disabled in config)');
-        setStep(2);
-        return;
-      }
-
-      // OTP verification is enabled - proceed with actual verification
-      const response = await verifyOtp(phone, otp);
-
-      // Check if OTP verification was successful
-      // @ts-ignore
-      if (response === 'OTP verified successfully.' || response.message === 'OTP verified successfully.') {
-        console.log('OTP verified:', response);
-        setVerifiedPhone(phone);
-        setVerifiedEmail(email);
-        setOtpVerified(true);
-        toast.success('Phone number verified successfully!');
-        setStep(2);
+        toast.success('Email verified successfully! Now verify your phone.');
+        // Automatically send phone OTP
+        await handleSendPhoneOtp();
       } else {
-        throw new Error('OTP verification failed');
+        toast.error(response.message || 'Invalid email OTP. Please try again.');
       }
     } catch (error) {
-      console.error('Failed to verify OTP:', error);
-      toast.error('Invalid OTP. Please try again.');
+      console.error('Failed to verify email OTP:', error);
+      toast.error('Invalid email OTP. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Send Phone OTP (Step 1c)
+  const handleSendPhoneOtp = async () => {
+    try {
+      setIsSubmitting(true);
+      const phone = verificationForm.getValues('phone');
+
+      console.log('Sending phone OTP...');
+      const response = await sendOtp(phone);
+      console.log('Phone OTP sent:', response);
+
+      setPhoneOtpSent(true);
+      startTimer(300);
+      toast.success('OTP sent to your phone successfully!');
+    } catch (error) {
+      console.error('Failed to send phone OTP:', error);
+      toast.error('Failed to send phone OTP. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Verify Phone OTP (Step 1d)
+  const handleVerifyPhoneOtp = async () => {
+    try {
+      setIsSubmitting(true);
+      const { phone, phoneOtp } = verificationForm.getValues();
+
+      const response = await verifyOtp(phone, phoneOtp);
+
+      // @ts-ignore
+      if (response === 'OTP verified successfully.' || response.message === 'OTP verified successfully.') {
+        console.log('Phone OTP verified:', response);
+        setPhoneOtpVerified(true);
+        setVerifiedPhone(phone);
+        setOtpVerified(true);
+        toast.success('Phone verified successfully!');
+        setStep(2);
+      } else {
+        toast.error('Invalid phone OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to verify phone OTP:', error);
+      toast.error('Invalid phone OTP. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Resend OTP (for current verification step)
   const resendOtp = async () => {
     try {
-      // Check if OTP verification is enabled
       if (!FEATURE_FLAGS.OTP_VERIFICATION_ENABLED) {
-        // Skip OTP resending
         startTimer(300);
         toast.success('OTP resend skipped (disabled in config)');
         return;
       }
 
-      // OTP verification is enabled - proceed with actual resend
-      const phone = verificationForm.getValues('phone');
-      const response = await sendOtp(phone);
-      console.log('OTP resent:', response);
-      startTimer(300);
-      toast.success('OTP resent successfully!');
+      if (!emailOtpVerified) {
+        // Resend email OTP
+        const email = verificationForm.getValues('email');
+        const response = await sendEmailOtp(email, 'registration');
+        if (response.success) {
+          startTimer(300);
+          toast.success('OTP resent to your email!');
+        } else {
+          toast.error(response.message || 'Failed to resend email OTP');
+        }
+      } else if (!phoneOtpVerified) {
+        // Resend phone OTP
+        const phone = verificationForm.getValues('phone');
+        await sendOtp(phone);
+        startTimer(300);
+        toast.success('OTP resent to your phone!');
+      }
     } catch (error) {
       console.error('Failed to resend OTP:', error);
       toast.error('Failed to resend OTP. Please try again.');
@@ -736,7 +796,7 @@ export default function RegisterPage() {
           {/* Title */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-black">
-              {step === 1 && 'Verify Your Phone Number'}
+              {step === 1 && 'Verify Your Email & Phone'}
               {step === 2 && 'Verify Your NID'}
               {step === 3 && 'Upload Your Documents and Additional Data'}
             </h1>
@@ -875,7 +935,7 @@ export default function RegisterPage() {
                         type="tel"
                         {...field}
                         placeholder="+880 1XXXXXXXXX"
-                        disabled={otpSent}
+                        disabled={emailOtpSent}
                         onChange={(e) => {
                           let value = e.target.value.replace(/\s/g, ''); // Remove spaces
 
@@ -920,7 +980,7 @@ export default function RegisterPage() {
                             ? 'border-red-500'
                             : 'border-gray-300'
                         } rounded-md text-black ${
-                          otpSent ? 'bg-gray-100' : ''
+                          emailOtpSent ? 'bg-gray-100' : ''
                         }`}
                       />
                       {fieldState.error && (
@@ -928,7 +988,7 @@ export default function RegisterPage() {
                           {fieldState.error.message}
                         </p>
                       )}
-                      {!fieldState.error && !otpSent && (
+                      {!fieldState.error && !emailOtpSent && (
                         <p className="text-gray-500 text-sm mt-1">
                           Enter as: +8801XXXXXXXXX, 8801XXXXXXXXX, or 01XXXXXXXXX
                         </p>
@@ -938,20 +998,26 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {otpSent && (
+              {/* Email OTP Section */}
+              {emailOtpSent && !emailOtpVerified && (
                 <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                    <p className="text-blue-800 text-sm">
+                      <strong>Step 1 of 2:</strong> Verify your email address
+                    </p>
+                  </div>
                   <div>
                     <label className="block text-black font-medium mb-1">
-                      Verification Code
+                      Email Verification Code (Check your email inbox)
                     </label>
                     <Controller
-                      name="otp"
+                      name="emailOtp"
                       control={verificationForm.control}
                       rules={{
-                        required: 'OTP is required',
+                        required: 'Email OTP is required',
                         pattern: {
-                          value: /^\d{5}$/,
-                          message: 'OTP must be 5 digits',
+                          value: /^\d{6}$/,
+                          message: 'OTP must be 6 digits',
                         },
                       }}
                       render={({ field, fieldState }) => (
@@ -959,6 +1025,8 @@ export default function RegisterPage() {
                           <input
                             type="text"
                             {...field}
+                            placeholder="Enter 6-digit code from email"
+                            maxLength={6}
                             className={`w-full px-3 py-2 border ${
                               fieldState.error
                                 ? 'border-red-500'
@@ -974,17 +1042,78 @@ export default function RegisterPage() {
                       )}
                     />
                   </div>
-
                   <div className="text-sm text-gray-600">
                     {secondsLeft > 0 ? (
                       <p>Time remaining: {formatTime(secondsLeft)}</p>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={resendOtp}
-                        className="text-blue-600 hover:underline"
-                      >
-                        Resend OTP
+                      <button type="button" onClick={resendOtp} className="text-blue-600 hover:underline">
+                        Resend Email OTP
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Email Verified Badge */}
+              {emailOtpVerified && (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-md p-3">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-green-800 font-medium">Email Verified</span>
+                </div>
+              )}
+
+              {/* Phone OTP Section */}
+              {phoneOtpSent && !phoneOtpVerified && (
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                    <p className="text-blue-800 text-sm">
+                      <strong>Step 2 of 2:</strong> Verify your phone number
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-black font-medium mb-1">
+                      Phone Verification Code (Check your SMS)
+                    </label>
+                    <Controller
+                      name="phoneOtp"
+                      control={verificationForm.control}
+                      rules={{
+                        required: 'Phone OTP is required',
+                        pattern: {
+                          value: /^\d{6}$/,
+                          message: 'OTP must be 6 digits',
+                        },
+                      }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <input
+                            type="text"
+                            {...field}
+                            placeholder="Enter 6-digit code from SMS"
+                            maxLength={6}
+                            className={`w-full px-3 py-2 border ${
+                              fieldState.error
+                                ? 'border-red-500'
+                                : 'border-gray-300'
+                            } rounded-md text-black`}
+                          />
+                          {fieldState.error && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {fieldState.error.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {secondsLeft > 0 ? (
+                      <p>Time remaining: {formatTime(secondsLeft)}</p>
+                    ) : (
+                      <button type="button" onClick={resendOtp} className="text-blue-600 hover:underline">
+                        Resend Phone OTP
                       </button>
                     )}
                   </div>
@@ -996,14 +1125,18 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  disabled={isSubmitting || (!otpSent && !canSendOtp)}
+                  disabled={isSubmitting || (!emailOtpSent && !canSendOtp)}
                   className="bg-[#00A651] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting
                     ? 'Processing...'
-                    : otpSent
-                    ? 'Verify OTP'
-                    : 'Send OTP'}
+                    : !emailOtpSent
+                    ? 'Send Email OTP'
+                    : !emailOtpVerified
+                    ? 'Verify Email'
+                    : !phoneOtpVerified
+                    ? 'Verify Phone'
+                    : 'Continue'}
                 </button>
               </div>
             </div>

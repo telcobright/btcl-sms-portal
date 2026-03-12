@@ -16,6 +16,7 @@ import {
   PurchaseHistory,
   PartnerDocument,
 } from '@/lib/api-client/admin';
+import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 type TabType = 'overview' | 'users' | 'purchases' | 'subscriptions' | 'documents';
 
@@ -32,6 +33,9 @@ export default function PartnerDetailsPage() {
   const [purchases, setPurchases] = useState<PurchaseHistory[]>([]);
   const [subscriptions, setSubscriptions] = useState<PurchaseHistory[]>([]);
   const [documents, setDocuments] = useState<PartnerDocument[]>([]);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
+  const [imageViewerData, setImageViewerData] = useState<{ url: string; name: string } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -68,6 +72,152 @@ export default function PartnerDetailsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Helper function to detect file type from blob
+  const detectFileType = async (blob: Blob): Promise<string> => {
+    const arr = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+    const header = arr.reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
+
+    if (header.startsWith('89504e47')) return '.png';
+    if (header.startsWith('ffd8ff')) return '.jpg';
+    if (header.startsWith('47494638')) return '.gif';
+    if (header.startsWith('25504446')) return '.pdf';
+    if (header.startsWith('52494646')) return '.webp';
+    return '.pdf';
+  };
+
+  const isImageFile = (extension: string): boolean => {
+    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].includes(extension.toLowerCase());
+  };
+
+  const viewDocument = async (documentType: string, documentName: string) => {
+    try {
+      setViewingDoc(documentType);
+      const authToken = localStorage.getItem('authToken');
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerDocument}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            partnerId: partnerId,
+            documentType: documentType,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to load document');
+      }
+
+      const blob = await response.blob();
+      const mimeType = blob.type;
+
+      let extension = '.pdf';
+      let isImage = false;
+
+      if (mimeType && mimeType.startsWith('image/')) {
+        isImage = true;
+        if (mimeType.includes('jpeg') || mimeType.includes('jpg')) extension = '.jpg';
+        else if (mimeType.includes('png')) extension = '.png';
+        else if (mimeType.includes('gif')) extension = '.gif';
+        else if (mimeType.includes('webp')) extension = '.webp';
+      } else if (mimeType && mimeType.includes('application/pdf')) {
+        extension = '.pdf';
+      } else {
+        extension = await detectFileType(blob);
+        isImage = isImageFile(extension);
+      }
+
+      const baseFileName = documentName.replace(/\.[^/.]+$/, '');
+      const finalFileName = `${baseFileName}${extension}`;
+
+      if (isImage || isImageFile(extension)) {
+        const url = window.URL.createObjectURL(blob);
+        setImageViewerData({ url, name: finalFileName });
+      } else if (extension === '.pdf') {
+        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(pdfBlob);
+        window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+      } else {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = finalFileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (err) {
+      console.error('Error viewing document:', err);
+      alert('Failed to load document. Please try again.');
+    } finally {
+      setViewingDoc(null);
+    }
+  };
+
+  const downloadDocument = async (documentType: string, documentName: string) => {
+    try {
+      setDownloadingDoc(documentType);
+      const authToken = localStorage.getItem('authToken');
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerDocument}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            partnerId: partnerId,
+            documentType: documentType,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const blob = await response.blob();
+      const mimeType = blob.type;
+
+      let extension = '.pdf';
+      if (mimeType && mimeType !== 'application/octet-stream') {
+        if (mimeType.includes('image/jpeg') || mimeType.includes('image/jpg')) extension = '.jpg';
+        else if (mimeType.includes('image/png')) extension = '.png';
+        else if (mimeType.includes('image/gif')) extension = '.gif';
+        else if (mimeType.includes('image/webp')) extension = '.webp';
+        else if (mimeType.includes('application/pdf')) extension = '.pdf';
+      } else {
+        extension = await detectFileType(blob);
+      }
+
+      const baseFileName = documentName.replace(/\.[^/.]+$/, '');
+      const finalFileName = `${baseFileName}${extension}`;
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = finalFileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Error downloading document:', err);
+      alert('Failed to download document. Please try again.');
+    } finally {
+      setDownloadingDoc(null);
+    }
+  };
 
   const tabs: { id: TabType; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
@@ -195,8 +345,54 @@ export default function PartnerDetailsPage() {
         {activeTab === 'users' && <UsersTab users={users} />}
         {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
         {activeTab === 'subscriptions' && <SubscriptionsTab subscriptions={subscriptions} />}
-        {activeTab === 'documents' && <DocumentsTab documents={documents} />}
+        {activeTab === 'documents' && (
+          <DocumentsTab
+            documents={documents}
+            viewDocument={viewDocument}
+            downloadDocument={downloadDocument}
+            viewingDoc={viewingDoc}
+            downloadingDoc={downloadingDoc}
+          />
+        )}
       </div>
+
+      {/* Image Viewer Modal */}
+      {imageViewerData && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            window.URL.revokeObjectURL(imageViewerData.url);
+            setImageViewerData(null);
+          }}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-white rounded-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-semibold text-gray-900">{imageViewerData.name}</h3>
+              <button
+                onClick={() => {
+                  window.URL.revokeObjectURL(imageViewerData.url);
+                  setImageViewerData(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
+              <img
+                src={imageViewerData.url}
+                alt={imageViewerData.name}
+                className="max-w-full h-auto mx-auto"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -562,7 +758,15 @@ function SubscriptionsTab({ subscriptions }: { subscriptions: PurchaseHistory[] 
 }
 
 // Documents Tab Component
-function DocumentsTab({ documents }: { documents: PartnerDocument[] }) {
+interface DocumentsTabProps {
+  documents: PartnerDocument[];
+  viewDocument: (documentType: string, documentName: string) => Promise<void>;
+  downloadDocument: (documentType: string, documentName: string) => Promise<void>;
+  viewingDoc: string | null;
+  downloadingDoc: string | null;
+}
+
+function DocumentsTab({ documents, viewDocument, downloadDocument, viewingDoc, downloadingDoc }: DocumentsTabProps) {
   const availableDocs = documents.filter((doc) => doc.available);
   const unavailableDocs = documents.filter((doc) => !doc.available);
 
@@ -600,13 +804,13 @@ function DocumentsTab({ documents }: { documents: PartnerDocument[] }) {
         {availableDocs.length === 0 ? (
           <p className="text-gray-500 text-sm">No documents uploaded yet</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {availableDocs.map((doc) => (
               <div
                 key={doc.type}
                 className="border border-green-200 bg-green-50 rounded-lg p-4"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">{getDocTypeIcon(doc.type)}</span>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{doc.name}</p>
@@ -614,6 +818,54 @@ function DocumentsTab({ documents }: { documents: PartnerDocument[] }) {
                   <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                     Uploaded
                   </span>
+                </div>
+                {/* View & Download Buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => viewDocument(doc.type, doc.name)}
+                    disabled={viewingDoc === doc.type}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#00A651] hover:bg-[#008040] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {viewingDoc === doc.type ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        View
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => downloadDocument(doc.type, doc.name)}
+                    disabled={downloadingDoc === doc.type}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#00A651] bg-white hover:bg-green-50 border-2 border-[#00A651] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {downloadingDoc === doc.type ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             ))}

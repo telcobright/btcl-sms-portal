@@ -18,20 +18,6 @@ export const PBX_BASE_URL = 'https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHR
 // HCC API Base URL for partner creation
 export const HCC_BASE_URL = 'https://hcc.btcliptelephony.gov.bd/FREESWITCHREST';
 
-// A2P SMS API Base URL for partner creation
-export const A2P_BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/FREESWITCHREST';
-
-// ============================================
-// Service API Enable/Disable Flags
-// Controls which APIs are called during partner creation
-// ============================================
-export const SERVICE_API_FLAGS = {
-  PRIMARY_ENABLED: true,   // Primary API - services.btcliptelephony.gov.bd
-  VBS_ENABLED: false,      // VBS API - VBS_BASE_URL (disabled)
-  HCC_ENABLED: false,      // HCC API - HCC_BASE_URL (disabled)
-  A2P_ENABLED: false,      // A2P SMS API - A2P_BASE_URL (disabled)
-} as const;
-
 // ============================================
 // Service Base URLs (derived from ROOT_URL)
 // ============================================

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, A2P_BASE_URL, AUTH_BASE_URL, PBX_BASE_URL, API_ENDPOINTS, SERVICE_API_FLAGS } from '@/config/api';
+import { API_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, AUTH_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
@@ -203,95 +203,33 @@ export const createPartner = async (payload: {
     callSrcId: number
 }): Promise<CreatePartnerResponse> => {
   try {
-    // Build API calls based on enabled service flags
-    const apiCalls: Promise<any>[] = [];
-    const apiNames: string[] = [];
-
-    const primaryUrl = `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
-    const vbsUrl = `${VBS_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
-    const hccUrl = `${HCC_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
-    const a2pUrl = `${A2P_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
-
-    // Primary API (services.btcliptelephony.gov.bd)
-    if (SERVICE_API_FLAGS.PRIMARY_ENABLED) {
-      apiCalls.push(
-        axios.post<CreatePartnerResponse>(primaryUrl, payload, {
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
-      apiNames.push('Primary');
-    }
-
-    // VBS API (without port)
-    if (SERVICE_API_FLAGS.VBS_ENABLED) {
-      apiCalls.push(
-        axios.post<CreatePartnerResponse>(vbsUrl, payload, {
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
-      apiNames.push('VBS');
-    }
-
-    // HCC API
-    if (SERVICE_API_FLAGS.HCC_ENABLED) {
-      apiCalls.push(
-        axios.post<CreatePartnerResponse>(hccUrl, payload, {
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
-      apiNames.push('HCC');
-    }
-
-    // A2P SMS API
-    if (SERVICE_API_FLAGS.A2P_ENABLED) {
-      apiCalls.push(
-        axios.post<CreatePartnerResponse>(a2pUrl, payload, {
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
-      apiNames.push('A2P SMS');
-    }
-
-    console.log('Creating partner on enabled endpoints:', apiNames);
-
-    // Make enabled API calls simultaneously
-    const responses = await Promise.allSettled(apiCalls);
-
-    // Log results for each enabled API
-    responses.forEach((response, index) => {
-      if (response.status === 'fulfilled') {
-        console.log(`✅ ${apiNames[index]} partner created:`, response.value.data);
-      } else {
-        console.warn(`⚠️ ${apiNames[index]} failed:`, response.reason?.message);
+    // Create partner in PRIMARY service only
+    // Other services (PBX, HCC, VBS) are handled on-demand via ensurePartnerInService()
+    const response = await axios.post<CreatePartnerResponse>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.createPartner}`,
+      payload,
+      {
+        headers: { 'Content-Type': 'application/json' },
       }
-    });
+    );
 
-    // Use first successful response (VBS if enabled, otherwise first available)
-    const successfulResponse = responses.find(r => r.status === 'fulfilled');
-    if (!successfulResponse || successfulResponse.status !== 'fulfilled') {
-      throw new Error('All enabled API endpoints failed');
-    }
-
-    const response = successfulResponse.value;
+    console.log('✅ Partner created in PRIMARY:', response.data);
 
     if (!response.data) {
       throw new Error('No response data received from create partner API');
     }
 
-    const responseData = {
+    return {
       ...response.data,
       idPartner: response.data.idPartner || response.data.id,
       id: response.data.id || response.data.idPartner,
     };
-
-    return responseData;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Create Partner API error:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        headers: error.response?.headers,
         requestData: payload,
       });
 

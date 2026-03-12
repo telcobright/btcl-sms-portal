@@ -7,7 +7,7 @@
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
 // export const ROOT_URL = 'http://localhost:8001';
-export const ROOT_URL = 'https://vbs.btcliptelephony.gov.bd:4000';
+export const ROOT_URL = 'https://services.btcliptelephony.gov.bd';
 
 // VBS API Base URL (without port) - used for secondary partner creation
 export const VBS_BASE_URL = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
@@ -26,10 +26,10 @@ export const A2P_BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/FREESWITCHRES
 // Controls which APIs are called during partner creation
 // ============================================
 export const SERVICE_API_FLAGS = {
-  PRIMARY_ENABLED: true,   // Primary API - PBX_BASE_URL (port 4000)
-  VBS_ENABLED: true,       // VBS API - VBS_BASE_URL (without port)
-  HCC_ENABLED: true,       // HCC API - HCC_BASE_URL
-  A2P_ENABLED: false,       // A2P SMS API - A2P_BASE_URL
+  PRIMARY_ENABLED: true,   // Primary API - services.btcliptelephony.gov.bd
+  VBS_ENABLED: false,      // VBS API - VBS_BASE_URL (disabled)
+  HCC_ENABLED: false,      // HCC API - HCC_BASE_URL (disabled)
+  A2P_ENABLED: false,      // A2P SMS API - A2P_BASE_URL (disabled)
 } as const;
 
 // ============================================
@@ -50,7 +50,7 @@ export const PAYMENT_BASE_URL = `${ROOT_URL}`;
  */
 export const FEATURE_FLAGS = {
   /** Enable/Disable OTP verification during registration */
-  OTP_VERIFICATION_ENABLED: true,
+  OTP_VERIFICATION_ENABLED: false,
 
   /** Enable/Disable NID verification during registration */
   NID_VERIFICATION_ENABLED: true,

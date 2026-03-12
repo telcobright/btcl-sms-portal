@@ -402,12 +402,15 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             console.log('Service type:', serviceType);
             console.log('Customer PrePaid:', customerPrePaid);
 
+            // For VBS service, always use payment gateway (even if customerPrePaid = 2)
+            const effectivePrePaid = serviceType === 'voice-broadcast' ? 1 : customerPrePaid;
+
             // Call unified purchase API
-            const response = await unifiedPurchase(payload, serviceType, customerPrePaid);
+            const response = await unifiedPurchase(payload, serviceType, effectivePrePaid);
             console.log('Unified Purchase response:', response);
 
-            // customerPrePaid = 1: Payment gateway initiated, redirect to payment URL
-            if (customerPrePaid === 1) {
+            // customerPrePaid = 1 (or VBS): Payment gateway initiated, redirect to payment URL
+            if (effectivePrePaid === 1) {
                 const redirectUrl = response.redirectUrl || response.GatewayPageURL || response;
 
                 if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
@@ -426,8 +429,8 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                     toast.error(locale === 'en' ? 'Payment URL not received. Please try again.' : 'পেমেন্ট URL পাওয়া যায়নি। আবার চেষ্টা করুন।');
                 }
             }
-            // customerPrePaid = 2: Direct purchase completed (no payment gateway)
-            else if (customerPrePaid === 2) {
+            // customerPrePaid = 2: Direct purchase completed (no payment gateway) - NOT for VBS
+            else if (effectivePrePaid === 2) {
                 if (response.status === 'SUCCESS') {
                     toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
 

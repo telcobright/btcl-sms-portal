@@ -53,10 +53,11 @@ export default function PartnerDetailsPage() {
         ]);
 
       setPartner(partnerData);
-      setUsers(usersData);
-      setPurchases(purchasesData);
-      setSubscriptions(subscriptionsData);
-      setDocuments(documentsData);
+      // Ensure all arrays are actually arrays
+      setUsers(Array.isArray(usersData) ? usersData : []);
+      setPurchases(Array.isArray(purchasesData) ? purchasesData : []);
+      setSubscriptions(Array.isArray(subscriptionsData) ? subscriptionsData : []);
+      setDocuments(Array.isArray(documentsData) ? documentsData : []);
     } catch (error) {
       console.error('Failed to fetch partner data:', error);
     } finally {

@@ -130,7 +130,7 @@ export const getUsersByPartner = async (
   authToken: string
 ): Promise<PartnerUser[]> => {
   try {
-    const response = await axios.post<PartnerUser[]>(
+    const response = await axios.post(
       `${API_BASE_URL}${API_ENDPOINTS.admin.getUsersByPartner}`,
       { idPartner },
       {
@@ -140,7 +140,14 @@ export const getUsersByPartner = async (
         },
       }
     );
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && typeof data === 'object' && 'content' in data) {
+      return data.content || [];
+    }
+    return [];
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Get Users by Partner error:', {
@@ -148,7 +155,7 @@ export const getUsersByPartner = async (
         data: error.response?.data,
       });
     }
-    return []; // Return empty array on error
+    return [];
   }
 };
 
@@ -160,7 +167,7 @@ export const getPurchasesByPartner = async (
   authToken: string
 ): Promise<PurchaseHistory[]> => {
   try {
-    const response = await axios.post<PurchaseHistory[]>(
+    const response = await axios.post(
       `${API_BASE_URL}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`,
       { idPartner },
       {
@@ -170,7 +177,15 @@ export const getPurchasesByPartner = async (
         },
       }
     );
-    return response.data || [];
+    const data = response.data;
+    // Handle both array and paginated response
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && typeof data === 'object' && 'content' in data) {
+      return data.content || [];
+    }
+    return [];
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Get Purchases by Partner error:', {
@@ -249,7 +264,7 @@ export const getSubscriptionsByPartner = async (
   authToken: string
 ): Promise<PurchaseHistory[]> => {
   try {
-    const response = await axios.post<PurchaseHistory[]>(
+    const response = await axios.post(
       `${API_BASE_URL}${API_ENDPOINTS.admin.getSubscriptionsByPartner}`,
       { idPartner },
       {
@@ -259,7 +274,14 @@ export const getSubscriptionsByPartner = async (
         },
       }
     );
-    return response.data || [];
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && typeof data === 'object' && 'content' in data) {
+      return data.content || [];
+    }
+    return [];
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Get Subscriptions by Partner error:', {

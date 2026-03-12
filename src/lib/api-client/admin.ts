@@ -40,6 +40,13 @@ export interface PartnerUser {
   authRoles: { id: number; name: string; description: string }[];
 }
 
+export interface PackageAccount {
+  packageId: number;
+  packageName: string;
+  balance: number;
+  validity: string | null;
+}
+
 export interface PurchaseHistory {
   id: number;
   idPackage: number;
@@ -51,9 +58,13 @@ export interface PurchaseHistory {
   price: number;
   vat: number;
   ait: number;
-  total: number;
+  total: number | null;
   status: string;
   autoRenewalStatus: boolean;
+  paid: number;
+  priority: number;
+  discount: number;
+  packageAccounts: PackageAccount[] | null;
 }
 
 export interface PartnerDocument {

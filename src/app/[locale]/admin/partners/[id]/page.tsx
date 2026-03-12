@@ -391,7 +391,37 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
 
 // Subscriptions Tab Component
 function SubscriptionsTab({ subscriptions }: { subscriptions: PurchaseHistory[] }) {
-  if (subscriptions.length === 0) {
+  // Categorize subscriptions by service type
+  const getServiceType = (packageName: string): string => {
+    const name = packageName.toLowerCase();
+    if (name.includes('pbx') || name.includes('hosted')) return 'pbx';
+    if (name.includes('hcc') || name.includes('contact') || name.includes('mint')) return 'hcc';
+    if (name.includes('vbs') || name.includes('broadcast') || name.includes('voice')) return 'vbs';
+    if (name.includes('sms') || name.includes('topup')) return 'sms';
+    return 'other';
+  };
+
+  const serviceConfig: Record<string, { name: string; color: string; bgColor: string; icon: string }> = {
+    pbx: { name: 'Hosted PBX', color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200', icon: '📞' },
+    hcc: { name: 'Contact Center', color: 'text-purple-600', bgColor: 'bg-purple-50 border-purple-200', icon: '👥' },
+    vbs: { name: 'Voice Broadcast', color: 'text-orange-600', bgColor: 'bg-orange-50 border-orange-200', icon: '📢' },
+    sms: { name: 'Bulk SMS', color: 'text-green-600', bgColor: 'bg-green-50 border-green-200', icon: '💬' },
+    other: { name: 'Other Services', color: 'text-gray-600', bgColor: 'bg-gray-50 border-gray-200', icon: '📦' },
+  };
+
+  // Filter out Postpaid_Credit (idPackage 9999) and group by service
+  const activeSubscriptions = subscriptions.filter(
+    (sub) => sub.idPackage !== 9999 && sub.status === 'ACTIVE'
+  );
+
+  const groupedByService = activeSubscriptions.reduce((acc, sub) => {
+    const service = getServiceType(sub.packageName);
+    if (!acc[service]) acc[service] = [];
+    acc[service].push(sub);
+    return acc;
+  }, {} as Record<string, PurchaseHistory[]>);
+
+  if (activeSubscriptions.length === 0) {
     return (
       <div className="p-12 text-center">
         <svg className="w-12 h-12 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,53 +433,130 @@ function SubscriptionsTab({ subscriptions }: { subscriptions: PurchaseHistory[] 
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expire Date</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auto Renewal</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {subscriptions.map((sub) => (
-            <tr key={sub.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <p className="text-sm font-medium text-gray-900">{sub.packageName}</p>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {sub.purchaseDate ? new Date(sub.purchaseDate).toLocaleDateString() : 'N/A'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {sub.expireDate ? new Date(sub.expireDate).toLocaleDateString() : 'N/A'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    sub.autoRenewalStatus ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {sub.autoRenewalStatus ? 'Enabled' : 'Disabled'}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    sub.status === 'ACTIVE'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {sub.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="p-6 space-y-6">
+      {/* Service Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.entries(groupedByService).map(([service, subs]) => {
+          const config = serviceConfig[service];
+          // Get total balance from all packageAccounts
+          const totalBalance = subs.reduce((total, sub) => {
+            if (sub.packageAccounts && Array.isArray(sub.packageAccounts)) {
+              return total + sub.packageAccounts.reduce((acc, pkg) => acc + (pkg.balance || 0), 0);
+            }
+            return total;
+          }, 0);
+
+          return (
+            <div key={service} className={`border-2 rounded-xl p-5 ${config.bgColor}`}>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-2xl">{config.icon}</span>
+                <div>
+                  <h3 className={`font-bold ${config.color}`}>{config.name}</h3>
+                  <p className="text-xs text-gray-500">{subs.length} active package(s)</p>
+                </div>
+              </div>
+
+              {/* Package List */}
+              <div className="space-y-3">
+                {subs.map((sub) => (
+                  <div key={sub.id} className="bg-white rounded-lg p-3 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900 text-sm">{sub.packageName}</span>
+                      <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {sub.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                      <div>
+                        <span className="text-gray-400">Start:</span>{' '}
+                        {sub.purchaseDate ? new Date(sub.purchaseDate).toLocaleDateString() : 'N/A'}
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Expires:</span>{' '}
+                        {sub.expireDate ? new Date(sub.expireDate).toLocaleDateString() : 'N/A'}
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Price:</span> ৳{sub.price?.toLocaleString() || 0}
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Auto-renew:</span>{' '}
+                        {sub.autoRenewalStatus ? 'Yes' : 'No'}
+                      </div>
+                    </div>
+
+                    {/* Package Accounts (Balances) */}
+                    {sub.packageAccounts && sub.packageAccounts.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 mb-2">Balances:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {sub.packageAccounts
+                            .filter((pkg) => pkg.packageId !== 9999)
+                            .map((pkg, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs"
+                              >
+                                <span className="font-medium">{pkg.packageName}:</span>
+                                <span className="text-green-600 font-bold">{pkg.balance?.toLocaleString() || 0}</span>
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Total Balance for Service */}
+              {totalBalance > 0 && (
+                <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Total Balance:</span>
+                  <span className={`text-lg font-bold ${config.color}`}>{totalBalance.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* All Subscriptions Table */}
+      <div className="mt-6">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">All Active Subscriptions</h3>
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Start</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
+                <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Auto-renew</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {activeSubscriptions.map((sub) => (
+                <tr key={sub.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 font-medium text-gray-900">{sub.packageName}</td>
+                  <td className="px-4 py-2 text-gray-500">
+                    {sub.purchaseDate ? new Date(sub.purchaseDate).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="px-4 py-2 text-gray-500">
+                    {sub.expireDate ? new Date(sub.expireDate).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="px-4 py-2 text-right text-gray-900">৳{sub.price?.toLocaleString() || 0}</td>
+                  <td className="px-4 py-2 text-center">
+                    <span className={`inline-flex px-2 py-0.5 text-xs rounded-full ${
+                      sub.autoRenewalStatus ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {sub.autoRenewalStatus ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

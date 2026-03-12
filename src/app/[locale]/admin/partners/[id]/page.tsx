@@ -456,25 +456,28 @@ function SubscriptionsTab({ subscriptions }: { subscriptions: PurchaseHistory[] 
 
 // Documents Tab Component
 function DocumentsTab({ documents }: { documents: PartnerDocument[] }) {
-  if (documents.length === 0) {
-    return (
-      <div className="p-12 text-center">
-        <svg className="w-12 h-12 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <p className="text-gray-500 mt-4">No documents uploaded</p>
-      </div>
-    );
-  }
+  const availableDocs = documents.filter((doc) => doc.available);
+  const unavailableDocs = documents.filter((doc) => !doc.available);
 
   const getDocTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'nid':
+      case 'nidfront':
+      case 'nidback':
         return '🪪';
-      case 'passport':
-        return '📕';
-      case 'trade_license':
+      case 'tradelicense':
         return '📜';
+      case 'tin':
+      case 'taxreturn':
+        return '🧾';
+      case 'photo':
+        return '📷';
+      case 'bin':
+      case 'vat':
+        return '📋';
+      case 'btrc':
+        return '📡';
+      case 'sla':
+        return '📝';
       default:
         return '📄';
     }
@@ -482,55 +485,61 @@ function DocumentsTab({ documents }: { documents: PartnerDocument[] }) {
 
   return (
     <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {documents.map((doc) => (
-          <div
-            key={doc.id}
-            className="border border-gray-200 rounded-lg p-4 hover:border-[#00A651] transition-colors"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getDocTypeIcon(doc.documentType)}</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{doc.documentType}</p>
-                  <p className="text-xs text-gray-500">
-                    Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}
-                  </p>
+      {/* Available Documents */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          Uploaded Documents ({availableDocs.length})
+        </h3>
+        {availableDocs.length === 0 ? (
+          <p className="text-gray-500 text-sm">No documents uploaded yet</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableDocs.map((doc) => (
+              <div
+                key={doc.type}
+                className="border border-green-200 bg-green-50 rounded-lg p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getDocTypeIcon(doc.type)}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                  </div>
+                  <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                    Uploaded
+                  </span>
                 </div>
               </div>
-              <span
-                className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
-                  doc.status === 'APPROVED'
-                    ? 'bg-green-100 text-green-800'
-                    : doc.status === 'REJECTED'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}
-              >
-                {doc.status}
-              </span>
-            </div>
-            <div className="mt-4">
-              <a
-                href={doc.documentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-[#00A651] hover:underline"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
-                View Document
-              </a>
-            </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
+
+      {/* Missing Documents */}
+      {unavailableDocs.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            Missing Documents ({unavailableDocs.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {unavailableDocs.map((doc) => (
+              <div
+                key={doc.type}
+                className="border border-gray-200 bg-gray-50 rounded-lg p-4 opacity-60"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl grayscale">{getDocTypeIcon(doc.type)}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600">{doc.name}</p>
+                  </div>
+                  <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-600">
+                    Not Uploaded
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

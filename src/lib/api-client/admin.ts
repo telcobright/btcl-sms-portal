@@ -57,12 +57,24 @@ export interface PurchaseHistory {
 }
 
 export interface PartnerDocument {
+  type: string;
+  name: string;
+  available: boolean;
+}
+
+export interface PartnerExtra {
   id: number;
-  partnerId: number;
-  documentType: string;
-  documentUrl: string;
-  uploadedAt: string;
-  status: string;
+  nid: string | null;
+  tradeLicenseAvailable: boolean;
+  tinCertificateAvailable: boolean;
+  lastTaxReturnAvailable: boolean;
+  nidFrontAvailable: boolean;
+  nidBackAvailable: boolean;
+  binCertificateAvailable: boolean;
+  vatDocAvailable: boolean;
+  btrcRegistrationAvailable: boolean;
+  photoAvailable: boolean;
+  slaAvailable: boolean;
 }
 
 export interface GetPartnersResponse {
@@ -198,23 +210,42 @@ export const getPurchasesByPartner = async (
 };
 
 /**
- * Get documents by partner ID
+ * Get documents by partner ID (uses get-partner-extra endpoint)
  */
 export const getDocumentsByPartner = async (
   partnerId: number,
   authToken: string
 ): Promise<PartnerDocument[]> => {
   try {
-    const response = await axios.get<PartnerDocument[]>(
-      `${API_BASE_URL}${API_ENDPOINTS.partner.partnerDocuments}`,
+    const response = await axios.post<PartnerExtra>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`,
+      { id: partnerId },
       {
-        params: { partnerId },
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
       }
     );
-    return response.data || [];
+
+    const extra = response.data;
+    if (!extra) return [];
+
+    // Transform partner extra into document list
+    const documents: PartnerDocument[] = [
+      { type: 'tradelicense', name: 'Trade License', available: !!extra.tradeLicenseAvailable },
+      { type: 'tin', name: 'TIN Certificate', available: !!extra.tinCertificateAvailable },
+      { type: 'taxreturn', name: 'Tax Return', available: !!extra.lastTaxReturnAvailable },
+      { type: 'nidfront', name: 'NID Front Side', available: !!extra.nidFrontAvailable },
+      { type: 'nidback', name: 'NID Back Side', available: !!extra.nidBackAvailable },
+      { type: 'bin', name: 'BIN Certificate', available: !!extra.binCertificateAvailable },
+      { type: 'vat', name: 'VAT Document', available: !!extra.vatDocAvailable },
+      { type: 'btrc', name: 'BTRC Registration', available: !!extra.btrcRegistrationAvailable },
+      { type: 'photo', name: 'Photo', available: !!extra.photoAvailable },
+      { type: 'sla', name: 'SLA Document', available: !!extra.slaAvailable },
+    ];
+
+    return documents;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Get Documents by Partner error:', {

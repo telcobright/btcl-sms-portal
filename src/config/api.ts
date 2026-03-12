@@ -102,7 +102,7 @@ export const API_ENDPOINTS = {
   // Admin endpoints
   admin: {
     getPartners: '/partner/get-partners', // Get all partners with pagination
-    getUsersByPartner: '/partner/get-users-by-partner', // Get users for a partner
+    getUsersByPartner: '/getUserByIdPartner', // Get users for a partner (uses AUTH_BASE_URL)
     getSubscriptionsByPartner: '/package/get-subscriptions-by-partner', // Get subscriptions for a partner
   },
 

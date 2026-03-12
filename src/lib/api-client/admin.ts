@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // ---------------------- INTERFACES ----------------------
 
@@ -123,7 +123,7 @@ export const getAllPartners = async (
 };
 
 /**
- * Get users by partner ID
+ * Get users by partner ID (uses AUTH_BASE_URL)
  */
 export const getUsersByPartner = async (
   idPartner: number,
@@ -131,7 +131,7 @@ export const getUsersByPartner = async (
 ): Promise<PartnerUser[]> => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}${API_ENDPOINTS.admin.getUsersByPartner}`,
+      `${AUTH_BASE_URL}${API_ENDPOINTS.admin.getUsersByPartner}`,
       { idPartner },
       {
         headers: {

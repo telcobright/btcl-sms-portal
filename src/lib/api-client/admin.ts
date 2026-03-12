@@ -90,7 +90,7 @@ export const getAllPartners = async (
   authToken: string
 ): Promise<Partner[]> => {
   try {
-    const response = await axios.post<Partner[]>(
+    const response = await axios.post<Partner[] | GetPartnersResponse>(
       `${API_BASE_URL}${API_ENDPOINTS.admin.getPartners}`,
       payload,
       {
@@ -100,7 +100,17 @@ export const getAllPartners = async (
         },
       }
     );
-    return response.data;
+
+    // Handle both array response and paginated response object
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    // If it's a paginated response object, extract the content array
+    if (data && typeof data === 'object' && 'content' in data) {
+      return data.content || [];
+    }
+    return [];
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Get Partners error:', {

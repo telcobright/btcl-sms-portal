@@ -28,8 +28,10 @@ export default function PartnersPage() {
         { page: 0, size: 1000, partnerName: null, partnerType: null },
         authToken
       );
-      setPartners(data);
-      setFilteredPartners(data);
+      // Ensure data is always an array
+      const partnersArray = Array.isArray(data) ? data : [];
+      setPartners(partnersArray);
+      setFilteredPartners(partnersArray);
     } catch (error) {
       console.error('Failed to fetch partners:', error);
     } finally {

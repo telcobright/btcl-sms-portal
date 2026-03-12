@@ -32,10 +32,12 @@ export default function AdminDashboard() {
         if (!authToken) return;
 
         // Fetch all partners
-        const partners = await getAllPartners(
+        const data = await getAllPartners(
           { page: 0, size: 100, partnerName: null, partnerType: null },
           authToken
         );
+        // Ensure data is always an array
+        const partners = Array.isArray(data) ? data : [];
 
         // Calculate stats
         const carriers = partners.filter((p) => p.partnerType === 1).length;

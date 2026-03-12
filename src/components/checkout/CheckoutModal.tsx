@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
 import { unifiedPurchase } from '@/lib/api-client/payment';
-import { getPartnerById, getUserByEmail, editUser } from '@/lib/api-client/partner';
+import { getPartnerById, getUserByEmail, editUser, ensurePartnerInService } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
 import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
@@ -312,6 +312,30 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             // Get partner details for customer info and customerPrePaid value
             toast.loading(locale === 'en' ? 'Preparing purchase...' : 'ক্রয় প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
             const partnerData = await getPartnerById(partnerId, authToken);
+
+            // For PBX, HCC, VBS services - ensure partner exists in target service before purchase
+            if (['hosted-pbx', 'contact-center', 'voice-broadcast'].includes(serviceType)) {
+                toast.loading(
+                    locale === 'en' ? 'Verifying account in service...' : 'সার্ভিসে অ্যাকাউন্ট যাচাই করা হচ্ছে...',
+                    { id: 'partner-check' }
+                );
+
+                const partnerReady = await ensurePartnerInService(partnerId, serviceType, authToken);
+                toast.dismiss('partner-check');
+
+                if (!partnerReady) {
+                    toast.error(
+                        locale === 'en'
+                            ? 'Failed to prepare account for this service. Please try again or contact support.'
+                            : 'এই সার্ভিসের জন্য অ্যাকাউন্ট প্রস্তুত করতে ব্যর্থ। আবার চেষ্টা করুন বা সাপোর্টে যোগাযোগ করুন।'
+                    );
+                    setLoading(false);
+                    return;
+                }
+
+                console.log(`✅ Partner ${partnerId} is ready in ${serviceType} service`);
+            }
+
             toast.dismiss('payment-prep');
 
             // Get customerPrePaid from partner data (1 = payment gateway, 2 = direct purchase)

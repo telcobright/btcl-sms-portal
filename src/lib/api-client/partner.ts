@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, A2P_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS, SERVICE_API_FLAGS } from '@/config/api';
+import { API_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, A2P_BASE_URL, AUTH_BASE_URL, PBX_BASE_URL, API_ENDPOINTS, SERVICE_API_FLAGS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
@@ -212,14 +212,14 @@ export const createPartner = async (payload: {
     const hccUrl = `${HCC_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
     const a2pUrl = `${A2P_BASE_URL}${API_ENDPOINTS.partner.createPartner}`;
 
-    // Primary API (port 4000)
+    // Primary API (services.btcliptelephony.gov.bd)
     if (SERVICE_API_FLAGS.PRIMARY_ENABLED) {
       apiCalls.push(
         axios.post<CreatePartnerResponse>(primaryUrl, payload, {
           headers: { 'Content-Type': 'application/json' },
         })
       );
-      apiNames.push('Primary (PBX)');
+      apiNames.push('Primary');
     }
 
     // VBS API (without port)
@@ -522,6 +522,168 @@ export const getPartnerById = async (idPartner: number, authToken: string): Prom
       });
     }
     throw error;
+  }
+};
+
+// ---------------------- SERVICE-SPECIFIC PARTNER FUNCTIONS ----------------------
+
+// Map service type to base URL
+export const SERVICE_BASE_URLS: Record<string, string> = {
+  'hosted-pbx': PBX_BASE_URL,
+  'contact-center': HCC_BASE_URL,
+  'voice-broadcast': VBS_BASE_URL,
+};
+
+/**
+ * Check if partner exists in a specific service
+ * @param idPartner - Partner ID to check
+ * @param serviceBaseUrl - Base URL of the service to check
+ * @returns Partner data if exists, null if not exists
+ */
+export const checkPartnerInService = async (
+  idPartner: number,
+  serviceBaseUrl: string
+): Promise<PartnerData | null> => {
+  try {
+    console.log(`🔍 Checking partner ${idPartner} in ${serviceBaseUrl}...`);
+
+    const response = await axios.post<PartnerData>(
+      `${serviceBaseUrl}${API_ENDPOINTS.partner.getPartner}`,
+      { idPartner },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000, // 10 second timeout
+      }
+    );
+
+    if (response.data && response.data.idPartner) {
+      console.log(`✅ Partner ${idPartner} EXISTS in ${serviceBaseUrl}`);
+      return response.data;
+    }
+
+    console.log(`❌ Partner ${idPartner} NOT FOUND in ${serviceBaseUrl}`);
+    return null;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.log(`❌ Partner ${idPartner} NOT FOUND in ${serviceBaseUrl}:`, error.response?.status);
+    }
+    return null; // Partner doesn't exist or service unavailable
+  }
+};
+
+/**
+ * Create partner in a specific service with same idPartner
+ * @param partnerData - Partner data to create
+ * @param serviceBaseUrl - Base URL of the service
+ */
+export const createPartnerInService = async (
+  partnerData: CreatePartnerPayload & { idPartner?: number },
+  serviceBaseUrl: string
+): Promise<CreatePartnerResponse | null> => {
+  try {
+    console.log(`📝 Creating partner in ${serviceBaseUrl}...`);
+
+    const response = await axios.post<CreatePartnerResponse>(
+      `${serviceBaseUrl}${API_ENDPOINTS.partner.createPartner}`,
+      partnerData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000, // 30 second timeout
+      }
+    );
+
+    console.log(`✅ Partner created in ${serviceBaseUrl}:`, response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error(`❌ Failed to create partner in ${serviceBaseUrl}:`, {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    return null;
+  }
+};
+
+/**
+ * Ensure partner exists in target service before purchase
+ * If partner doesn't exist, create it first
+ * @param idPartner - Partner ID
+ * @param serviceType - Service type (hosted-pbx, contact-center, voice-broadcast)
+ * @param authToken - Auth token to get partner data from primary
+ */
+export const ensurePartnerInService = async (
+  idPartner: number,
+  serviceType: string,
+  authToken: string
+): Promise<boolean> => {
+  const serviceBaseUrl = SERVICE_BASE_URLS[serviceType];
+
+  if (!serviceBaseUrl) {
+    console.error(`❌ Unknown service type: ${serviceType}`);
+    return false;
+  }
+
+  console.log(`🔄 Ensuring partner ${idPartner} exists in ${serviceType} (${serviceBaseUrl})...`);
+
+  // Step 1: Check if partner exists in target service
+  const existingPartner = await checkPartnerInService(idPartner, serviceBaseUrl);
+
+  if (existingPartner) {
+    console.log(`✅ Partner already exists in ${serviceType}, proceeding with purchase...`);
+    return true;
+  }
+
+  // Step 2: Partner doesn't exist, get data from primary service
+  console.log(`📥 Partner not found in ${serviceType}, fetching from primary...`);
+
+  try {
+    const primaryPartnerData = await getPartnerById(idPartner, authToken);
+
+    if (!primaryPartnerData) {
+      console.error('❌ Could not fetch partner data from primary service');
+      return false;
+    }
+
+    // Step 3: Create partner in target service with same data
+    const createPayload: CreatePartnerPayload & { idPartner?: number } = {
+      idPartner: primaryPartnerData.idPartner,
+      partnerName: primaryPartnerData.partnerName,
+      telephone: primaryPartnerData.telephone,
+      email: primaryPartnerData.email,
+      userPassword: primaryPartnerData.userPassword || '',
+      address1: primaryPartnerData.address1 || '',
+      address2: primaryPartnerData.address2 || '',
+      city: primaryPartnerData.city || '',
+      state: primaryPartnerData.state || '',
+      postalCode: primaryPartnerData.postalCode || '',
+      country: primaryPartnerData.country || 'Bangladesh',
+      alternateNameInvoice: primaryPartnerData.alternateNameInvoice || '',
+      alternateNameOther: primaryPartnerData.alternateNameOther || '',
+      vatRegistrationNo: primaryPartnerData.vatRegistrationNo || '',
+      invoiceAddress: primaryPartnerData.invoiceAddress || '',
+      customerPrePaid: primaryPartnerData.customerPrePaid || 1,
+      partnerType: primaryPartnerData.partnerType || 2,
+      defaultCurrency: primaryPartnerData.defaultCurrency || 4,
+      callSrcId: primaryPartnerData.callSrcId || 0,
+    };
+
+    const createdPartner = await createPartnerInService(createPayload, serviceBaseUrl);
+
+    if (createdPartner) {
+      console.log(`✅ Partner successfully created in ${serviceType}`);
+      return true;
+    } else {
+      console.error(`❌ Failed to create partner in ${serviceType}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ Error ensuring partner in ${serviceType}:`, error);
+    return false;
   }
 };
 

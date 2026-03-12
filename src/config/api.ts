@@ -99,6 +99,13 @@ export const API_ENDPOINTS = {
     unifiedPurchase: '/api/payment/unified/purchase', // Unified purchase (handles both payment gateway & direct purchase)
   },
 
+  // Admin endpoints
+  admin: {
+    getPartners: '/partner/get-partners', // Get all partners with pagination
+    getUsersByPartner: '/partner/get-users-by-partner', // Get users for a partner
+    getSubscriptionsByPartner: '/package/get-subscriptions-by-partner', // Get subscriptions for a partner
+  },
+
 } as const;
 
 // Helper function to build full API URL

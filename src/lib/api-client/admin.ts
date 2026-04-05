@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS, PBX_BASE_URL, HCC_BASE_URL, VBS_BASE_URL } from '@/config/api';
 
 // ---------------------- INTERFACES ----------------------
 
@@ -41,10 +41,16 @@ export interface PartnerUser {
 }
 
 export interface PackageAccount {
+  id: number | null;
+  idPackagePurchase: number | null;
+  name: string;
   packageId: number;
-  packageName: string;
-  balance: number;
-  validity: string | null;
+  quantity: number;
+  lastAmount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  uom: string;
+  selected: boolean;
 }
 
 export interface PurchaseHistory {
@@ -227,23 +233,43 @@ export const getDocumentsByPartner = async (
   partnerId: number,
   authToken: string
 ): Promise<PartnerDocument[]> => {
+  // Default document structure - all marked as not available
+  const defaultDocuments: PartnerDocument[] = [
+    { type: 'tradelicense', name: 'Trade License', available: false },
+    { type: 'tin', name: 'TIN Certificate', available: false },
+    { type: 'taxreturn', name: 'Tax Return', available: false },
+    { type: 'nidfront', name: 'NID Front Side', available: false },
+    { type: 'nidback', name: 'NID Back Side', available: false },
+    { type: 'bin', name: 'BIN Certificate', available: false },
+    { type: 'vat', name: 'VAT Document', available: false },
+    { type: 'btrc', name: 'BTRC Registration', available: false },
+    { type: 'photo', name: 'Photo', available: false },
+    { type: 'sla', name: 'SLA Document', available: false },
+  ];
+
   try {
-    const response = await axios.post<PartnerExtra>(
+    const response = await fetch(
       `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`,
-      { id: partnerId },
       {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
+        body: JSON.stringify({ id: partnerId }),
       }
     );
 
-    const extra = response.data;
-    if (!extra) return [];
+    if (!response.ok) {
+      console.warn(`Get partner extra returned ${response.status} for partner ${partnerId}`);
+      return defaultDocuments;
+    }
+
+    const extra: PartnerExtra = await response.json();
+    if (!extra) return defaultDocuments;
 
     // Transform partner extra into document list
-    const documents: PartnerDocument[] = [
+    return [
       { type: 'tradelicense', name: 'Trade License', available: !!extra.tradeLicenseAvailable },
       { type: 'tin', name: 'TIN Certificate', available: !!extra.tinCertificateAvailable },
       { type: 'taxreturn', name: 'Tax Return', available: !!extra.lastTaxReturnAvailable },
@@ -255,16 +281,9 @@ export const getDocumentsByPartner = async (
       { type: 'photo', name: 'Photo', available: !!extra.photoAvailable },
       { type: 'sla', name: 'SLA Document', available: !!extra.slaAvailable },
     ];
-
-    return documents;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('❌ Get Documents by Partner error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-    }
-    return [];
+    console.warn('Failed to fetch partner extra:', error);
+    return defaultDocuments;
   }
 };
 
@@ -365,4 +384,74 @@ export const getCustomerPrePaidLabel = (customerPrePaid: number): string => {
     default:
       return 'Unknown';
   }
+};
+
+// ---------------------- SERVICE STATUS ----------------------
+
+export interface ServiceStatus {
+  pbx: { active: boolean; purchases: PurchaseHistory[] };
+  hcc: { active: boolean; purchases: PurchaseHistory[] };
+  vbs: { active: boolean; purchases: PurchaseHistory[] };
+}
+
+/**
+ * Get service-specific purchase data from all three services (PBX, HCC, VBS)
+ */
+export const getServiceStatus = async (
+  idPartner: number,
+  authToken: string
+): Promise<ServiceStatus> => {
+  const endpoint = API_ENDPOINTS.package.getPurchaseForPartner;
+
+  const apiConfigs = [
+    { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },
+    { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },
+    { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },
+  ];
+
+  const result: ServiceStatus = {
+    pbx: { active: false, purchases: [] },
+    hcc: { active: false, purchases: [] },
+    vbs: { active: false, purchases: [] },
+  };
+
+  const fetchPromises = apiConfigs.map(async ({ url, service }) => {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ idPartner }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const purchases = Array.isArray(data) ? data : [];
+
+        // Filter out Postpaid_Credit (9999) and check for valid active packages
+        const validPurchases = purchases.filter(
+          (p: PurchaseHistory) => p.idPackage !== 9999 && p.status === 'ACTIVE'
+        );
+
+        // Check if there are valid packageAccounts (not just postpaid credit)
+        const hasValidPackages = purchases.some(
+          (item: any) =>
+            Array.isArray(item.packageAccounts) &&
+            item.packageAccounts.some((pkg: any) => pkg.packageId !== 9999)
+        );
+
+        result[service] = {
+          active: hasValidPackages || validPurchases.length > 0,
+          purchases: validPurchases,
+        };
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch ${service} status:`, error);
+    }
+  });
+
+  await Promise.allSettled(fetchPromises);
+  return result;
 };

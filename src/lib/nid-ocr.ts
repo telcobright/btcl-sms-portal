@@ -18,8 +18,8 @@ export interface NidOcrResult {
 }
 
 /**
- * Process image through canvas to normalize it and fix any metadata issues
- * This creates a clean base64 image without problematic Exif data
+ * Process image through canvas to normalize it, fix metadata issues,
+ * and apply preprocessing for better OCR accuracy
  */
 function processImageThroughCanvas(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -29,21 +29,40 @@ function processImageThroughCanvas(file: File): Promise<string> {
     reader.onload = () => {
       img.onload = () => {
         try {
-          // Create canvas with image dimensions
           const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
+          const width = img.naturalWidth || img.width;
+          const height = img.naturalHeight || img.height;
+          canvas.width = width;
+          canvas.height = height;
 
-          // Draw image to canvas (this strips metadata and normalizes the image)
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             reject(new Error('Could not get canvas context'));
             return;
           }
 
+          // Draw original image
           ctx.drawImage(img, 0, 0);
 
-          // Convert to base64 data URL
+          // Apply contrast enhancement and binarization for better OCR
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+
+          for (let i = 0; i < data.length; i += 4) {
+            // Convert to grayscale
+            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            // Apply contrast stretch
+            const contrast = 1.5;
+            const adjusted = Math.min(255, Math.max(0, ((gray - 128) * contrast) + 128));
+            // Apply threshold for binarization (Otsu-like simple threshold)
+            const binary = adjusted > 140 ? 255 : 0;
+            data[i] = binary;
+            data[i + 1] = binary;
+            data[i + 2] = binary;
+          }
+
+          ctx.putImageData(imageData, 0, 0);
+
           const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
           resolve(dataUrl);
         } catch (error) {
@@ -150,15 +169,16 @@ function parseNidText(text: string): NidOcrResult['data'] {
     }
   }
 
-  // If still not found, extract all digit groups and try to combine them
+  // If still not found, extract nearby digit groups (3-4 digits each) and try to combine them
   if (!nidNumber) {
-    const allDigitGroups = fullText.match(/\d{3,}/g);
-    if (allDigitGroups) {
-      // Try combining consecutive digit groups
-      for (let i = 0; i < allDigitGroups.length; i++) {
-        let combined = allDigitGroups[i];
-        for (let j = i + 1; j < allDigitGroups.length && combined.length < 17; j++) {
-          combined += allDigitGroups[j];
+    // Only combine groups of 3-4 digits (typical NID formatting), not arbitrary numbers
+    const nidDigitGroups = fullText.match(/\b\d{3,4}\b/g);
+    if (nidDigitGroups) {
+      for (let i = 0; i < nidDigitGroups.length; i++) {
+        let combined = nidDigitGroups[i];
+        // Only combine up to 5 consecutive groups (max needed for 17 digits)
+        for (let j = i + 1; j < Math.min(i + 5, nidDigitGroups.length) && combined.length < 17; j++) {
+          combined += nidDigitGroups[j];
           if (combined.length === 10 || combined.length === 17) {
             nidNumber = combined;
             nidDigitType = combined.length === 10 ? '10' : '17';
@@ -173,59 +193,61 @@ function parseNidText(text: string): NidOcrResult['data'] {
 
   // ===== EXTRACT NAME =====
   // Strategy: Look for the text segment after "Name" keyword
-  // The OCR text shows: "— \Name £ : F HUMAYUN AHMED = =r"
+
+  const excludeWords = new Set([
+    'NATIONAL', 'ID', 'CARD', 'BANGLADESH', 'GOVERNMENT', 'REPUBLIC',
+    'PEOPLES', 'DATE', 'BIRTH', 'OF', 'THE', 'AND', 'FOR', 'SET',
+    'FRONT', 'BACK', 'SIDE', 'PIN', 'NO', 'NID', 'BLOOD',
+  ]);
 
   // Find where "Name" appears and extract text after it
   const nameKeywordIndex = fullText.search(/\\?Name\b/i);
   if (nameKeywordIndex !== -1) {
-    // Get text after "Name" keyword
-    const textAfterName = fullText.substring(nameKeywordIndex + 5); // Skip "Name" or "\Name"
+    const textAfterName = fullText.substring(nameKeywordIndex).replace(/^\\?Name\s*/i, '');
     console.log('Text after Name keyword:', textAfterName.substring(0, 100));
 
-    // Look for capitalized name pattern (FIRSTNAME LASTNAME)
-    const nameMatch = textAfterName.match(/([A-Z]{2,})\s+([A-Z]{2,})/);
+    // Extract consecutive uppercase words (2+ chars each), supporting multi-word names
+    const nameMatch = textAfterName.match(/(?:[A-Z][A-Z.]+\s*){2,}/);
     if (nameMatch) {
-      const firstName = nameMatch[1];
-      const lastName = nameMatch[2];
-      // Make sure these aren't noise words
-      const noiseWords = ['CH', 'IF', 'CHT', 'SET', 'THE', 'OF', 'AND', 'FOR'];
-      if (!noiseWords.includes(firstName) && !noiseWords.includes(lastName) &&
-          firstName.length >= 3 && lastName.length >= 3) {
-        name = `${firstName} ${lastName}`;
+      // Split into words, filter out noise and single chars
+      const words = nameMatch[0].trim().split(/\s+/)
+        .filter(w => w.length >= 2 && !excludeWords.has(w.replace(/\./g, '')));
+      if (words.length >= 2) {
+        name = words.join(' ');
         console.log('Found Name (after keyword):', name);
       }
     }
   }
 
-  // If not found, try alternative patterns
+  // If not found, try finding consecutive uppercase words anywhere
   if (!name) {
-    // Look for pattern like "F HUMAYUN AHMED" - skip single letters, find full name
-    const altMatch = fullText.match(/[^A-Za-z]([A-Z]{4,}\s+[A-Z]{4,})[^A-Za-z]/);
-    if (altMatch && altMatch[1]) {
-      const potentialName = altMatch[1].trim();
-      // Exclude header text
-      const excludePatterns = ['NATIONAL ID', 'ID CARD', 'BANGLADESH', 'GOVERNMENT', 'REPUBLIC'];
-      const isExcluded = excludePatterns.some(p => potentialName.includes(p));
-      if (!isExcluded) {
-        name = potentialName;
-        console.log('Found Name (alt pattern):', name);
+    const allCapsMatches = fullText.match(/(?:[A-Z][A-Z.]+\s+){1,}[A-Z][A-Z.]+/g);
+    if (allCapsMatches) {
+      for (const candidate of allCapsMatches) {
+        const words = candidate.trim().split(/\s+/)
+          .filter(w => w.length >= 2 && !excludeWords.has(w.replace(/\./g, '')));
+        if (words.length >= 2) {
+          name = words.join(' ');
+          console.log('Found Name (all caps scan):', name);
+          break;
+        }
       }
     }
   }
 
-  // Fallback: Look for common Bangladeshi name patterns
+  // Fallback: Look for common Bangladeshi name patterns (supports MD., MST., multi-word)
   if (!name) {
     const bdNamePatterns = [
-      /\b(HUMAYUN\s+AHMED)\b/i,
-      /\b(MOHAMMAD?\s+[A-Z]+)\b/i,
-      /\b(MD\.?\s+[A-Z]+)\b/i,
-      /\b([A-Z]{4,}\s+(?:AHMED|ISLAM|HOSSAIN|RAHMAN|KHAN|ALAM|UDDIN|BEGUM|KHATUN))\b/i,
+      /\b(MOHAMMAD?\s+(?:[A-Z]{2,}\s*)+)/i,
+      /\b(MD\.?\s+(?:[A-Z]{2,}\s*)+)/i,
+      /\b(MST\.?\s+(?:[A-Z]{2,}\s*)+)/i,
+      /\b((?:[A-Z]{2,}\s+)+(?:AHMED|ISLAM|HOSSAIN|HASAN|RAHMAN|KHAN|ALAM|UDDIN|BEGUM|KHATUN|AKTER|SULTANA|MIAH|CHOWDHURY|HOQUE))\b/i,
     ];
 
     for (const pattern of bdNamePatterns) {
       const match = fullText.match(pattern);
       if (match && match[1]) {
-        name = match[1].toUpperCase();
+        name = match[1].trim().toUpperCase();
         console.log('Found Name (BD pattern):', name);
         break;
       }
@@ -364,8 +386,8 @@ function parseDateOfBirth(dateStr: string): string | null {
  */
 export async function preloadOcrWorker(): Promise<void> {
   try {
-    // Preload the worker for faster subsequent OCR
-    await Tesseract.createWorker('eng+ben');
+    // Preload the worker for faster subsequent OCR (English only, matching extractNidData)
+    await Tesseract.createWorker('eng');
   } catch (error) {
     console.error('Failed to preload OCR worker:', error);
   }

@@ -7,14 +7,15 @@ import {
   getPartnerById,
   getUsersByPartner,
   getPurchasesByPartner,
-  getSubscriptionsByPartner,
   getDocumentsByPartner,
+  getServiceStatus,
   getPartnerTypeLabel,
   getCustomerPrePaidLabel,
   Partner,
   PartnerUser,
   PurchaseHistory,
   PartnerDocument,
+  ServiceStatus,
 } from '@/lib/api-client/admin';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
@@ -33,9 +34,15 @@ export default function PartnerDetailsPage() {
   const [purchases, setPurchases] = useState<PurchaseHistory[]>([]);
   const [subscriptions, setSubscriptions] = useState<PurchaseHistory[]>([]);
   const [documents, setDocuments] = useState<PartnerDocument[]>([]);
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatus>({
+    pbx: { active: false, purchases: [] },
+    hcc: { active: false, purchases: [] },
+    vbs: { active: false, purchases: [] },
+  });
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
   const [imageViewerData, setImageViewerData] = useState<{ url: string; name: string } | null>(null);
+  const [pdfViewerData, setPdfViewerData] = useState<{ url: string; name: string } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -47,21 +54,29 @@ export default function PartnerDetailsPage() {
       }
 
       // Fetch all data in parallel
-      const [partnerData, usersData, purchasesData, subscriptionsData, documentsData] =
+      const [partnerData, usersData, purchasesData, documentsData, serviceStatusData] =
         await Promise.all([
           getPartnerById(partnerId, authToken),
           getUsersByPartner(partnerId, authToken),
           getPurchasesByPartner(partnerId, authToken),
-          getSubscriptionsByPartner(partnerId, authToken),
           getDocumentsByPartner(partnerId, authToken),
+          getServiceStatus(partnerId, authToken),
         ]);
 
       setPartner(partnerData);
       // Ensure all arrays are actually arrays
       setUsers(Array.isArray(usersData) ? usersData : []);
       setPurchases(Array.isArray(purchasesData) ? purchasesData : []);
-      setSubscriptions(Array.isArray(subscriptionsData) ? subscriptionsData : []);
       setDocuments(Array.isArray(documentsData) ? documentsData : []);
+      setServiceStatus(serviceStatusData);
+
+      // Derive subscriptions from serviceStatus (combine all active purchases from all services)
+      const allSubscriptions = [
+        ...serviceStatusData.pbx.purchases,
+        ...serviceStatusData.hcc.purchases,
+        ...serviceStatusData.vbs.purchases,
+      ];
+      setSubscriptions(allSubscriptions);
     } catch (error) {
       console.error('Failed to fetch partner data:', error);
     } finally {
@@ -142,8 +157,7 @@ export default function PartnerDetailsPage() {
       } else if (extension === '.pdf') {
         const pdfBlob = new Blob([blob], { type: 'application/pdf' });
         const url = window.URL.createObjectURL(pdfBlob);
-        window.open(url, '_blank');
-        setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+        setPdfViewerData({ url, name: finalFileName });
       } else {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -219,12 +233,22 @@ export default function PartnerDetailsPage() {
     }
   };
 
+  // Count available documents
+  const availableDocumentsCount = documents.filter((d) => d.available).length;
+
+  // Count active services
+  const activeServicesCount = [
+    serviceStatus.pbx.active,
+    serviceStatus.hcc.active,
+    serviceStatus.vbs.active,
+  ].filter(Boolean).length;
+
   const tabs: { id: TabType; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'users', label: 'Users', count: users.length },
     { id: 'purchases', label: 'Purchases', count: purchases.length },
-    { id: 'subscriptions', label: 'Subscriptions', count: subscriptions.length },
-    { id: 'documents', label: 'Documents', count: documents.length },
+    { id: 'subscriptions', label: 'Services', count: activeServicesCount },
+    { id: 'documents', label: 'Documents', count: availableDocumentsCount },
   ];
 
   if (loading) {
@@ -344,7 +368,13 @@ export default function PartnerDetailsPage() {
         {activeTab === 'overview' && <OverviewTab partner={partner} />}
         {activeTab === 'users' && <UsersTab users={users} />}
         {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
-        {activeTab === 'subscriptions' && <SubscriptionsTab subscriptions={subscriptions} />}
+        {activeTab === 'subscriptions' && (
+          <SubscriptionsTab
+            subscriptions={subscriptions}
+            serviceStatus={serviceStatus}
+            partnerName={partner?.partnerName || ''}
+          />
+        )}
         {activeTab === 'documents' && (
           <DocumentsTab
             documents={documents}
@@ -388,6 +418,56 @@ export default function PartnerDetailsPage() {
                 src={imageViewerData.url}
                 alt={imageViewerData.name}
                 className="max-w-full h-auto mx-auto"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {pdfViewerData && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            window.URL.revokeObjectURL(pdfViewerData.url);
+            setPdfViewerData(null);
+          }}
+        >
+          <div
+            className="relative w-full max-w-5xl h-[90vh] bg-white rounded-xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b shrink-0">
+              <h3 className="font-semibold text-gray-900">{pdfViewerData.name}</h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={pdfViewerData.url}
+                  download={pdfViewerData.name}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#00A651] hover:bg-green-50 border border-[#00A651] rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </a>
+                <button
+                  onClick={() => {
+                    window.URL.revokeObjectURL(pdfViewerData.url);
+                    setPdfViewerData(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={pdfViewerData.url}
+                title={pdfViewerData.name}
+                className="w-full h-full border-0"
               />
             </div>
           </div>
@@ -546,7 +626,9 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
           {purchases.map((purchase) => (
             <tr key={purchase.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <p className="text-sm font-medium text-gray-900">{purchase.packageName}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {purchase.packageName || purchase.packageAccounts?.[0]?.name || 'N/A'}
+                </p>
                 <p className="text-sm text-gray-500">ID: {purchase.idPackage}</p>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -586,173 +668,177 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
 }
 
 // Subscriptions Tab Component
-function SubscriptionsTab({ subscriptions }: { subscriptions: PurchaseHistory[] }) {
-  // Categorize subscriptions by service type
-  const getServiceType = (packageName: string): string => {
-    const name = packageName.toLowerCase();
-    if (name.includes('pbx') || name.includes('hosted')) return 'pbx';
-    if (name.includes('hcc') || name.includes('contact') || name.includes('mint')) return 'hcc';
-    if (name.includes('vbs') || name.includes('broadcast') || name.includes('voice')) return 'vbs';
-    if (name.includes('sms') || name.includes('topup')) return 'sms';
-    return 'other';
-  };
+interface SubscriptionsTabProps {
+  subscriptions: PurchaseHistory[];
+  serviceStatus: ServiceStatus;
+  partnerName: string;
+}
 
-  const serviceConfig: Record<string, { name: string; color: string; bgColor: string; icon: string }> = {
-    pbx: { name: 'Hosted PBX', color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200', icon: '📞' },
-    hcc: { name: 'Contact Center', color: 'text-purple-600', bgColor: 'bg-purple-50 border-purple-200', icon: '👥' },
-    vbs: { name: 'Voice Broadcast', color: 'text-orange-600', bgColor: 'bg-orange-50 border-orange-200', icon: '📢' },
-    sms: { name: 'Bulk SMS', color: 'text-green-600', bgColor: 'bg-green-50 border-green-200', icon: '💬' },
-    other: { name: 'Other Services', color: 'text-gray-600', bgColor: 'bg-gray-50 border-gray-200', icon: '📦' },
-  };
-
-  // Filter out Postpaid_Credit (idPackage 9999) and group by service
-  const activeSubscriptions = subscriptions.filter(
-    (sub) => sub.idPackage !== 9999 && sub.status === 'ACTIVE'
-  );
-
-  const groupedByService = activeSubscriptions.reduce((acc, sub) => {
-    const service = getServiceType(sub.packageName);
-    if (!acc[service]) acc[service] = [];
-    acc[service].push(sub);
-    return acc;
-  }, {} as Record<string, PurchaseHistory[]>);
-
-  if (activeSubscriptions.length === 0) {
-    return (
-      <div className="p-12 text-center">
-        <svg className="w-12 h-12 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-        </svg>
-        <p className="text-gray-500 mt-4">No active subscriptions found</p>
-      </div>
-    );
-  }
+function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: SubscriptionsTabProps) {
+  const servicePortals = [
+    {
+      id: 'pbx',
+      name: 'Hosted PBX',
+      icon: '📞',
+      url: 'https://hippbx.btcliptelephony.gov.bd:5174/',
+      activeColor: 'from-blue-50 to-blue-100 border-blue-200',
+      activeBg: 'from-blue-500 to-blue-600',
+      activeText: 'text-blue-700',
+    },
+    {
+      id: 'hcc',
+      name: 'Contact Center',
+      icon: '👥',
+      url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`,
+      activeColor: 'from-purple-50 to-purple-100 border-purple-200',
+      activeBg: 'from-purple-500 to-purple-600',
+      activeText: 'text-purple-700',
+    },
+    {
+      id: 'vbs',
+      name: 'Voice Broadcast',
+      icon: '📢',
+      url: 'https://vbs.btcliptelephony.gov.bd/',
+      activeColor: 'from-orange-50 to-orange-100 border-orange-200',
+      activeBg: 'from-orange-500 to-orange-600',
+      activeText: 'text-orange-700',
+    },
+  ];
 
   return (
     <div className="p-6 space-y-6">
-      {/* Service Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(groupedByService).map(([service, subs]) => {
-          const config = serviceConfig[service];
-          // Get total balance from all packageAccounts
-          const totalBalance = subs.reduce((total, sub) => {
-            if (sub.packageAccounts && Array.isArray(sub.packageAccounts)) {
-              return total + sub.packageAccounts.reduce((acc, pkg) => acc + (pkg.balance || 0), 0);
-            }
-            return total;
-          }, 0);
+      {/* Service Portals Section */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          Service Portals
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {servicePortals.map((portal) => {
+            const status = serviceStatus[portal.id as keyof ServiceStatus];
+            const isActive = status?.active;
 
-          return (
-            <div key={service} className={`border-2 rounded-xl p-5 ${config.bgColor}`}>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">{config.icon}</span>
-                <div>
-                  <h3 className={`font-bold ${config.color}`}>{config.name}</h3>
-                  <p className="text-xs text-gray-500">{subs.length} active package(s)</p>
-                </div>
-              </div>
-
-              {/* Package List */}
-              <div className="space-y-3">
-                {subs.map((sub) => (
-                  <div key={sub.id} className="bg-white rounded-lg p-3 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900 text-sm">{sub.packageName}</span>
-                      <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        {sub.status}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                      <div>
-                        <span className="text-gray-400">Start:</span>{' '}
-                        {sub.purchaseDate ? new Date(sub.purchaseDate).toLocaleDateString() : 'N/A'}
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Expires:</span>{' '}
-                        {sub.expireDate ? new Date(sub.expireDate).toLocaleDateString() : 'N/A'}
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Price:</span> ৳{sub.price?.toLocaleString() || 0}
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Auto-renew:</span>{' '}
-                        {sub.autoRenewalStatus ? 'Yes' : 'No'}
-                      </div>
-                    </div>
-
-                    {/* Package Accounts (Balances) */}
-                    {sub.packageAccounts && sub.packageAccounts.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <p className="text-xs font-medium text-gray-500 mb-2">Balances:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {sub.packageAccounts
-                            .filter((pkg) => pkg.packageId !== 9999)
-                            .map((pkg, idx) => (
-                              <span
-                                key={idx}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs"
-                              >
-                                <span className="font-medium">{pkg.packageName}:</span>
-                                <span className="text-green-600 font-bold">{pkg.balance?.toLocaleString() || 0}</span>
-                              </span>
-                            ))}
-                        </div>
-                      </div>
-                    )}
+            return (
+              <div
+                key={portal.id}
+                className={`rounded-xl p-4 border-2 ${
+                  isActive
+                    ? `bg-gradient-to-r ${portal.activeColor}`
+                    : 'bg-gray-50 border-gray-200 border-dashed'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-3 rounded-lg ${
+                      isActive ? `bg-gradient-to-br ${portal.activeBg}` : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className="text-xl">{portal.icon}</span>
                   </div>
-                ))}
-              </div>
-
-              {/* Total Balance for Service */}
-              {totalBalance > 0 && (
-                <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total Balance:</span>
-                  <span className={`text-lg font-bold ${config.color}`}>{totalBalance.toLocaleString()}</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* All Subscriptions Table */}
-      <div className="mt-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">All Active Subscriptions</h3>
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Start</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Auto-renew</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {activeSubscriptions.map((sub) => (
-                <tr key={sub.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-medium text-gray-900">{sub.packageName}</td>
-                  <td className="px-4 py-2 text-gray-500">
-                    {sub.purchaseDate ? new Date(sub.purchaseDate).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td className="px-4 py-2 text-gray-500">
-                    {sub.expireDate ? new Date(sub.expireDate).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td className="px-4 py-2 text-right text-gray-900">৳{sub.price?.toLocaleString() || 0}</td>
-                  <td className="px-4 py-2 text-center">
-                    <span className={`inline-flex px-2 py-0.5 text-xs rounded-full ${
-                      sub.autoRenewalStatus ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {sub.autoRenewalStatus ? 'Yes' : 'No'}
+                  <div className="flex-1">
+                    <h4 className={`font-bold ${isActive ? portal.activeText : 'text-gray-500'}`}>
+                      {portal.name}
+                    </h4>
+                    <p className={`text-xs ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {isActive ? 'Active' : 'Not Active'}
+                    </p>
+                  </div>
+                  {isActive ? (
+                    <a
+                      href={portal.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <span className="px-2 py-1 text-xs bg-gray-200 text-gray-500 rounded-full">
+                      No Package
                     </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  )}
+                </div>
+
+                {/* Show active packages for this service */}
+                {isActive && status.purchases.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200/50">
+                    <p className="text-xs text-gray-500 mb-2">Active Packages:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {status.purchases.slice(0, 3).map((p, idx) => (
+                        <span key={idx} className="text-xs px-2 py-0.5 bg-white/80 rounded text-gray-700">
+                          {p.packageName || p.packageAccounts?.[0]?.name || 'Package'}
+                        </span>
+                      ))}
+                      {status.purchases.length > 3 && (
+                        <span className="text-xs px-2 py-0.5 bg-white/80 rounded text-gray-500">
+                          +{status.purchases.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
+
+      {/* All Subscriptions */}
+      {subscriptions.filter((s) => s.idPackage !== 9999).length > 0 ? (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">All Subscriptions</h3>
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Start</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {subscriptions
+                  .filter((sub) => sub.idPackage !== 9999)
+                  .map((sub) => (
+                    <tr key={sub.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 font-medium text-gray-900">
+                        {sub.packageName || sub.packageAccounts?.[0]?.name || 'N/A'}
+                      </td>
+                      <td className="px-4 py-2 text-gray-500">
+                        {sub.purchaseDate ? new Date(sub.purchaseDate).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-4 py-2 text-gray-500">
+                        {sub.expireDate ? new Date(sub.expireDate).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-4 py-2 text-right text-gray-900">৳{sub.price?.toLocaleString() || 0}</td>
+                      <td className="px-4 py-2 text-center">
+                        <span
+                          className={`inline-flex px-2 py-0.5 text-xs rounded-full ${
+                            sub.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {sub.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          <p>No subscription data available</p>
+        </div>
+      )}
     </div>
   );
 }

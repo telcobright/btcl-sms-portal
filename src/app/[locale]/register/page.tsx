@@ -1438,7 +1438,6 @@ export default function RegisterPage() {
                           <input
                             type="text"
                             {...field}
-                            readOnly={nidExtractedFromOcr}
                             placeholder={
                               watchedNidDigitType === '10'
                                 ? 'Enter 10-digit NID'
@@ -1451,11 +1450,11 @@ export default function RegisterPage() {
                                 : nidExtractedFromOcr
                                 ? 'border-green-500 bg-green-50'
                                 : 'border-gray-300'
-                            } rounded-md text-black ${nidExtractedFromOcr ? 'cursor-not-allowed' : ''}`}
+                            } rounded-md text-black`}
                           />
                           {nidExtractedFromOcr && (
                             <p className="text-green-600 text-sm mt-1">
-                              NID extracted from uploaded image
+                              NID extracted from uploaded image (you can edit if needed)
                             </p>
                           )}
                           {fieldState.error && (

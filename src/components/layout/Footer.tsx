@@ -182,6 +182,12 @@ export function Footer() {
                 </div>
                 <div className="flex space-x-8">
                   <Link
+                      href={`/${locale}/package-migration-policy`}
+                      className="text-sm text-gray-500 hover:text-[#00a651] transition-colors duration-200"
+                  >
+                    {locale === 'en' ? 'Package Migration Policy' : 'প্যাকেজ মাইগ্রেশন নীতিমালা'}
+                  </Link>
+                  <Link
                       href="#"
                       className="text-sm text-gray-500 hover:text-[#00a651] transition-colors duration-200"
                   >

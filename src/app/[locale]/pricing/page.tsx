@@ -9,7 +9,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import CheckoutModal from "@/components/checkout/CheckoutModal";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { PBX_BASE_URL } from "@/config/api";
+import { PBX_BASE_URL, FEATURE_FLAGS } from "@/config/api";
 import { jwtDecode } from 'jwt-decode';
 
 interface DecodedToken {
@@ -447,14 +447,36 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         <div className="py-20 bg-gray-100">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                {locale === 'en' ? 'Choose Your Postpaid Plan' : 'আপনার পোস্টপেইড পরিকল্পনা চয়ন করুন'}
-              </h2>
+              <div className="inline-flex items-center gap-3 mb-4">
+                <h2 className="text-3xl font-bold text-gray-900">
+                  {locale === 'en' ? 'Choose Your Postpaid Plan' : 'আপনার পোস্টপেইড পরিকল্পনা চয়ন করুন'}
+                </h2>
+                {!FEATURE_FLAGS.POSTPAID_ENABLED && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300 uppercase tracking-wider">
+                    {locale === 'en' ? 'Coming Soon' : 'শীঘ্রই আসছে'}
+                  </span>
+                )}
+              </div>
               <p className="text-xl text-gray-600">
                 {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
                 {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per message pricing' : 'প্রতি মেসেজ মূল্য')}
                 {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
               </p>
+
+              {/* Postpaid Eligibility Notice */}
+              <div className="mt-6 max-w-3xl mx-auto bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <svg className="flex-shrink-0 w-5 h-5 text-red-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-sm text-red-800 text-left">
+                    <strong>{locale === 'en' ? 'Eligibility: ' : 'যোগ্যতা: '}</strong>
+                    {locale === 'en'
+                      ? 'Postpaid option is only applicable for Government / Semi-Government / Autonomous Organisations.'
+                      : 'পোস্টপেইড অপশন শুধুমাত্র সরকারি / আধা-সরকারি / স্বায়ত্তশাসিত প্রতিষ্ঠানের জন্য প্রযোজ্য।'}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className={`grid gap-8 ${selectedService === 'contact-center' ? 'grid-cols-1 md:grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}>
@@ -528,7 +550,14 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     </div>
 
                     <div className="mb-6">
-                      {typeof pkg.price === 'number' ? (
+                      {!FEATURE_FLAGS.POSTPAID_ENABLED ? (
+                        <Button
+                          disabled
+                          className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed"
+                        >
+                          {locale === 'en' ? 'Coming Soon' : 'শীঘ্রই আসছে'}
+                        </Button>
+                      ) : typeof pkg.price === 'number' ? (
                         <Button
                           onClick={() => handleApply(pkg)}
                           className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${

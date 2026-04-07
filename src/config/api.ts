@@ -36,13 +36,23 @@ export const PAYMENT_BASE_URL = `${ROOT_URL}`;
  */
 export const FEATURE_FLAGS = {
   /** Enable/Disable OTP verification during registration */
-  OTP_VERIFICATION_ENABLED: true,
+  OTP_VERIFICATION_ENABLED: false,
 
   /** Enable/Disable NID verification during registration */
   NID_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable SSLCommerz payment */
   PAYMENT_ENABLED: true,
+
+  /**
+   * Enable/Disable Postpaid option (registration form + pricing page).
+   * When false:
+   *   - Postpaid radio in registration form is disabled (shows "Coming soon")
+   *   - Postpaid plan buttons on pricing page show "Coming Soon" instead of "Apply"
+   *   - "Coming Soon" badge appears next to the postpaid plan heading
+   * When true: Postpaid is fully enabled.
+   */
+  POSTPAID_ENABLED: false,
 } as const;
 
 // API Endpoints

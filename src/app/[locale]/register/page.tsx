@@ -169,7 +169,9 @@ export default function RegisterPage() {
 
   // Watch specific form fields
   const watchedNidDigitType = useWatch({ control: personalInfoForm.control, name: 'nidDigitType' });
+  const watchedNidFrontSide = useWatch({ control: personalInfoForm.control, name: 'identityCardFrontSide' });
   const watchedCustomerType = useWatch({ control: otherInfoForm.control, name: 'customerType' });
+  const isNidFrontUploaded = !!watchedNidFrontSide;
 
   // Watch verification form fields for Send OTP button
   useEffect(() => {
@@ -1304,174 +1306,11 @@ export default function RegisterPage() {
               >
               <div className="max-w-2xl mx-auto px-4">
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-black font-medium mb-1">
-                      Full Name (as shown on your National ID)
-                    </label>
-                    <Controller
-                      name="fullName"
-                      control={personalInfoForm.control}
-                      rules={{ required: 'Full name is required' }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <input
-                            type="text"
-                            {...field}
-                            placeholder="Enter your full name as shown on NID"
-                            className={`w-full px-3 py-2 border ${
-                              fieldState.error
-                                ? 'border-red-500'
-                                : 'border-gray-300'
-                            } rounded-md text-black`}
-                          />
-                          {fieldState.error && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {fieldState.error.message}
-                            </p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-black font-medium mb-1">
-                      Date of Birth
-                    </label>
-                    <Controller
-                      name="dateOfBirth"
-                      control={personalInfoForm.control}
-                      rules={{ required: 'Date of birth is required' }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <input
-                            type="date"
-                            {...field}
-                            placeholder="YYYY-MM-DD"
-                            onKeyDown={(e) => {
-                              // Allow typing: numbers, backspace, delete, arrows, tab
-                              const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', '-'];
-                              if (!allowedKeys.includes(e.key) && !/[0-9]/.test(e.key)) {
-                                e.preventDefault();
-                              }
-                            }}
-                            className={`w-full px-3 py-2 border ${
-                              fieldState.error
-                                ? 'border-red-500'
-                                : 'border-gray-300'
-                            } rounded-md text-black`}
-                          />
-                          {fieldState.error && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {fieldState.error.message}
-                            </p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-black font-medium mb-2">
-                      NID Type
-                    </label>
-                    <Controller
-                      name="nidDigitType"
-                      control={personalInfoForm.control}
-                      render={({ field }) => (
-                        <div className="flex gap-6">
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="radio"
-                              {...field}
-                              value="10"
-                              checked={field.value === '10'}
-                              className="mr-2"
-                            />
-                            <span className="text-black">10 Digit NID</span>
-                          </label>
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="radio"
-                              {...field}
-                              value="17"
-                              checked={field.value === '17'}
-                              className="mr-2"
-                            />
-                            <span className="text-black">17 Digit NID</span>
-                          </label>
-                        </div>
-                      )}
-                    />
-                    {watchedNidDigitType === '17' && (
-                      <p className="text-blue-600 text-sm mt-2">
-                        💡 Please add birth year with the NID number to match 17 digits
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-black font-medium mb-1">
-                      NID Number
-                    </label>
-                    <Controller
-                      name="nidNumber"
-                      control={personalInfoForm.control}
-                      rules={{
-                        required: 'NID number is required',
-                        validate: (value) => {
-                          const digitType = watchedNidDigitType;
-                          if (digitType === '10' && value.length !== 10) {
-                            return 'NID must be exactly 10 digits';
-                          }
-                          if (digitType === '17' && value.length !== 17) {
-                            return 'NID must be exactly 17 digits';
-                          }
-                          if (!/^\d+$/.test(value)) {
-                            return 'NID must contain only numbers';
-                          }
-                          return true;
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <input
-                            type="text"
-                            {...field}
-                            placeholder={
-                              watchedNidDigitType === '10'
-                                ? 'Enter 10-digit NID'
-                                : 'Enter 17-digit NID'
-                            }
-                            maxLength={watchedNidDigitType === '10' ? 10 : 17}
-                            className={`w-full px-3 py-2 border ${
-                              fieldState.error
-                                ? 'border-red-500'
-                                : nidExtractedFromOcr
-                                ? 'border-green-500 bg-green-50'
-                                : 'border-gray-300'
-                            } rounded-md text-black`}
-                          />
-                          {nidExtractedFromOcr && (
-                            <p className="text-green-600 text-sm mt-1">
-                              NID extracted from uploaded image (you can edit if needed)
-                            </p>
-                          )}
-                          {fieldState.error && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {fieldState.error.message}
-                            </p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-
-                  {/* 2-Column Grid for NID Uploads and Passwords */}
+                  {/* NID Upload Section - Must be uploaded first */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-black font-medium mb-1">
-                        Upload NID (Front Side)
+                        Upload NID (Front Side) <span className="text-red-500">*</span>
                       </label>
                       <Controller
                         name="identityCardFrontSide"
@@ -1535,7 +1374,7 @@ export default function RegisterPage() {
 
                     <div>
                       <label className="block text-black font-medium mb-1">
-                        Upload NID (Back Side)
+                        Upload NID (Back Side) <span className="text-red-500">*</span>
                       </label>
                       <Controller
                         name="identityCardBackSide"
@@ -1564,8 +1403,178 @@ export default function RegisterPage() {
                         )}
                       />
                     </div>
-
                   </div>
+
+                  <div>
+                    <label className="block text-black font-medium mb-1">
+                      Full Name (as shown on your National ID)
+                    </label>
+                    <Controller
+                      name="fullName"
+                      control={personalInfoForm.control}
+                      rules={{ required: 'Full name is required' }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <input
+                            type="text"
+                            {...field}
+                            disabled={!isNidFrontUploaded}
+                            placeholder={isNidFrontUploaded ? "Enter your full name as shown on NID" : "Please upload NID Front Side first"}
+                            className={`w-full px-3 py-2 border ${
+                              fieldState.error
+                                ? 'border-red-500'
+                                : 'border-gray-300'
+                            } rounded-md text-black disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          />
+                          {fieldState.error && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {fieldState.error.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-black font-medium mb-1">
+                      Date of Birth
+                    </label>
+                    <Controller
+                      name="dateOfBirth"
+                      control={personalInfoForm.control}
+                      rules={{ required: 'Date of birth is required' }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <input
+                            type="date"
+                            {...field}
+                            disabled={!isNidFrontUploaded}
+                            placeholder="YYYY-MM-DD"
+                            onKeyDown={(e) => {
+                              // Allow typing: numbers, backspace, delete, arrows, tab
+                              const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', '-'];
+                              if (!allowedKeys.includes(e.key) && !/[0-9]/.test(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
+                            className={`w-full px-3 py-2 border ${
+                              fieldState.error
+                                ? 'border-red-500'
+                                : 'border-gray-300'
+                            } rounded-md text-black disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          />
+                          {fieldState.error && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {fieldState.error.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-black font-medium mb-2">
+                      NID Type
+                    </label>
+                    <Controller
+                      name="nidDigitType"
+                      control={personalInfoForm.control}
+                      render={({ field }) => (
+                        <div className={`flex gap-6 ${!isNidFrontUploaded ? 'opacity-50' : ''}`}>
+                          <label className={`flex items-center ${isNidFrontUploaded ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                            <input
+                              type="radio"
+                              {...field}
+                              value="10"
+                              checked={field.value === '10'}
+                              disabled={!isNidFrontUploaded}
+                              className="mr-2"
+                            />
+                            <span className="text-black">10 Digit NID</span>
+                          </label>
+                          <label className={`flex items-center ${isNidFrontUploaded ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                            <input
+                              type="radio"
+                              {...field}
+                              value="17"
+                              checked={field.value === '17'}
+                              disabled={!isNidFrontUploaded}
+                              className="mr-2"
+                            />
+                            <span className="text-black">17 Digit NID</span>
+                          </label>
+                        </div>
+                      )}
+                    />
+                    {watchedNidDigitType === '17' && (
+                      <p className="text-blue-600 text-sm mt-2">
+                        💡 Please add birth year with the NID number to match 17 digits
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-black font-medium mb-1">
+                      NID Number
+                    </label>
+                    <Controller
+                      name="nidNumber"
+                      control={personalInfoForm.control}
+                      rules={{
+                        required: 'NID number is required',
+                        validate: (value) => {
+                          const digitType = watchedNidDigitType;
+                          if (digitType === '10' && value.length !== 10) {
+                            return 'NID must be exactly 10 digits';
+                          }
+                          if (digitType === '17' && value.length !== 17) {
+                            return 'NID must be exactly 17 digits';
+                          }
+                          if (!/^\d+$/.test(value)) {
+                            return 'NID must contain only numbers';
+                          }
+                          return true;
+                        },
+                      }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <input
+                            type="text"
+                            {...field}
+                            disabled={!isNidFrontUploaded}
+                            placeholder={
+                              !isNidFrontUploaded
+                                ? 'Please upload NID Front Side first'
+                                : watchedNidDigitType === '10'
+                                ? 'Enter 10-digit NID'
+                                : 'Enter 17-digit NID'
+                            }
+                            maxLength={watchedNidDigitType === '10' ? 10 : 17}
+                            className={`w-full px-3 py-2 border ${
+                              fieldState.error
+                                ? 'border-red-500'
+                                : nidExtractedFromOcr
+                                ? 'border-green-500 bg-green-50'
+                                : 'border-gray-300'
+                            } rounded-md text-black disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          />
+                          {nidExtractedFromOcr && (
+                            <p className="text-green-600 text-sm mt-1">
+                              NID extracted from uploaded image (you can edit if needed)
+                            </p>
+                          )}
+                          {fieldState.error && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {fieldState.error.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
                 </div>
               </div>
 
@@ -1619,26 +1628,37 @@ export default function RegisterPage() {
                         />
                         <span className="text-black">Prepaid</span>
                       </label>
-                      <label className="flex items-center cursor-pointer">
+                      <label className={`flex items-center ${FEATURE_FLAGS.POSTPAID_ENABLED ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
                         <input
                           type="radio"
                           {...field}
                           value="postpaid"
                           checked={field.value === 'postpaid'}
                           onChange={() => field.onChange('postpaid')}
+                          disabled={!FEATURE_FLAGS.POSTPAID_ENABLED}
                           className="mr-2"
                         />
-                        <span className="text-black">Postpaid</span>
+                        <span className={FEATURE_FLAGS.POSTPAID_ENABLED ? 'text-black' : 'text-gray-500'}>Postpaid</span>
+                        {!FEATURE_FLAGS.POSTPAID_ENABLED && (
+                          <span className="ml-2 text-xs text-gray-400 italic">(Coming soon)</span>
+                        )}
                       </label>
                     </div>
                   )}
                 />
-                {/* T&C Note for Postpaid */}
+                {/* Eligibility & T&C Note for Postpaid */}
                 {watchedCustomerType === 'postpaid' && (
-                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                    <p className="text-amber-800 text-sm">
-                      <strong>Note:</strong> T&C applies to postpaid customers. Postpaid billing is applicable only for Hosted PBX purchases. All other services will remain prepaid.
-                    </p>
+                  <div className="mt-3 space-y-2">
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-red-800 text-sm">
+                        <strong>Eligibility:</strong> Postpaid option is only applicable for Government / Semi-Government / Autonomous Organisations.
+                      </p>
+                    </div>
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                      <p className="text-amber-800 text-sm">
+                        <strong>Note:</strong> T&C applies to postpaid customers. Postpaid billing is applicable only for Hosted PBX purchases. All other services will remain prepaid.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

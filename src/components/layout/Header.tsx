@@ -15,7 +15,7 @@ export function Header() {
   const t = useTranslations()
   const locale = useLocale()
   const pathname = usePathname()
-  const { isAuthenticated, loading, logout } = useAuth()
+  const { isAuthenticated, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navigation = [
@@ -75,13 +75,7 @@ export function Header() {
 
               {/* Desktop Auth Buttons */}
               <div className="hidden md:flex items-center space-x-4">
-                {loading ? (
-                    // Show loading state
-                    <div className="flex space-x-4">
-                      <div className="w-20 h-9 bg-gray-200 animate-pulse rounded-md"></div>
-                      <div className="w-20 h-9 bg-gray-200 animate-pulse rounded-md"></div>
-                    </div>
-                ) : isAuthenticated ? (
+                {isAuthenticated ? (
                     // Authenticated state - Show Dashboard and Logout
                     <>
                       <Link href={`/${locale}/dashboard`}>
@@ -154,12 +148,7 @@ export function Header() {
                   ))}
                 </div>
                 <div className="border-t border-gray-200 px-2 pt-4 pb-3 space-y-2">
-                  {loading ? (
-                      <div className="space-y-2">
-                        <div className="h-9 bg-gray-200 animate-pulse rounded-md"></div>
-                        <div className="h-9 bg-gray-200 animate-pulse rounded-md"></div>
-                      </div>
-                  ) : isAuthenticated ? (
+                  {isAuthenticated ? (
                       <>
                         <Link href={`/${locale}/dashboard`} onClick={() => setMobileMenuOpen(false)}>
                           <Button variant="ghost" size="sm" className="w-full">

@@ -833,8 +833,11 @@ export default function RegisterPage() {
               <h3 className="text-2xl font-bold text-green-600 mb-2 text-center">
                 Registration Successful!
               </h3>
-              <p className="text-gray-600 text-center mb-2">
-                Your account has been created successfully.
+              <p className="text-gray-700 text-center mb-2 font-medium">
+                Credentials has been sent to email.
+              </p>
+              <p className="text-gray-600 text-center mb-4">
+                Please check your email.
               </p>
               {otherInfoForm.getValues('customerType') === 'postpaid' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 w-full">

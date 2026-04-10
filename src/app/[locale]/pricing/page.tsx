@@ -9,7 +9,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import CheckoutModal from "@/components/checkout/CheckoutModal";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { API_BASE_URL, API_ENDPOINTS, FEATURE_FLAGS } from "@/config/api";
+import { API_BASE_URL, API_ENDPOINTS, FEATURE_FLAGS, PBX_BASE_URL, VBS_BASE_URL, HCC_BASE_URL } from "@/config/api";
 import { jwtDecode } from 'jwt-decode';
 
 interface DecodedToken {
@@ -25,7 +25,22 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [selectedPackage, setSelectedPackage] = useState<any>(null)
   const [userType, setUserType] = useState<'prepaid' | 'postpaid' | null>(null)
   const [isLoadingUserType, setIsLoadingUserType] = useState(true)
+  // activePackages maps service → active pkg id string (e.g. 'hosted-pbx' → 'silver')
+  const [activePackages, setActivePackages] = useState<Record<string, string | null>>({})
   const router = useRouter()
+
+  // Maps packageId integer → pkg.id string used in pricing cards
+  const packageIdToSlug: Record<number, string> = {
+    9132: 'bronze', 9133: 'silver', 9134: 'gold',
+    9135: 'basic',  9136: 'standard', 9137: 'enterprise',
+    9140: 'basic',
+  }
+
+  const serviceBaseUrls: Record<string, string> = {
+    'hosted-pbx':      PBX_BASE_URL,
+    'voice-broadcast': VBS_BASE_URL,
+    'contact-center':  HCC_BASE_URL,
+  }
 
   const isLoggedIn = () => {
     if (typeof window !== 'undefined') {
@@ -85,7 +100,48 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       }
     }
 
+    const fetchActivePackages = async () => {
+      const authToken = localStorage.getItem('authToken')
+      if (!authToken) return
+
+      try {
+        const decodedToken = jwtDecode<DecodedToken>(authToken)
+        const idPartner = decodedToken?.idPartner
+        if (!idPartner) return
+
+        const services = ['hosted-pbx', 'voice-broadcast', 'contact-center']
+        const results = await Promise.allSettled(
+          services.map(async (service) => {
+            const baseUrl = serviceBaseUrls[service]
+            const res = await fetch(`${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+              body: JSON.stringify({ idPartner }),
+            })
+            if (!res.ok) return { service, slug: null }
+            const data = await res.json()
+            const accounts = (data?.packageAccounts ?? []).filter((a: any) => a.packageId && a.packageId !== 9999)
+            if (accounts.length === 0) return { service, slug: null }
+            const expireDate = data?.expireDate ?? null
+            const isExpired = expireDate ? new Date(expireDate) < new Date() : false
+            if (isExpired) return { service, slug: null }
+            const slug = packageIdToSlug[accounts[0].packageId] ?? null
+            return { service, slug }
+          })
+        )
+
+        const map: Record<string, string | null> = {}
+        results.forEach((r) => {
+          if (r.status === 'fulfilled') map[r.value.service] = r.value.slug
+        })
+        setActivePackages(map)
+      } catch (e) {
+        console.error('Failed to fetch active packages:', e)
+      }
+    }
+
     fetchUserType()
+    fetchActivePackages()
   }, [])
 
   const handleBuyNow = (pkg: any) => {
@@ -398,6 +454,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
                     <div className="mb-6">
                       {typeof pkg.price === 'number' ? (
+                        activePackages[selectedService] === pkg.id ? (
+                          <div className="w-full py-4 px-6 rounded-xl font-semibold text-lg text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
+                            ✓ {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
+                          </div>
+                        ) : (
                         <Button
                           onClick={() => handleBuyNow(pkg)}
                           className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
@@ -408,6 +469,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                         >
                           {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
                         </Button>
+                        )
                       ) : (
                         <Link href={`/${locale}/contact`}>
                           <Button

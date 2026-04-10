@@ -27,6 +27,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [isLoadingUserType, setIsLoadingUserType] = useState(true)
   // activePackages maps service → active pkg id string (e.g. 'hosted-pbx' → 'silver')
   const [activePackages, setActivePackages] = useState<Record<string, string | null>>({})
+  // expiredPackages maps service → expired pkg id string
+  const [expiredPackages, setExpiredPackages] = useState<Record<string, string | null>>({})
   const router = useRouter()
 
   // Maps packageId integer → pkg.id string used in pricing cards
@@ -127,17 +129,27 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               p.idPackage && p.idPackage !== 9999 &&
               (!p.expireDate || new Date(p.expireDate) > new Date())
             )
-            if (!active) return { service, slug: null }
+            if (!active) {
+              // Check for expired
+              const expired = purchases.find((p: any) => p.idPackage && p.idPackage !== 9999)
+              const expiredSlug = expired ? (packageIdToSlug[expired.idPackage] ?? null) : null
+              return { service, slug: null, expiredSlug }
+            }
             const slug = packageIdToSlug[active.idPackage] ?? null
-            return { service, slug }
+            return { service, slug, expiredSlug: null }
           })
         )
 
-        const map: Record<string, string | null> = {}
+        const activeMap: Record<string, string | null> = {}
+        const expiredMap: Record<string, string | null> = {}
         results.forEach((r) => {
-          if (r.status === 'fulfilled') map[r.value.service] = r.value.slug
+          if (r.status === 'fulfilled') {
+            activeMap[r.value.service] = r.value.slug
+            expiredMap[r.value.service] = r.value.expiredSlug
+          }
         })
-        setActivePackages(map)
+        setActivePackages(activeMap)
+        setExpiredPackages(expiredMap)
       } catch (e) {
         console.error('Failed to fetch active packages:', e)
       }
@@ -458,9 +470,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     <div className="mb-6">
                       {typeof pkg.price === 'number' ? (
                         activePackages[selectedService] === pkg.id ? (
+                          // Active plan — disabled
                           <div className="w-full py-4 px-6 rounded-xl font-semibold text-lg text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
                             ✓ {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
                           </div>
+                        ) : expiredPackages[selectedService] === pkg.id ? (
+                          // Expired plan — show Renew button
+                          <Button
+                            onClick={() => handleBuyNow(pkg)}
+                            className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg"
+                          >
+                            ↻ {locale === 'en' ? 'Renew Plan' : 'প্ল্যান নবায়ন করুন'}
+                          </Button>
                         ) : (
                         <Button
                           onClick={() => handleBuyNow(pkg)}

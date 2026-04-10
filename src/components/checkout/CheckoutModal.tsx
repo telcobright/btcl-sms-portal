@@ -118,60 +118,72 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 }
 
                 const baseUrl = getServiceBaseUrl(serviceType);
-                const response = await fetch(`${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`, {
+
+                // Step 1: Check for active package via getPurchaseForPartner
+                const activeRes = await fetch(`${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                     body: JSON.stringify({ idPartner: partnerId }),
                 });
 
-                if (!response.ok) {
-                    setPurchaseAction('new');
-                    return;
+                if (activeRes.ok) {
+                    const data = await activeRes.json();
+                    const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? []);
+                    const activePurchase = purchases.find((p: any) =>
+                        p.idPackage && p.idPackage !== 9999 &&
+                        (!p.expireDate || new Date(p.expireDate) > new Date())
+                    );
+
+                    if (activePurchase) {
+                        const currentSlug = packageIdToName[activePurchase.idPackage] ?? '';
+                        setCurrentPackage({
+                            name: currentSlug || activePurchase.packageName || 'Unknown',
+                            packageId: activePurchase.idPackage,
+                            expireDate: activePurchase.expireDate ?? null,
+                            isExpired: false,
+                        });
+
+                        const tiers = packageTierOrder[serviceType] ?? {};
+                        const currentTier = tiers[currentSlug] ?? 0;
+                        const newTier = tiers[pkg?.id ?? ''] ?? 0;
+
+                        if (currentTier === 0 || newTier === 0 || pkg?.id === currentSlug) {
+                            setPurchaseAction('renew');
+                        } else if (newTier > currentTier) {
+                            setPurchaseAction('upgrade');
+                        } else {
+                            setPurchaseAction('downgrade');
+                        }
+                        return;
+                    }
                 }
 
-                const data = await response.json();
-                // Response is an array: [{ idPackage, status, expireDate, ... }]
-                const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? []);
-                const activePurchase = purchases.find((p: any) =>
-                    p.idPackage && p.idPackage !== 9999
-                );
-
-                if (!activePurchase) {
-                    setPurchaseAction('new');
-                    return;
-                }
-
-                const expireDate = activePurchase.expireDate ?? null;
-                const isExpired = expireDate ? new Date(expireDate) < new Date() : false;
-
-                setCurrentPackage({
-                    name: packageIdToName[activePurchase.idPackage] ?? activePurchase.packageName ?? 'Unknown',
-                    packageId: activePurchase.idPackage,
-                    expireDate,
-                    isExpired,
+                // Step 2: No active package — check purchase history for expired packages
+                const historyRes = await fetch(`${baseUrl}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ page: 0, size: 5, idPartner: partnerId }),
                 });
 
-                if (isExpired) {
-                    setPurchaseAction('renew');
-                    return;
+                if (historyRes.ok) {
+                    const historyData = await historyRes.json();
+                    const history = Array.isArray(historyData) ? historyData : (historyData?.content ?? historyData?.data ?? []);
+                    const pastPurchase = history.find((p: any) => p.idPackage && p.idPackage !== 9999);
+
+                    if (pastPurchase) {
+                        const currentSlug = packageIdToName[pastPurchase.idPackage] ?? '';
+                        setCurrentPackage({
+                            name: currentSlug || pastPurchase.packageName || 'Unknown',
+                            packageId: pastPurchase.idPackage,
+                            expireDate: pastPurchase.expireDate ?? null,
+                            isExpired: true,
+                        });
+                        setPurchaseAction('renew');
+                        return;
+                    }
                 }
 
-                // Determine upgrade / downgrade / renew
-                const tiers = packageTierOrder[serviceType] ?? {};
-                const currentSlug = packageIdToName[activePurchase.idPackage] ?? '';
-                const currentTier = tiers[currentSlug] ?? 0;
-                const newTier = tiers[pkg?.id ?? ''] ?? 0;
-
-                if (currentTier === 0 || newTier === 0 || pkg?.id === currentSlug) {
-                    setPurchaseAction('renew');
-                } else if (newTier > currentTier) {
-                    setPurchaseAction('upgrade');
-                } else {
-                    setPurchaseAction('downgrade');
-                }
+                setPurchaseAction('new');
             } catch (e) {
                 console.error('Failed to fetch current package:', e);
                 setPurchaseAction('new');

@@ -31,6 +31,13 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [expiredPackages, setExpiredPackages] = useState<Record<string, string | null>>({})
   const router = useRouter()
 
+  // Package tier order per service (higher number = higher tier)
+  const packageTierOrder: Record<string, Record<string, number>> = {
+    'hosted-pbx':      { bronze: 1, silver: 2, gold: 3 },
+    'voice-broadcast': { basic: 1, standard: 2, enterprise: 3 },
+    'contact-center':  { basic: 1 },
+  }
+
   // Maps packageId integer → pkg.id string used in pricing cards
   const packageIdToSlug: Record<number, string> = {
     9132: 'bronze', 9133: 'silver', 9134: 'gold',
@@ -487,6 +494,28 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           <div className="w-full py-4 px-6 rounded-xl font-semibold text-lg text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
                             ✓ {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
                           </div>
+                        ) : activePackages[selectedService] ? (
+                          // User has an active plan — show Upgrade or Downgrade
+                          (() => {
+                            const tiers = packageTierOrder[selectedService] ?? {}
+                            const activeTier = tiers[activePackages[selectedService]!] ?? 0
+                            const thisTier = tiers[pkg.id] ?? 0
+                            const isUpgrade = thisTier > activeTier
+                            return (
+                              <Button
+                                onClick={() => handleBuyNow(pkg)}
+                                className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                                  isUpgrade
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
+                                    : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg'
+                                }`}
+                              >
+                                {isUpgrade
+                                  ? (locale === 'en' ? '↑ Upgrade Plan' : '↑ আপগ্রেড করুন')
+                                  : (locale === 'en' ? '↓ Downgrade Plan' : '↓ ডাউনগ্রেড করুন')}
+                              </Button>
+                            )
+                          })()
                         ) : expiredPackages[selectedService] === pkg.id ? (
                           // Expired plan — show Renew button
                           <Button

@@ -395,6 +395,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
         }
 
         setLoading(true);
+
         try {
             // Check if payment is disabled in config
             if (!FEATURE_FLAGS.PAYMENT_ENABLED) {
@@ -403,7 +404,6 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
 
                 // Show success popup for Hosted PBX
                 if (serviceType === 'hosted-pbx' && email) {
-                    // Check if user already has PBX
                     try {
                         const userData = await getUserByEmail(email, authToken!);
                         setUserHasPbx(!!userData?.pbxUuid);
@@ -420,6 +420,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 // Show success popup for Voice Broadcast
                 if (serviceType === 'voice-broadcast' && email) {
                     setSuccessEmail(email);
+                    setPurchasedPackageName(pkg.name);
                     setShowVbsSuccessPopup(true);
                     setLoading(false);
                     return;
@@ -429,14 +430,14 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 return;
             }
 
-            // Get partner details for customer info and customerPrePaid value
-            toast.loading(locale === 'en' ? 'Preparing purchase...' : 'ক্রয় প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
+            // Step 1: Fetch partner details
+            toast.loading(locale === 'en' ? 'Preparing your account...' : 'অ্যাকাউন্ট প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
             const partnerData = await getPartnerById(partnerId, authToken);
 
-            // For PBX, HCC, VBS services - ensure partner exists in target service before purchase
+            // Step 2: Ensure partner exists in target service
             if (['hosted-pbx', 'contact-center', 'voice-broadcast'].includes(serviceType)) {
                 toast.loading(
-                    locale === 'en' ? 'Verifying account in service...' : 'সার্ভিসে অ্যাকাউন্ট যাচাই করা হচ্ছে...',
+                    locale === 'en' ? 'Verifying service account...' : 'সার্ভিস অ্যাকাউন্ট যাচাই হচ্ছে...',
                     { id: 'partner-check' }
                 );
 
@@ -444,16 +445,10 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 toast.dismiss('partner-check');
 
                 if (!partnerReady) {
-                    toast.error(
-                        locale === 'en'
-                            ? 'Failed to prepare account for this service. Please try again or contact support.'
-                            : 'এই সার্ভিসের জন্য অ্যাকাউন্ট প্রস্তুত করতে ব্যর্থ। আবার চেষ্টা করুন বা সাপোর্টে যোগাযোগ করুন।'
-                    );
+                    toast.error(locale === 'en' ? 'Could not set up your service account. Please try again.' : 'সার্ভিস অ্যাকাউন্ট সেটআপ করা যায়নি। আবার চেষ্টা করুন।');
                     setLoading(false);
                     return;
                 }
-
-                console.log(`✅ Partner ${partnerId} is ready in ${serviceType} service`);
             }
 
             toast.dismiss('payment-prep');
@@ -598,56 +593,95 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
         onClose();
     };
 
-    // Success Popup for Hosted PBX
-    if (showSuccessPopup) {
-        return (
-            <Dialog open={isOpen} onClose={handleCloseSuccessPopup} className="relative z-50 font-bengali">
-                <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
+    // Shared success popup renderer (PBX + VBS)
+    const renderSuccessPopup = (portalLabel: string, portalUrl: string) => {
+        const isNew = purchaseAction === 'new';
+        const actionLabel = (() => {
+            if (locale === 'en') {
+                if (purchaseAction === 'renew')     return 'Plan Renewed';
+                if (purchaseAction === 'upgrade')   return 'Plan Upgraded';
+                if (purchaseAction === 'downgrade') return 'Plan Downgraded';
+                return 'Purchase Successful';
+            } else {
+                if (purchaseAction === 'renew')     return 'প্ল্যান নবায়ন হয়েছে';
+                if (purchaseAction === 'upgrade')   return 'প্ল্যান আপগ্রেড হয়েছে';
+                if (purchaseAction === 'downgrade') return 'প্ল্যান ডাউনগ্রেড হয়েছে';
+                return 'ক্রয় সফল হয়েছে';
+            }
+        })();
 
+        return (
+            <Dialog open={isOpen} onClose={() => {}} className="relative z-50 font-bengali">
+                <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
                     <Dialog.Panel className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
-                        {/* Success Header */}
-                        <div className="bg-gradient-to-r from-[#00A651] to-[#004225] px-6 py-8 text-center">
+                        {/* Header */}
+                        <div className={`px-6 py-8 text-center ${
+                            purchaseAction === 'downgrade'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600'
+                                : purchaseAction === 'upgrade'
+                                ? 'bg-gradient-to-r from-blue-600 to-blue-700'
+                                : 'bg-gradient-to-r from-[#00A651] to-[#004225]'
+                        }`}>
                             <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                                <svg
-                                    className="w-12 h-12 text-[#00A651]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={3}
-                                        d="M5 13l4 4L19 7"
-                                    />
+                                <svg className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : purchaseAction === 'upgrade' ? 'text-blue-600' : 'text-[#00A651]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
                             <h2 className="text-2xl font-bold text-white">
                                 {locale === 'en' ? 'Congratulations!' : 'অভিনন্দন!'}
                             </h2>
-                            <p className="text-green-100 mt-2">
-                                {locale === 'en'
-                                    ? (userHasPbx ? 'Package purchased successfully!' : 'Your Hosted PBX is ready!')
-                                    : (userHasPbx ? 'প্যাকেজ সফলভাবে ক্রয় হয়েছে!' : 'আপনার হোস্টেড PBX প্রস্তুত!')}
-                            </p>
+                            <p className="text-white/80 mt-2 font-medium">{actionLabel}</p>
                         </div>
 
-                        {/* Package Details or Credentials Section */}
                         <div className="px-6 py-6">
                             <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                {userHasPbx ? (
-                                    <>
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                            <svg className="w-5 h-5 mr-2 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                {isNew ? (
+                                    /* First-time purchase: email notification */
+                                    <div className="flex flex-col items-center text-center gap-3">
+                                        <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
+                                            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                             </svg>
-                                            {locale === 'en' ? 'Package Purchased' : 'প্যাকেজ ক্রয় হয়েছে'}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">
+                                                {locale === 'en' ? 'Check Your Email' : 'আপনার ইমেইল চেক করুন'}
+                                            </p>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {locale === 'en'
+                                                    ? 'Your login credentials have been sent to:'
+                                                    : 'আপনার লগইন তথ্য পাঠানো হয়েছে:'}
+                                            </p>
+                                            <p className="font-semibold text-blue-600 mt-1 break-all">{successEmail}</p>
+                                        </div>
+                                        <div className="w-full mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-left">
+                                            <p className="text-xs text-amber-800">
+                                                <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
+                                                {locale === 'en'
+                                                    ? 'Please change your password after first login for security.'
+                                                    : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Renew / Upgrade / Downgrade: package summary */
+                                    <>
+                                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                                            {locale === 'en' ? 'Plan Summary' : 'প্ল্যান সারসংক্ষেপ'}
                                         </h3>
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center py-2 border-b border-gray-200">
                                                 <span className="text-gray-600">{locale === 'en' ? 'Package' : 'প্যাকেজ'}</span>
-                                                <span className="font-semibold text-[#00A651]">{purchasedPackageName}</span>
+                                                <span className="font-semibold text-gray-900">{purchasedPackageName}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                                <span className="text-gray-600">{locale === 'en' ? 'Action' : 'পদক্ষেপ'}</span>
+                                                <span className={`font-semibold ${
+                                                    purchaseAction === 'upgrade' ? 'text-blue-600' :
+                                                    purchaseAction === 'downgrade' ? 'text-amber-600' :
+                                                    'text-green-600'
+                                                }`}>{actionLabel}</span>
                                             </div>
                                             <div className="flex justify-between items-center py-2 border-b border-gray-200">
                                                 <span className="text-gray-600">{locale === 'en' ? 'Status' : 'স্ট্যাটাস'}</span>
@@ -655,61 +689,25 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                                             </div>
                                         </div>
                                     </>
-                                ) : (
-                                    <>
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                            <svg className="w-5 h-5 mr-2 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                            </svg>
-                                            {locale === 'en' ? 'Your Login Credentials' : 'আপনার লগইন তথ্য'}
-                                        </h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Email' : 'ইমেইল'}</span>
-                                                <span className="font-semibold text-gray-900">{successEmail}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Password' : 'পাসওয়ার্ড'}</span>
-                                                <span className="font-mono font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded">11111111</span>
-                                            </div>
-                                        </div>
-                                    </>
                                 )}
                             </div>
 
                             {/* Portal Link */}
-                            <div className="mt-6">
-                                <p className="text-sm text-gray-600 mb-3 text-center">
-                                    {locale === 'en'
-                                        ? 'Access your PBX User Portal:'
-                                        : 'আপনার PBX ইউজার পোর্টালে প্রবেশ করুন:'}
-                                </p>
+                            <div className="mt-5">
                                 <a
-                                    href="https://hippbx.btcliptelephony.gov.bd:5174/"
+                                    href={portalUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
                                 >
-                                    {locale === 'en' ? 'Go to PBX Portal' : 'PBX পোর্টালে যান'} →
+                                    {portalLabel} →
                                 </a>
                             </div>
 
-                            {/* Note - only show for new users */}
-                            {!userHasPbx && (
-                                <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                    <p className="text-xs text-amber-800">
-                                        <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
-                                        {locale === 'en'
-                                            ? 'Please change your password after first login for security.'
-                                            : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Close Button */}
+                            {/* Close Button — manual only */}
                             <button
                                 onClick={handleCloseSuccessPopup}
-                                className="w-full mt-4 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                                className="w-full mt-3 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
                             >
                                 {locale === 'en' ? 'Close' : 'বন্ধ করুন'}
                             </button>
@@ -718,103 +716,19 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 </div>
             </Dialog>
         );
+    };
+
+    if (showSuccessPopup) {
+        return renderSuccessPopup(
+            locale === 'en' ? 'Go to PBX Portal' : 'PBX পোর্টালে যান',
+            'https://hippbx.btcliptelephony.gov.bd:5174/'
+        );
     }
 
-    // Success Popup for Voice Broadcast
     if (showVbsSuccessPopup) {
-        return (
-            <Dialog open={isOpen} onClose={handleCloseSuccessPopup} className="relative z-50 font-bengali">
-                <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
-
-                <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
-                    <Dialog.Panel className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
-                        {/* Success Header */}
-                        <div className="bg-gradient-to-r from-[#00A651] to-[#004225] px-6 py-8 text-center">
-                            <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                                <svg
-                                    className="w-12 h-12 text-[#00A651]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={3}
-                                        d="M5 13l4 4L19 7"
-                                    />
-                                </svg>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white">
-                                {locale === 'en' ? 'Congratulations!' : 'অভিনন্দন!'}
-                            </h2>
-                            <p className="text-green-100 mt-2">
-                                {locale === 'en'
-                                    ? 'Your Voice Broadcast is ready!'
-                                    : 'আপনার ভয়েস ব্রডকাস্ট প্রস্তুত!'}
-                            </p>
-                        </div>
-
-                        {/* Credentials Section */}
-                        <div className="px-6 py-6">
-                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                    <svg className="w-5 h-5 mr-2 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                    </svg>
-                                    {locale === 'en' ? 'Your Login Credentials' : 'আপনার লগইন তথ্য'}
-                                </h3>
-
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">{locale === 'en' ? 'Email' : 'ইমেইল'}</span>
-                                        <span className="font-semibold text-gray-900">{successEmail}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">{locale === 'en' ? 'Password' : 'পাসওয়ার্ড'}</span>
-                                        <span className="font-mono font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded">11111111</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Portal Link */}
-                            <div className="mt-6">
-                                <p className="text-sm text-gray-600 mb-3 text-center">
-                                    {locale === 'en'
-                                        ? 'Access your Voice Broadcast Portal:'
-                                        : 'আপনার ভয়েস ব্রডকাস্ট পোর্টালে প্রবেশ করুন:'}
-                                </p>
-                                <a
-                                    href="https://vbs.btcliptelephony.gov.bd/"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
-                                >
-                                    {locale === 'en' ? 'Go to VBS Portal' : 'VBS পোর্টালে যান'} →
-                                </a>
-                            </div>
-
-                            {/* Note */}
-                            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                <p className="text-xs text-amber-800">
-                                    <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
-                                    {locale === 'en'
-                                        ? 'Please change your password after first login for security.'
-                                        : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
-                                </p>
-                            </div>
-
-                            {/* Close Button */}
-                            <button
-                                onClick={handleCloseSuccessPopup}
-                                className="w-full mt-4 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
-                            >
-                                {locale === 'en' ? 'Close' : 'বন্ধ করুন'}
-                            </button>
-                        </div>
-                    </Dialog.Panel>
-                </div>
-            </Dialog>
+        return renderSuccessPopup(
+            locale === 'en' ? 'Go to VBS Portal' : 'VBS পোর্টালে যান',
+            'https://vbs.btcliptelephony.gov.bd/'
         );
     }
 

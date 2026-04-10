@@ -179,22 +179,24 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     fetchActivePackages()
   }, [])
 
-  const handleBuyNow = (pkg: any) => {
+  const handleBuyNow = (pkg: any, service: string) => {
     if (!isLoggedIn()) {
       toast.error(locale === 'en' ? 'Please login to purchase' : 'কেনার জন্য অনুগ্রহ করে লগইন করুন')
       router.push(`/${locale}/login`)
       return
     }
+    setSelectedService(service)
     setSelectedPackage(pkg)
     setIsCheckoutOpen(true)
   }
 
-  const handleApply = (pkg: any) => {
+  const handleApply = (pkg: any, service: string) => {
     if (!isLoggedIn()) {
       toast.error(locale === 'en' ? 'Please login to apply' : 'আবেদন করতে অনুগ্রহ করে লগইন করুন')
       router.push(`/${locale}/login`)
       return
     }
+    setSelectedService(service)
     setSelectedPackage(pkg)
     setIsCheckoutOpen(true)
   }
@@ -382,6 +384,194 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     return colors[color] || colors.blue
   }
 
+  // Renders the action button for a prepaid card
+  const renderPrepaidButton = (pkg: any, serviceId: string) => {
+    if (typeof pkg.price !== 'number') {
+      return (
+        <Link href={`/${locale}/contact`}>
+          <Button className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${pkg.popular ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg' : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'}`}>
+            {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
+          </Button>
+        </Link>
+      )
+    }
+    if (activePackages[serviceId] === pkg.id) {
+      return (
+        <div className="w-full py-4 px-6 rounded-xl font-semibold text-lg text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
+          ✓ {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
+        </div>
+      )
+    }
+    if (activePackages[serviceId]) {
+      const tiers = packageTierOrder[serviceId] ?? {}
+      const activeTier = tiers[activePackages[serviceId]!] ?? 0
+      const thisTier = tiers[pkg.id] ?? 0
+      const isUpgrade = thisTier > activeTier
+      return (
+        <Button
+          onClick={() => handleBuyNow(pkg, serviceId)}
+          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${isUpgrade ? 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg' : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg'}`}
+        >
+          {isUpgrade ? (locale === 'en' ? '↑ Upgrade Plan' : '↑ আপগ্রেড করুন') : (locale === 'en' ? '↓ Downgrade Plan' : '↓ ডাউনগ্রেড করুন')}
+        </Button>
+      )
+    }
+    if (expiredPackages[serviceId] === pkg.id) {
+      return (
+        <Button onClick={() => handleBuyNow(pkg, serviceId)} className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg">
+          ↻ {locale === 'en' ? 'Renew Plan' : 'প্ল্যান নবায়ন করুন'}
+        </Button>
+      )
+    }
+    return (
+      <Button
+        onClick={() => handleBuyNow(pkg, serviceId)}
+        className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${pkg.popular ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg' : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'}`}
+      >
+        {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
+      </Button>
+    )
+  }
+
+  // Renders a full section of package cards for a given service
+  const renderSection = (
+    serviceId: string,
+    icon: string,
+    titleEn: string,
+    titleBn: string,
+    subtitleEn: string,
+    subtitleBn: string,
+    packages: any[],
+    bgClass: string,
+    accentClass: string,
+    isPostpaid = false
+  ) => {
+    const isSingle = packages.length === 1
+    return (
+      <div id={serviceId} className={`py-20 ${bgClass}`}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 ${accentClass}`}>
+              <span className="text-4xl">{icon}</span>
+              <h2 className="text-2xl font-bold">{locale === 'en' ? titleEn : titleBn}</h2>
+              {isPostpaid && !FEATURE_FLAGS.POSTPAID_ENABLED && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300 uppercase tracking-wider">
+                  {locale === 'en' ? 'Coming Soon' : 'শীঘ্রই আসছে'}
+                </span>
+              )}
+            </div>
+            <p className="text-gray-600 text-lg">{locale === 'en' ? subtitleEn : subtitleBn}</p>
+            {isPostpaid && (
+              <div className="mt-4 max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800">
+                  <strong>{locale === 'en' ? 'Eligibility: ' : 'যোগ্যতা: '}</strong>
+                  {locale === 'en' ? 'Only applicable for Government / Semi-Government / Autonomous Organisations.' : 'শুধুমাত্র সরকারি / আধা-সরকারি / স্বায়ত্তশাসিত প্রতিষ্ঠানের জন্য।'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Cards Grid */}
+          <div className={`grid gap-8 ${isSingle ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}>
+            {packages.map((pkg: any) => (
+              <div key={`${isPostpaid ? 'post' : 'pre'}-${serviceId}-${pkg.id}`}
+                   className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>
+                {pkg.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
+                      {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
+                    </div>
+                  </div>
+                )}
+                <div className="px-8 py-8">
+                  {/* Price display */}
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">{pkg.name}</h3>
+                    <div className="mb-4">
+                      {serviceId === 'voice-broadcast' ? (
+                        <>
+                          <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
+                          <span className="text-gray-600 text-lg">/{locale === 'en' ? 'message' : 'মেসেজ'}</span>
+                          <div className="text-sm text-gray-500 mt-2">{pkg.messages} {locale === 'en' ? 'VB Messages' : 'ভিবি মেসেজ'}</div>
+                        </>
+                      ) : serviceId === 'hosted-pbx' ? (
+                        <>
+                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
+                          <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                          <div className="text-sm text-gray-500 mt-2">
+                            {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
+                          </div>
+                          {isPostpaid && (
+                            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+                              <div className="text-xs text-blue-600 font-medium mb-1">{locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                ৳{pkg.id === 'bronze' ? '84' : pkg.id === 'silver' ? '174' : '312'}
+                                <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        /* contact-center */
+                        <>
+                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
+                          <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                          <div className="text-sm text-gray-500 mt-2">{typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}</div>
+                          {isPostpaid && (
+                            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+                              <div className="text-xs text-blue-600 font-medium mb-1">{locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                ৳{Math.ceil(45 * 1.15 * 6)}
+                                <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action button */}
+                  <div className="mb-6">
+                    {isPostpaid ? (
+                      !FEATURE_FLAGS.POSTPAID_ENABLED ? (
+                        <Button disabled className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed">
+                          {locale === 'en' ? 'Coming Soon' : 'শীঘ্রই আসছে'}
+                        </Button>
+                      ) : typeof pkg.price === 'number' ? (
+                        <Button onClick={() => handleApply(pkg, serviceId)} className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${pkg.popular ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg' : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'}`}>
+                          {locale === 'en' ? 'Apply' : 'আবেদন করুন'}
+                        </Button>
+                      ) : (
+                        <Link href={`/${locale}/contact`}><Button className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-btcl-primary text-white hover:bg-btcl-secondary">{locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}</Button></Link>
+                      )
+                    ) : renderPrepaidButton(pkg, serviceId)}
+                  </div>
+
+                  {/* Features */}
+                  <div className="space-y-3">
+                    {pkg.features.map((feature: string, index: number) => (
+                      <div key={index} className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        </svg>
+                        <span className="text-gray-700 text-sm font-medium">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const showPrepaid = isLoadingUserType || userType === null || userType === 'prepaid'
+  const showPostpaid = !isLoadingUserType && (userType === 'postpaid' || (userType === null && !isLoggedIn()))
+
   return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -397,337 +587,59 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 ? 'Transparent pricing for all our enterprise communication services. Choose the plan that fits your business needs.'
                 : 'আমাদের সমস্ত এন্টারপ্রাইজ যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
             </p>
-          </div>
-        </div>
-
-        {/* Service Selector */}
-        <div className="py-12 bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap justify-center gap-4">
-              {services.map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => setSelectedService(service.id)}
-                  className={`flex items-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 ${
-                    selectedService === service.id
-                      ? `bg-gradient-to-r ${getServiceColor(service.color)} text-white shadow-lg scale-105`
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <span className="text-2xl">{service.icon}</span>
-                  <span>{service.name}</span>
-                </button>
+            {/* Quick jump links */}
+            <div className="flex flex-wrap justify-center gap-3 mt-2">
+              {[
+                { id: 'hosted-pbx', icon: '☎️', en: 'Hosted PBX', bn: 'হোস্টেড PBX' },
+                { id: 'voice-broadcast', icon: '📢', en: 'Voice Broadcast', bn: 'ভয়েস ব্রডকাস্ট' },
+                { id: 'contact-center', icon: '🎧', en: 'Contact Center', bn: 'কন্টাক্ট সেন্টার' },
+              ].map(s => (
+                <a key={s.id} href={`#${s.id}`} className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-sm font-medium transition-colors">
+                  <span>{s.icon}</span>
+                  <span>{locale === 'en' ? s.en : s.bn}</span>
+                </a>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Prepaid Pricing Cards - Show if loading, not logged in, prepaid user, OR Voice Broadcast (which is prepaid only) */}
-        {(isLoadingUserType || userType === null || userType === 'prepaid' || selectedService === 'voice-broadcast') && (
-        <div className="py-20">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                {locale === 'en' ? 'Choose Your Prepaid Plan' : 'আপনার প্রিপেইড পরিকল্পনা চয়ন করুন'}
-              </h2>
-              <p className="text-xl text-gray-600">
-                {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
-                {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per message pricing' : 'প্রতি মেসেজ মূল্য')}
-                {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
-              </p>
-            </div>
-
-            <div className={`grid gap-8 ${selectedService === 'contact-center' ? 'grid-cols-1 md:grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}>
-              {getCurrentPackages().map((pkg: any) => (
-                <div key={pkg.id}
-                     className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>
-                  {pkg.popular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
-                        {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="px-8 py-8">
-                    <div className="text-center mb-6">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-4">{pkg.name}</h3>
-                      <div className="mb-4">
-                        {selectedService === 'contact-center' && (
-                          <>
-                            <span className="text-4xl font-bold text-gray-900">
-                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
-                            </span>
-                            <span className="text-gray-600 text-lg">/month</span>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}
-                            </div>
-                          </>
-                        )}
-                        {selectedService === 'hosted-pbx' && (
-                          <>
-                            <span className="text-4xl font-bold text-gray-900">
-                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
-                            </span>
-                            <span className="text-gray-600 text-lg">/month</span>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
-                            </div>
-                          </>
-                        )}
-                        {selectedService === 'voice-broadcast' && (
-                          <>
-                            <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
-                            <span className="text-gray-600 text-lg">/{locale === 'en' ? 'message' : 'মেসেজ'}</span>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {pkg.messages} {locale === 'en' ? 'VB Messages' : 'ভিবি মেসেজ'}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mb-6">
-                      {typeof pkg.price === 'number' ? (
-                        activePackages[selectedService] === pkg.id ? (
-                          // Active plan — disabled
-                          <div className="w-full py-4 px-6 rounded-xl font-semibold text-lg text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
-                            ✓ {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
-                          </div>
-                        ) : activePackages[selectedService] ? (
-                          // User has an active plan — show Upgrade or Downgrade
-                          (() => {
-                            const tiers = packageTierOrder[selectedService] ?? {}
-                            const activeTier = tiers[activePackages[selectedService]!] ?? 0
-                            const thisTier = tiers[pkg.id] ?? 0
-                            const isUpgrade = thisTier > activeTier
-                            return (
-                              <Button
-                                onClick={() => handleBuyNow(pkg)}
-                                className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                                  isUpgrade
-                                    ? 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
-                                    : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg'
-                                }`}
-                              >
-                                {isUpgrade
-                                  ? (locale === 'en' ? '↑ Upgrade Plan' : '↑ আপগ্রেড করুন')
-                                  : (locale === 'en' ? '↓ Downgrade Plan' : '↓ ডাউনগ্রেড করুন')}
-                              </Button>
-                            )
-                          })()
-                        ) : expiredPackages[selectedService] === pkg.id ? (
-                          // Expired plan — show Renew button
-                          <Button
-                            onClick={() => handleBuyNow(pkg)}
-                            className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg"
-                          >
-                            ↻ {locale === 'en' ? 'Renew Plan' : 'প্ল্যান নবায়ন করুন'}
-                          </Button>
-                        ) : (
-                        <Button
-                          onClick={() => handleBuyNow(pkg)}
-                          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                            pkg.popular
-                              ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
-                              : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
-                          }`}
-                        >
-                          {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
-                        </Button>
-                        )
-                      ) : (
-                        <Link href={`/${locale}/contact`}>
-                          <Button
-                            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                              pkg.popular
-                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
-                                : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
-                            }`}
-                          >
-                            {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-
-                    <div className="space-y-3">
-                      {pkg.features.map((feature: string, index: number) => (
-                        <div key={index} className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                          </svg>
-                          <span className="text-gray-700 text-sm font-medium">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
+        {/* ── Prepaid Sections ── */}
+        {showPrepaid && (
+          <>
+            {renderSection('hosted-pbx', '☎️',
+              'Hosted PBX', 'হোস্টেড PBX',
+              'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
+              pbxPackages, 'bg-white', 'bg-green-50 text-green-800'
+            )}
+            {renderSection('voice-broadcast', '📢',
+              'Voice Broadcast', 'ভয়েস ব্রডকাস্ট',
+              'Pay per message pricing', 'প্রতি মেসেজ মূল্য',
+              voiceBroadcastPackages, 'bg-orange-50', 'bg-orange-100 text-orange-800'
+            )}
+            {renderSection('contact-center', '🎧',
+              'Contact Center', 'কন্টাক্ট সেন্টার',
+              'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
+              contactCenterPackages, 'bg-purple-50', 'bg-purple-100 text-purple-800'
+            )}
+          </>
         )}
 
-        {/* Postpaid Plan Section - Show only for postpaid users or when not logged in. Hide for prepaid users and Voice Broadcast */}
-        {!isLoadingUserType && (userType === 'postpaid' || (userType === null && !isLoggedIn())) && selectedService !== 'voice-broadcast' && (
-        <div className="py-20 bg-gray-100">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-3 mb-4">
-                <h2 className="text-3xl font-bold text-gray-900">
-                  {locale === 'en' ? 'Choose Your Postpaid Plan' : 'আপনার পোস্টপেইড পরিকল্পনা চয়ন করুন'}
-                </h2>
-                {!FEATURE_FLAGS.POSTPAID_ENABLED && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300 uppercase tracking-wider">
-                    {locale === 'en' ? 'Coming Soon' : 'শীঘ্রই আসছে'}
-                  </span>
-                )}
-              </div>
-              <p className="text-xl text-gray-600">
-                {selectedService === 'hosted-pbx' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
-                {selectedService === 'voice-broadcast' && (locale === 'en' ? 'Pay per message pricing' : 'প্রতি মেসেজ মূল্য')}
-                {selectedService === 'contact-center' && (locale === 'en' ? 'Monthly subscription pricing' : 'মাসিক সাবস্ক্রিপশন মূল্য')}
-              </p>
-
-              {/* Postpaid Eligibility Notice */}
-              <div className="mt-6 max-w-3xl mx-auto bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <svg className="flex-shrink-0 w-5 h-5 text-red-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <p className="text-sm text-red-800 text-left">
-                    <strong>{locale === 'en' ? 'Eligibility: ' : 'যোগ্যতা: '}</strong>
-                    {locale === 'en'
-                      ? 'Postpaid option is only applicable for Government / Semi-Government / Autonomous Organisations.'
-                      : 'পোস্টপেইড অপশন শুধুমাত্র সরকারি / আধা-সরকারি / স্বায়ত্তশাসিত প্রতিষ্ঠানের জন্য প্রযোজ্য।'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className={`grid gap-8 ${selectedService === 'contact-center' ? 'grid-cols-1 md:grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}>
-              {getCurrentPackages().map((pkg: any) => (
-                <div key={`apply-${pkg.id}`}
-                     className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>
-                  {pkg.popular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
-                        {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="px-8 py-8">
-                    <div className="text-center mb-6">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-4">{pkg.name}</h3>
-                      <div className="mb-4">
-                        {selectedService === 'contact-center' && (
-                          <>
-                            <span className="text-4xl font-bold text-gray-900">
-                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
-                            </span>
-                            <span className="text-gray-600 text-lg">/month</span>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}
-                            </div>
-                            {/* Postpaid Credit Limit - Gold package * 6 + 15% VAT ceiling */}
-                            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
-                              <div className="text-xs text-blue-600 font-medium mb-1">
-                                {locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}
-                              </div>
-                              <div className="text-lg font-bold text-blue-900">
-                                ৳{Math.ceil(45 * 1.15 * 6)}
-                                <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                        {selectedService === 'hosted-pbx' && (
-                          <>
-                            <span className="text-4xl font-bold text-gray-900">
-                              {typeof pkg.price === 'number' ? `৳${pkg.price.toLocaleString()}` : pkg.price}
-                            </span>
-                            <span className="text-gray-600 text-lg">/month</span>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
-                            </div>
-                            {/* Postpaid Credit Limit */}
-                            <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
-                              <div className="text-xs text-blue-600 font-medium mb-1">
-                                {locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}
-                              </div>
-                              <div className="text-lg font-bold text-blue-900">
-                                ৳{pkg.id === 'bronze' ? '84' : pkg.id === 'silver' ? '174' : '312'}
-                                <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                        {selectedService === 'voice-broadcast' && (
-                          <>
-                            <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
-                            <span className="text-gray-600 text-lg">/{locale === 'en' ? 'message' : 'মেসেজ'}</span>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {pkg.messages} {locale === 'en' ? 'VB Messages' : 'ভিবি মেসেজ'}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mb-6">
-                      {!FEATURE_FLAGS.POSTPAID_ENABLED ? (
-                        <Button
-                          disabled
-                          className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed"
-                        >
-                          {locale === 'en' ? 'Coming Soon' : 'শীঘ্রই আসছে'}
-                        </Button>
-                      ) : typeof pkg.price === 'number' ? (
-                        <Button
-                          onClick={() => handleApply(pkg)}
-                          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                            pkg.popular
-                              ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
-                              : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
-                          }`}
-                        >
-                          {locale === 'en' ? 'Apply' : 'আবেদন করুন'}
-                        </Button>
-                      ) : (
-                        <Link href={`/${locale}/contact`}>
-                          <Button
-                            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                              pkg.popular
-                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg transform hover:scale-105'
-                                : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
-                            }`}
-                          >
-                            {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-
-                    <div className="space-y-3">
-                      {pkg.features.map((feature: string, index: number) => (
-                        <div key={index} className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                          </svg>
-                          <span className="text-gray-700 text-sm font-medium">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
+        {/* ── Postpaid Sections ── */}
+        {showPostpaid && (
+          <>
+            {renderSection('hosted-pbx', '☎️',
+              'Hosted PBX — Postpaid', 'হোস্টেড PBX — পোস্টপেইড',
+              'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
+              pbxPackages, 'bg-gray-100', 'bg-green-50 text-green-800',
+              true
+            )}
+            {renderSection('contact-center', '🎧',
+              'Contact Center — Postpaid', 'কন্টাক্ট সেন্টার — পোস্টপেইড',
+              'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
+              contactCenterPackages, 'bg-white', 'bg-purple-100 text-purple-800',
+              true
+            )}
+          </>
         )}
 
         {/* Contact CTA */}

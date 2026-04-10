@@ -120,12 +120,15 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             })
             if (!res.ok) return { service, slug: null }
             const data = await res.json()
-            const accounts = (data?.packageAccounts ?? []).filter((a: any) => a.packageId && a.packageId !== 9999)
-            if (accounts.length === 0) return { service, slug: null }
-            const expireDate = data?.expireDate ?? null
-            const isExpired = expireDate ? new Date(expireDate) < new Date() : false
-            if (isExpired) return { service, slug: null }
-            const slug = packageIdToSlug[accounts[0].packageId] ?? null
+            // Response is an array: [{ idPackage, status, expireDate, ... }]
+            const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? [])
+            const active = purchases.find((p: any) =>
+              p.status === 'ACTIVE' &&
+              p.idPackage && p.idPackage !== 9999 &&
+              (!p.expireDate || new Date(p.expireDate) > new Date())
+            )
+            if (!active) return { service, slug: null }
+            const slug = packageIdToSlug[active.idPackage] ?? null
             return { service, slug }
           })
         )

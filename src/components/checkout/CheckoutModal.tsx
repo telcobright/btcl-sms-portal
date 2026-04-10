@@ -133,22 +133,23 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                 }
 
                 const data = await response.json();
-                const accounts = data?.packageAccounts ?? [];
-                // Filter out dummy/test packages
-                const valid = accounts.filter((a: any) => a.packageId && a.packageId !== 9999);
+                // Response is an array: [{ idPackage, status, expireDate, ... }]
+                const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? []);
+                const activePurchase = purchases.find((p: any) =>
+                    p.idPackage && p.idPackage !== 9999
+                );
 
-                if (valid.length === 0) {
+                if (!activePurchase) {
                     setPurchaseAction('new');
                     return;
                 }
 
-                const active = valid[0];
-                const expireDate = data?.expireDate ?? null;
+                const expireDate = activePurchase.expireDate ?? null;
                 const isExpired = expireDate ? new Date(expireDate) < new Date() : false;
 
                 setCurrentPackage({
-                    name: active.name ?? packageIdToName[active.packageId] ?? 'Unknown',
-                    packageId: active.packageId,
+                    name: packageIdToName[activePurchase.idPackage] ?? activePurchase.packageName ?? 'Unknown',
+                    packageId: activePurchase.idPackage,
                     expireDate,
                     isExpired,
                 });
@@ -160,10 +161,11 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
 
                 // Determine upgrade / downgrade / renew
                 const tiers = packageTierOrder[serviceType] ?? {};
-                const currentTier = tiers[packageIdToName[active.packageId] ?? ''] ?? 0;
+                const currentSlug = packageIdToName[activePurchase.idPackage] ?? '';
+                const currentTier = tiers[currentSlug] ?? 0;
                 const newTier = tiers[pkg?.id ?? ''] ?? 0;
 
-                if (currentTier === 0 || newTier === 0 || pkg?.id === packageIdToName[active.packageId]) {
+                if (currentTier === 0 || newTier === 0 || pkg?.id === currentSlug) {
                     setPurchaseAction('renew');
                 } else if (newTier > currentTier) {
                     setPurchaseAction('upgrade');

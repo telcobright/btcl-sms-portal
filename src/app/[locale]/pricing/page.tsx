@@ -9,7 +9,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import CheckoutModal from "@/components/checkout/CheckoutModal";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { PBX_BASE_URL, FEATURE_FLAGS } from "@/config/api";
+import { API_BASE_URL, API_ENDPOINTS, FEATURE_FLAGS } from "@/config/api";
 import { jwtDecode } from 'jwt-decode';
 
 interface DecodedToken {
@@ -58,7 +58,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           return
         }
 
-        const response = await fetch(`${PBX_BASE_URL}/partner/get-partner`, {
+        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getPartner}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

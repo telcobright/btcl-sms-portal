@@ -6,12 +6,14 @@ export default function OrderSummary({
   loading,
   serviceType = 'sms',
   locale = 'en',
+  purchaseAction = 'new',
 }: {
   pkg: any;
   onCheckout: () => void;
   loading: boolean;
   serviceType?: 'sms' | 'hosted-pbx' | 'contact-center' | 'voice-broadcast';
   locale?: string;
+  purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade';
 }) {
   const getServiceIcon = () => {
     switch (serviceType) {
@@ -148,16 +150,26 @@ export default function OrderSummary({
       <button
         onClick={onCheckout}
         disabled={loading}
-        className="w-full bg-btcl-primary hover:bg-btcl-secondary text-white mt-8 py-3 rounded-xl font-semibold transition-colors duration-300 disabled:opacity-50"
+        className={`w-full text-white mt-8 py-3 rounded-xl font-semibold transition-colors duration-300 disabled:opacity-50 ${
+          purchaseAction === 'downgrade'
+            ? 'bg-amber-500 hover:bg-amber-600'
+            : purchaseAction === 'upgrade'
+            ? 'bg-blue-600 hover:bg-blue-700'
+            : 'bg-btcl-primary hover:bg-btcl-secondary'
+        }`}
         type="button"
       >
-        {loading
-          ? locale === 'en'
-            ? 'Processing...'
-            : 'প্রসেস হচ্ছে...'
-          : locale === 'en'
-            ? 'Complete Purchase →'
-            : 'ক্রয় সম্পন্ন করুন →'}
+        {loading ? (
+          locale === 'en' ? 'Processing...' : 'প্রসেস হচ্ছে...'
+        ) : purchaseAction === 'renew' ? (
+          locale === 'en' ? '↻ Renew Plan →' : '↻ প্ল্যান নবায়ন করুন →'
+        ) : purchaseAction === 'upgrade' ? (
+          locale === 'en' ? '↑ Upgrade Plan →' : '↑ আপগ্রেড করুন →'
+        ) : purchaseAction === 'downgrade' ? (
+          locale === 'en' ? '↓ Downgrade Plan →' : '↓ ডাউনগ্রেড করুন →'
+        ) : (
+          locale === 'en' ? 'Complete Purchase →' : 'ক্রয় সম্পন্ন করুন →'
+        )}
       </button>
 
       <p className="text-xs text-center mt-4 text-btcl-gray-500">

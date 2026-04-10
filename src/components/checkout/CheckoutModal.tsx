@@ -8,7 +8,7 @@ import { unifiedPurchase } from '@/lib/api-client/payment';
 import { getPartnerById, getUserByEmail, editUser, ensurePartnerInService } from '@/lib/api-client/partner';
 import toast from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
-import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, HCC_BASE_URL, API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface DecodedToken {
     idPartner: number;
@@ -37,6 +37,40 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
     const [customerPrePaid, setCustomerPrePaid] = useState<number | null>(null);
     const [partnerDataLoading, setPartnerDataLoading] = useState(true);
     const [agentCount, setAgentCount] = useState(1);
+
+    // Current package / renew-upgrade-downgrade states
+    const [currentPackage, setCurrentPackage] = useState<{
+        name: string;
+        packageId: number;
+        expireDate: string | null;
+        isExpired: boolean;
+    } | null>(null);
+    const [purchaseAction, setPurchaseAction] = useState<'new' | 'renew' | 'upgrade' | 'downgrade'>('new');
+    const [currentPackageLoading, setCurrentPackageLoading] = useState(true);
+
+    // Package tier order per service type (higher number = higher tier)
+    const packageTierOrder: Record<string, Record<string, number>> = {
+        'hosted-pbx':      { bronze: 1, silver: 2, gold: 3 },
+        'voice-broadcast': { basic: 1, standard: 2, enterprise: 3 },
+        'contact-center':  { basic: 1 },
+        'sms':             { basic: 1, standard: 2, enterprise: 3 },
+    };
+
+    // Map packageId → tier name
+    const packageIdToName: Record<number, string> = {
+        9132: 'bronze', 9133: 'silver', 9134: 'gold',           // PBX
+        9135: 'basic',  9136: 'standard', 9137: 'enterprise',   // VBS
+        9140: 'basic',                                           // CC
+    };
+
+    const getServiceBaseUrl = (type: string): string => {
+        switch (type) {
+            case 'hosted-pbx':      return PBX_BASE_URL;
+            case 'voice-broadcast': return VBS_BASE_URL;
+            case 'contact-center':  return HCC_BASE_URL;
+            default:                return API_BASE_URL;
+        }
+    };
 
     // Fetch partner data to get customerPrePaid when modal opens
     useEffect(() => {
@@ -73,8 +107,80 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             }
         };
 
+        // Fetch current active package for this service to determine renew/upgrade/downgrade
+        const fetchCurrentPackage = async () => {
+            setCurrentPackageLoading(true);
+            try {
+                const { partnerId, authToken } = getTokenData();
+                if (!partnerId || !authToken) {
+                    setPurchaseAction('new');
+                    return;
+                }
+
+                const baseUrl = getServiceBaseUrl(serviceType);
+                const response = await fetch(`${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({ idPartner: partnerId }),
+                });
+
+                if (!response.ok) {
+                    setPurchaseAction('new');
+                    return;
+                }
+
+                const data = await response.json();
+                const accounts = data?.packageAccounts ?? [];
+                // Filter out dummy/test packages
+                const valid = accounts.filter((a: any) => a.packageId && a.packageId !== 9999);
+
+                if (valid.length === 0) {
+                    setPurchaseAction('new');
+                    return;
+                }
+
+                const active = valid[0];
+                const expireDate = data?.expireDate ?? null;
+                const isExpired = expireDate ? new Date(expireDate) < new Date() : false;
+
+                setCurrentPackage({
+                    name: active.name ?? packageIdToName[active.packageId] ?? 'Unknown',
+                    packageId: active.packageId,
+                    expireDate,
+                    isExpired,
+                });
+
+                if (isExpired) {
+                    setPurchaseAction('renew');
+                    return;
+                }
+
+                // Determine upgrade / downgrade / renew
+                const tiers = packageTierOrder[serviceType] ?? {};
+                const currentTier = tiers[packageIdToName[active.packageId] ?? ''] ?? 0;
+                const newTier = tiers[pkg?.id ?? ''] ?? 0;
+
+                if (currentTier === 0 || newTier === 0 || pkg?.id === packageIdToName[active.packageId]) {
+                    setPurchaseAction('renew');
+                } else if (newTier > currentTier) {
+                    setPurchaseAction('upgrade');
+                } else {
+                    setPurchaseAction('downgrade');
+                }
+            } catch (e) {
+                console.error('Failed to fetch current package:', e);
+                setPurchaseAction('new');
+            } finally {
+                setCurrentPackageLoading(false);
+            }
+        };
+
         fetchPartnerPrePaidStatus();
-    }, [isOpen]);
+        fetchCurrentPackage();
+    }, [isOpen, serviceType]);
 
     const handleFormChange = (data: typeof formData) => {
         setFormData(data);
@@ -705,6 +811,48 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
             <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
                 <Dialog.Panel className="w-full max-w-5xl bg-white rounded-xl shadow-card p-8 flex flex-col md:flex-row gap-10 my-8">
                     <div className="flex-1">
+                        {/* Current package banner */}
+                        {!currentPackageLoading && currentPackage && (
+                            <div className={`mb-6 rounded-xl p-4 border ${
+                                currentPackage.isExpired
+                                    ? 'bg-red-50 border-red-200'
+                                    : purchaseAction === 'upgrade'
+                                    ? 'bg-blue-50 border-blue-200'
+                                    : purchaseAction === 'downgrade'
+                                    ? 'bg-amber-50 border-amber-200'
+                                    : 'bg-green-50 border-green-200'
+                            }`}>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                                    {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
+                                </p>
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div>
+                                        <span className="font-bold text-gray-800 capitalize">{currentPackage.name}</span>
+                                        {currentPackage.expireDate && (
+                                            <span className={`ml-2 text-xs ${currentPackage.isExpired ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                                                {currentPackage.isExpired
+                                                    ? (locale === 'en' ? '● Expired' : '● মেয়াদ শেষ')
+                                                    : (locale === 'en' ? `Expires: ${new Date(currentPackage.expireDate).toLocaleDateString()}` : `মেয়াদ: ${new Date(currentPackage.expireDate).toLocaleDateString()}`)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                        currentPackage.isExpired
+                                            ? 'bg-red-100 text-red-700'
+                                            : purchaseAction === 'upgrade'
+                                            ? 'bg-blue-100 text-blue-700'
+                                            : purchaseAction === 'downgrade'
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-green-100 text-green-700'
+                                    }`}>
+                                        {purchaseAction === 'renew' && (locale === 'en' ? '↻ Renewing' : '↻ নবায়ন')}
+                                        {purchaseAction === 'upgrade' && (locale === 'en' ? '↑ Upgrading to' : '↑ আপগ্রেড')} {purchaseAction === 'upgrade' && <span className="capitalize ml-1">{pkg?.name}</span>}
+                                        {purchaseAction === 'downgrade' && (locale === 'en' ? '↓ Downgrading to' : '↓ ডাউনগ্রেড')} {purchaseAction === 'downgrade' && <span className="capitalize ml-1">{pkg?.name}</span>}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex items-center justify-between mb-8">
                             <h2 className="text-4xl font-bold text-btcl-gray-900">
                                 {locale === 'en' ? 'Checkout' : 'চেকআউট'}
@@ -768,6 +916,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                             loading={loading}
                             serviceType={serviceType}
                             locale={locale}
+                            purchaseAction={purchaseAction}
                         />
                     </div>
                 </Dialog.Panel>

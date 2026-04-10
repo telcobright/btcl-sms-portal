@@ -442,8 +442,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         </div>
         )}
 
-        {/* Postpaid Plan Section - Show if loading, not logged in, OR if postpaid user, Hide for Voice Broadcast */}
-        {(isLoadingUserType || userType === null || userType === 'postpaid') && selectedService !== 'voice-broadcast' && (
+        {/* Postpaid Plan Section - Show only for postpaid users or when not logged in. Hide for prepaid users and Voice Broadcast */}
+        {!isLoadingUserType && (userType === 'postpaid' || (userType === null && !isLoggedIn())) && selectedService !== 'voice-broadcast' && (
         <div className="py-20 bg-gray-100">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">

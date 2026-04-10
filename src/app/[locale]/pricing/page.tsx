@@ -115,28 +115,41 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         const results = await Promise.allSettled(
           services.map(async (service) => {
             const baseUrl = serviceBaseUrls[service]
-            const res = await fetch(`${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`, {
+
+            // Step 1: Check for active package via getPurchaseForPartner
+            const activeRes = await fetch(`${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
               body: JSON.stringify({ idPartner }),
             })
-            if (!res.ok) return { service, slug: null }
-            const data = await res.json()
-            // Response is an array: [{ idPackage, status, expireDate, ... }]
-            const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? [])
-            const active = purchases.find((p: any) =>
-              p.status === 'ACTIVE' &&
-              p.idPackage && p.idPackage !== 9999 &&
-              (!p.expireDate || new Date(p.expireDate) > new Date())
-            )
-            if (!active) {
-              // Check for expired
-              const expired = purchases.find((p: any) => p.idPackage && p.idPackage !== 9999)
-              const expiredSlug = expired ? (packageIdToSlug[expired.idPackage] ?? null) : null
-              return { service, slug: null, expiredSlug }
+            if (activeRes.ok) {
+              const data = await activeRes.json()
+              const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? [])
+              const active = purchases.find((p: any) =>
+                p.idPackage && p.idPackage !== 9999 &&
+                (!p.expireDate || new Date(p.expireDate) > new Date())
+              )
+              if (active) {
+                return { service, slug: packageIdToSlug[active.idPackage] ?? null, expiredSlug: null }
+              }
             }
-            const slug = packageIdToSlug[active.idPackage] ?? null
-            return { service, slug, expiredSlug: null }
+
+            // Step 2: No active package — check purchase history for expired packages
+            const historyRes = await fetch(`${baseUrl}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+              body: JSON.stringify({ page: 0, size: 5, idPartner }),
+            })
+            if (historyRes.ok) {
+              const historyData = await historyRes.json()
+              const history = Array.isArray(historyData) ? historyData : (historyData?.content ?? historyData?.data ?? [])
+              const pastPurchase = history.find((p: any) => p.idPackage && p.idPackage !== 9999)
+              if (pastPurchase) {
+                return { service, slug: null, expiredSlug: packageIdToSlug[pastPurchase.idPackage] ?? null }
+              }
+            }
+
+            return { service, slug: null, expiredSlug: null }
           })
         )
 

@@ -619,12 +619,10 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                         <div className={`px-6 py-8 text-center ${
                             purchaseAction === 'downgrade'
                                 ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-                                : purchaseAction === 'upgrade'
-                                ? 'bg-gradient-to-r from-blue-600 to-blue-700'
                                 : 'bg-gradient-to-r from-[#00A651] to-[#004225]'
                         }`}>
                             <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                                <svg className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : purchaseAction === 'upgrade' ? 'text-blue-600' : 'text-[#00A651]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : 'text-[#00A651]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
@@ -678,7 +676,7 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                                             <div className="flex justify-between items-center py-2 border-b border-gray-200">
                                                 <span className="text-gray-600">{locale === 'en' ? 'Action' : 'পদক্ষেপ'}</span>
                                                 <span className={`font-semibold ${
-                                                    purchaseAction === 'upgrade' ? 'text-blue-600' :
+                                                    purchaseAction === 'upgrade' ? 'text-[#00A651]' :
                                                     purchaseAction === 'downgrade' ? 'text-amber-600' :
                                                     'text-green-600'
                                                 }`}>{actionLabel}</span>

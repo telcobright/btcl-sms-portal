@@ -506,7 +506,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                                 onClick={() => handleBuyNow(pkg)}
                                 className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
                                   isUpgrade
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
+                                    ? 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
                                     : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg'
                                 }`}
                               >

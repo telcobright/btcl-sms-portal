@@ -1,44 +1,103 @@
-# BTCL Bulk SMS Service Website
+# BTCL IP Telephony Service Portal
 
-A modern, responsive website for Bangladesh Telecommunications Company Limited (BTCL) to promote and sell their bulk SMS service.
+A modern, responsive web portal for Bangladesh Telecommunications Company Limited (BTCL) to promote and sell enterprise communication services — including Hosted PBX, Voice Broadcast, Contact Center, and Bulk SMS.
 
-## Features
+## Services
 
-- **Modern Design**: Clean, corporate design with BTCL branding and Bangladeshi cultural elements
-- **Bilingual Support**: Complete English and Bangla internationalization using next-intl
-- **Authentication**: Secure user authentication with NextAuth.js
-- **Multi-step Registration**: Document upload with verification workflow
-- **Package Management**: Multiple SMS packages with flexible pricing
-- **Payment Integration**: SSL Commerz payment gateway with support for mobile banking
-- **User Dashboard**: Comprehensive dashboard for managing SMS packages and usage
-- **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **Database**: MySQL with Prisma ORM for data management
+| Service | Description |
+|---|---|
+| ☎️ **Hosted PBX** | Cloud-based PBX with extensions, IVR, call recording (Bronze / Silver / Gold) |
+| 📢 **Voice Broadcast** | Automated voice messaging with text-to-speech (Basic / Standard / Enterprise) |
+| 🎧 **Contact Center** | Multi-channel contact center with ACD, social media integration (Basic) |
+| 📱 **Bulk SMS** | A2P SMS with delivery reports via the SMS Portal |
 
 ## Tech Stack
 
 - **Framework**: Next.js 14 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **Database**: MySQL with Prisma ORM
-- **Authentication**: NextAuth.js
-- **Internationalization**: next-intl
-- **Payment**: SSL Commerz
-- **File Upload**: Custom file upload component
+- **Internationalization**: next-intl (English + Bangla)
+- **Authentication**: JWT-based, custom login/register
+- **Payment**: SSL Commerz (unified purchase API)
+- **OCR**: Tesseract.js for NID card scanning
+- **Backend**: External REST APIs (`services.btcliptelephony.gov.bd`)
+
+## Key Features
+
+### User Registration
+- Multi-step registration with NID/Passport upload
+- Tesseract.js OCR auto-fills name, DOB, NID number from uploaded card
+- OTP (phone + email) and NID verification (toggleable via feature flags)
+- Credentials delivered to registered email on first purchase
+
+### Pricing & Packages
+- All three services displayed as scrollable sections (no tab switching)
+- Quick-jump anchor links from hero banner
+- Smart buttons per logged-in state:
+  - **Buy Now** — new customer
+  - **✓ Current Plan** — active plan (disabled)
+  - **↑ Upgrade Plan** — higher tier available
+  - **↓ Downgrade Plan** — lower tier available
+  - **↻ Renew Plan** — expired plan
+
+### Checkout & Payment
+- SSL Commerz payment gateway for prepaid users
+- Direct purchase for postpaid users (customerPrePaid = 2)
+- Auto-creates partner account in the target service before purchase
+- Post-purchase modal:
+  - **New purchase** — "Credentials sent to your email"
+  - **Renew / Upgrade / Downgrade** — plan summary with action label
+  - Manual close only (no backdrop dismiss)
+
+### Admin Panel
+- Partner management with document view/download
+- Subscription management
+- User verification workflow
+
+### Internationalization
+- Full English / Bangla toggle
+- Localized currency (BDT / ৳), phone format (+880), timezone (GMT+6)
+- All UI text, errors, and toasts translated
+
+## Feature Flags
+
+Located in `src/config/api.ts`:
+
+```ts
+FEATURE_FLAGS = {
+  OTP_VERIFICATION_ENABLED: false,   // Phone OTP during registration
+  NID_VERIFICATION_ENABLED: false,   // NID API verification
+  PAYMENT_ENABLED: true,             // SSL Commerz payment gateway
+  POSTPAID_ENABLED: false,           // Postpaid plan visibility
+}
+```
+
+## API Configuration
+
+All API base URLs are centralised in `src/config/api.ts`:
+
+```ts
+ROOT_URL        = 'https://services.btcliptelephony.gov.bd'
+PBX_BASE_URL    = 'https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST'  // Hosted PBX
+VBS_BASE_URL    = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST'       // Voice Broadcast
+HCC_BASE_URL    = 'https://hcc.btcliptelephony.gov.bd/FREESWITCHREST'       // Contact Center
+```
+
+To switch to local development, comment out the production `ROOT_URL` and uncomment `http://localhost:8001`.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ 
-- MySQL database
-- SSL Commerz account (for payments)
+- Node.js 18+
+- npm or yarn
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd btcl-sms
+git clone https://github.com/telcobright/btcl-sms-portal.git
+cd btcl-sms-portal
 ```
 
 2. Install dependencies:
@@ -51,79 +110,18 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Update the following variables in `.env.local`:
+Update `.env.local`:
 ```env
-DATABASE_URL="mysql://root:123456@127.0.0.1:3306/btcl_sms"
-NEXTAUTH_SECRET="your-nextauth-secret-here"
-NEXTAUTH_URL="http://localhost:3000"
-SSLCOMMERZ_STORE_ID="your-sslcommerz-store-id"
-SSLCOMMERZ_STORE_PASSWORD="your-sslcommerz-store-password"
-SSLCOMMERZ_IS_LIVE=false
 NEXT_PUBLIC_DEFAULT_LOCALE=en
 NEXT_PUBLIC_SUPPORTED_LOCALES=en,bn
 ```
 
-4. Set up the database:
-```bash
-# Generate Prisma client
-npx prisma generate
-
-# Push database schema
-npx prisma db push
-
-# Seed the database (optional)
-npx prisma db seed
-```
-
-5. Start the development server:
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
 The application will be available at [http://localhost:3000](http://localhost:3000).
-
-## Database Schema
-
-The application uses the following main models:
-
-- **User**: User accounts with verification status
-- **Package**: SMS packages with pricing and features
-- **Order**: Purchase orders with payment tracking
-- **Document**: User-uploaded verification documents
-- **SMSUsage**: SMS usage tracking and analytics
-
-## Key Features
-
-### User Registration
-- Multi-step registration process
-- Document upload (NID/Passport, Trade License)
-- Account verification workflow
-- Email verification
-
-### Package Management
-- Multiple SMS packages (Starter, Business, Enterprise, Premium)
-- Flexible quantity selection
-- Real-time pricing calculation
-- Package expiration tracking
-
-### Payment Processing
-- SSL Commerz integration
-- Support for bKash, Nagad, Rocket, cards, and bank transfers
-- Secure payment validation
-- Order status tracking
-
-### User Dashboard
-- SMS usage statistics
-- Package management
-- Order history
-- Profile management
-- API access information
-
-### Internationalization
-- Complete English and Bangla translations
-- Language toggle in header
-- Localized number and date formatting
-- Cultural design elements
 
 ## Project Structure
 
@@ -131,68 +129,56 @@ The application uses the following main models:
 src/
 ├── app/
 │   ├── [locale]/
-│   │   ├── (auth)/
-│   │   │   ├── login/
-│   │   │   └── register/
+│   │   ├── login/
+│   │   ├── register/
 │   │   ├── dashboard/
-│   │   ├── packages/
+│   │   ├── pricing/
+│   │   ├── admin/
 │   │   ├── about/
 │   │   ├── services/
-│   │   ├── pricing/
 │   │   ├── contact/
 │   │   └── page.tsx
-│   ├── api/
-│   │   ├── auth/
-│   │   └── payment/
-│   └── layout.tsx
+│   └── api/
+│       └── payment/
 ├── components/
 │   ├── ui/
-│   ├── forms/
-│   └── layout/
+│   ├── layout/        # Header, Footer
+│   └── checkout/      # CheckoutModal, OrderSummary, CheckoutForm
+├── config/
+│   └── api.ts         # All API URLs + feature flags
 ├── lib/
-│   ├── auth.ts
-│   ├── prisma.ts
-│   ├── sslcommerz.ts
-│   ├── utils.ts
-│   └── i18n.ts
+│   ├── api-client/    # partner, payment API helpers
+│   ├── nid-ocr.ts     # Tesseract.js OCR engine
+│   └── utils.ts
 ├── messages/
 │   ├── en.json
 │   └── bn.json
 └── types/
 ```
 
+## Package ID Reference
+
+| Package | ID | Service |
+|---|---|---|
+| Bronze | 9132 | Hosted PBX |
+| Silver | 9133 | Hosted PBX |
+| Gold | 9134 | Hosted PBX |
+| Basic | 9135 | Voice Broadcast |
+| Standard | 9136 | Voice Broadcast |
+| Enterprise | 9137 | Voice Broadcast |
+| Basic | 9140 | Contact Center |
+
 ## Deployment
 
-### Environment Setup
-1. Set up production database
-2. Configure SSL Commerz for live environment
-3. Set production environment variables
-4. Deploy to Vercel or similar platform
+Deploy to Vercel or any Node.js-compatible platform. No database setup required — all data is served from the BTCL backend APIs.
 
-### Database Migration
 ```bash
-# Generate and deploy migrations
-npx prisma migrate deploy
-
-# Generate Prisma client
-npx prisma generate
+npm run build
+npm start
 ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 
-For support, please contact:
-- Email: sms@btcl.gov.bd
-- Phone: +880-2-8181234
-- Address: BTCL Tower, Agargaon, Dhaka-1207, Bangladesh
+- **Email**: sms@btcl.gov.bd
+- **Phone**: +880-2-8181234
+- **Address**: BTCL Tower, Agargaon, Dhaka-1207, Bangladesh

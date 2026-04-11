@@ -426,6 +426,15 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                     return;
                 }
 
+                // Show success popup for Contact Center
+                if (serviceType === 'contact-center' && email) {
+                    setSuccessEmail(email);
+                    setPurchasedPackageName(pkg.name);
+                    setShowSuccessPopup(true);
+                    setLoading(false);
+                    return;
+                }
+
                 onClose();
                 return;
             }
@@ -574,6 +583,15 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
                         return;
                     }
 
+                    // Show success popup for Contact Center
+                    if (serviceType === 'contact-center' && email) {
+                        setSuccessEmail(email);
+                        setPurchasedPackageName(pkg.name);
+                        setShowSuccessPopup(true);
+                        setLoading(false);
+                        return;
+                    }
+
                     onClose();
                 } else {
                     toast.error(response.message || (locale === 'en' ? 'Purchase failed. Please try again.' : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।'));
@@ -717,9 +735,14 @@ export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms
     };
 
     if (showSuccessPopup) {
+        const isCC = serviceType === 'contact-center';
         return renderSuccessPopup(
-            locale === 'en' ? 'Go to PBX Portal' : 'PBX পোর্টালে যান',
-            'https://hippbx.btcliptelephony.gov.bd:5174/'
+            isCC
+                ? (locale === 'en' ? 'Go to CC Portal' : 'CC পোর্টালে যান')
+                : (locale === 'en' ? 'Go to PBX Portal' : 'PBX পোর্টালে যান'),
+            isCC
+                ? 'https://hcc.btcliptelephony.gov.bd/'
+                : 'https://hippbx.btcliptelephony.gov.bd:5174/'
         );
     }
 

@@ -42,7 +42,7 @@ export const FEATURE_FLAGS = {
   NID_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable SSLCommerz payment */
-  PAYMENT_ENABLED: false,
+  PAYMENT_ENABLED: true,
 
   /**
    * Enable/Disable Postpaid option (registration form + pricing page).

@@ -496,7 +496,7 @@ export const checkPartnerInService = async (
       }
     );
 
-    if (response.data && response.data.idPartner) {
+    if (response.data && (response.data.idPartner || (response.data as any).id)) {
       console.log(`✅ Partner ${idPartner} EXISTS in ${serviceBaseUrl}`);
       return response.data;
     }
@@ -538,6 +538,16 @@ export const createPartnerInService = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      const errMsg: string = error.response?.data?.message || '';
+      // "partnerName not available" means the partner was already created in a previous attempt
+      // (e.g. user cancelled payment and retried). Treat this as success — partner exists.
+      if (
+        error.response?.status === 400 &&
+        errMsg.toLowerCase().includes('partnername not available')
+      ) {
+        console.log(`ℹ️ Partner already exists in ${serviceBaseUrl} (duplicate name), treating as success`);
+        return { idPartner: partnerData.idPartner ?? 0 };
+      }
       console.error(`❌ Failed to create partner in ${serviceBaseUrl}:`, {
         status: error.response?.status,
         data: error.response?.data,

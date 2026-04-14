@@ -475,16 +475,26 @@ export default function Dashboard() {
 
       // Combine all successful results
       const allData: any[] = [];
+      const now = Date.now();
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           const { service, data } = result.value;
           if (Array.isArray(data) && data.length > 0) {
-            // Check if there are any valid packageAccounts (excluding packageId 9999)
-            const hasValidPackages = data.some((item: any) =>
-              item.packageAccounts &&
-              Array.isArray(item.packageAccounts) &&
-              item.packageAccounts.some((pkg: any) => pkg.packageId !== 9999)
-            );
+            // A portal is "valid" if it has either:
+            //   (a) a populated packageAccount (excluding sentinel packageId 9999), OR
+            //   (b) an ACTIVE purchase whose expireDate is in the future (idPackage != 9999)
+            const hasValidPackages = data.some((item: any) => {
+              if (item.idPackage === 9999) return false;
+              const hasActiveAccount =
+                item.packageAccounts &&
+                Array.isArray(item.packageAccounts) &&
+                item.packageAccounts.some((pkg: any) => pkg.packageId !== 9999);
+              if (hasActiveAccount) return true;
+              const status = item.status?.toUpperCase?.();
+              const expireDate = item.expireDate || item.expire_date;
+              if (status !== 'ACTIVE') return false;
+              return !expireDate || new Date(expireDate).getTime() >= now;
+            });
             if (hasValidPackages) {
               portalsWithValidPurchase[service] = true;
             }

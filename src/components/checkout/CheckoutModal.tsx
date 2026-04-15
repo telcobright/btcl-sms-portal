@@ -1,875 +1,1163 @@
 'use client';
 
+import {
+    API_BASE_URL,
+    API_ENDPOINTS,
+    FEATURE_FLAGS,
+    HCC_BASE_URL,
+    PBX_BASE_URL,
+    VBS_BASE_URL,
+} from '@/config/api';
+import {
+    ensurePartnerInService,
+    getPartnerById,
+    getUserByEmail,
+} from '@/lib/api-client/partner';
+import { unifiedPurchase } from '@/lib/api-client/payment';
 import { Dialog } from '@headlessui/react';
-import React, { useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
-import { unifiedPurchase } from '@/lib/api-client/payment';
-import { getPartnerById, getUserByEmail, editUser, ensurePartnerInService } from '@/lib/api-client/partner';
-import toast from 'react-hot-toast';
-import { jwtDecode } from 'jwt-decode';
-import { FEATURE_FLAGS, VBS_BASE_URL, PBX_BASE_URL, HCC_BASE_URL, API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface DecodedToken {
-    idPartner: number;
-    email: string;
-    sub?: string;
-    [key: string]: any;
+  idPartner: number;
+  email: string;
+  sub?: string;
+  [key: string]: any;
 }
 
-export default function CheckoutModal({ pkg, isOpen, onClose, serviceType = 'sms', locale = 'en' }: any) {
+export default function CheckoutModal({
+  pkg,
+  isOpen,
+  onClose,
+  serviceType = 'sms',
+  locale = 'en',
+}: any) {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    phone: '',
+    email: '',
+    city: '',
+    streetAddress: '',
+    zipCode: '',
+  });
+  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showVbsSuccessPopup, setShowVbsSuccessPopup] = useState(false);
+  const [successEmail, setSuccessEmail] = useState('');
+  const [userHasPbx, setUserHasPbx] = useState(false);
+  const [purchasedPackageName, setPurchasedPackageName] = useState('');
+  const [customerPrePaid, setCustomerPrePaid] = useState<number | null>(null);
+  const [partnerDataLoading, setPartnerDataLoading] = useState(true);
+  const [agentCount, setAgentCount] = useState<number | ''>(1);
 
-    const [formData, setFormData] = useState({
-        fullName: '',
-        phone: '',
-        email: '',
-        city: '',
-        streetAddress: '',
-        zipCode: '',
-    });
-    const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-    const [showVbsSuccessPopup, setShowVbsSuccessPopup] = useState(false);
-    const [successEmail, setSuccessEmail] = useState('');
-    const [userHasPbx, setUserHasPbx] = useState(false);
-    const [purchasedPackageName, setPurchasedPackageName] = useState('');
-    const [customerPrePaid, setCustomerPrePaid] = useState<number | null>(null);
-    const [partnerDataLoading, setPartnerDataLoading] = useState(true);
-    const [agentCount, setAgentCount] = useState(1);
+  // Current package / renew-upgrade-downgrade states
+  const [currentPackage, setCurrentPackage] = useState<{
+    name: string;
+    packageId: number;
+    expireDate: string | null;
+    isExpired: boolean;
+  } | null>(null);
+  const [purchaseAction, setPurchaseAction] = useState<
+    'new' | 'renew' | 'upgrade' | 'downgrade'
+  >('new');
+  const [currentPackageLoading, setCurrentPackageLoading] = useState(true);
 
-    // Current package / renew-upgrade-downgrade states
-    const [currentPackage, setCurrentPackage] = useState<{
-        name: string;
-        packageId: number;
-        expireDate: string | null;
-        isExpired: boolean;
-    } | null>(null);
-    const [purchaseAction, setPurchaseAction] = useState<'new' | 'renew' | 'upgrade' | 'downgrade'>('new');
-    const [currentPackageLoading, setCurrentPackageLoading] = useState(true);
+  // Package tier order per service type (higher number = higher tier)
+  const packageTierOrder: Record<string, Record<string, number>> = {
+    'hosted-pbx': { bronze: 1, silver: 2, gold: 3 },
+    'voice-broadcast': { basic: 1, standard: 2, enterprise: 3 },
+    'contact-center': { basic: 1 },
+    sms: { basic: 1, standard: 2, enterprise: 3 },
+  };
 
-    // Package tier order per service type (higher number = higher tier)
-    const packageTierOrder: Record<string, Record<string, number>> = {
-        'hosted-pbx':      { bronze: 1, silver: 2, gold: 3 },
-        'voice-broadcast': { basic: 1, standard: 2, enterprise: 3 },
-        'contact-center':  { basic: 1 },
-        'sms':             { basic: 1, standard: 2, enterprise: 3 },
-    };
+  // Map packageId → tier name
+  const packageIdToName: Record<number, string> = {
+    9132: 'bronze',
+    9133: 'silver',
+    9134: 'gold', // PBX
+    9135: 'basic',
+    9136: 'standard',
+    9137: 'enterprise', // VBS
+    9140: 'basic', // CC
+  };
 
-    // Map packageId → tier name
-    const packageIdToName: Record<number, string> = {
-        9132: 'bronze', 9133: 'silver', 9134: 'gold',           // PBX
-        9135: 'basic',  9136: 'standard', 9137: 'enterprise',   // VBS
-        9140: 'basic',                                           // CC
-    };
+  const getServiceBaseUrl = (type: string): string => {
+    switch (type) {
+      case 'hosted-pbx':
+        return PBX_BASE_URL;
+      case 'voice-broadcast':
+        return VBS_BASE_URL;
+      case 'contact-center':
+        return HCC_BASE_URL;
+      default:
+        return API_BASE_URL;
+    }
+  };
 
-    const getServiceBaseUrl = (type: string): string => {
-        switch (type) {
-            case 'hosted-pbx':      return PBX_BASE_URL;
-            case 'voice-broadcast': return VBS_BASE_URL;
-            case 'contact-center':  return HCC_BASE_URL;
-            default:                return API_BASE_URL;
-        }
-    };
+  // Fetch partner data to get customerPrePaid when modal opens
+  useEffect(() => {
+    const fetchPartnerPrePaidStatus = async () => {
+      if (!isOpen) return;
 
-    // Fetch partner data to get customerPrePaid when modal opens
-    useEffect(() => {
-        const fetchPartnerPrePaidStatus = async () => {
-            if (!isOpen) return;
+      try {
+        setPartnerDataLoading(true);
+        const { partnerId, authToken } = getTokenData();
 
-            try {
-                setPartnerDataLoading(true);
-                const { partnerId, authToken } = getTokenData();
-
-                if (!partnerId || !authToken) {
-                    setCustomerPrePaid(1); // Default to payment gateway
-                    setPartnerDataLoading(false);
-                    return;
-                }
-
-                const partnerData = await getPartnerById(partnerId, authToken);
-                const prePaidValue = partnerData.customerPrePaid || 1;
-                setCustomerPrePaid(prePaidValue);
-
-                // Auto-select SSLCommerz if customerPrePaid is 1
-                if (prePaidValue === 1) {
-                    setSelectedPayment('SSLcommerz');
-                }
-                // If customerPrePaid is 2, no payment method needed but set a placeholder
-                if (prePaidValue === 2) {
-                    setSelectedPayment('direct');
-                }
-            } catch (error) {
-                console.error('Failed to fetch partner prePaid status:', error);
-                setCustomerPrePaid(1); // Default to payment gateway on error
-            } finally {
-                setPartnerDataLoading(false);
-            }
-        };
-
-        // Fetch current active package for this service to determine renew/upgrade/downgrade
-        const fetchCurrentPackage = async () => {
-            setCurrentPackageLoading(true);
-            try {
-                const { partnerId, authToken } = getTokenData();
-                if (!partnerId || !authToken) {
-                    setPurchaseAction('new');
-                    return;
-                }
-
-                const baseUrl = getServiceBaseUrl(serviceType);
-
-                // Step 1: Check for active package via getPurchaseForPartner
-                const activeRes = await fetch(`${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ idPartner: partnerId }),
-                });
-
-                if (activeRes.ok) {
-                    const data = await activeRes.json();
-                    const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? []);
-                    const activePurchase = purchases.find((p: any) =>
-                        p.idPackage && p.idPackage !== 9999 &&
-                        (!p.expireDate || new Date(p.expireDate) > new Date())
-                    );
-
-                    if (activePurchase) {
-                        const currentSlug = packageIdToName[activePurchase.idPackage] ?? '';
-                        setCurrentPackage({
-                            name: currentSlug || activePurchase.packageName || 'Unknown',
-                            packageId: activePurchase.idPackage,
-                            expireDate: activePurchase.expireDate ?? null,
-                            isExpired: false,
-                        });
-
-                        const tiers = packageTierOrder[serviceType] ?? {};
-                        const currentTier = tiers[currentSlug] ?? 0;
-                        const newTier = tiers[pkg?.id ?? ''] ?? 0;
-
-                        if (currentTier === 0 || newTier === 0 || pkg?.id === currentSlug) {
-                            setPurchaseAction('renew');
-                        } else if (newTier > currentTier) {
-                            setPurchaseAction('upgrade');
-                        } else {
-                            setPurchaseAction('downgrade');
-                        }
-                        return;
-                    }
-                }
-
-                // Step 2: No active package — check purchase history for expired packages
-                const historyRes = await fetch(`${baseUrl}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ page: 0, size: 5, idPartner: partnerId }),
-                });
-
-                if (historyRes.ok) {
-                    const historyData = await historyRes.json();
-                    const history = Array.isArray(historyData) ? historyData : (historyData?.content ?? historyData?.data ?? []);
-                    const pastPurchase = history.find((p: any) => p.idPackage && p.idPackage !== 9999);
-
-                    if (pastPurchase) {
-                        const currentSlug = packageIdToName[pastPurchase.idPackage] ?? '';
-                        setCurrentPackage({
-                            name: currentSlug || pastPurchase.packageName || 'Unknown',
-                            packageId: pastPurchase.idPackage,
-                            expireDate: pastPurchase.expireDate ?? null,
-                            isExpired: true,
-                        });
-                        setPurchaseAction('renew');
-                        return;
-                    }
-                }
-
-                setPurchaseAction('new');
-            } catch (e) {
-                console.error('Failed to fetch current package:', e);
-                setPurchaseAction('new');
-            } finally {
-                setCurrentPackageLoading(false);
-            }
-        };
-
-        fetchPartnerPrePaidStatus();
-        fetchCurrentPackage();
-    }, [isOpen, serviceType]);
-
-    const handleFormChange = (data: typeof formData) => {
-        setFormData(data);
-    };
-
-    const handleSelectPayment = (method: string) => {
-        setSelectedPayment(method);
-    };
-
-    const getTokenData = (): { partnerId: number | null; email: string | null; authToken: string | null } => {
-        try {
-            const authToken = localStorage.getItem('authToken');
-            if (!authToken) return { partnerId: null, email: null, authToken: null };
-            const decodedToken = jwtDecode<DecodedToken>(authToken);
-            return {
-                partnerId: decodedToken?.idPartner || null,
-                email: decodedToken?.email || decodedToken?.sub || null,
-                authToken,
-            };
-        } catch {
-            return { partnerId: null, email: null, authToken: null };
-        }
-    };
-
-    const getPartnerId = (): number | null => {
-        return getTokenData().partnerId;
-    };
-
-    // Purchase Voice Broadcast package after successful payment
-    const purchaseVoiceBroadcast = async (authToken: string, partnerId: number, packageId: number, price: number) => {
-        try {
-            console.log('Starting Voice Broadcast package purchase...');
-            toast.loading(locale === 'en' ? 'Activating your Voice Broadcast package...' : 'আপনার ভয়েস ব্রডকাস্ট প্যাকেজ সক্রিয় হচ্ছে...', { id: 'vbs-purchase' });
-
-            // Calculate VAT (15% of price)
-            const vat = Math.round(price * 0.15);
-            const total = price + vat;
-
-            // Calculate expiry date (30 days from now)
-            const validity = 2592000; // 30 days in seconds
-            const expiryDate = new Date(Date.now() + validity * 1000).toISOString().slice(0, 19);
-
-            const payload = {
-                idPackage: packageId,
-                idPartner: partnerId,
-                purchaseDate: null,
-                status: 'ACTIVE',
-                paid: total,
-                autoRenewalStatus: true,
-                price: price,
-                vat: vat,
-                ait: 0,
-                priority: 1,
-                discount: 0,
-                onSelectPriority: -1,
-                expiryDate: expiryDate,
-                total: total,
-                expireDate: null,
-                currency: null,
-                validity: validity,
-            };
-
-            console.log('Voice Broadcast purchase payload:', payload);
-
-            const response = await fetch(`${VBS_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to purchase Voice Broadcast package');
-            }
-
-            const data = await response.json();
-            console.log('Voice Broadcast purchase response:', data);
-
-            toast.success(
-                locale === 'en'
-                    ? 'Voice Broadcast package activated successfully!'
-                    : 'ভয়েস ব্রডকাস্ট প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
-                { id: 'vbs-purchase' }
-            );
-
-            return { success: true, data };
-        } catch (error) {
-            console.error('Voice Broadcast purchase failed:', error);
-            toast.error(
-                locale === 'en'
-                    ? 'Voice Broadcast activation failed. Please contact support.'
-                    : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
-                { id: 'vbs-purchase' }
-            );
-            return { success: false, error };
-        }
-    };
-
-    // Purchase Hosted PBX package after successful payment
-    const purchaseHostedPbx = async (authToken: string, partnerId: number, packageId: number, price: number) => {
-        try {
-            console.log('Starting Hosted PBX package purchase...');
-            toast.loading(locale === 'en' ? 'Activating your Hosted PBX package...' : 'আপনার হোস্টেড PBX প্যাকেজ সক্রিয় হচ্ছে...', { id: 'pbx-purchase' });
-
-            // Calculate VAT (15% of price)
-            const vat = Math.round(price * 0.15);
-            const total = price + vat;
-
-            // Calculate expiry date (30 days from now)
-            const validity = 2592000; // 30 days in seconds
-            const expiryDate = new Date(Date.now() + validity * 1000).toISOString().slice(0, 19);
-
-            const payload = {
-                idPackage: packageId,
-                idPartner: partnerId,
-                purchaseDate: null,
-                status: 'ACTIVE',
-                paid: total,
-                autoRenewalStatus: true,
-                price: price,
-                vat: vat,
-                ait: 0,
-                priority: 1,
-                discount: 0,
-                onSelectPriority: -1,
-                expiryDate: expiryDate,
-                total: total,
-                expireDate: null,
-                currency: null,
-                validity: validity,
-            };
-
-            console.log('Hosted PBX purchase payload:', payload);
-
-            const response = await fetch(`${PBX_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to purchase Hosted PBX package');
-            }
-
-            const data = await response.json();
-            console.log('Hosted PBX purchase response:', data);
-
-            toast.success(
-                locale === 'en'
-                    ? 'Hosted PBX package activated successfully!'
-                    : 'হোস্টেড PBX প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
-                { id: 'pbx-purchase' }
-            );
-
-            return { success: true, data };
-        } catch (error) {
-            console.error('Hosted PBX purchase failed:', error);
-            return { success: false, error };
-        }
-    };
-
-    // Map package string ID to integer ID based on service type
-    const getPackageIdInt = (packageId: string, service: string): number => {
-        const packageIdMap: { [key: string]: { [key: string]: number } } = {
-            'hosted-pbx': {
-                'bronze': 9132,
-                'silver': 9133,
-                'gold': 9134,
-            },
-            'voice-broadcast': {
-                'basic': 9135,
-                'standard': 9136,
-                'enterprise': 9137,
-            },
-            'contact-center': {
-                'basic': 9140,
-            },
-        };
-        return packageIdMap[service]?.[packageId] || 9132;
-    };
-
-    const handleCheckout = async () => {
-        // Only require payment method if customerPrePaid is 1 (payment gateway)
-        if (customerPrePaid === 1 && !selectedPayment) {
-            toast.error(locale === 'en' ? 'Please select a payment method.' : 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন।');
-            return;
-        }
-
-        const { partnerId, email, authToken } = getTokenData();
         if (!partnerId || !authToken) {
-            toast.error(locale === 'en' ? 'Please login to continue.' : 'চালিয়ে যেতে অনুগ্রহ করে লগইন করুন।');
-            return;
+          setCustomerPrePaid(1); // Default to payment gateway
+          setPartnerDataLoading(false);
+          return;
         }
 
-        setLoading(true);
+        const partnerData = await getPartnerById(partnerId, authToken);
+        const prePaidValue = partnerData.customerPrePaid || 1;
+        setCustomerPrePaid(prePaidValue);
 
-        try {
-            // Check if payment is disabled in config
-            if (!FEATURE_FLAGS.PAYMENT_ENABLED) {
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
-
-                // Show success popup for Hosted PBX
-                if (serviceType === 'hosted-pbx' && email) {
-                    try {
-                        const userData = await getUserByEmail(email, authToken!);
-                        setUserHasPbx(!!userData?.pbxUuid);
-                    } catch (e) {
-                        setUserHasPbx(false);
-                    }
-                    setSuccessEmail(email);
-                    setPurchasedPackageName(pkg.name);
-                    setShowSuccessPopup(true);
-                    setLoading(false);
-                    return;
-                }
-
-                // Show success popup for Voice Broadcast
-                if (serviceType === 'voice-broadcast' && email) {
-                    setSuccessEmail(email);
-                    setPurchasedPackageName(pkg.name);
-                    setShowVbsSuccessPopup(true);
-                    setLoading(false);
-                    return;
-                }
-
-                // Show success popup for Contact Center
-                if (serviceType === 'contact-center' && email) {
-                    setSuccessEmail(email);
-                    setPurchasedPackageName(pkg.name);
-                    setShowSuccessPopup(true);
-                    setLoading(false);
-                    return;
-                }
-
-                onClose();
-                return;
-            }
-
-            // Step 1: Fetch partner details
-            toast.loading(locale === 'en' ? 'Preparing your account...' : 'অ্যাকাউন্ট প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
-            const partnerData = await getPartnerById(partnerId, authToken);
-
-            // Step 2: Ensure partner exists in target service
-            if (['hosted-pbx', 'contact-center', 'voice-broadcast'].includes(serviceType)) {
-                toast.loading(
-                    locale === 'en' ? 'Verifying service account...' : 'সার্ভিস অ্যাকাউন্ট যাচাই হচ্ছে...',
-                    { id: 'partner-check' }
-                );
-
-                const partnerReady = await ensurePartnerInService(partnerId, serviceType, authToken);
-                toast.dismiss('partner-check');
-
-                if (!partnerReady) {
-                    toast.error(locale === 'en' ? 'Could not set up your service account. Please try again.' : 'সার্ভিস অ্যাকাউন্ট সেটআপ করা যায়নি। আবার চেষ্টা করুন।');
-                    setLoading(false);
-                    return;
-                }
-            }
-
-            toast.dismiss('payment-prep');
-
-            // Get customerPrePaid from partner data (1 = payment gateway, 2 = direct purchase)
-            const customerPrePaid = partnerData.customerPrePaid || 1;
-            console.log('Customer PrePaid type:', customerPrePaid);
-
-            // Set product name and category based on service type
-            const getProductDetails = () => {
-                switch (serviceType) {
-                    case 'hosted-pbx':
-                        return { name: `Hosted PBX - ${pkg.name}`, category: 'Hosted PBX' };
-                    case 'voice-broadcast':
-                        return { name: `Voice Broadcast - ${pkg.name}`, category: 'Voice Broadcast' };
-                    case 'contact-center':
-                        return { name: `Contact Center - ${pkg.name}`, category: 'Contact Center' };
-                    default:
-                        return { name: pkg.name, category: 'SMS' };
-                }
-            };
-            const { name: productName, category: productCategory } = getProductDetails();
-
-            // Clean phone number (remove + if present)
-            const cleanPhone = partnerData.telephone?.replace('+', '') || '';
-
-            // For Contact Center, calculate price based on agentCount state
-            const basePrice = (serviceType === 'contact-center') ? (pkg.price * agentCount) : pkg.price;
-            const quantity = (serviceType === 'contact-center') ? agentCount : 1;
-
-            // Calculate VAT (15% of price) and total
-            const vatAmount = Math.round(basePrice * 0.15);
-            const totalAmount = basePrice + vatAmount;
-
-            const payload = {
-                idPackage: getPackageIdInt(pkg.id, serviceType),
-                idPartner: partnerId,
-                cusName: partnerData.partnerName || partnerData.alternateNameInvoice,
-                cusEmail: partnerData.email,
-                cusAdd1: partnerData.address1 || partnerData.city,
-                cusCity: partnerData.city,
-                cusPostcode: partnerData.postalCode,
-                cusCountry: partnerData.country || 'Bangladesh',
-                cusPhone: cleanPhone,
-                productName: productName,
-                productCategory: productCategory,
-                productType: serviceType,
-                topupNumber: cleanPhone,
-                countryTopup: 'Bangladesh',
-                purchaseDate: null,
-                status: 'ACTIVE',
-                autoRenewalStatus: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType),
-                price: basePrice,
-                vat: vatAmount,
-                ait: 0,
-                priority: 2,
-                discount: 0,
-                currency: 'BDT',
-                paid: 1,
-                total: totalAmount,
-                validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType) ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000), // 30 days in seconds
-                ...(serviceType === 'contact-center' && { quantity: quantity }), // Include quantity for CC
-            };
-
-            console.log('Unified Purchase payload:', payload);
-            console.log('Service type:', serviceType);
-            console.log('Customer PrePaid:', customerPrePaid);
-
-            // For VBS service, always use payment gateway (even if customerPrePaid = 2)
-            const effectivePrePaid = serviceType === 'voice-broadcast' ? 1 : customerPrePaid;
-
-            // Call unified purchase API
-            const response = await unifiedPurchase(payload, serviceType, effectivePrePaid);
-            console.log('Unified Purchase response:', response);
-
-            // customerPrePaid = 1 (or VBS): Payment gateway initiated, redirect to payment URL
-            if (effectivePrePaid === 1) {
-                const redirectUrl = response.redirectUrl || response.GatewayPageURL || response;
-
-                if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
-                    // Store the service type and data in session for callback handling
-                    sessionStorage.setItem('pendingServiceProvision', JSON.stringify({
-                        serviceType,
-                        partnerId,
-                        email,
-                        packageId: pkg.id,
-                        packageIdInt: getPackageIdInt(pkg.id, serviceType),
-                        packageName: pkg.name,
-                        price: pkg.price
-                    }));
-                    window.location.href = redirectUrl;
-                } else {
-                    toast.error(locale === 'en' ? 'Payment URL not received. Please try again.' : 'পেমেন্ট URL পাওয়া যায়নি। আবার চেষ্টা করুন।');
-                }
-            }
-            // customerPrePaid = 2: Direct purchase completed (no payment gateway) - NOT for VBS
-            else if (effectivePrePaid === 2) {
-                if (response.status === 'SUCCESS') {
-                    toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
-
-                    // Show success popup for Hosted PBX
-                    if (serviceType === 'hosted-pbx' && email) {
-                        // Check if user already has PBX
-                        try {
-                            const userData = await getUserByEmail(email, authToken);
-                            setUserHasPbx(!!userData?.pbxUuid);
-                        } catch (e) {
-                            setUserHasPbx(false);
-                        }
-                        setSuccessEmail(email);
-                        setPurchasedPackageName(pkg.name);
-                        setShowSuccessPopup(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Show success popup for Voice Broadcast
-                    if (serviceType === 'voice-broadcast' && email) {
-                        setSuccessEmail(email);
-                        setPurchasedPackageName(pkg.name);
-                        setShowVbsSuccessPopup(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Show success popup for Contact Center
-                    if (serviceType === 'contact-center' && email) {
-                        setSuccessEmail(email);
-                        setPurchasedPackageName(pkg.name);
-                        setShowSuccessPopup(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    onClose();
-                } else {
-                    toast.error(response.message || (locale === 'en' ? 'Purchase failed. Please try again.' : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।'));
-                }
-            }
-        } catch (error) {
-            console.error('Purchase failed:', error);
-            toast.error(locale === 'en' ? 'Purchase failed. Please try again.' : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।');
-        } finally {
-            setLoading(false);
+        // Auto-select SSLCommerz if customerPrePaid is 1
+        if (prePaidValue === 1) {
+          setSelectedPayment('SSLcommerz');
         }
+        // If customerPrePaid is 2, no payment method needed but set a placeholder
+        if (prePaidValue === 2) {
+          setSelectedPayment('direct');
+        }
+      } catch (error) {
+        console.error('Failed to fetch partner prePaid status:', error);
+        setCustomerPrePaid(1); // Default to payment gateway on error
+      } finally {
+        setPartnerDataLoading(false);
+      }
     };
 
-    const handleCloseSuccessPopup = () => {
-        setShowSuccessPopup(false);
-        setShowVbsSuccessPopup(false);
-        onClose();
-    };
+    // Fetch current active package for this service to determine renew/upgrade/downgrade
+    const fetchCurrentPackage = async () => {
+      setCurrentPackageLoading(true);
+      try {
+        const { partnerId, authToken } = getTokenData();
+        if (!partnerId || !authToken) {
+          setPurchaseAction('new');
+          return;
+        }
 
-    // Shared success popup renderer (PBX + VBS)
-    const renderSuccessPopup = (portalLabel: string, portalUrl: string) => {
-        const isNew = purchaseAction === 'new';
-        const actionLabel = (() => {
-            if (locale === 'en') {
-                if (purchaseAction === 'renew')     return 'Plan Renewed';
-                if (purchaseAction === 'upgrade')   return 'Plan Upgraded';
-                if (purchaseAction === 'downgrade') return 'Plan Downgraded';
-                return 'Purchase Successful';
+        const baseUrl = getServiceBaseUrl(serviceType);
+
+        // Step 1: Check for active package via getPurchaseForPartner
+        const activeRes = await fetch(
+          `${baseUrl}${API_ENDPOINTS.package.getPurchaseForPartner}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({ idPartner: partnerId }),
+          }
+        );
+
+        if (activeRes.ok) {
+          const data = await activeRes.json();
+          const purchases = Array.isArray(data)
+            ? data
+            : (data?.content ?? data?.data ?? []);
+          const activePurchase = purchases.find(
+            (p: any) =>
+              p.idPackage &&
+              p.idPackage !== 9999 &&
+              (!p.expireDate || new Date(p.expireDate) > new Date())
+          );
+
+          if (activePurchase) {
+            const currentSlug = packageIdToName[activePurchase.idPackage] ?? '';
+            setCurrentPackage({
+              name: currentSlug || activePurchase.packageName || 'Unknown',
+              packageId: activePurchase.idPackage,
+              expireDate: activePurchase.expireDate ?? null,
+              isExpired: false,
+            });
+
+            const tiers = packageTierOrder[serviceType] ?? {};
+            const currentTier = tiers[currentSlug] ?? 0;
+            const newTier = tiers[pkg?.id ?? ''] ?? 0;
+
+            if (currentTier === 0 || newTier === 0 || pkg?.id === currentSlug) {
+              setPurchaseAction('renew');
+            } else if (newTier > currentTier) {
+              setPurchaseAction('upgrade');
             } else {
-                if (purchaseAction === 'renew')     return 'প্ল্যান নবায়ন হয়েছে';
-                if (purchaseAction === 'upgrade')   return 'প্ল্যান আপগ্রেড হয়েছে';
-                if (purchaseAction === 'downgrade') return 'প্ল্যান ডাউনগ্রেড হয়েছে';
-                return 'ক্রয় সফল হয়েছে';
+              setPurchaseAction('downgrade');
             }
-        })();
+            return;
+          }
+        }
 
-        return (
-            <Dialog open={isOpen} onClose={() => {}} className="relative z-50 font-bengali">
-                <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
-                <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
-                    <Dialog.Panel className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
-                        {/* Header */}
-                        <div className={`px-6 py-8 text-center ${
-                            purchaseAction === 'downgrade'
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-                                : 'bg-gradient-to-r from-[#00A651] to-[#004225]'
-                        }`}>
-                            <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                                <svg className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : 'text-[#00A651]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white">
-                                {locale === 'en' ? 'Congratulations!' : 'অভিনন্দন!'}
-                            </h2>
-                            <p className="text-white/80 mt-2 font-medium">{actionLabel}</p>
-                        </div>
-
-                        <div className="px-6 py-6">
-                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                {isNew ? (
-                                    /* First-time purchase: email notification */
-                                    <div className="flex flex-col items-center text-center gap-3">
-                                        <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
-                                            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-800">
-                                                {locale === 'en' ? 'Check Your Email' : 'আপনার ইমেইল চেক করুন'}
-                                            </p>
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                {locale === 'en'
-                                                    ? 'Your login credentials have been sent to:'
-                                                    : 'আপনার লগইন তথ্য পাঠানো হয়েছে:'}
-                                            </p>
-                                            <p className="font-semibold text-blue-600 mt-1 break-all">{successEmail}</p>
-                                        </div>
-                                        <div className="w-full mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-left">
-                                            <p className="text-xs text-amber-800">
-                                                <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
-                                                {locale === 'en'
-                                                    ? 'Please change your password after first login for security.'
-                                                    : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    /* Renew / Upgrade / Downgrade: package summary */
-                                    <>
-                                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                                            {locale === 'en' ? 'Plan Summary' : 'প্ল্যান সারসংক্ষেপ'}
-                                        </h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Package' : 'প্যাকেজ'}</span>
-                                                <span className="font-semibold text-gray-900">{purchasedPackageName}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Action' : 'পদক্ষেপ'}</span>
-                                                <span className={`font-semibold ${
-                                                    purchaseAction === 'upgrade' ? 'text-[#00A651]' :
-                                                    purchaseAction === 'downgrade' ? 'text-amber-600' :
-                                                    'text-green-600'
-                                                }`}>{actionLabel}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Status' : 'স্ট্যাটাস'}</span>
-                                                <span className="font-semibold text-green-600">{locale === 'en' ? 'Active' : 'সক্রিয়'}</span>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Portal Link */}
-                            <div className="mt-5">
-                                <a
-                                    href={portalUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
-                                >
-                                    {portalLabel} →
-                                </a>
-                            </div>
-
-                            {/* Close Button — manual only */}
-                            <button
-                                onClick={handleCloseSuccessPopup}
-                                className="w-full mt-3 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
-                            >
-                                {locale === 'en' ? 'Close' : 'বন্ধ করুন'}
-                            </button>
-                        </div>
-                    </Dialog.Panel>
-                </div>
-            </Dialog>
+        // Step 2: No active package — check purchase history for expired packages
+        const historyRes = await fetch(
+          `${baseUrl}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({ page: 0, size: 5, idPartner: partnerId }),
+          }
         );
+
+        if (historyRes.ok) {
+          const historyData = await historyRes.json();
+          const history = Array.isArray(historyData)
+            ? historyData
+            : (historyData?.content ?? historyData?.data ?? []);
+          const pastPurchase = history.find(
+            (p: any) => p.idPackage && p.idPackage !== 9999
+          );
+
+          if (pastPurchase) {
+            const currentSlug = packageIdToName[pastPurchase.idPackage] ?? '';
+            setCurrentPackage({
+              name: currentSlug || pastPurchase.packageName || 'Unknown',
+              packageId: pastPurchase.idPackage,
+              expireDate: pastPurchase.expireDate ?? null,
+              isExpired: true,
+            });
+            setPurchaseAction('renew');
+            return;
+          }
+        }
+
+        setPurchaseAction('new');
+      } catch (e) {
+        console.error('Failed to fetch current package:', e);
+        setPurchaseAction('new');
+      } finally {
+        setCurrentPackageLoading(false);
+      }
     };
 
-    if (showSuccessPopup) {
-        const isCC = serviceType === 'contact-center';
-        return renderSuccessPopup(
-            isCC
-                ? (locale === 'en' ? 'Go to CC Portal' : 'CC পোর্টালে যান')
-                : (locale === 'en' ? 'Go to PBX Portal' : 'PBX পোর্টালে যান'),
-            isCC
-                ? 'https://hcc.btcliptelephony.gov.bd/'
-                : 'https://hippbx.btcliptelephony.gov.bd:5174/'
-        );
+    fetchPartnerPrePaidStatus();
+    fetchCurrentPackage();
+  }, [isOpen, serviceType]);
+
+  const handleFormChange = (data: typeof formData) => {
+    setFormData(data);
+  };
+
+  const handleSelectPayment = (method: string) => {
+    setSelectedPayment(method);
+  };
+
+  const getTokenData = (): {
+    partnerId: number | null;
+    email: string | null;
+    authToken: string | null;
+  } => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return { partnerId: null, email: null, authToken: null };
+      const decodedToken = jwtDecode<DecodedToken>(authToken);
+      return {
+        partnerId: decodedToken?.idPartner || null,
+        email: decodedToken?.email || decodedToken?.sub || null,
+        authToken,
+      };
+    } catch {
+      return { partnerId: null, email: null, authToken: null };
+    }
+  };
+
+  const getPartnerId = (): number | null => {
+    return getTokenData().partnerId;
+  };
+
+  // Purchase Voice Broadcast package after successful payment
+  const purchaseVoiceBroadcast = async (
+    authToken: string,
+    partnerId: number,
+    packageId: number,
+    price: number
+  ) => {
+    try {
+      console.log('Starting Voice Broadcast package purchase...');
+      toast.loading(
+        locale === 'en'
+          ? 'Activating your Voice Broadcast package...'
+          : 'আপনার ভয়েস ব্রডকাস্ট প্যাকেজ সক্রিয় হচ্ছে...',
+        { id: 'vbs-purchase' }
+      );
+
+      // Calculate VAT (15% of price)
+      const vat = Math.round(price * 0.15);
+      const total = price + vat;
+
+      // Calculate expiry date (30 days from now)
+      const validity = 2592000; // 30 days in seconds
+      const expiryDate = new Date(Date.now() + validity * 1000)
+        .toISOString()
+        .slice(0, 19);
+
+      const payload = {
+        idPackage: packageId,
+        idPartner: partnerId,
+        purchaseDate: null,
+        status: 'ACTIVE',
+        paid: total,
+        autoRenewalStatus: true,
+        price: price,
+        vat: vat,
+        ait: 0,
+        priority: 1,
+        discount: 0,
+        onSelectPriority: -1,
+        expiryDate: expiryDate,
+        total: total,
+        expireDate: null,
+        currency: null,
+        validity: validity,
+      };
+
+      console.log('Voice Broadcast purchase payload:', payload);
+
+      const response = await fetch(
+        `${VBS_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to purchase Voice Broadcast package');
+      }
+
+      const data = await response.json();
+      console.log('Voice Broadcast purchase response:', data);
+
+      toast.success(
+        locale === 'en'
+          ? 'Voice Broadcast package activated successfully!'
+          : 'ভয়েস ব্রডকাস্ট প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
+        { id: 'vbs-purchase' }
+      );
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Voice Broadcast purchase failed:', error);
+      toast.error(
+        locale === 'en'
+          ? 'Voice Broadcast activation failed. Please contact support.'
+          : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
+        { id: 'vbs-purchase' }
+      );
+      return { success: false, error };
+    }
+  };
+
+  // Purchase Hosted PBX package after successful payment
+  const purchaseHostedPbx = async (
+    authToken: string,
+    partnerId: number,
+    packageId: number,
+    price: number
+  ) => {
+    try {
+      console.log('Starting Hosted PBX package purchase...');
+      toast.loading(
+        locale === 'en'
+          ? 'Activating your Hosted PBX package...'
+          : 'আপনার হোস্টেড PBX প্যাকেজ সক্রিয় হচ্ছে...',
+        { id: 'pbx-purchase' }
+      );
+
+      // Calculate VAT (15% of price)
+      const vat = Math.round(price * 0.15);
+      const total = price + vat;
+
+      // Calculate expiry date (30 days from now)
+      const validity = 2592000; // 30 days in seconds
+      const expiryDate = new Date(Date.now() + validity * 1000)
+        .toISOString()
+        .slice(0, 19);
+
+      const payload = {
+        idPackage: packageId,
+        idPartner: partnerId,
+        purchaseDate: null,
+        status: 'ACTIVE',
+        paid: total,
+        autoRenewalStatus: true,
+        price: price,
+        vat: vat,
+        ait: 0,
+        priority: 1,
+        discount: 0,
+        onSelectPriority: -1,
+        expiryDate: expiryDate,
+        total: total,
+        expireDate: null,
+        currency: null,
+        validity: validity,
+      };
+
+      console.log('Hosted PBX purchase payload:', payload);
+
+      const response = await fetch(
+        `${PBX_BASE_URL}${API_ENDPOINTS.package.purchasePackage}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to purchase Hosted PBX package');
+      }
+
+      const data = await response.json();
+      console.log('Hosted PBX purchase response:', data);
+
+      toast.success(
+        locale === 'en'
+          ? 'Hosted PBX package activated successfully!'
+          : 'হোস্টেড PBX প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
+        { id: 'pbx-purchase' }
+      );
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Hosted PBX purchase failed:', error);
+      return { success: false, error };
+    }
+  };
+
+  // Map package string ID to integer ID based on service type
+  const getPackageIdInt = (packageId: string, service: string): number => {
+    const packageIdMap: { [key: string]: { [key: string]: number } } = {
+      'hosted-pbx': {
+        bronze: 9132,
+        silver: 9133,
+        gold: 9134,
+      },
+      'voice-broadcast': {
+        basic: 9135,
+        standard: 9136,
+        enterprise: 9137,
+      },
+      'contact-center': {
+        basic: 9140,
+      },
+    };
+    return packageIdMap[service]?.[packageId] || 9132;
+  };
+
+  const handleCheckout = async () => {
+    // Only require payment method if customerPrePaid is 1 (payment gateway)
+    if (customerPrePaid === 1 && !selectedPayment) {
+      toast.error(
+        locale === 'en'
+          ? 'Please select a payment method.'
+          : 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন।'
+      );
+      return;
     }
 
-    if (showVbsSuccessPopup) {
-        return renderSuccessPopup(
-            locale === 'en' ? 'Go to VBS Portal' : 'VBS পোর্টালে যান',
-            'https://vbs.btcliptelephony.gov.bd/'
-        );
+    const { partnerId, email, authToken } = getTokenData();
+    if (!partnerId || !authToken) {
+      toast.error(
+        locale === 'en'
+          ? 'Please login to continue.'
+          : 'চালিয়ে যেতে অনুগ্রহ করে লগইন করুন।'
+      );
+      return;
     }
+
+    setLoading(true);
+
+    try {
+      // Check if payment is disabled in config
+      if (!FEATURE_FLAGS.PAYMENT_ENABLED) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        toast.success(
+          locale === 'en'
+            ? 'Purchase completed successfully!'
+            : 'ক্রয় সফল হয়েছে!'
+        );
+
+        // Show success popup for Hosted PBX
+        if (serviceType === 'hosted-pbx' && email) {
+          try {
+            const userData = await getUserByEmail(email, authToken!);
+            setUserHasPbx(!!userData?.pbxUuid);
+          } catch (e) {
+            setUserHasPbx(false);
+          }
+          setSuccessEmail(email);
+          setPurchasedPackageName(pkg.name);
+          setShowSuccessPopup(true);
+          setLoading(false);
+          return;
+        }
+
+        // Show success popup for Voice Broadcast
+        if (serviceType === 'voice-broadcast' && email) {
+          setSuccessEmail(email);
+          setPurchasedPackageName(pkg.name);
+          setShowVbsSuccessPopup(true);
+          setLoading(false);
+          return;
+        }
+
+        // Show success popup for Contact Center
+        if (serviceType === 'contact-center' && email) {
+          setSuccessEmail(email);
+          setPurchasedPackageName(pkg.name);
+          setShowSuccessPopup(true);
+          setLoading(false);
+          return;
+        }
+
+        onClose();
+        return;
+      }
+
+      // Step 1: Fetch partner details
+      toast.loading(
+        locale === 'en'
+          ? 'Preparing your account...'
+          : 'অ্যাকাউন্ট প্রস্তুত হচ্ছে...',
+        { id: 'payment-prep' }
+      );
+      const partnerData = await getPartnerById(partnerId, authToken);
+
+      // Step 2: Ensure partner exists in target service
+      if (
+        ['hosted-pbx', 'contact-center', 'voice-broadcast'].includes(
+          serviceType
+        )
+      ) {
+        toast.loading(
+          locale === 'en'
+            ? 'Verifying service account...'
+            : 'সার্ভিস অ্যাকাউন্ট যাচাই হচ্ছে...',
+          { id: 'partner-check' }
+        );
+
+        const partnerReady = await ensurePartnerInService(
+          partnerId,
+          serviceType,
+          authToken
+        );
+        toast.dismiss('partner-check');
+
+        if (!partnerReady) {
+          toast.error(
+            locale === 'en'
+              ? 'Could not set up your service account. Please try again.'
+              : 'সার্ভিস অ্যাকাউন্ট সেটআপ করা যায়নি। আবার চেষ্টা করুন।'
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
+      toast.dismiss('payment-prep');
+
+      // Get customerPrePaid from partner data (1 = payment gateway, 2 = direct purchase)
+      const customerPrePaid = partnerData.customerPrePaid || 1;
+      console.log('Customer PrePaid type:', customerPrePaid);
+
+      // Set product name and category based on service type
+      const getProductDetails = () => {
+        switch (serviceType) {
+          case 'hosted-pbx':
+            return { name: `Hosted PBX - ${pkg.name}`, category: 'Hosted PBX' };
+          case 'voice-broadcast':
+            return {
+              name: `Voice Broadcast - ${pkg.name}`,
+              category: 'Voice Broadcast',
+            };
+          case 'contact-center':
+            return {
+              name: `Contact Center - ${pkg.name}`,
+              category: 'Contact Center',
+            };
+          default:
+            return { name: pkg.name, category: 'SMS' };
+        }
+      };
+      const { name: productName, category: productCategory } =
+        getProductDetails();
+
+      // Clean phone number (remove + if present)
+      const cleanPhone = partnerData.telephone?.replace('+', '') || '';
+
+      // For Contact Center, calculate price based on agentCount state
+      const effectiveAgentCount = agentCount === '' ? 1 : agentCount;
+      const basePrice =
+        serviceType === 'contact-center' ? pkg.price * effectiveAgentCount : pkg.price;
+      const quantity = serviceType === 'contact-center' ? effectiveAgentCount : 1;
+
+      // Calculate VAT (15% of price) and total
+      const vatAmount = Math.round(basePrice * 0.15);
+      const totalAmount = basePrice + vatAmount;
+
+      const payload = {
+        idPackage: getPackageIdInt(pkg.id, serviceType),
+        idPartner: partnerId,
+        cusName: partnerData.partnerName || partnerData.alternateNameInvoice,
+        cusEmail: partnerData.email,
+        cusAdd1: partnerData.address1 || partnerData.city,
+        cusCity: partnerData.city,
+        cusPostcode: partnerData.postalCode,
+        cusCountry: partnerData.country || 'Bangladesh',
+        cusPhone: cleanPhone,
+        productName: productName,
+        productCategory: productCategory,
+        productType: serviceType,
+        topupNumber: cleanPhone,
+        countryTopup: 'Bangladesh',
+        purchaseDate: null,
+        status: 'ACTIVE',
+        autoRenewalStatus: [
+          'hosted-pbx',
+          'voice-broadcast',
+          'contact-center',
+        ].includes(serviceType),
+        price: basePrice,
+        vat: vatAmount,
+        ait: 0,
+        priority: 2,
+        discount: 0,
+        currency: 'BDT',
+        paid: 1,
+        total: totalAmount,
+        validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(
+          serviceType
+        )
+          ? 2592000
+          : pkg.validity
+            ? pkg.validity * 86400
+            : 2592000, // 30 days in seconds
+        ...(serviceType === 'contact-center' && { quantity: quantity }), // Include quantity for CC
+      };
+
+      console.log('Unified Purchase payload:', payload);
+      console.log('Service type:', serviceType);
+      console.log('Customer PrePaid:', customerPrePaid);
+
+      // For VBS service, always use payment gateway (even if customerPrePaid = 2)
+      const effectivePrePaid =
+        serviceType === 'voice-broadcast' ? 1 : customerPrePaid;
+
+      // Call unified purchase API
+      const response = await unifiedPurchase(
+        payload,
+        serviceType,
+        effectivePrePaid
+      );
+      console.log('Unified Purchase response:', response);
+
+      // customerPrePaid = 1 (or VBS): Payment gateway initiated, redirect to payment URL
+      if (effectivePrePaid === 1) {
+        const redirectUrl =
+          response.redirectUrl || response.GatewayPageURL || response;
+
+        if (
+          redirectUrl &&
+          typeof redirectUrl === 'string' &&
+          redirectUrl.startsWith('http')
+        ) {
+          // Store the service type and data in session for callback handling
+          sessionStorage.setItem(
+            'pendingServiceProvision',
+            JSON.stringify({
+              serviceType,
+              partnerId,
+              email,
+              packageId: pkg.id,
+              packageIdInt: getPackageIdInt(pkg.id, serviceType),
+              packageName: pkg.name,
+              price: pkg.price,
+            })
+          );
+          window.location.href = redirectUrl;
+        } else {
+          toast.error(
+            locale === 'en'
+              ? 'Payment URL not received. Please try again.'
+              : 'পেমেন্ট URL পাওয়া যায়নি। আবার চেষ্টা করুন।'
+          );
+        }
+      }
+      // customerPrePaid = 2: Direct purchase completed (no payment gateway) - NOT for VBS
+      else if (effectivePrePaid === 2) {
+        if (response.status === 'SUCCESS') {
+          toast.success(
+            locale === 'en'
+              ? 'Purchase completed successfully!'
+              : 'ক্রয় সফল হয়েছে!'
+          );
+
+          // Show success popup for Hosted PBX
+          if (serviceType === 'hosted-pbx' && email) {
+            // Check if user already has PBX
+            try {
+              const userData = await getUserByEmail(email, authToken);
+              setUserHasPbx(!!userData?.pbxUuid);
+            } catch (e) {
+              setUserHasPbx(false);
+            }
+            setSuccessEmail(email);
+            setPurchasedPackageName(pkg.name);
+            setShowSuccessPopup(true);
+            setLoading(false);
+            return;
+          }
+
+          // Show success popup for Voice Broadcast
+          if (serviceType === 'voice-broadcast' && email) {
+            setSuccessEmail(email);
+            setPurchasedPackageName(pkg.name);
+            setShowVbsSuccessPopup(true);
+            setLoading(false);
+            return;
+          }
+
+          // Show success popup for Contact Center
+          if (serviceType === 'contact-center' && email) {
+            setSuccessEmail(email);
+            setPurchasedPackageName(pkg.name);
+            setShowSuccessPopup(true);
+            setLoading(false);
+            return;
+          }
+
+          onClose();
+        } else {
+          toast.error(
+            response.message ||
+              (locale === 'en'
+                ? 'Purchase failed. Please try again.'
+                : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।')
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      toast.error(
+        locale === 'en'
+          ? 'Purchase failed. Please try again.'
+          : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    setShowVbsSuccessPopup(false);
+    onClose();
+  };
+
+  // Shared success popup renderer (PBX + VBS)
+  const renderSuccessPopup = (portalLabel: string, portalUrl: string) => {
+    const isNew = purchaseAction === 'new';
+    const actionLabel = (() => {
+      if (locale === 'en') {
+        if (purchaseAction === 'renew') return 'Plan Renewed';
+        if (purchaseAction === 'upgrade') return 'Plan Upgraded';
+        if (purchaseAction === 'downgrade') return 'Plan Downgraded';
+        return 'Purchase Successful';
+      } else {
+        if (purchaseAction === 'renew') return 'প্ল্যান নবায়ন হয়েছে';
+        if (purchaseAction === 'upgrade') return 'প্ল্যান আপগ্রেড হয়েছে';
+        if (purchaseAction === 'downgrade') return 'প্ল্যান ডাউনগ্রেড হয়েছে';
+        return 'ক্রয় সফল হয়েছে';
+      }
+    })();
 
     return (
-        <Dialog open={isOpen} onClose={onClose} className="relative z-50 font-bengali">
-            <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
-
-            <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
-                <Dialog.Panel className="w-full max-w-5xl bg-white rounded-xl shadow-card p-8 flex flex-col md:flex-row gap-10 my-8">
-                    <div className="flex-1">
-                        {/* Current package banner */}
-                        {!currentPackageLoading && currentPackage && (
-                            <div className={`mb-6 rounded-xl p-4 border ${
-                                currentPackage.isExpired
-                                    ? 'bg-red-50 border-red-200'
-                                    : purchaseAction === 'upgrade'
-                                    ? 'bg-blue-50 border-blue-200'
-                                    : purchaseAction === 'downgrade'
-                                    ? 'bg-amber-50 border-amber-200'
-                                    : 'bg-green-50 border-green-200'
-                            }`}>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                                    {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
-                                </p>
-                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                    <div>
-                                        <span className="font-bold text-gray-800 capitalize">{currentPackage.name}</span>
-                                        {currentPackage.expireDate && (
-                                            <span className={`ml-2 text-xs ${currentPackage.isExpired ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                                                {currentPackage.isExpired
-                                                    ? (locale === 'en' ? '● Expired' : '● মেয়াদ শেষ')
-                                                    : (locale === 'en' ? `Expires: ${new Date(currentPackage.expireDate).toLocaleDateString()}` : `মেয়াদ: ${new Date(currentPackage.expireDate).toLocaleDateString()}`)}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                        currentPackage.isExpired
-                                            ? 'bg-red-100 text-red-700'
-                                            : purchaseAction === 'upgrade'
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : purchaseAction === 'downgrade'
-                                            ? 'bg-amber-100 text-amber-700'
-                                            : 'bg-green-100 text-green-700'
-                                    }`}>
-                                        {purchaseAction === 'renew' && (locale === 'en' ? '↻ Renewing' : '↻ নবায়ন')}
-                                        {purchaseAction === 'upgrade' && (locale === 'en' ? '↑ Upgrading to' : '↑ আপগ্রেড')} {purchaseAction === 'upgrade' && <span className="capitalize ml-1">{pkg?.name}</span>}
-                                        {purchaseAction === 'downgrade' && (locale === 'en' ? '↓ Downgrading to' : '↓ ডাউনগ্রেড')} {purchaseAction === 'downgrade' && <span className="capitalize ml-1">{pkg?.name}</span>}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-4xl font-bold text-btcl-gray-900">
-                                {locale === 'en' ? 'Checkout' : 'চেকআউট'}
-                            </h2>
-                            <button
-                                onClick={onClose}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <CheckoutForm
-                            formData={formData}
-                            onFormChange={handleFormChange}
-                            selectedPayment={selectedPayment}
-                            onSelectPayment={handleSelectPayment}
-                            customerPrePaid={customerPrePaid}
-                        />
-                    </div>
-                    <div className="w-full md:w-[380px]">
-                        {/* Agent Quantity Selector for Contact Center */}
-                        {serviceType === 'contact-center' && (
-                            <div className="bg-white rounded-xl shadow-md p-6 mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                    {locale === 'en' ? 'Select Number of Agents' : 'এজেন্ট সংখ্যা নির্বাচন করুন'}
-                                </h3>
-                                <div className="flex items-center justify-center gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAgentCount(prev => Math.max(1, prev - 1))}
-                                        className="w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-2xl transition-colors flex items-center justify-center"
-                                    >
-                                        -
-                                    </button>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={agentCount}
-                                        onChange={(e) => setAgentCount(Math.max(1, parseInt(e.target.value) || 1))}
-                                        className="w-20 text-center text-2xl font-bold border border-gray-300 rounded-lg py-2"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setAgentCount(prev => prev + 1)}
-                                        className="w-12 h-12 rounded-full bg-[#00A651] hover:bg-[#008f44] text-white font-bold text-2xl transition-colors flex items-center justify-center"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                                <div className="mt-4 text-center">
-                                    <span className="text-gray-600">{locale === 'en' ? 'Price per agent:' : 'প্রতি এজেন্ট মূল্য:'} </span>
-                                    <span className="font-semibold">৳{pkg?.price?.toLocaleString() || 0}/month</span>
-                                </div>
-                            </div>
-                        )}
-                        <OrderSummary
-                            pkg={serviceType === 'contact-center' ? { ...pkg, quantity: agentCount, totalPrice: (pkg?.price || 0) * agentCount } : pkg}
-                            onCheckout={handleCheckout}
-                            loading={loading}
-                            serviceType={serviceType}
-                            locale={locale}
-                            purchaseAction={purchaseAction}
-                        />
-                    </div>
-                </Dialog.Panel>
+      <Dialog
+        open={isOpen}
+        onClose={() => {}}
+        className="relative z-50 font-bengali"
+      >
+        <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
+          <Dialog.Panel className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div
+              className={`px-6 py-8 text-center ${
+                purchaseAction === 'downgrade'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600'
+                  : 'bg-gradient-to-r from-[#00A651] to-[#004225]'
+              }`}
+            >
+              <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <svg
+                  className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : 'text-[#00A651]'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white">
+                {locale === 'en' ? 'Congratulations!' : 'অভিনন্দন!'}
+              </h2>
+              <p className="text-white/80 mt-2 font-medium">{actionLabel}</p>
             </div>
-        </Dialog>
+
+            <div className="px-6 py-6">
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                {isNew ? (
+                  /* First-time purchase: email notification */
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-7 h-7 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {locale === 'en'
+                          ? 'Check Your Email'
+                          : 'আপনার ইমেইল চেক করুন'}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {locale === 'en'
+                          ? 'Your login credentials have been sent to:'
+                          : 'আপনার লগইন তথ্য পাঠানো হয়েছে:'}
+                      </p>
+                      <p className="font-semibold text-blue-600 mt-1 break-all">
+                        {successEmail}
+                      </p>
+                    </div>
+                    <div className="w-full mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-left">
+                      <p className="text-xs text-amber-800">
+                        <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
+                        {locale === 'en'
+                          ? 'Please change your password after first login for security.'
+                          : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  /* Renew / Upgrade / Downgrade: package summary */
+                  <>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                      {locale === 'en' ? 'Plan Summary' : 'প্ল্যান সারসংক্ষেপ'}
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <span className="text-gray-600">
+                          {locale === 'en' ? 'Package' : 'প্যাকেজ'}
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          {purchasedPackageName}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <span className="text-gray-600">
+                          {locale === 'en' ? 'Action' : 'পদক্ষেপ'}
+                        </span>
+                        <span
+                          className={`font-semibold ${
+                            purchaseAction === 'upgrade'
+                              ? 'text-[#00A651]'
+                              : purchaseAction === 'downgrade'
+                                ? 'text-amber-600'
+                                : 'text-green-600'
+                          }`}
+                        >
+                          {actionLabel}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <span className="text-gray-600">
+                          {locale === 'en' ? 'Status' : 'স্ট্যাটাস'}
+                        </span>
+                        <span className="font-semibold text-green-600">
+                          {locale === 'en' ? 'Active' : 'সক্রিয়'}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Portal Link */}
+              <div className="mt-5">
+                <a
+                  href={portalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                >
+                  {portalLabel} →
+                </a>
+              </div>
+
+              {/* Close Button — manual only */}
+              <button
+                onClick={handleCloseSuccessPopup}
+                className="w-full mt-3 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
+              >
+                {locale === 'en' ? 'Close' : 'বন্ধ করুন'}
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     );
+  };
+
+  if (showSuccessPopup) {
+    const isCC = serviceType === 'contact-center';
+    return renderSuccessPopup(
+      isCC
+        ? locale === 'en'
+          ? 'Go to CC Portal'
+          : 'CC পোর্টালে যান'
+        : locale === 'en'
+          ? 'Go to PBX Portal'
+          : 'PBX পোর্টালে যান',
+      isCC
+        ? 'https://hcc.btcliptelephony.gov.bd/'
+        : 'https://hippbx.btcliptelephony.gov.bd:5174/'
+    );
+  }
+
+  if (showVbsSuccessPopup) {
+    return renderSuccessPopup(
+      locale === 'en' ? 'Go to VBS Portal' : 'VBS পোর্টালে যান',
+      'https://vbs.btcliptelephony.gov.bd/'
+    );
+  }
+
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      className="relative z-50 font-bengali"
+    >
+      <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
+
+      <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
+        <Dialog.Panel className="w-full max-w-5xl bg-white rounded-xl shadow-card p-8 flex flex-col md:flex-row gap-10 my-8">
+          <div className="flex-1">
+            {/* Current package banner */}
+            {!currentPackageLoading && currentPackage && (
+              <div
+                className={`mb-6 rounded-xl p-4 border ${
+                  currentPackage.isExpired
+                    ? 'bg-red-50 border-red-200'
+                    : purchaseAction === 'upgrade'
+                      ? 'bg-blue-50 border-blue-200'
+                      : purchaseAction === 'downgrade'
+                        ? 'bg-amber-50 border-amber-200'
+                        : 'bg-green-50 border-green-200'
+                }`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                  {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
+                </p>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <span className="font-bold text-gray-800 capitalize">
+                      {currentPackage.name}
+                    </span>
+                    {currentPackage.expireDate && (
+                      <span
+                        className={`ml-2 text-xs ${currentPackage.isExpired ? 'text-red-600 font-semibold' : 'text-gray-500'}`}
+                      >
+                        {currentPackage.isExpired
+                          ? locale === 'en'
+                            ? '● Expired'
+                            : '● মেয়াদ শেষ'
+                          : locale === 'en'
+                            ? `Expires: ${new Date(currentPackage.expireDate).toLocaleDateString()}`
+                            : `মেয়াদ: ${new Date(currentPackage.expireDate).toLocaleDateString()}`}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      currentPackage.isExpired
+                        ? 'bg-red-100 text-red-700'
+                        : purchaseAction === 'upgrade'
+                          ? 'bg-blue-100 text-blue-700'
+                          : purchaseAction === 'downgrade'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-green-100 text-green-700'
+                    }`}
+                  >
+                    {purchaseAction === 'renew' &&
+                      (locale === 'en' ? '↻ Renewing' : '↻ নবায়ন')}
+                    {purchaseAction === 'upgrade' &&
+                      (locale === 'en' ? '↑ Upgrading to' : '↑ আপগ্রেড')}{' '}
+                    {purchaseAction === 'upgrade' && (
+                      <span className="capitalize ml-1">{pkg?.name}</span>
+                    )}
+                    {purchaseAction === 'downgrade' &&
+                      (locale === 'en'
+                        ? '↓ Downgrading to'
+                        : '↓ ডাউনগ্রেড')}{' '}
+                    {purchaseAction === 'downgrade' && (
+                      <span className="capitalize ml-1">{pkg?.name}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-4xl font-bold text-btcl-gray-900">
+                {locale === 'en' ? 'Checkout' : 'চেকআউট'}
+              </h2>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <CheckoutForm
+              formData={formData}
+              onFormChange={handleFormChange}
+              selectedPayment={selectedPayment}
+              onSelectPayment={handleSelectPayment}
+              customerPrePaid={customerPrePaid}
+            />
+          </div>
+          <div className="w-full md:w-[380px]">
+            {/* Agent Quantity Selector for Contact Center */}
+            {serviceType === 'contact-center' && (
+              <div className="bg-white rounded-xl shadow-md p-6 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {locale === 'en'
+                    ? 'Select Number of Agents'
+                    : 'এজেন্ট সংখ্যা নির্বাচন করুন'}
+                </h3>
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAgentCount((prev) =>
+                        prev === '' ? 1 : Math.max(1, prev - 1)
+                      )
+                    }
+                    className="w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-2xl transition-colors flex items-center justify-center"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={agentCount === '' ? '' : agentCount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      if (value === '') {
+                        setAgentCount('');
+                      } else {
+                        const num = Number(value);
+                        if (!isNaN(num)) {
+                          setAgentCount(Math.max(1, num));
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      // Ensure it's never empty after user leaves input
+                      if (agentCount === '') {
+                        setAgentCount(1);
+                      }
+                    }}
+                    className="w-20 text-center text-2xl font-bold border border-gray-300 rounded-lg py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAgentCount((prev) => (prev === '' ? 1 : prev + 1))
+                    }
+                    className="w-12 h-12 rounded-full bg-[#00A651] hover:bg-[#008f44] text-white font-bold text-2xl transition-colors flex items-center justify-center"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="mt-4 text-center">
+                  <span className="text-gray-600">
+                    {locale === 'en'
+                      ? 'Price per agent:'
+                      : 'প্রতি এজেন্ট মূল্য:'}{' '}
+                  </span>
+                  <span className="font-semibold">
+                    ৳{pkg?.price?.toLocaleString() || 0}/month
+                  </span>
+                </div>
+              </div>
+            )}
+            <OrderSummary
+              pkg={
+                serviceType === 'contact-center'
+                  ? {
+                      ...pkg,
+                      quantity: agentCount === '' ? 1 : agentCount,
+                      totalPrice:
+                        (pkg?.price || 0) *
+                        (agentCount === '' ? 1 : agentCount),
+                    }
+                  : pkg
+              }
+              onCheckout={handleCheckout}
+              loading={loading}
+              serviceType={serviceType}
+              locale={locale}
+              purchaseAction={purchaseAction}
+            />
+          </div>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  );
 }

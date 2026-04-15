@@ -2,6 +2,14 @@
 
 import { Header } from '@/components/layout/Header';
 import {
+  API_ENDPOINTS,
+  buildApiUrl,
+  HCC_BASE_URL,
+  PBX_BASE_URL,
+  VBS_BASE_URL,
+} from '@/config/api';
+import { jwtDecode } from 'jwt-decode';
+import {
   CheckCircle,
   Download,
   ExternalLink,
@@ -16,8 +24,6 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import { API_ENDPOINTS, buildApiUrl, BULK_SMS_PORTAL_URL, PBX_BASE_URL, VBS_BASE_URL, HCC_BASE_URL } from '@/config/api';
 
 // Mock packages data
 const packages = [
@@ -371,14 +377,17 @@ export default function Dashboard() {
       const password = localStorage.getItem('userPassword') || '********';
 
       // Fetch partner details from API
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.partner.getPartner), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ idPartner }),
-      });
+      const response = await fetch(
+        buildApiUrl(API_ENDPOINTS.partner.getPartner),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ idPartner }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to fetch partner details');
@@ -426,7 +435,10 @@ export default function Dashboard() {
       );
 
       if (!response.ok) {
-        console.warn('Partner extra API returned non-OK status:', response.status);
+        console.warn(
+          'Partner extra API returned non-OK status:',
+          response.status
+        );
         return;
       }
 
@@ -444,9 +456,9 @@ export default function Dashboard() {
 
       // Define all three API endpoints to fetch from with service identifiers
       const apiConfigs = [
-        { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },   // https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST/package/getPurchaseForPartner
-        { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },   // https://hcc.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
-        { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },   // https://vbs.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
+        { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const }, // https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST/package/getPurchaseForPartner
+        { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const }, // https://hcc.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
+        { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const }, // https://vbs.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
       ];
 
       // Fetch from all three APIs in parallel
@@ -524,10 +536,18 @@ export default function Dashboard() {
             allPackageAccounts.push(...filteredAccounts);
           }
           // Use the latest purchase/expire dates
-          if (item.purchaseDate && (!latestPurchaseDate || new Date(item.purchaseDate) > new Date(latestPurchaseDate))) {
+          if (
+            item.purchaseDate &&
+            (!latestPurchaseDate ||
+              new Date(item.purchaseDate) > new Date(latestPurchaseDate))
+          ) {
             latestPurchaseDate = item.purchaseDate;
           }
-          if (item.expireDate && (!latestExpireDate || new Date(item.expireDate) > new Date(latestExpireDate))) {
+          if (
+            item.expireDate &&
+            (!latestExpireDate ||
+              new Date(item.expireDate) > new Date(latestExpireDate))
+          ) {
             latestExpireDate = item.expireDate;
           }
         });
@@ -583,7 +603,7 @@ export default function Dashboard() {
           body: JSON.stringify({
             page: 0,
             size: 20,
-            idPartner: partnerId
+            idPartner: partnerId,
           }),
         }).then(async (response) => {
           if (!response.ok) {
@@ -605,16 +625,26 @@ export default function Dashboard() {
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           const { service, data } = result.value;
-          const purchaseList = Array.isArray(data) ? data : (data.content || data.data || data.purchases || data.list || []);
+          const purchaseList = Array.isArray(data)
+            ? data
+            : data.content || data.data || data.purchases || data.list || [];
           // Filter out idPackage 9999 before checking
-          const filteredList = purchaseList.filter((p: PurchaseHistory) => p.idPackage !== 9999);
+          const filteredList = purchaseList.filter(
+            (p: PurchaseHistory) => p.idPackage !== 9999
+          );
           if (filteredList.length > 0) {
             historyByService[service] = true;
-            console.log(`Purchase history from ${service.toUpperCase()}:`, filteredList);
+            console.log(
+              `Purchase history from ${service.toUpperCase()}:`,
+              filteredList
+            );
             allPurchases.push(...filteredList);
           }
         } else {
-          console.warn(`Purchase history API ${index + 1} failed:`, result.reason);
+          console.warn(
+            `Purchase history API ${index + 1} failed:`,
+            result.reason
+          );
         }
       });
 
@@ -626,13 +656,16 @@ export default function Dashboard() {
         (purchase) => purchase.idPackage !== 9999
       );
 
-      const uniquePurchases = filteredPurchases.reduce((acc: PurchaseHistory[], current) => {
-        const exists = acc.find(item => item.id === current.id);
-        if (!exists) {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
+      const uniquePurchases = filteredPurchases.reduce(
+        (acc: PurchaseHistory[], current) => {
+          const exists = acc.find((item) => item.id === current.id);
+          if (!exists) {
+            acc.push(current);
+          }
+          return acc;
+        },
+        []
+      );
 
       // Sort by purchase date descending
       uniquePurchases.sort((a, b) => {
@@ -668,7 +701,7 @@ export default function Dashboard() {
       return new Date(dateStr).toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
       });
     };
 
@@ -677,7 +710,7 @@ export default function Dashboard() {
       return date.toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
       });
     };
 
@@ -740,19 +773,18 @@ export default function Dashboard() {
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
               <img src="${window.location.origin}/btcllogo.png" alt="BTCL Logo" style="height: 60px; width: auto;" onerror="this.style.display='none'" />
               <div style="text-align: right;">
-                <h1 style="margin: 0;">BTCL SMS Portal</h1>
                 <p style="margin: 0;">Bangladesh Telecommunications Company Limited</p>
               </div>
             </div>
             <div class="company-info">
               <div>
-                <p>Telesales Building, 37/E, Eskaton Garden</p>
-                <p>Dhaka-1000, Bangladesh</p>
-                <p>Phone: +880-2-4831115000</p>
+                <h2>BTCL Head Office</h2>
+                <p>37/E, Telejogajog Bhaban, Eskaton Garden, Dhaka</p>
+                <p>Telephone: +880248311500 (Office Time)</p>
+                <p>Email: md@btcl.gov.bd</p>
               </div>
               <div style="text-align: right;">
-                <p>Email: mdoffice@btcl.gov.bd</p>
-                <p>Website: www.btcl.gov.bd</p>
+                <h6 style="font-size: 14px; margin: 5px 0;">Website: www.btcl.gov.bd</h6>
               </div>
             </div>
           </div>
@@ -790,7 +822,7 @@ export default function Dashboard() {
                 <tr>
                   <td>
                     <strong>${pkgName}</strong><br>
-                    <span style="color: #888; font-size: 13px;">SMS Package Subscription</span>
+                    <span style="color: #888; font-size: 13px;">Package Subscription</span>
                   </td>
                   <td>${formatDate(purchaseDate)}</td>
                   <td>${formatDate(expireDate)}</td>
@@ -816,8 +848,10 @@ export default function Dashboard() {
           </div>
 
           <div class="footer">
-            <p><strong>Thank you for choosing BTCL SMS Portal!</strong></p>
-            <p>For any queries, please contact our support team at mdoffice@btcl.gov.bd</p>
+            <h5 style="font-size: 14px; margin: 5px 0;">Thank you for choosing BTCL!</h5>
+            <p>For any queries, please contact our support team at: </p>
+            <p>Phone:+880258312233 (Office Time) - Email: dgm.swmogbazar@btcl.gov.bd || noc@btcl.gov.bd</p>
+            <h5 style="font-size: 14px; margin: 5px 0;">BTCL Call Center: 16402</h5>
             <p style="margin-top: 10px; color: #999;">This is a computer-generated invoice and does not require a signature.</p>
           </div>
         </div>
@@ -859,7 +893,10 @@ export default function Dashboard() {
     }
 
     const activePackageAccount = packageData.packageAccounts[0];
-    const unit = activePackageAccount?.uom === 'OTH_ea' ? 'SMS' : activePackageAccount?.uom || 'SMS';
+    const unit =
+      activePackageAccount?.uom === 'OTH_ea'
+        ? 'SMS'
+        : activePackageAccount?.uom || 'SMS';
 
     return {
       packageName: activePackageAccount?.name ?? null,
@@ -1100,8 +1137,10 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="animate-spin h-12 w-12 text-[#067a3e]
- mx-auto mb-4" />
+          <Loader2
+            className="animate-spin h-12 w-12 text-[#067a3e]
+ mx-auto mb-4"
+          />
           <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
@@ -1191,11 +1230,10 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-[#067a3e] to-green-700 bg-clip-text text-transparent mb-2">
-            Welcome back, {displayUserData.firstName} {displayUserData.lastName}!
+            Welcome back, {displayUserData.firstName} {displayUserData.lastName}
+            !
           </h2>
-          <p className="text-gray-700">
-            Here's an overview of your account
-          </p>
+          <p className="text-gray-700">Here's an overview of your account</p>
         </div>
 
         {/* Account Status & Current Package */}
@@ -1246,7 +1284,9 @@ export default function Dashboard() {
 
           <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Current Packages</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Current Packages
+              </h3>
               <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-full">
                 <Package className="w-6 h-6 text-white" />
               </div>
@@ -1254,7 +1294,10 @@ export default function Dashboard() {
             {allPackages.length > 0 ? (
               <div className="space-y-2">
                 {allPackages.map((pkgName, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
+                  >
                     <span className="text-[#067a3e] font-bold">Package:</span>
                     <span className="font-bold text-[#067a3e] text-lg">
                       {pkgName}
@@ -1274,9 +1317,7 @@ export default function Dashboard() {
             <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
               <ExternalLink className="w-6 h-6 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">
-              Service Portals
-            </h3>
+            <h3 className="text-xl font-bold text-gray-900">Service Portals</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* PBX Portal */}
@@ -1288,13 +1329,27 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">Hosted PBX Portal</h4>
-                  <p className="text-sm text-gray-600">Access your PBX dashboard</p>
+                  <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
+                    Hosted PBX Portal
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Access your PBX dashboard
+                  </p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-blue-500 group-hover:text-blue-700 transition-colors" />
               </a>
@@ -1304,12 +1359,24 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">Hosted PBX</h4>
+                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
+                    Hosted PBX
+                  </h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
@@ -1322,13 +1389,27 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-blue-400 hover:bg-blue-50 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-blue-500 group-hover:to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-500 group-hover:text-blue-700 transition-colors">Hosted PBX</h4>
-                  <p className="text-sm text-gray-400 group-hover:text-gray-600">No active package</p>
+                  <h4 className="font-bold text-gray-500 group-hover:text-blue-700 transition-colors">
+                    Hosted PBX
+                  </h4>
+                  <p className="text-sm text-gray-400 group-hover:text-gray-600">
+                    No active package
+                  </p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm">
                   Buy Now
@@ -1345,13 +1426,27 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors">Contact Center Portal</h4>
-                  <p className="text-sm text-gray-600">Access your HCC dashboard</p>
+                  <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                    Contact Center Portal
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Access your HCC dashboard
+                  </p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" />
               </a>
@@ -1361,12 +1456,24 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">Contact Center</h4>
+                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
+                    Contact Center
+                  </h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
@@ -1379,13 +1486,27 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-purple-400 hover:bg-purple-50 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-purple-500 group-hover:to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-500 group-hover:text-purple-700 transition-colors">Contact Center</h4>
-                  <p className="text-sm text-gray-400 group-hover:text-gray-600">No active package</p>
+                  <h4 className="font-bold text-gray-500 group-hover:text-purple-700 transition-colors">
+                    Contact Center
+                  </h4>
+                  <p className="text-sm text-gray-400 group-hover:text-gray-600">
+                    No active package
+                  </p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-sm">
                   Buy Now
@@ -1402,13 +1523,27 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors">Voice Broadcast Portal</h4>
-                  <p className="text-sm text-gray-600">Access your VBS dashboard</p>
+                  <h4 className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors">
+                    Voice Broadcast Portal
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Access your VBS dashboard
+                  </p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-orange-500 group-hover:text-orange-700 transition-colors" />
               </a>
@@ -1418,12 +1553,24 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">Voice Broadcast</h4>
+                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
+                    Voice Broadcast
+                  </h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
@@ -1436,13 +1583,27 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-orange-400 hover:bg-orange-50 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-orange-500 group-hover:to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-500 group-hover:text-orange-700 transition-colors">Voice Broadcast</h4>
-                  <p className="text-sm text-gray-400 group-hover:text-gray-600">No active package</p>
+                  <h4 className="font-bold text-gray-500 group-hover:text-orange-700 transition-colors">
+                    Voice Broadcast
+                  </h4>
+                  <p className="text-sm text-gray-400 group-hover:text-gray-600">
+                    No active package
+                  </p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-full shadow-sm">
                   Buy Now
@@ -1456,8 +1617,18 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                className="w-6 h-6 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </div>
             <h3 className="text-xl font-bold text-gray-900">
@@ -1501,9 +1672,24 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900">
@@ -1515,7 +1701,9 @@ export default function Dashboard() {
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Address
                 </label>
-                <p className="text-gray-900 font-bold">{partnerExtra.address1}</p>
+                <p className="text-gray-900 font-bold">
+                  {partnerExtra.address1}
+                </p>
               </div>
 
               <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
@@ -1528,7 +1716,9 @@ export default function Dashboard() {
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Postal Code
                 </label>
-                <p className="text-gray-900 font-bold">{partnerExtra.postalCode}</p>
+                <p className="text-gray-900 font-bold">
+                  {partnerExtra.postalCode}
+                </p>
               </div>
               <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
@@ -1549,8 +1739,18 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900">
@@ -1694,7 +1894,8 @@ export default function Dashboard() {
                                   </svg>
                                 )}
                                 {/* NID Front/Back Icons - ID Card */}
-                                {(doc.type === 'nidfront' || doc.type === 'nidback') && (
+                                {(doc.type === 'nidfront' ||
+                                  doc.type === 'nidback') && (
                                   <svg
                                     className="w-5 h-5 text-white"
                                     fill="none"
@@ -1825,11 +2026,18 @@ export default function Dashboard() {
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() =>
-                                  doc.available && viewDocument(doc.type, `${doc.name}`)
+                                  doc.available &&
+                                  viewDocument(doc.type, `${doc.name}`)
                                 }
-                                disabled={!doc.available || viewingDoc === doc.type}
+                                disabled={
+                                  !doc.available || viewingDoc === doc.type
+                                }
                                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
-                                title={doc.available ? "View Document" : "Document not available"}
+                                title={
+                                  doc.available
+                                    ? 'View Document'
+                                    : 'Document not available'
+                                }
                               >
                                 {viewingDoc === doc.type ? (
                                   <>
@@ -1846,11 +2054,18 @@ export default function Dashboard() {
 
                               <button
                                 onClick={() =>
-                                  doc.available && downloadDocument(doc.type, `${doc.name}`)
+                                  doc.available &&
+                                  downloadDocument(doc.type, `${doc.name}`)
                                 }
-                                disabled={!doc.available || downloadingDoc === doc.type}
+                                disabled={
+                                  !doc.available || downloadingDoc === doc.type
+                                }
                                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#067a3e] bg-white hover:bg-green-50 border-2 border-[#067a3e] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
-                                title={doc.available ? "Download Document" : "Document not available"}
+                                title={
+                                  doc.available
+                                    ? 'Download Document'
+                                    : 'Document not available'
+                                }
                               >
                                 {downloadingDoc === doc.type ? (
                                   <>
@@ -1880,8 +2095,18 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                className="w-6 h-6 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
             </div>
             <h3 className="text-xl font-bold text-gray-900">Invoice History</h3>
@@ -1896,121 +2121,179 @@ export default function Dashboard() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Invoice ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Package</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Customer Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Purchase Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Package Expire Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Invoice Due Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Invoice ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Package
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Customer Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Purchase Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Package Expire Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Invoice Due Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {purchaseHistory
-                    .filter((purchase) => isPrepaid || purchase.packageName !== 'TopUp')
+                    .filter(
+                      (purchase) =>
+                        isPrepaid || purchase.packageName !== 'TopUp'
+                    )
                     .map((purchase, index) => {
-                    const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
-                    const pkgName = purchase.packageName || 'Package';
-                    const purchaseDate = purchase.purchaseDate;
-                    const expireDate = purchase.expireDate;
-                    const amount = purchase.price || 0;
-                    const vat = purchase.vat || 0;
-                    const total = amount + vat;
-                    const status = purchase.status || 'ACTIVE';
-                    const invoiceDueDate = getInvoiceDueDate(purchaseDate);
+                      const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
+                      const pkgName = purchase.packageName || 'Package';
+                      const purchaseDate = purchase.purchaseDate;
+                      const expireDate = purchase.expireDate;
+                      const amount = purchase.price || 0;
+                      const vat = purchase.vat || 0;
+                      const total = amount + vat;
+                      const status = purchase.status || 'ACTIVE';
+                      const invoiceDueDate = getInvoiceDueDate(purchaseDate);
 
-                    return (
-                      <tr key={purchase.id || index} className="hover:bg-gradient-to-r hover:from-green-50/80 hover:to-green-50/40 transition-all duration-200">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-mono font-medium text-[#067a3e]">{invoiceId}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">{pkgName}</p>
-                            {purchase.partnerName && (
-                              <p className="text-xs text-gray-500">{purchase.partnerName}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                            isPrepaid
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-purple-100 text-purple-700'
-                          }`}>
-                            {paymentType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-700">
-                            {purchaseDate ? new Date(purchaseDate).toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            }) : '-'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-700">
-                            {expireDate ? new Date(expireDate).toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            }) : '-'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-700">
-                            {invoiceDueDate ? invoiceDueDate.toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            }) : '-'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">৳{total.toLocaleString()}</p>
-                            {vat > 0 && (
-                              <p className="text-xs text-gray-500">incl. VAT ৳{vat.toLocaleString()}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span
-                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                              status === 'ACTIVE' || status === 'active'
-                                ? 'bg-green-100 text-green-700'
-                                : status === 'EXPIRED' || status === 'expired'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}
-                          >
-                            {status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <button
-                            onClick={() => handleDownloadInvoice(purchase)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                            title="Download Invoice"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                      return (
+                        <tr
+                          key={purchase.id || index}
+                          className="hover:bg-gradient-to-r hover:from-green-50/80 hover:to-green-50/40 transition-all duration-200"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-mono font-medium text-[#067a3e]">
+                              {invoiceId}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">
+                                {pkgName}
+                              </p>
+                              {purchase.partnerName && (
+                                <p className="text-xs text-gray-500">
+                                  {purchase.partnerName}
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                isPrepaid
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-purple-100 text-purple-700'
+                              }`}
+                            >
+                              {paymentType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm text-gray-700">
+                              {purchaseDate
+                                ? new Date(purchaseDate).toLocaleDateString(
+                                    'en-GB',
+                                    {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    }
+                                  )
+                                : '-'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm text-gray-700">
+                              {expireDate
+                                ? new Date(expireDate).toLocaleDateString(
+                                    'en-GB',
+                                    {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    }
+                                  )
+                                : '-'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm text-gray-700">
+                              {invoiceDueDate
+                                ? invoiceDueDate.toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : '-'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">
+                                ৳{total.toLocaleString()}
+                              </p>
+                              {vat > 0 && (
+                                <p className="text-xs text-gray-500">
+                                  incl. VAT ৳{vat.toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <span
+                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                status === 'ACTIVE' || status === 'active'
+                                  ? 'bg-green-100 text-green-700'
+                                  : status === 'EXPIRED' || status === 'expired'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-yellow-100 text-yellow-700'
+                              }`}
+                            >
+                              {status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <button
+                              onClick={() => handleDownloadInvoice(purchase)}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              title="Download Invoice"
+                            >
+                              <Download className="w-4 h-4" />
+                              Download
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
               <p className="text-lg font-medium mb-2">No invoices found</p>
               <p className="text-sm">Your purchase history will appear here</p>

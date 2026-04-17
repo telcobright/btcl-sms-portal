@@ -59,6 +59,7 @@ DEPLOY_ARCHIVE="deploy.tar.gz"
 tar --exclude='.next/cache' -czf $DEPLOY_ARCHIVE \
     .next \
     public \
+    prisma \
     package.json \
     package-lock.json \
     next.config.js
@@ -70,6 +71,13 @@ echo -e "\n${YELLOW}Step 3: Uploading to jump host...${NC}"
 sshpass -p "$JUMP_PASS" scp -P $JUMP_PORT -o StrictHostKeyChecking=no \
     $DEPLOY_ARCHIVE $JUMP_USER@$JUMP_HOST:/tmp/
 
+# Upload .env.production if it exists
+if [ -f ".env.production" ]; then
+    sshpass -p "$JUMP_PASS" scp -P $JUMP_PORT -o StrictHostKeyChecking=no \
+        .env.production $JUMP_USER@$JUMP_HOST:/tmp/btcl.env
+    echo -e "${GREEN}Env file uploaded!${NC}"
+fi
+
 echo -e "${GREEN}Upload complete!${NC}"
 
 # Step 4: Deploy to LXC container and start with PM2
@@ -79,16 +87,6 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
     $JUMP_USER@$JUMP_HOST << 'ENDSSH'
 
     echo "Connected to jump host"
-
-    # Stop and remove app from SoftSwitch if running
-    echo "Removing app from SoftSwitch..."
-    lxc exec SoftSwitch -- bash -c '
-        PM2_APP_NAME="btcl-portal"
-        pm2 delete $PM2_APP_NAME 2>/dev/null || true
-        pm2 save 2>/dev/null || true
-        rm -rf /var/www/btcl-sms-portal 2>/dev/null || true
-        echo "Cleaned up SoftSwitch"
-    ' 2>/dev/null || true
 
     # Copy archive to container
     lxc file push /tmp/deploy.tar.gz Services/tmp/deploy.tar.gz
@@ -119,9 +117,17 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
         cd $DEPLOY_PATH
         tar -xzf /tmp/deploy.tar.gz
 
+        # Deploy env file if uploaded
+        [ -f /tmp/btcl.env ] && cp /tmp/btcl.env $DEPLOY_PATH/.env && rm /tmp/btcl.env
+
         # Install production dependencies
         echo "Installing dependencies..."
         npm install --production --legacy-peer-deps
+
+        # Generate Prisma client for this platform (use project's prisma, not global)
+        echo "Generating Prisma client..."
+        npm install prisma@5 --no-save --silent
+        node_modules/.bin/prisma generate
 
         # Start with PM2
         echo "Starting application with PM2..."

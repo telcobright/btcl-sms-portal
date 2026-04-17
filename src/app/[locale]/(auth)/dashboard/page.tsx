@@ -2136,9 +2136,9 @@ export default function Dashboard() {
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <span
                               className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                                status === 'ACTIVE' || status === 'active'
+                                status === 'ACTIVE'
                                   ? 'bg-green-100 text-green-700'
-                                  : status === 'EXPIRED' || status === 'expired'
+                                  : status === 'EXPIRED'
                                     ? 'bg-red-100 text-red-700'
                                     : 'bg-yellow-100 text-yellow-700'
                               }`}

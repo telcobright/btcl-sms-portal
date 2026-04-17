@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 JUMP_HOST="114.130.145.75"
 JUMP_PORT="40001"
 JUMP_USER="telcobright"
-CONTAINER_NAME="SoftSwitch"
+CONTAINER_NAME="Services"
 DEPLOY_PATH="/var/www/btcl-sms-portal"
 APP_NAME="btcl-sms-portal"
 PM2_APP_NAME="btcl-portal"
@@ -80,17 +80,27 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
 
     echo "Connected to jump host"
 
+    # Stop and remove app from SoftSwitch if running
+    echo "Removing app from SoftSwitch..."
+    lxc exec SoftSwitch -- bash -c '
+        PM2_APP_NAME="btcl-portal"
+        pm2 delete $PM2_APP_NAME 2>/dev/null || true
+        pm2 save 2>/dev/null || true
+        rm -rf /var/www/btcl-sms-portal 2>/dev/null || true
+        echo "Cleaned up SoftSwitch"
+    ' 2>/dev/null || true
+
     # Copy archive to container
-    lxc file push /tmp/deploy.tar.gz SoftSwitch/tmp/
+    lxc file push /tmp/deploy.tar.gz Services/tmp/
 
     # Execute deployment inside container
-    lxc exec SoftSwitch -- bash -c '
+    lxc exec Services -- bash -c '
         set -e
 
         DEPLOY_PATH="/var/www/btcl-sms-portal"
         PM2_APP_NAME="btcl-portal"
 
-        echo "Inside container: SoftSwitch"
+        echo "Inside container: Services"
 
         # Create deploy directory if not exists
         mkdir -p $DEPLOY_PATH
@@ -129,8 +139,8 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
         pm2 status
     '
 
-    # Cleanup on jump host
-    rm /tmp/deploy.tar.gz
+    # Cleanup tmp on jump host
+    rm -f /tmp/deploy.tar.gz
 
     echo "Deployment complete!"
 ENDSSH

@@ -91,7 +91,7 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
     ' 2>/dev/null || true
 
     # Copy archive to container
-    lxc file push /tmp/deploy.tar.gz Services/tmp/
+    lxc file push /tmp/deploy.tar.gz Services/tmp/deploy.tar.gz
 
     # Execute deployment inside container
     lxc exec Services -- bash -c '

@@ -92,7 +92,6 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
         if (response.ok) {
           const data = await response.json()
-          console.log('Partner data:', data)
           // customerPrePaid: 1 = prepaid, 2 = postpaid
           if (data.customerPrePaid === 1) {
             setUserType('prepaid')
@@ -150,7 +149,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             if (historyRes.ok) {
               const historyData = await historyRes.json()
               const history = Array.isArray(historyData) ? historyData : (historyData?.content ?? historyData?.data ?? [])
-              const pastPurchase = history.find((p: any) => p.idPackage && p.idPackage !== 9999)
+              const pastPurchase = history
+                .filter((p: any) => p.idPackage && p.idPackage !== 9999)
+                .sort((a: any, b: any) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime())
+                [0]
               if (pastPurchase) {
                 return { service, slug: null, expiredSlug: packageIdToSlug[pastPurchase.idPackage] ?? null }
               }

@@ -154,10 +154,11 @@ interface PackageAccount {
   selected: boolean;
 }
 
-interface PurchaseForPartner {
+interface ServiceEntry {
+  valid: boolean;
+  packageName: string | null;
   purchaseDate: string | null;
   expireDate: string | null;
-  packageAccounts: PackageAccount[];
 }
 
 interface PurchaseHistory {
@@ -174,15 +175,6 @@ interface PurchaseHistory {
   status: string;
 }
 
-interface ActivePackageDetails {
-  packageName: string | null;
-  unit: string;
-  purchased: number | null;
-  used: number | null;
-  remaining: number | null;
-  purchaseDate: string | null;
-  expireDate: string | null;
-}
 
 // Image Viewer Modal Component
 const ImageViewerModal = ({
@@ -306,9 +298,11 @@ export default function Dashboard() {
   const [currentPackage, setCurrentPackage] = useState(packages[1]);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
-  const [purchaseForPartner, setPurchaseForPartner] =
-    useState<PurchaseForPartner | null>(null);
-  const [allPackages, setAllPackages] = useState<string[]>([]);
+  const [serviceData, setServiceData] = useState<Record<'pbx' | 'hcc' | 'vbs', ServiceEntry>>({
+    pbx: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+    hcc: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+    vbs: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+  });
   const [imageViewerData, setImageViewerData] = useState<{
     url: string;
     name: string;
@@ -317,11 +311,6 @@ export default function Dashboard() {
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
-  const [validPortals, setValidPortals] = useState<{
-    pbx: boolean;
-    hcc: boolean;
-    vbs: boolean;
-  }>({ pbx: false, hcc: false, vbs: false });
   const [serviceHistory, setServiceHistory] = useState<{
     pbx: boolean;
     hcc: boolean;
@@ -339,8 +328,6 @@ export default function Dashboard() {
     const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
     return nextMonth;
   };
-
-  console.log('purchaseForPartner', purchaseForPartner);
 
   useEffect(() => {
     // Access localStorage only on client side
@@ -454,14 +441,12 @@ export default function Dashboard() {
       const authToken = localStorage.getItem('authToken');
       const endpoint = API_ENDPOINTS.package.getPurchaseForPartner;
 
-      // Define all three API endpoints to fetch from with service identifiers
       const apiConfigs = [
-        { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const }, // https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST/package/getPurchaseForPartner
-        { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const }, // https://hcc.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
-        { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const }, // https://vbs.btcliptelephony.gov.bd/FREESWITCHREST/package/getPurchaseForPartner
+        { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },
+        { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },
+        { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },
       ];
 
-      // Fetch from all three APIs in parallel
       const fetchPromises = apiConfigs.map(({ url, service }) =>
         fetch(url, {
           method: 'POST',
@@ -471,109 +456,46 @@ export default function Dashboard() {
           },
           body: JSON.stringify({ idPartner: partnerId }),
         }).then(async (response) => {
-          if (!response.ok) {
-            throw new Error(`Failed to fetch from ${url}`);
-          }
+          if (!response.ok) throw new Error(`Failed to fetch from ${url}`);
           const data = await response.json();
           return { service, data };
         })
       );
 
-      // Use Promise.allSettled to get results from all APIs (even if some fail)
       const results = await Promise.allSettled(fetchPromises);
 
-      // Track which services have valid purchases
-      const portalsWithValidPurchase = { pbx: false, hcc: false, vbs: false };
+      const updated: Record<'pbx' | 'hcc' | 'vbs', ServiceEntry> = {
+        pbx: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+        hcc: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+        vbs: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+      };
 
-      // Combine all successful results
-      const allData: any[] = [];
-      const now = Date.now();
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          const { service, data } = result.value;
-          if (Array.isArray(data) && data.length > 0) {
-            // A portal is "valid" if it has either:
-            //   (a) a populated packageAccount (excluding sentinel packageId 9999), OR
-            //   (b) an ACTIVE purchase whose expireDate is in the future (idPackage != 9999)
-            const hasValidPackages = data.some((item: any) => {
-              if (item.idPackage === 9999) return false;
-              const hasActiveAccount =
-                item.packageAccounts &&
-                Array.isArray(item.packageAccounts) &&
-                item.packageAccounts.some((pkg: any) => pkg.packageId !== 9999);
-              if (hasActiveAccount) return true;
-              const status = item.status?.toUpperCase?.();
-              const expireDate = item.expireDate || item.expire_date;
-              if (status !== 'ACTIVE') return false;
-              return !expireDate || new Date(expireDate).getTime() >= now;
-            });
-            if (hasValidPackages) {
-              portalsWithValidPurchase[service] = true;
-            }
-            console.log(`Data from ${service.toUpperCase()}:`, data);
-            allData.push(...data);
-          }
-        } else if (result.status === 'rejected') {
-          console.warn(`API ${index + 1} failed:`, result.reason);
-        }
+      results.forEach((result) => {
+        if (result.status !== 'fulfilled') return;
+        const { service, data } = result.value;
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        // Find first active non-sentinel purchase
+        const activeItem = data.find(
+          (item: any) => item.idPackage !== 9999 && item.status?.toUpperCase() === 'ACTIVE'
+        );
+        if (!activeItem) return;
+
+        // Get package name from first non-sentinel account
+        const packageName =
+          activeItem.packageAccounts
+            ?.filter((a: any) => a.packageId !== 9999)
+            ?.[0]?.name ?? null;
+
+        updated[service] = {
+          valid: true,
+          packageName,
+          purchaseDate: activeItem.purchaseDate ?? null,
+          expireDate: activeItem.expireDate ?? null,
+        };
       });
 
-      // Update valid portals state
-      setValidPortals(portalsWithValidPurchase);
-
-      if (allData.length > 0) {
-        // Combine all packageAccounts from all sources, filtering out idPackage 9999
-        const allPackageAccounts: PackageAccount[] = [];
-        let latestPurchaseDate: string | null = null;
-        let latestExpireDate: string | null = null;
-
-        allData.forEach((item: any) => {
-          if (item.packageAccounts && Array.isArray(item.packageAccounts)) {
-            // Filter out packages with packageId 9999
-            const filteredAccounts = item.packageAccounts.filter(
-              (account: PackageAccount) => account.packageId !== 9999
-            );
-            allPackageAccounts.push(...filteredAccounts);
-          }
-          // Use the latest purchase/expire dates
-          if (
-            item.purchaseDate &&
-            (!latestPurchaseDate ||
-              new Date(item.purchaseDate) > new Date(latestPurchaseDate))
-          ) {
-            latestPurchaseDate = item.purchaseDate;
-          }
-          if (
-            item.expireDate &&
-            (!latestExpireDate ||
-              new Date(item.expireDate) > new Date(latestExpireDate))
-          ) {
-            latestExpireDate = item.expireDate;
-          }
-        });
-
-        setPurchaseForPartner({
-          packageAccounts: allPackageAccounts,
-          purchaseDate: latestPurchaseDate,
-          expireDate: latestExpireDate,
-        });
-
-        // Extract all unique package names from combined data
-        const packageNames: string[] = [];
-        allPackageAccounts.forEach((account: PackageAccount) => {
-          if (account.name && !packageNames.includes(account.name)) {
-            packageNames.push(account.name);
-          }
-        });
-        setAllPackages(packageNames);
-      } else {
-        setPurchaseForPartner({
-          packageAccounts: [],
-          purchaseDate: null,
-          expireDate: null,
-        });
-        setAllPackages([]);
-      }
+      setServiceData(updated);
     } catch (err) {
       console.error('Error fetching purchase data:', err);
     }
@@ -634,10 +556,6 @@ export default function Dashboard() {
           );
           if (filteredList.length > 0) {
             historyByService[service] = true;
-            console.log(
-              `Purchase history from ${service.toUpperCase()}:`,
-              filteredList
-            );
             allPurchases.push(...filteredList);
           }
         } else {
@@ -651,12 +569,8 @@ export default function Dashboard() {
       // Update service history state
       setServiceHistory(historyByService);
 
-      // Filter out idPackage 9999, remove duplicates by id, and sort
-      const filteredPurchases = allPurchases.filter(
-        (purchase) => purchase.idPackage !== 9999
-      );
-
-      const uniquePurchases = filteredPurchases.reduce(
+      // Remove duplicates by id and sort
+      const uniquePurchases = allPurchases.reduce(
         (acc: PurchaseHistory[], current) => {
           const exists = acc.find((item) => item.id === current.id);
           if (!exists) {
@@ -693,7 +607,9 @@ export default function Dashboard() {
     const vat = purchase.vat || 0;
     const ait = purchase.ait || 0;
     const total = amount + vat + ait;
-    const status = purchase.status || 'ACTIVE';
+    const status = purchase.expireDate && new Date(purchase.expireDate) < new Date()
+      ? 'EXPIRED'
+      : 'ACTIVE';
     const invoiceDueDate = getInvoiceDueDate(purchaseDate);
 
     const formatDate = (dateStr: string | null) => {
@@ -873,43 +789,7 @@ export default function Dashboard() {
     }
   };
 
-  const activePackageInfo = (
-    packageData: PurchaseForPartner | null
-  ): ActivePackageDetails => {
-    if (
-      !packageData ||
-      !packageData.packageAccounts ||
-      packageData.packageAccounts.length === 0
-    ) {
-      return {
-        packageName: null,
-        unit: 'SMS',
-        purchased: null,
-        used: null,
-        remaining: null,
-        purchaseDate: null,
-        expireDate: null,
-      };
-    }
 
-    const activePackageAccount = packageData.packageAccounts[0];
-    const unit =
-      activePackageAccount?.uom === 'OTH_ea'
-        ? 'SMS'
-        : activePackageAccount?.uom || 'SMS';
-
-    return {
-      packageName: activePackageAccount?.name ?? null,
-      unit: unit,
-      purchased: activePackageAccount?.quantity ?? null,
-      used: activePackageAccount
-        ? activePackageAccount.quantity - activePackageAccount.balanceAfter
-        : null,
-      remaining: activePackageAccount?.balanceAfter ?? null,
-      purchaseDate: packageData.purchaseDate ?? null,
-      expireDate: packageData.expireDate ?? null,
-    };
-  };
 
   const detectFileType = async (blob: Blob): Promise<string> => {
     const buffer = await blob.slice(0, 12).arrayBuffer();
@@ -1206,8 +1086,6 @@ export default function Dashboard() {
     },
   ];
 
-  const packageDetails = activePackageInfo(purchaseForPartner);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30">
       <Header />
@@ -1291,19 +1169,21 @@ export default function Dashboard() {
                 <Package className="w-6 h-6 text-white" />
               </div>
             </div>
-            {allPackages.length > 0 ? (
+            {(Object.entries(serviceData) as [string, ServiceEntry][]).some(([, s]) => s.valid) ? (
               <div className="space-y-2">
-                {allPackages.map((pkgName, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
-                  >
-                    <span className="text-[#067a3e] font-bold">Package:</span>
-                    <span className="font-bold text-[#067a3e] text-lg">
-                      {pkgName}
-                    </span>
-                  </div>
-                ))}
+                {(Object.entries(serviceData) as [string, ServiceEntry][])
+                  .filter(([, s]) => s.valid)
+                  .map(([service, s]) => (
+                    <div
+                      key={service}
+                      className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
+                    >
+                      <span className="text-[#067a3e] font-bold">Package:</span>
+                      <span className="font-bold text-[#067a3e] text-lg">
+                        {s.packageName ?? service.toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
               </div>
             ) : (
               <p className="text-gray-500 text-sm">No active package found</p>
@@ -1321,7 +1201,7 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* PBX Portal */}
-            {validPortals.pbx ? (
+            {serviceData.pbx.valid ? (
               <a
                 href="https://hippbx.btcliptelephony.gov.bd:5174/"
                 target="_blank"
@@ -1418,7 +1298,7 @@ export default function Dashboard() {
             )}
 
             {/* HCC Portal */}
-            {validPortals.hcc ? (
+            {serviceData.hcc.valid ? (
               <a
                 href={`https://hcc.btcliptelephony.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
                 target="_blank"
@@ -1515,7 +1395,7 @@ export default function Dashboard() {
             )}
 
             {/* VBS Portal */}
-            {validPortals.vbs ? (
+            {serviceData.vbs.valid ? (
               <a
                 href="https://vbs.btcliptelephony.gov.bd/"
                 target="_blank"
@@ -2164,7 +2044,9 @@ export default function Dashboard() {
                       const amount = purchase.price || 0;
                       const vat = purchase.vat || 0;
                       const total = amount + vat;
-                      const status = purchase.status || 'ACTIVE';
+                      const status = purchase.expireDate && new Date(purchase.expireDate) < new Date()
+      ? 'EXPIRED'
+      : 'ACTIVE';
                       const invoiceDueDate = getInvoiceDueDate(purchaseDate);
 
                       return (

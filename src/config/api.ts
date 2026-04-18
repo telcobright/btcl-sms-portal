@@ -70,6 +70,7 @@ export const API_ENDPOINTS = {
   },
 
   // Password reset
+  sendResetOtp: '/auth/send-reset-otp',
   passwordReset: '/auth/reset-password',
 
   // Authentication endpoints

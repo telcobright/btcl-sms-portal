@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
     const [error, setError] = useState('')
     const [resendCooldown, setResendCooldown] = useState(0)
 
-    // ── Step 1: send OTP ──────────────────────────────────────────────────────
+    // ── Step 1: send OTP (checks registration first) ─────────────────────────
     const handleSendOtp = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
@@ -34,8 +34,8 @@ export default function ForgotPasswordPage() {
 
         try {
             const { data } = await axios.post(
-                `${API_BASE_URL}${API_ENDPOINTS.emailOtp.send}`,
-                { email: email.trim().toLowerCase(), purpose: 'password_reset' }
+                `${API_BASE_URL}${API_ENDPOINTS.sendResetOtp}`,
+                { email: email.trim().toLowerCase() }
             )
 
             if (data.success) {
@@ -61,8 +61,8 @@ export default function ForgotPasswordPage() {
 
         try {
             const { data, status } = await axios.post(
-                `${API_BASE_URL}${API_ENDPOINTS.emailOtp.send}`,
-                { email: email.trim().toLowerCase(), purpose: 'password_reset' }
+                `${API_BASE_URL}${API_ENDPOINTS.sendResetOtp}`,
+                { email: email.trim().toLowerCase() }
             )
 
             if (data.success) {

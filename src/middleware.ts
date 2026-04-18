@@ -8,7 +8,7 @@ const intlMiddleware = createMiddleware({
 
 const PROTECTED = ['/dashboard', '/admin'];
 
-export default function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Handle POST requests to /pg/success (payment gateway callback)

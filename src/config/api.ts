@@ -87,6 +87,9 @@ export const API_ENDPOINTS = {
     getPartner: '/partner/get-partner',
     getPartnerExtra: '/partner/get-partner-extra',
     getPartnerDocument: '/partner/get-partner-document',
+    getDocumentStatuses: '/partner/get-document-statuses',
+    updateDocumentStatus: '/partner/update-document-status',
+    checkPurchaseEligibility: '/partner/check-purchase-eligibility',
   },
 
   // NID endpoints

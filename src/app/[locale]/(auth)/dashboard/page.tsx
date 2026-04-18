@@ -316,6 +316,8 @@ export default function Dashboard() {
     hcc: boolean;
     vbs: boolean;
   }>({ pbx: false, hcc: false, vbs: false });
+  const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
+  const [purchaseBlocked, setPurchaseBlocked] = useState(false);
 
   // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
   const isPrepaid = partnerData?.customerPrePaid === 1;
@@ -397,11 +399,42 @@ export default function Dashboard() {
 
       // Fetch additional partner extra information
       await fetchPartnerExtra(idPartner);
+      await fetchDocStatuses(idPartner);
     } catch (err) {
       console.error('Error fetching user data:', err);
       setError('Failed to load user data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
+
+  const handleBuyNow = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (purchaseBlocked) {
+      e.preventDefault();
+      alert('Your package purchase is restricted because one or more major documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please contact support.');
+    }
+  };
+
+  const fetchDocStatuses = async (partnerId: number) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.partner.getDocumentStatuses), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ id: partnerId }),
+      });
+      if (!res.ok) return;
+      const data: Record<string, { status: string; rejectionReason: string }> = await res.json();
+      setDocStatuses(data);
+      // Check if any major doc is REJECTED
+      const blocked = Object.entries(data).some(
+        ([docType, info]) => MAJOR_DOCS.has(docType) && info.status === 'REJECTED'
+      );
+      setPurchaseBlocked(blocked);
+    } catch (err) {
+      console.warn('Failed to load document statuses:', err);
     }
   };
 
@@ -1199,6 +1232,19 @@ export default function Dashboard() {
             </div>
             <h3 className="text-xl font-bold text-gray-900">Service Portals</h3>
           </div>
+          {purchaseBlocked && (
+            <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-red-700">Package purchase is currently restricted</p>
+                <p className="text-xs text-red-600 mt-0.5">
+                  One or more of your major documents (NID Front, NID Back, Trade License, or TIN) have been rejected by admin. Please contact support to resolve the issue before purchasing a package.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* PBX Portal */}
             {serviceData.pbx.valid ? (
@@ -1236,6 +1282,7 @@ export default function Dashboard() {
             ) : serviceHistory.pbx ? (
               <a
                 href="/en/pricing"
+                onClick={handleBuyNow}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
@@ -1266,6 +1313,7 @@ export default function Dashboard() {
             ) : (
               <a
                 href="/en/pricing"
+                onClick={handleBuyNow}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-blue-400 hover:bg-blue-50 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-blue-500 group-hover:to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
@@ -1333,6 +1381,7 @@ export default function Dashboard() {
             ) : serviceHistory.hcc ? (
               <a
                 href="/en/pricing"
+                onClick={handleBuyNow}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
@@ -1363,6 +1412,7 @@ export default function Dashboard() {
             ) : (
               <a
                 href="/en/pricing"
+                onClick={handleBuyNow}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-purple-400 hover:bg-purple-50 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-purple-500 group-hover:to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
@@ -1430,6 +1480,7 @@ export default function Dashboard() {
             ) : serviceHistory.vbs ? (
               <a
                 href="/en/pricing"
+                onClick={handleBuyNow}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
@@ -1460,6 +1511,7 @@ export default function Dashboard() {
             ) : (
               <a
                 href="/en/pricing"
+                onClick={handleBuyNow}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-orange-400 hover:bg-orange-50 hover:shadow-lg transition-all group"
               >
                 <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-orange-500 group-hover:to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
@@ -1888,17 +1940,41 @@ export default function Dashboard() {
 
                           {/* Status */}
                           <td className="px-6 py-4 whitespace-nowrap text-center">
-                            {doc.available ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-100 to-emerald-100 text-[#067a3e] border border-green-200 shadow-sm">
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                Verified
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-red-100 to-orange-100 text-red-600 border border-red-200 shadow-sm">
+                            {!doc.available ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200 shadow-sm">
                                 <XCircle className="w-3.5 h-3.5" />
-                                Unverified
+                                Not Uploaded
                               </span>
-                            )}
+                            ) : (() => {
+                              const st = docStatuses[doc.type]?.status || 'PENDING';
+                              if (st === 'APPROVED') return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-100 to-emerald-100 text-[#067a3e] border border-green-200 shadow-sm">
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  Approved
+                                </span>
+                              );
+                              if (st === 'REJECTED') return (
+                                <div>
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-red-100 to-orange-100 text-red-600 border border-red-200 shadow-sm">
+                                    <XCircle className="w-3.5 h-3.5" />
+                                    Rejected
+                                  </span>
+                                  {docStatuses[doc.type]?.rejectionReason && (
+                                    <p className="text-[10px] text-red-500 mt-1 max-w-[160px] mx-auto">
+                                      {docStatuses[doc.type].rejectionReason}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200 shadow-sm">
+                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                  </svg>
+                                  Pending Review
+                                </span>
+                              );
+                            })()}
                           </td>
 
                           {/* Actions */}

@@ -43,6 +43,8 @@ export default function PartnerDetailsPage() {
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
   const [imageViewerData, setImageViewerData] = useState<{ url: string; name: string } | null>(null);
   const [pdfViewerData, setPdfViewerData] = useState<{ url: string; name: string } | null>(null);
+  const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
+  const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -54,13 +56,18 @@ export default function PartnerDetailsPage() {
       }
 
       // Fetch all data in parallel
-      const [partnerData, usersData, purchasesData, documentsData, serviceStatusData] =
+      const [partnerData, usersData, purchasesData, documentsData, serviceStatusData, docStatusesRes] =
         await Promise.all([
           getPartnerById(partnerId, authToken),
           getUsersByPartner(partnerId, authToken),
           getPurchasesByPartner(partnerId, authToken),
           getDocumentsByPartner(partnerId, authToken),
           getServiceStatus(partnerId, authToken),
+          fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ id: partnerId }),
+          }).then((r) => r.json()).catch(() => ({})),
         ]);
 
       setPartner(partnerData);
@@ -69,6 +76,7 @@ export default function PartnerDetailsPage() {
       setPurchases(Array.isArray(purchasesData) ? purchasesData : []);
       setDocuments(Array.isArray(documentsData) ? documentsData : []);
       setServiceStatus(serviceStatusData);
+      setDocStatuses(docStatusesRes || {});
 
       // Derive subscriptions from serviceStatus (combine all active purchases from all services)
       const allSubscriptions = [
@@ -233,6 +241,28 @@ export default function PartnerDetailsPage() {
     }
   };
 
+  const updateDocStatus = async (docType: string, status: string, rejectionReason: string) => {
+    try {
+      setUpdatingDocStatus(docType);
+      const authToken = localStorage.getItem('authToken');
+      const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.updateDocumentStatus}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ partnerId, documentType: docType, status, rejectionReason }),
+      });
+      if (res.ok) {
+        setDocStatuses((prev) => ({
+          ...prev,
+          [docType]: { status, rejectionReason: status === 'APPROVED' ? '' : rejectionReason },
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to update document status:', err);
+    } finally {
+      setUpdatingDocStatus(null);
+    }
+  };
+
   // Count available documents
   const availableDocumentsCount = documents.filter((d) => d.available).length;
 
@@ -382,6 +412,9 @@ export default function PartnerDetailsPage() {
             downloadDocument={downloadDocument}
             viewingDoc={viewingDoc}
             downloadingDoc={downloadingDoc}
+            docStatuses={docStatuses}
+            onUpdateStatus={updateDocStatus}
+            updatingDocStatus={updatingDocStatus}
           />
         )}
       </div>
@@ -844,15 +877,32 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: Subscri
 }
 
 // Documents Tab Component
+const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
+
 interface DocumentsTabProps {
   documents: PartnerDocument[];
   viewDocument: (documentType: string, documentName: string) => Promise<void>;
   downloadDocument: (documentType: string, documentName: string) => Promise<void>;
   viewingDoc: string | null;
   downloadingDoc: string | null;
+  docStatuses: Record<string, { status: string; rejectionReason: string }>;
+  onUpdateStatus: (docType: string, status: string, rejectionReason: string) => Promise<void>;
+  updatingDocStatus: string | null;
 }
 
-function DocumentsTab({ documents, viewDocument, downloadDocument, viewingDoc, downloadingDoc }: DocumentsTabProps) {
+function DocumentsTab({
+  documents,
+  viewDocument,
+  downloadDocument,
+  viewingDoc,
+  downloadingDoc,
+  docStatuses,
+  onUpdateStatus,
+  updatingDocStatus,
+}: DocumentsTabProps) {
+  const [rejectingDoc, setRejectingDoc] = useState<string | null>(null);
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
+
   const availableDocs = documents.filter((doc) => doc.available);
   const unavailableDocs = documents.filter((doc) => !doc.available);
 
@@ -880,6 +930,58 @@ function DocumentsTab({ documents, viewDocument, downloadDocument, viewingDoc, d
     }
   };
 
+  const getStatusBadge = (docType: string) => {
+    const statusInfo = docStatuses[docType];
+    const status = statusInfo?.status || 'PENDING';
+    switch (status) {
+      case 'APPROVED':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            Approved
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            Rejected
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+            </svg>
+            Pending
+          </span>
+        );
+    }
+  };
+
+  const handleApprove = async (docType: string) => {
+    setRejectingDoc(null);
+    await onUpdateStatus(docType, 'APPROVED', '');
+  };
+
+  const handleRejectSubmit = async (docType: string) => {
+    const reason = rejectionReasons[docType] || '';
+    await onUpdateStatus(docType, 'REJECTED', reason);
+    setRejectingDoc(null);
+  };
+
+  const borderColorByStatus = (docType: string) => {
+    const status = docStatuses[docType]?.status || 'PENDING';
+    if (status === 'APPROVED') return 'border-green-200 bg-green-50';
+    if (status === 'REJECTED') return 'border-red-200 bg-red-50';
+    return 'border-yellow-200 bg-yellow-50';
+  };
+
   return (
     <div className="p-6">
       {/* Available Documents */}
@@ -891,70 +993,156 @@ function DocumentsTab({ documents, viewDocument, downloadDocument, viewingDoc, d
           <p className="text-gray-500 text-sm">No documents uploaded yet</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {availableDocs.map((doc) => (
-              <div
-                key={doc.type}
-                className="border border-green-200 bg-green-50 rounded-lg p-4"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-2xl">{getDocTypeIcon(doc.type)}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+            {availableDocs.map((doc) => {
+              const currentStatus = docStatuses[doc.type]?.status || 'PENDING';
+              const rejectionReason = docStatuses[doc.type]?.rejectionReason || '';
+              const isUpdating = updatingDocStatus === doc.type;
+              const isRejecting = rejectingDoc === doc.type;
+
+              return (
+                <div
+                  key={doc.type}
+                  className={`border rounded-lg p-4 ${borderColorByStatus(doc.type)}`}
+                >
+                  {/* Header row */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-2xl">{getDocTypeIcon(doc.type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                        {MAJOR_DOCS.has(doc.type) && (
+                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded bg-orange-100 text-orange-700 uppercase tracking-wide">
+                            Major
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {getStatusBadge(doc.type)}
                   </div>
-                  <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                    Uploaded
-                  </span>
-                </div>
-                {/* View & Download Buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => viewDocument(doc.type, doc.name)}
-                    disabled={viewingDoc === doc.type}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#00A651] hover:bg-[#008040] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {viewingDoc === doc.type ? (
-                      <>
-                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        View
-                      </>
+
+                  {/* Rejection reason (when rejected) */}
+                  {currentStatus === 'REJECTED' && rejectionReason && !isRejecting && (
+                    <p className="text-xs text-red-600 mb-3 bg-red-100 rounded px-2 py-1">
+                      <span className="font-semibold">Reason:</span> {rejectionReason}
+                    </p>
+                  )}
+
+                  {/* Reject reason input form */}
+                  {isRejecting && (
+                    <div className="mb-3">
+                      <textarea
+                        className="w-full text-xs border border-red-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-400 resize-none"
+                        rows={2}
+                        placeholder="Enter rejection reason..."
+                        value={rejectionReasons[doc.type] || ''}
+                        onChange={(e) =>
+                          setRejectionReasons((prev) => ({ ...prev, [doc.type]: e.target.value }))
+                        }
+                      />
+                      <div className="flex gap-2 mt-1">
+                        <button
+                          onClick={() => handleRejectSubmit(doc.type)}
+                          disabled={isUpdating}
+                          className="flex-1 text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {isUpdating ? 'Saving...' : 'Confirm Reject'}
+                        </button>
+                        <button
+                          onClick={() => setRejectingDoc(null)}
+                          className="flex-1 text-xs px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2">
+                    {/* View */}
+                    <button
+                      onClick={() => viewDocument(doc.type, doc.name)}
+                      disabled={viewingDoc === doc.type}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#00A651] hover:bg-[#008040] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {viewingDoc === doc.type ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          View
+                        </>
+                      )}
+                    </button>
+                    {/* Download */}
+                    <button
+                      onClick={() => downloadDocument(doc.type, doc.name)}
+                      disabled={downloadingDoc === doc.type}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#00A651] bg-white hover:bg-green-50 border-2 border-[#00A651] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {downloadingDoc === doc.type ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download
+                        </>
+                      )}
+                    </button>
+                    {/* Approve */}
+                    {!isRejecting && (
+                      <button
+                        onClick={() => handleApprove(doc.type)}
+                        disabled={isUpdating || currentStatus === 'APPROVED'}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUpdating && currentStatus !== 'REJECTED' ? (
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        Approve
+                      </button>
                     )}
-                  </button>
-                  <button
-                    onClick={() => downloadDocument(doc.type, doc.name)}
-                    disabled={downloadingDoc === doc.type}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#00A651] bg-white hover:bg-green-50 border-2 border-[#00A651] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {downloadingDoc === doc.type ? (
-                      <>
-                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    {/* Reject */}
+                    {!isRejecting && (
+                      <button
+                        onClick={() => setRejectingDoc(doc.type)}
+                        disabled={isUpdating || currentStatus === 'REJECTED'}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
-                        Downloading...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download
-                      </>
+                        Reject
+                      </button>
                     )}
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

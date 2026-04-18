@@ -69,6 +69,9 @@ export const API_ENDPOINTS = {
     verify: '/otp/email/verify',
   },
 
+  // Password reset
+  passwordReset: '/auth/reset-password',
+
   // Authentication endpoints
   auth: {
     login: '/auth/login',

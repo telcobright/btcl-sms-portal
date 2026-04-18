@@ -408,12 +408,18 @@ export default function LoginPage() {
                                     autoComplete="current-password"
                                 />
 
-                                <div className="text-sm text-center">
+                                <div className="flex items-center justify-between text-sm">
                                     <Link
                                         href={`/${locale}/register`}
                                         className="text-blue-600 hover:underline"
                                     >
                                         Don't have an account? Register here
+                                    </Link>
+                                    <Link
+                                        href={`/${locale}/forgot-password`}
+                                        className="text-btcl-primary hover:underline"
+                                    >
+                                        Forgot password?
                                     </Link>
                                 </div>
 

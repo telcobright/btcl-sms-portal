@@ -1,5 +1,4 @@
 import createMiddleware from 'next-intl/middleware';
-import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
 const intlMiddleware = createMiddleware({
@@ -9,8 +8,7 @@ const intlMiddleware = createMiddleware({
 
 const PROTECTED = ['/dashboard', '/admin'];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function middleware(request: NextRequest): Promise<any> {
+export default function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Handle POST requests to /pg/success (payment gateway callback)
@@ -56,8 +54,8 @@ export default async function middleware(request: NextRequest): Promise<any> {
   // Protect dashboard and admin routes — redirect unauthenticated users to login
   const isProtected = PROTECTED.some(p => pathname.match(new RegExp(`^/(en|bn)${p}`)));
   if (isProtected) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-    if (!token) {
+    const authCookie = request.cookies.get('btcl_auth');
+    if (!authCookie?.value) {
       const locale = pathname.startsWith('/bn') ? 'bn' : 'en';
       const loginUrl = new URL(`/${locale}/login`, request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);

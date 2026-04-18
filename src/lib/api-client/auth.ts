@@ -122,6 +122,8 @@ export const setAuthToken = (token: string) => {
     if (typeof window !== 'undefined') {
         localStorage.setItem('authToken', token);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Set cookie so middleware can verify auth server-side
+        document.cookie = `btcl_auth=1; path=/; SameSite=Lax; max-age=${60 * 60 * 24 * 7}`;
     }
 };
 
@@ -136,6 +138,7 @@ export const removeAuthToken = () => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('authToken');
         delete axios.defaults.headers.common['Authorization'];
+        document.cookie = 'btcl_auth=; path=/; max-age=0';
     }
 };
 

@@ -1,15 +1,12 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 const intlMiddleware = createMiddleware({
   locales: ['en', 'bn'],
   defaultLocale: 'en'
 });
 
-const protectedPaths = ['/dashboard', '/admin'];
-
-export default async function middleware(request: NextRequest) {
+export default function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Handle POST requests to /pg/success (payment gateway callback)
@@ -50,21 +47,6 @@ export default async function middleware(request: NextRequest) {
   // Skip next-intl for /pg routes (payment callback pages)
   if (pathname.startsWith('/pg')) {
     return NextResponse.next();
-  }
-
-  // Protect dashboard and admin routes
-  const isProtected = protectedPaths.some(p =>
-    pathname.match(new RegExp(`^/(en|bn)${p}`))
-  );
-
-  if (isProtected) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-    if (!token) {
-      const locale = pathname.startsWith('/bn') ? 'bn' : 'en';
-      const loginUrl = new URL(`/${locale}/login`, request.url);
-      loginUrl.searchParams.set('callbackUrl', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
   }
 
   return intlMiddleware(request);

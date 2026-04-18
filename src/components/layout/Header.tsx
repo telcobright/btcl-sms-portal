@@ -76,11 +76,16 @@ export function Header() {
               {/* Desktop Auth Buttons */}
               <div className="hidden md:flex items-center space-x-4">
                 {isAuthenticated ? (
-                    // Authenticated state - Show Dashboard and Logout
+                    // Authenticated state - Show Dashboard, Settings and Logout
                     <>
                       <Link href={`/${locale}/dashboard`}>
                         <Button variant="ghost" size="sm">
                           Dashboard
+                        </Button>
+                      </Link>
+                      <Link href={`/${locale}/settings`}>
+                        <Button variant="ghost" size="sm">
+                          Settings
                         </Button>
                       </Link>
                       <Button
@@ -153,6 +158,11 @@ export function Header() {
                         <Link href={`/${locale}/dashboard`} onClick={() => setMobileMenuOpen(false)}>
                           <Button variant="ghost" size="sm" className="w-full">
                             Dashboard
+                          </Button>
+                        </Link>
+                        <Link href={`/${locale}/settings`} onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" size="sm" className="w-full">
+                            Settings
                           </Button>
                         </Link>
                         <Button

@@ -10,6 +10,7 @@ import { LanguageToggle } from './LanguageToggle'
 import { useAuth } from '@/lib/contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { useState } from 'react'
+import { Settings } from 'lucide-react'
 
 export function Header() {
   const t = useTranslations()
@@ -83,10 +84,12 @@ export function Header() {
                           Dashboard
                         </Button>
                       </Link>
-                      <Link href={`/${locale}/settings`}>
-                        <Button variant="ghost" size="sm">
-                          Settings
-                        </Button>
+                      <Link
+                        href={`/${locale}/settings`}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Settings"
+                      >
+                        <Settings className="w-5 h-5 text-gray-600" />
                       </Link>
                       <Button
                           size="sm"
@@ -161,7 +164,8 @@ export function Header() {
                           </Button>
                         </Link>
                         <Link href={`/${locale}/settings`} onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" size="sm" className="w-full">
+                          <Button variant="ghost" size="sm" className="w-full flex items-center gap-2">
+                            <Settings className="w-4 h-4" />
                             Settings
                           </Button>
                         </Link>

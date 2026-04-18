@@ -124,7 +124,7 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
         echo "Installing dependencies..."
         npm install --production --legacy-peer-deps
 
-        # Generate Prisma client for this platform (use project's prisma, not global)
+        # Generate Prisma client for this platform (use local prisma binary, not global)
         echo "Generating Prisma client..."
         npm install prisma@5 --no-save --silent
         node_modules/.bin/prisma generate

@@ -257,12 +257,6 @@ export default function SettingsPage() {
                     <div className="min-w-0">
                         <p className="text-lg font-semibold text-gray-900 truncate">{fullName}</p>
                         <p className="text-sm text-gray-500 truncate">{userInfo.email || '—'}</p>
-                        {userInfo.partnerId && (
-                            <span className="inline-block mt-1.5 px-2 py-0.5 bg-btcl-primary/10
-                                             text-btcl-primary text-xs font-medium rounded-full">
-                                Partner ID: {userInfo.partnerId}
-                            </span>
-                        )}
                     </div>
                 </div>
 

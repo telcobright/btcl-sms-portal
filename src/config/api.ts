@@ -89,6 +89,8 @@ export const API_ENDPOINTS = {
     getPartnerDocument: '/partner/get-partner-document',
     getDocumentStatuses: '/partner/get-document-statuses',
     updateDocumentStatus: '/partner/update-document-status',
+    updatePartner: '/partner/update-partner',
+    deletePartnerDocument: '/partner/delete-partner-document',
     checkPurchaseEligibility: '/partner/check-purchase-eligibility',
   },
 
@@ -109,6 +111,8 @@ export const API_ENDPOINTS = {
     getTopupBalanceForUser: '/user/DashBoard/getTopupBalanceForUser',
     getUserByEmail: '/getUserByEmail',
     editUser: '/editUser',
+    createUser: '/auth/createUser',
+    deleteUser: '/deleteUser',
   },
 
   // Payment endpoints

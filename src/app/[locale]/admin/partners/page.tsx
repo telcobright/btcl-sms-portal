@@ -28,8 +28,10 @@ export default function PartnersPage() {
         { page: 0, size: 1000, partnerName: null, partnerType: null },
         authToken
       );
-      // Ensure data is always an array
-      const partnersArray = Array.isArray(data) ? data : [];
+      // Ensure data is always an array, only show partner types 3,4,5,6
+      const partnersArray = (Array.isArray(data) ? data : []).filter(
+        (p) => [3, 4, 5, 6].includes(p.partnerType)
+      );
       setPartners(partnersArray);
       setFilteredPartners(partnersArray);
     } catch (error) {
@@ -74,12 +76,14 @@ export default function PartnersPage() {
 
   const getPartnerTypeBadgeColor = (type: number) => {
     switch (type) {
-      case 1:
-        return 'bg-purple-100 text-purple-800';
-      case 2:
-        return 'bg-orange-100 text-orange-800';
       case 3:
         return 'bg-green-100 text-green-800';
+      case 4:
+        return 'bg-orange-100 text-orange-800';
+      case 5:
+        return 'bg-blue-100 text-blue-800';
+      case 6:
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -144,9 +148,10 @@ export default function PartnersPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A651] focus:border-transparent"
             >
               <option value="">All Types</option>
-              <option value="1">Carrier</option>
-              <option value="2">Reseller</option>
               <option value="3">Customer</option>
+              <option value="4">Reseller</option>
+              <option value="5">SMS Customer</option>
+              <option value="6">Enterprise</option>
             </select>
           </div>
 

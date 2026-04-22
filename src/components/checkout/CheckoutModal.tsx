@@ -117,219 +117,9 @@ export default function CheckoutModal({
         const prePaidValue = partnerData.customerPrePaid || 1;
         setCustomerPrePaid(prePaidValue);
 
-<<<<<<< HEAD
         // Auto-select SSLCommerz if customerPrePaid is 1
         if (prePaidValue === 1) {
           setSelectedPayment('SSLcommerz');
-=======
-        try {
-            // Check if payment is disabled in config
-            if (!FEATURE_FLAGS.PAYMENT_ENABLED) {
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
-
-                // Show success popup for Hosted PBX
-                if (serviceType === 'hosted-pbx' && email) {
-                    try {
-                        const userData = await getUserByEmail(email, authToken!);
-                        setUserHasPbx(!!userData?.pbxUuid);
-                    } catch (e) {
-                        setUserHasPbx(false);
-                    }
-                    setSuccessEmail(email);
-                    setPurchasedPackageName(pkg.name);
-                    setShowSuccessPopup(true);
-                    setLoading(false);
-                    return;
-                }
-
-                // Show success popup for Voice Broadcast
-                if (serviceType === 'voice-broadcast' && email) {
-                    setSuccessEmail(email);
-                    setPurchasedPackageName(pkg.name);
-                    setShowVbsSuccessPopup(true);
-                    setLoading(false);
-                    return;
-                }
-
-                // Show success popup for Contact Center
-                if (serviceType === 'contact-center' && email) {
-                    setSuccessEmail(email);
-                    setPurchasedPackageName(pkg.name);
-                    setShowSuccessPopup(true);
-                    setLoading(false);
-                    return;
-                }
-
-                onClose();
-                return;
-            }
-
-            // Step 1: Fetch partner details
-            toast.loading(locale === 'en' ? 'Preparing your account...' : 'অ্যাকাউন্ট প্রস্তুত হচ্ছে...', { id: 'payment-prep' });
-            const partnerData = await getPartnerById(partnerId, authToken);
-
-            // Step 2: Ensure partner exists in target service
-            if (['hosted-pbx', 'contact-center', 'voice-broadcast'].includes(serviceType)) {
-                toast.loading(
-                    locale === 'en' ? 'Verifying service account...' : 'সার্ভিস অ্যাকাউন্ট যাচাই হচ্ছে...',
-                    { id: 'partner-check' }
-                );
-
-                const partnerReady = await ensurePartnerInService(partnerId, serviceType, authToken);
-                toast.dismiss('partner-check');
-
-                if (!partnerReady) {
-                    toast.error(locale === 'en' ? 'Could not set up your service account. Please try again.' : 'সার্ভিস অ্যাকাউন্ট সেটআপ করা যায়নি। আবার চেষ্টা করুন।');
-                    setLoading(false);
-                    return;
-                }
-            }
-
-            toast.dismiss('payment-prep');
-
-            // Get customerPrePaid from partner data (1 = payment gateway, 2 = direct purchase)
-            const customerPrePaid = partnerData.customerPrePaid || 1;
-            console.log('Customer PrePaid type:', customerPrePaid);
-
-            // Set product name and category based on service type
-            const getProductDetails = () => {
-                switch (serviceType) {
-                    case 'hosted-pbx':
-                        return { name: `Hosted PBX - ${pkg.name}`, category: 'Hosted PBX' };
-                    case 'voice-broadcast':
-                        return { name: `Voice Broadcast - ${pkg.name}`, category: 'Voice Broadcast' };
-                    case 'contact-center':
-                        return { name: `Contact Center - ${pkg.name}`, category: 'Contact Center' };
-                    default:
-                        return { name: pkg.name, category: 'SMS' };
-                }
-            };
-            const { name: productName, category: productCategory } = getProductDetails();
-
-            // Clean phone number (remove + if present)
-            const cleanPhone = partnerData.telephone?.replace('+', '') || '';
-
-            // For Contact Center, calculate price based on agentCount state
-            const basePrice = (serviceType === 'contact-center') ? (pkg.price * agentCount) : pkg.price;
-            const quantity = (serviceType === 'contact-center') ? agentCount : 1;
-
-            // Calculate VAT (15% of price) and total
-            const vatAmount = Math.round(basePrice * 0.15);
-            const totalAmount = basePrice + vatAmount;
-
-            const payload = {
-                idPackage: getPackageIdInt(pkg.id, serviceType),
-                idPartner: partnerId,
-                cusName: partnerData.partnerName || partnerData.alternateNameInvoice,
-                cusEmail: partnerData.email,
-                cusAdd1: partnerData.address1 || partnerData.city,
-                cusCity: partnerData.city,
-                cusPostcode: partnerData.postalCode,
-                cusCountry: partnerData.country || 'Bangladesh',
-                cusPhone: cleanPhone,
-                productName: productName,
-                productCategory: productCategory,
-                productType: serviceType,
-                topupNumber: cleanPhone,
-                countryTopup: 'Bangladesh',
-                purchaseDate: null,
-                status: 'ACTIVE',
-                autoRenewalStatus: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType),
-                price: basePrice,
-                vat: vatAmount,
-                ait: 0,
-                priority: 2,
-                discount: 0,
-                currency: 'BDT',
-                paid: 1,
-                total: totalAmount,
-                validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(serviceType) ? 2592000 : (pkg.validity ? pkg.validity * 86400 : 2592000), // 30 days in seconds
-                ...(serviceType === 'contact-center' && { quantity: quantity }), // Include quantity for CC
-            };
-
-            console.log('Unified Purchase payload:', payload);
-            console.log('Service type:', serviceType);
-            console.log('Customer PrePaid:', customerPrePaid);
-
-            // For VBS service, always use payment gateway (even if customerPrePaid = 2)
-            const effectivePrePaid = serviceType === 'voice-broadcast' ? 1 : customerPrePaid;
-
-            // Call unified purchase API
-            const response = await unifiedPurchase(payload, serviceType, effectivePrePaid);
-            console.log('Unified Purchase response:', response);
-
-            // customerPrePaid = 1 (or VBS): Payment gateway initiated, redirect to payment URL
-            if (effectivePrePaid === 1) {
-                const redirectUrl = response.redirectUrl || response.GatewayPageURL || response;
-
-                if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
-                    // Store the service type and data in session for callback handling
-                    sessionStorage.setItem('pendingServiceProvision', JSON.stringify({
-                        serviceType,
-                        partnerId,
-                        email,
-                        packageId: pkg.id,
-                        packageIdInt: getPackageIdInt(pkg.id, serviceType),
-                        packageName: pkg.name,
-                        price: pkg.price,
-                        purchaseAction,
-                    }));
-                    window.location.href = redirectUrl;
-                } else {
-                    toast.error(locale === 'en' ? 'Payment URL not received. Please try again.' : 'পেমেন্ট URL পাওয়া যায়নি। আবার চেষ্টা করুন।');
-                }
-            }
-            // customerPrePaid = 2: Direct purchase completed (no payment gateway) - NOT for VBS
-            else if (effectivePrePaid === 2) {
-                if (response.status === 'SUCCESS') {
-                    toast.success(locale === 'en' ? 'Purchase completed successfully!' : 'ক্রয় সফল হয়েছে!');
-
-                    // Show success popup for Hosted PBX
-                    if (serviceType === 'hosted-pbx' && email) {
-                        // Check if user already has PBX
-                        try {
-                            const userData = await getUserByEmail(email, authToken);
-                            setUserHasPbx(!!userData?.pbxUuid);
-                        } catch (e) {
-                            setUserHasPbx(false);
-                        }
-                        setSuccessEmail(email);
-                        setPurchasedPackageName(pkg.name);
-                        setShowSuccessPopup(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Show success popup for Voice Broadcast
-                    if (serviceType === 'voice-broadcast' && email) {
-                        setSuccessEmail(email);
-                        setPurchasedPackageName(pkg.name);
-                        setShowVbsSuccessPopup(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Show success popup for Contact Center
-                    if (serviceType === 'contact-center' && email) {
-                        setSuccessEmail(email);
-                        setPurchasedPackageName(pkg.name);
-                        setShowSuccessPopup(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    onClose();
-                } else {
-                    toast.error(response.message || (locale === 'en' ? 'Purchase failed. Please try again.' : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।'));
-                }
-            }
-        } catch (error) {
-            console.error('Purchase failed:', error);
-            toast.error(locale === 'en' ? 'Purchase failed. Please try again.' : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।');
-        } finally {
-            setLoading(false);
->>>>>>> e4f9cd1 (feat: Admin role redirect, success page redesign, deploy container fix)
         }
         // If customerPrePaid is 2, no payment method needed but set a placeholder
         if (prePaidValue === 2) {
@@ -404,7 +194,6 @@ export default function CheckoutModal({
           }
         }
 
-<<<<<<< HEAD
         // Step 2: No active package — check purchase history for expired packages
         const historyRes = await fetch(
           `${baseUrl}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`,
@@ -416,111 +205,6 @@ export default function CheckoutModal({
             },
             body: JSON.stringify({ page: 0, size: 5, idPartner: partnerId }),
           }
-=======
-        return (
-            <Dialog open={isOpen} onClose={() => {}} className="relative z-50 font-bengali">
-                <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
-                <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
-                    <Dialog.Panel className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
-                        {/* Header */}
-                        <div className={`px-6 py-8 text-center ${
-                            purchaseAction === 'downgrade'
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-                                : 'bg-gradient-to-r from-[#00A651] to-[#004225]'
-                        }`}>
-                            <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                                <svg className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : 'text-[#00A651]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white">
-                                {locale === 'en' ? 'Congratulations!' : 'অভিনন্দন!'}
-                            </h2>
-                            <p className="text-white/80 mt-2 font-medium">{actionLabel}</p>
-                        </div>
-
-                        <div className="px-6 py-6">
-                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                {isNew ? (
-                                    /* First-time purchase: email notification */
-                                    <div className="flex flex-col items-center text-center gap-3">
-                                        <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
-                                            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-800">
-                                                {locale === 'en' ? 'Check Your Email' : 'আপনার ইমেইল চেক করুন'}
-                                            </p>
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                {locale === 'en'
-                                                    ? 'Your login credentials have been sent to:'
-                                                    : 'আপনার লগইন তথ্য পাঠানো হয়েছে:'}
-                                            </p>
-                                            <p className="font-semibold text-blue-600 mt-1 break-all">{successEmail}</p>
-                                        </div>
-                                        <div className="w-full mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-left">
-                                            <p className="text-xs text-amber-800">
-                                                <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
-                                                {locale === 'en'
-                                                    ? 'Your username and password are included in the email. Please change your password after first login for security.'
-                                                    : 'আপনার ইউজারনেম ও পাসওয়ার্ড ইমেইলে পাঠানো হয়েছে। নিরাপত্তার জন্য প্রথম লগইনের পর পাসওয়ার্ড পরিবর্তন করুন।'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    /* Renew / Upgrade / Downgrade: package summary */
-                                    <>
-                                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                                            {locale === 'en' ? 'Plan Summary' : 'প্ল্যান সারসংক্ষেপ'}
-                                        </h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Package' : 'প্যাকেজ'}</span>
-                                                <span className="font-semibold text-gray-900">{purchasedPackageName}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Action' : 'পদক্ষেপ'}</span>
-                                                <span className={`font-semibold ${
-                                                    purchaseAction === 'upgrade' ? 'text-[#00A651]' :
-                                                    purchaseAction === 'downgrade' ? 'text-amber-600' :
-                                                    'text-green-600'
-                                                }`}>{actionLabel}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                                <span className="text-gray-600">{locale === 'en' ? 'Status' : 'স্ট্যাটাস'}</span>
-                                                <span className="font-semibold text-green-600">{locale === 'en' ? 'Active' : 'সক্রিয়'}</span>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Portal Link */}
-                            <div className="mt-5">
-                                <a
-                                    href={portalUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
-                                >
-                                    {portalLabel} →
-                                </a>
-                            </div>
-
-                            {/* Close Button — manual only */}
-                            <button
-                                onClick={handleCloseSuccessPopup}
-                                className="w-full mt-3 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
-                            >
-                                {locale === 'en' ? 'Close' : 'বন্ধ করুন'}
-                            </button>
-                        </div>
-                    </Dialog.Panel>
-                </div>
-            </Dialog>
->>>>>>> e4f9cd1 (feat: Admin role redirect, success page redesign, deploy container fix)
         );
 
         if (historyRes.ok) {
@@ -1005,6 +689,7 @@ export default function CheckoutModal({
               packageIdInt: getPackageIdInt(pkg.id, serviceType),
               packageName: pkg.name,
               price: pkg.price,
+              purchaseAction,
             })
           );
           window.location.href = redirectUrl;
@@ -1181,8 +866,8 @@ export default function CheckoutModal({
                       <p className="text-xs text-amber-800">
                         <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
                         {locale === 'en'
-                          ? 'Please change your password after first login for security.'
-                          : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
+                          ? 'Your username and password are included in the email. Please change your password after first login for security.'
+                          : 'আপনার ইউজারনেম ও পাসওয়ার্ড ইমেইলে পাঠানো হয়েছে। নিরাপত্তার জন্য প্রথম লগইনের পর পাসওয়ার্ড পরিবর্তন করুন।'}
                       </p>
                     </div>
                   </div>

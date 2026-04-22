@@ -152,6 +152,136 @@ export const getAllPartners = async (
 };
 
 /**
+ * Update partner data
+ */
+export const updatePartner = async (
+  partner: Partner,
+  authToken: string
+): Promise<boolean> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.updatePartner}`,
+      partner,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.status === 200;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Update Partner error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+/**
+ * Create a new user for a partner
+ */
+export interface CreateUserPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phoneNo: string;
+  userStatus: string;
+  partnerId: number;
+}
+
+export const createUser = async (
+  payload: CreateUserPayload,
+  authToken: string
+): Promise<string> => {
+  try {
+    const response = await axios.post(
+      `${AUTH_BASE_URL}${API_ENDPOINTS.user.createUser}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Create User error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+/**
+ * Edit an existing user
+ */
+export const editUser = async (
+  user: Partial<PartnerUser> & { id: number; password?: string },
+  authToken: string
+): Promise<boolean> => {
+  try {
+    const response = await axios.post(
+      `${AUTH_BASE_URL}${API_ENDPOINTS.user.editUser}`,
+      user,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.status === 200;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Edit User error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+/**
+ * Delete a user by ID
+ */
+export const deleteUser = async (
+  userId: number,
+  authToken: string
+): Promise<boolean> => {
+  try {
+    const response = await axios.post(
+      `${AUTH_BASE_URL}${API_ENDPOINTS.user.deleteUser}`,
+      { id: userId },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.status === 200;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Delete User error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    throw error;
+  }
+};
+
+/**
  * Get users by partner ID (uses AUTH_BASE_URL)
  */
 export const getUsersByPartner = async (
@@ -367,6 +497,12 @@ export const getPartnerTypeLabel = (partnerType: number): string => {
       return 'Reseller';
     case 3:
       return 'Customer';
+    case 4:
+      return 'Reseller';
+    case 5:
+      return 'SMS Customer';
+    case 6:
+      return 'Enterprise';
     default:
       return 'Unknown';
   }
@@ -383,6 +519,84 @@ export const getCustomerPrePaidLabel = (customerPrePaid: number): string => {
       return 'Postpaid';
     default:
       return 'Unknown';
+  }
+};
+
+// ---------------------- DOCUMENT MANAGEMENT ----------------------
+
+/** Map frontend doc type keys to the multipart field name the backend expects */
+const DOC_TYPE_TO_FIELD: Record<string, string> = {
+  tin: 'tinCertificate',
+  nidfront: 'nidFront',
+  nidback: 'nidBack',
+  vat: 'vatDoc',
+  tradelicense: 'tradeLicense',
+  photo: 'photo',
+  bin: 'binCertificate',
+  sla: 'sla',
+  btrc: 'btrcRegistration',
+  taxreturn: 'lastTaxReturn',
+};
+
+/**
+ * Upload / replace a single document for a partner
+ */
+export const uploadPartnerDocument = async (
+  partnerId: number,
+  documentType: string,
+  file: File,
+  authToken: string
+): Promise<boolean> => {
+  try {
+    const fieldName = DOC_TYPE_TO_FIELD[documentType.toLowerCase()];
+    if (!fieldName) throw new Error(`Unknown document type: ${documentType}`);
+
+    const formData = new FormData();
+    formData.append('partnerId', partnerId.toString());
+    formData.append(fieldName, file, file.name);
+
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.partnerDocuments}`,
+      formData,
+      {
+        headers: { Authorization: `Bearer ${authToken}` },
+        timeout: 60000,
+      }
+    );
+    return response.status === 200;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Upload Document error:', error.response?.data);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Delete a single document for a partner
+ */
+export const deletePartnerDocument = async (
+  partnerId: number,
+  documentType: string,
+  authToken: string
+): Promise<boolean> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.deletePartnerDocument}`,
+      { partnerId, documentType },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.status === 200;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Delete Document error:', error.response?.data);
+    }
+    throw error;
   }
 };
 

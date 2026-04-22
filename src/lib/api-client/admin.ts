@@ -548,15 +548,13 @@ export const uploadPartnerDocument = async (
   authToken: string
 ): Promise<boolean> => {
   try {
-    const fieldName = DOC_TYPE_TO_FIELD[documentType.toLowerCase()];
-    if (!fieldName) throw new Error(`Unknown document type: ${documentType}`);
-
     const formData = new FormData();
     formData.append('partnerId', partnerId.toString());
-    formData.append(fieldName, file, file.name);
+    formData.append('documentType', documentType.toLowerCase());
+    formData.append('file', file, file.name);
 
     const response = await axios.post(
-      `${API_BASE_URL}${API_ENDPOINTS.partner.partnerDocuments}`,
+      `${API_BASE_URL}${API_ENDPOINTS.partner.updatePartnerDocument}`,
       formData,
       {
         headers: { Authorization: `Bearer ${authToken}` },

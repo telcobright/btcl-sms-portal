@@ -90,6 +90,7 @@ export const API_ENDPOINTS = {
     getDocumentStatuses: '/partner/get-document-statuses',
     updateDocumentStatus: '/partner/update-document-status',
     updatePartner: '/partner/update-partner',
+    updatePartnerDocument: '/partner/update-partner-document',
     deletePartnerDocument: '/partner/delete-partner-document',
     checkPurchaseEligibility: '/partner/check-purchase-eligibility',
   },

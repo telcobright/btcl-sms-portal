@@ -4,7 +4,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
-import { Toaster } from 'react-hot-toast'
 
 interface PendingProvision {
     serviceType: string;
@@ -14,6 +13,152 @@ interface PendingProvision {
     packageIdInt: number;
     packageName: string;
     price: number;
+    purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade';
+}
+
+const SERVICE_CONFIG: Record<string, { label: string; subtitle: string; portalLabel: string; portalUrl: string }> = {
+    'hosted-pbx': {
+        label: 'Hosted PBX',
+        subtitle: 'Your Hosted PBX package is now active!',
+        portalLabel: 'Go to PBX Portal',
+        portalUrl: 'https://hippbx.btcliptelephony.gov.bd:5174/',
+    },
+    'voice-broadcast': {
+        label: 'Voice Broadcast',
+        subtitle: 'Your Voice Broadcast package is now active!',
+        portalLabel: 'Go to VBS Portal',
+        portalUrl: 'https://vbs.btcliptelephony.gov.bd/',
+    },
+    'contact-center': {
+        label: 'Contact Center',
+        subtitle: 'Your Contact Center package is now active!',
+        portalLabel: 'Go to CC Portal',
+        portalUrl: 'https://hcc.btcliptelephony.gov.bd/',
+    },
+};
+
+function ServiceSuccessPage({
+    serviceType,
+    userEmail,
+    packageName,
+    purchaseAction = 'new',
+}: {
+    serviceType: string;
+    userEmail: string;
+    packageName: string;
+    purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade';
+}) {
+    const config = SERVICE_CONFIG[serviceType];
+    const isNew = purchaseAction === 'new';
+    const isDowngrade = purchaseAction === 'downgrade';
+
+    const actionLabel =
+        purchaseAction === 'renew' ? 'Plan Renewed' :
+        purchaseAction === 'upgrade' ? 'Plan Upgraded' :
+        purchaseAction === 'downgrade' ? 'Plan Downgraded' :
+        'Purchase Successful';
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <header className="bg-white shadow-sm border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-center items-center h-16">
+                        <Link href="/en">
+                            <Image src="/btcllogo.png" alt="BTCL Logo" width={124} height={100} className="rounded-lg object-contain" />
+                        </Link>
+                    </div>
+                </div>
+            </header>
+
+            <main className="flex-1 flex items-center justify-center px-4 py-12">
+                <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+                    {/* Header */}
+                    <div className={`px-6 py-8 text-center ${isDowngrade ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-[#00A651] to-[#004225]'}`}>
+                        <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+                            <svg className={`w-12 h-12 ${isDowngrade ? 'text-amber-500' : 'text-[#00A651]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">Congratulations!</h2>
+                        <p className="text-white/80 mt-2 font-medium">{actionLabel}</p>
+                    </div>
+
+                    <div className="px-6 py-6">
+                        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                            {isNew ? (
+                                /* First-time purchase: email notification */
+                                <div className="flex flex-col items-center text-center gap-3">
+                                    <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
+                                        <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-800">Check Your Email</p>
+                                        <p className="text-sm text-gray-500 mt-1">Your login credentials have been sent to:</p>
+                                        <p className="font-semibold text-blue-600 mt-1 break-all">{userEmail}</p>
+                                    </div>
+                                    <div className="w-full mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-left">
+                                        <p className="text-xs text-amber-800">
+                                            <strong>Note:</strong> Your username and password are included in the email. Please change your password after first login for security.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Renew / Upgrade / Downgrade: plan summary */
+                                <>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Plan Summary</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                            <span className="text-gray-600">Package</span>
+                                            <span className="font-semibold text-gray-900">{packageName}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                            <span className="text-gray-600">Action</span>
+                                            <span className={`font-semibold ${
+                                                purchaseAction === 'upgrade' ? 'text-[#00A651]' :
+                                                purchaseAction === 'downgrade' ? 'text-amber-600' :
+                                                'text-green-600'
+                                            }`}>{actionLabel}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                            <span className="text-gray-600">Status</span>
+                                            <span className="font-semibold text-green-600">Active</span>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Portal link */}
+                        <div className="mt-5">
+                            <a
+                                href={config.portalUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                            >
+                                {config.portalLabel} →
+                            </a>
+                        </div>
+
+                        <Link
+                            href="/en/dashboard"
+                            className="block w-full mt-3 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                        >
+                            Go to Dashboard
+                        </Link>
+                    </div>
+                </div>
+            </main>
+
+            <footer className="bg-white border-t border-gray-200 py-4">
+                <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
+                    &copy; {new Date().getFullYear()} Bangladesh Telecommunications Company Limited. All rights reserved.
+                </div>
+            </footer>
+        </div>
+    );
 }
 
 function SuccessContent() {
@@ -22,149 +167,29 @@ function SuccessContent() {
     const amount = searchParams.get('amount')
     const [serviceType, setServiceType] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState('')
+    const [packageName, setPackageName] = useState('')
+    const [purchaseAction, setPurchaseAction] = useState<'new' | 'renew' | 'upgrade' | 'downgrade'>('new')
 
     useEffect(() => {
-        // Read pending provision data to determine service type
         const pendingData = sessionStorage.getItem('pendingServiceProvision');
         if (pendingData) {
             const provision: PendingProvision = JSON.parse(pendingData);
             setServiceType(provision.serviceType);
             setUserEmail(provision.email);
-            // Clear the session storage
+            setPackageName(provision.packageName);
+            setPurchaseAction(provision.purchaseAction ?? 'new');
             sessionStorage.removeItem('pendingServiceProvision');
         }
     }, []);
 
-    // PBX Success Page
-    if (serviceType === 'hosted-pbx') {
-        return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Toaster position="top-center" />
-                <header className="bg-white shadow-sm border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-center items-center h-16">
-                            <Link href="/en">
-                                <Image src="/btcllogo.png" alt="BTCL Logo" width={124} height={100} className="rounded-lg object-contain" />
-                            </Link>
-                        </div>
-                    </div>
-                </header>
-                <main className="flex-1 flex items-center justify-center px-4 py-12">
-                    <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-[#00A651] to-[#004225] px-6 py-8 text-center">
-                            <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                                <svg className="w-12 h-12 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white">Congratulations!</h2>
-                            <p className="text-green-100 mt-2">Your Hosted PBX is ready!</p>
-                        </div>
-                        <div className="px-6 py-6">
-                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Login Credentials</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">Email</span>
-                                        <span className="font-semibold text-gray-900">{userEmail}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">Password</span>
-                                        <span className="font-mono font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded">11111111</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="mt-6">
-                                <p className="text-sm text-gray-600 mb-3 text-center">Access your PBX User Portal:</p>
-                                <a href="https://hippbx.btcliptelephony.gov.bd:5174/" target="_blank" rel="noopener noreferrer" className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors">
-                                    Go to PBX Portal
-                                </a>
-                            </div>
-                            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                <p className="text-xs text-amber-800"><strong>Note:</strong> Please change your password after first login.</p>
-                            </div>
-                            <Link href="/en/dashboard" className="block w-full mt-4 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors">
-                                Go to Dashboard
-                            </Link>
-                        </div>
-                    </div>
-                </main>
-                <footer className="bg-white border-t border-gray-200 py-4">
-                    <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-                        &copy; {new Date().getFullYear()} Bangladesh Telecommunications Company Limited. All rights reserved.
-                    </div>
-                </footer>
-            </div>
-        );
+    // Service-specific success page (PBX, VBS, CC)
+    if (serviceType && SERVICE_CONFIG[serviceType]) {
+        return <ServiceSuccessPage serviceType={serviceType} userEmail={userEmail} packageName={packageName} purchaseAction={purchaseAction} />;
     }
 
-    // VBS Success Page
-    if (serviceType === 'voice-broadcast') {
-        return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Toaster position="top-center" />
-                <header className="bg-white shadow-sm border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-center items-center h-16">
-                            <Link href="/en">
-                                <Image src="/btcllogo.png" alt="BTCL Logo" width={124} height={100} className="rounded-lg object-contain" />
-                            </Link>
-                        </div>
-                    </div>
-                </header>
-                <main className="flex-1 flex items-center justify-center px-4 py-12">
-                    <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-[#00A651] to-[#004225] px-6 py-8 text-center">
-                            <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                                <svg className="w-12 h-12 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white">Congratulations!</h2>
-                            <p className="text-green-100 mt-2">Your Voice Broadcast is ready!</p>
-                        </div>
-                        <div className="px-6 py-6">
-                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Login Credentials</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">Email</span>
-                                        <span className="font-semibold text-gray-900">{userEmail}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600">Password</span>
-                                        <span className="font-mono font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded">11111111</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="mt-6">
-                                <p className="text-sm text-gray-600 mb-3 text-center">Access your Voice Broadcast Portal:</p>
-                                <a href="https://vbs.btcliptelephony.gov.bd/" target="_blank" rel="noopener noreferrer" className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors">
-                                    Go to Voice Broadcast Portal
-                                </a>
-                            </div>
-                            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                <p className="text-xs text-amber-800"><strong>Note:</strong> Please change your password after first login.</p>
-                            </div>
-                            <Link href="/en/dashboard" className="block w-full mt-4 border border-gray-300 text-gray-700 hover:bg-gray-50 text-center font-medium py-3 px-4 rounded-lg transition-colors">
-                                Go to Dashboard
-                            </Link>
-                        </div>
-                    </div>
-                </main>
-                <footer className="bg-white border-t border-gray-200 py-4">
-                    <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-                        &copy; {new Date().getFullYear()} Bangladesh Telecommunications Company Limited. All rights reserved.
-                    </div>
-                </footer>
-            </div>
-        );
-    }
-
-    // Default Success Page
+    // Generic fallback (SMS or unknown service)
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Toaster position="top-center" />
             <header className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-center items-center h-16">

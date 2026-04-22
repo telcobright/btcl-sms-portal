@@ -140,18 +140,6 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      {/* Back to User Dashboard */}
-      <div className="p-3 border-t border-gray-800">
-        <Link
-          href={`/${locale}/dashboard`}
-          className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-xl transition-all duration-200 group"
-        >
-          <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-          </svg>
-          <span className="font-medium">Back to Dashboard</span>
-        </Link>
-      </div>
     </aside>
   );
 }

@@ -19,6 +19,17 @@ export function Header() {
   const { isAuthenticated, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  const isAdmin = (() => {
+    if (typeof window === 'undefined') return false
+    try {
+      const roles = localStorage.getItem('userRoles')
+      if (!roles) return false
+      return JSON.parse(roles).some((r: { name: string }) => r.name === 'ROLE_ADMIN')
+    } catch { return false }
+  })()
+
+  const dashboardHref = isAdmin ? `/${locale}/admin` : `/${locale}/dashboard`
+
   const navigation = [
     { name: t('navigation.home'), href: `/${locale}` },
     { name: t('navigation.about'), href: `/${locale}/about` },
@@ -79,7 +90,7 @@ export function Header() {
                 {isAuthenticated ? (
                     // Authenticated state - Show Dashboard, Settings and Logout
                     <>
-                      <Link href={`/${locale}/dashboard`}>
+                      <Link href={dashboardHref}>
                         <Button variant="ghost" size="sm">
                           Dashboard
                         </Button>
@@ -158,7 +169,7 @@ export function Header() {
                 <div className="border-t border-gray-200 px-2 pt-4 pb-3 space-y-2">
                   {isAuthenticated ? (
                       <>
-                        <Link href={`/${locale}/dashboard`} onClick={() => setMobileMenuOpen(false)}>
+                        <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)}>
                           <Button variant="ghost" size="sm" className="w-full">
                             Dashboard
                           </Button>

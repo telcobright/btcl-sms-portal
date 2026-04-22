@@ -219,22 +219,22 @@ export default function PartnerDetailsPage() {
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#00A651] to-[#004D28] rounded-xl p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#00A651] rounded-lg flex items-center justify-center text-white text-lg font-bold">
+          <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white text-xl font-bold border border-white/20">
             {partner.partnerName?.charAt(0).toUpperCase() || '?'}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{partner.partnerName}</h1>
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
-              <span>#{partner.idPartner}</span>
-              <span className="px-1.5 py-0.5 rounded bg-green-50 text-[#00A651] font-medium">{getPartnerTypeLabel(partner.partnerType)}</span>
-              <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">{getCustomerPrePaidLabel(partner.customerPrePaid)}</span>
+            <h1 className="text-xl font-bold text-white">{partner.partnerName}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-white/60">#{partner.idPartner}</span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getPartnerTypeLabel(partner.partnerType)}</span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getCustomerPrePaidLabel(partner.customerPrePaid)}</span>
             </div>
           </div>
         </div>
-        <button onClick={fetchData} className={btn.secondary} title="Refresh">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        <button onClick={fetchData} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Refresh">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
         </button>
       </div>
 
@@ -491,7 +491,7 @@ function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partn
       ) : (
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100 text-xs text-gray-400 uppercase">
+            <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
               <th className="text-left px-6 py-2 font-medium">User</th>
               <th className="text-left px-6 py-2 font-medium">Contact</th>
               <th className="text-left px-6 py-2 font-medium">Status</th>
@@ -516,9 +516,9 @@ function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partn
                     <div className="flex flex-wrap gap-1">{u.authRoles?.map((r) => <span key={r.id} className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{r.name.replace('ROLE_', '')}</span>)}</div>
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(u)} className="text-xs text-[#00A651] hover:underline mr-3">Edit</button>
-                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id} className="text-xs text-red-500 hover:underline disabled:opacity-50">
-                      {deletingId === u.id ? 'Deleting...' : 'Delete'}
+                    <button onClick={() => openEdit(u)} className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#00A651]/10 text-[#00A651] hover:bg-[#00A651] hover:text-white transition-colors mr-1.5">Edit</button>
+                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id} className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50">
+                      {deletingId === u.id ? '...' : 'Delete'}
                     </button>
                   </td>
                 </tr>
@@ -539,7 +539,7 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead><tr className="border-b border-gray-100 text-xs text-gray-400 uppercase">
+        <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
           <th className="text-left px-6 py-2 font-medium">Package</th>
           <th className="text-left px-6 py-2 font-medium">Purchased</th>
           <th className="text-left px-6 py-2 font-medium">Expires</th>
@@ -571,9 +571,9 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
    ═══════════════════════════════════════════════════════════════════ */
 function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subscriptions: PurchaseHistory[]; serviceStatus: ServiceStatus; partnerName: string }) {
   const services = [
-    { id: 'pbx' as const, name: 'Hosted PBX', url: 'https://hippbx.btcliptelephony.gov.bd:5174/' },
-    { id: 'hcc' as const, name: 'Contact Center', url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home` },
-    { id: 'vbs' as const, name: 'Voice Broadcast', url: 'https://vbs.btcliptelephony.gov.bd/' },
+    { id: 'pbx' as const, name: 'Hosted PBX', icon: '📞', url: 'https://hippbx.btcliptelephony.gov.bd:5174/', gradient: 'from-blue-500 to-blue-600', lightBg: 'bg-blue-50 border-blue-200', lightText: 'text-blue-700' },
+    { id: 'hcc' as const, name: 'Contact Center', icon: '👥', url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`, gradient: 'from-purple-500 to-purple-600', lightBg: 'bg-purple-50 border-purple-200', lightText: 'text-purple-700' },
+    { id: 'vbs' as const, name: 'Voice Broadcast', icon: '📢', url: 'https://vbs.btcliptelephony.gov.bd/', gradient: 'from-orange-500 to-orange-600', lightBg: 'bg-orange-50 border-orange-200', lightText: 'text-orange-700' },
   ];
 
   return (
@@ -582,25 +582,32 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
         {services.map((s) => {
           const active = serviceStatus[s.id]?.active;
           return (
-            <div key={s.id} className={`p-4 rounded-lg border ${active ? 'border-[#00A651]/30 bg-green-50/30' : 'border-gray-200 bg-gray-50'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-semibold ${active ? 'text-[#00A651]' : 'text-gray-400'}`}>{s.name}</p>
-                  <p className={`text-xs mt-0.5 ${active ? 'text-gray-600' : 'text-gray-400'}`}>{active ? 'Active' : 'Not Active'}</p>
+            <div key={s.id} className={`rounded-xl border overflow-hidden ${active ? s.lightBg : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`px-4 py-3 ${active ? `bg-gradient-to-r ${s.gradient}` : 'bg-gray-100'}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{s.icon}</span>
+                  <p className={`text-sm font-bold ${active ? 'text-white' : 'text-gray-400'}`}>{s.name}</p>
                 </div>
-                {active ? (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#00A651] hover:underline">Open</a>
-                ) : (
-                  <span className="text-xs text-gray-300">--</span>
+              </div>
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                    {active ? 'Active' : 'Inactive'}
+                  </span>
+                  {active && (
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className={`text-xs font-medium ${s.lightText} hover:underline`}>
+                      Open Portal →
+                    </a>
+                  )}
+                </div>
+                {active && serviceStatus[s.id].purchases.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {serviceStatus[s.id].purchases.slice(0, 3).map((p, i) => (
+                      <span key={i} className="text-xs px-2 py-0.5 bg-white rounded-full text-gray-600 border border-gray-100">{p.packageName || 'Package'}</span>
+                    ))}
+                  </div>
                 )}
               </div>
-              {active && serviceStatus[s.id].purchases.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200/50 flex flex-wrap gap-1">
-                  {serviceStatus[s.id].purchases.slice(0, 3).map((p, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 bg-white rounded text-gray-600 border border-gray-100">{p.packageName || 'Package'}</span>
-                  ))}
-                </div>
-              )}
             </div>
           );
         })}
@@ -609,7 +616,7 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
       {subscriptions.filter((s) => s.idPackage !== 9999).length > 0 && (
         <div className="overflow-x-auto border border-gray-100 rounded-lg">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100 text-xs text-gray-400 uppercase">
+            <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
               <th className="text-left px-4 py-2 font-medium">Package</th>
               <th className="text-left px-4 py-2 font-medium">Start</th>
               <th className="text-left px-4 py-2 font-medium">Expires</th>
@@ -711,25 +718,29 @@ function DocumentsTab({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-3 text-xs shrink-0">
-                    <button onClick={() => viewDocument(doc.type, doc.name)} disabled={viewingDoc === doc.type} className="text-[#00A651] hover:underline disabled:opacity-50">
-                      {viewingDoc === doc.type ? 'Loading...' : 'View'}
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                    <button onClick={() => viewDocument(doc.type, doc.name)} disabled={viewingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#00A651] text-white hover:bg-[#004D28] disabled:opacity-50 transition-colors">
+                      {viewingDoc === doc.type ? '...' : 'View'}
                     </button>
-                    <button onClick={() => downloadDocument(doc.type, doc.name)} disabled={downloadingDoc === doc.type} className="text-gray-500 hover:underline disabled:opacity-50">
+                    <button onClick={() => downloadDocument(doc.type, doc.name)} disabled={downloadingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-colors">
                       {downloadingDoc === doc.type ? '...' : 'Download'}
                     </button>
-                    <label className={`text-amber-600 hover:underline cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <label className={`px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
                       <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(doc.type, f); e.target.value = ''; }} />
-                      {uploadingDoc === doc.type ? 'Uploading...' : 'Replace'}
+                      {uploadingDoc === doc.type ? '...' : 'Replace'}
                     </label>
-                    <button onClick={() => handleDeleteDoc(doc.type, doc.name)} disabled={deletingDoc === doc.type} className="text-red-500 hover:underline disabled:opacity-50">
+                    <button onClick={() => handleDeleteDoc(doc.type, doc.name)} disabled={deletingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors">
                       {deletingDoc === doc.type ? '...' : 'Delete'}
                     </button>
-                    <span className="text-gray-200">|</span>
                     {!isRejecting && (
                       <>
-                        <button onClick={async () => { setRejectingDoc(null); await onUpdateStatus(doc.type, 'APPROVED', ''); }} disabled={isUpdating || status === 'APPROVED'} className="text-blue-600 hover:underline disabled:opacity-30">Approve</button>
-                        <button onClick={() => setRejectingDoc(doc.type)} disabled={isUpdating || status === 'REJECTED'} className="text-red-500 hover:underline disabled:opacity-30">Reject</button>
+                        <button onClick={async () => { setRejectingDoc(null); await onUpdateStatus(doc.type, 'APPROVED', ''); }} disabled={isUpdating || status === 'APPROVED'}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-30 transition-colors">Approve</button>
+                        <button onClick={() => setRejectingDoc(doc.type)} disabled={isUpdating || status === 'REJECTED'}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-30 transition-colors">Reject</button>
                       </>
                     )}
                   </div>
@@ -746,9 +757,9 @@ function DocumentsTab({
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Missing ({missing.length})</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {missing.map((doc) => (
-              <div key={doc.type} className="flex items-center justify-between p-3 border border-dashed border-gray-200 rounded-lg">
-                <span className="text-sm text-gray-400">{doc.name}</span>
-                <label className={`text-xs text-[#00A651] hover:underline cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div key={doc.type} className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                <span className="text-sm text-gray-500">{doc.name}</span>
+                <label className={`px-3 py-1 text-xs font-medium rounded-full bg-[#00A651] text-white hover:bg-[#004D28] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
                   <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(doc.type, f); e.target.value = ''; }} />
                   {uploadingDoc === doc.type ? 'Uploading...' : 'Upload'}
                 </label>

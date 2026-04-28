@@ -94,6 +94,9 @@ export default function RegisterPage() {
   const [isVerifyingNid, setIsVerifyingNid] = useState(false);
   const [nidVerificationData, setNidVerificationData] = useState<any>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  // Track sub-steps in final registration to allow retry on partial failure
+  const [createdPartnerId, setCreatedPartnerId] = useState<number | null>(null);
+  const [partnerJwtToken, setPartnerJwtToken] = useState<string | null>(null);
   // OCR states
   const [isExtractingOcr, setIsExtractingOcr] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
@@ -673,10 +676,12 @@ export default function RegisterPage() {
       // Get company name from localStorage
       const companyName = localStorage.getItem('companyName');
 
-        const fullName = personalInfoData.fullName;
-      // 2. First call: create partner (NO TOKEN REQUIRED)
-      console.log('\n🔵 STEP 2: Creating partner account...');
-        // Set customerPrePaid based on customer type selection
+      const fullName = personalInfoData.fullName;
+
+      // 2. First call: create partner (skip if already created on a previous attempt)
+      let idPartner = createdPartnerId;
+      if (!idPartner) {
+        console.log('\n🔵 STEP 2: Creating partner account...');
         const customerPrePaidValue = otherInfoData.customerType === 'prepaid' ? 1 : 2;
 
         const partnerPayload = {
@@ -700,43 +705,43 @@ export default function RegisterPage() {
             callSrcId: 2,
         };
 
-      const partnerResponse = await createPartner(partnerPayload);
+        const partnerResponse = await createPartner(partnerPayload);
 
-      // Extract partnerId
-      const idPartner = partnerResponse?.idPartner || partnerResponse?.id;
-      if (!idPartner) {
-        console.error('❌ Partner response:', partnerResponse);
-        throw new Error('Partner ID missing in createPartner response');
+        idPartner = partnerResponse?.idPartner || partnerResponse?.id;
+        if (!idPartner) {
+          console.error('❌ Partner response:', partnerResponse);
+          throw new Error('Partner ID missing in createPartner response');
+        }
+        setCreatedPartnerId(idPartner);
+        console.log('✅ Partner created with ID:', idPartner);
+      } else {
+        console.log('⏩ Skipping partner creation (already created with ID:', idPartner, ')');
       }
-      console.log('✅ Partner created with ID:', idPartner);
 
-      // 3. Second call: login to get JWT token
-      console.log('\n🔵 STEP 3: Logging in to get JWT token...');
-      console.log('Login credentials:', {
-        email: verifiedEmail,
-        passwordLength: 8,
-      });
-
-      const loginResponse = await loginPartner(
-        verifiedEmail,
-        '11111111'
-      );
-
-      const jwtToken = loginResponse.token;
+      // 3. Second call: login to get JWT token (skip if already obtained)
+      let jwtToken = partnerJwtToken;
       if (!jwtToken) {
-        console.error('❌ Login response:', loginResponse);
-        throw new Error('JWT token missing in login response');
-      }
-      console.log('✅ JWT token received:', jwtToken.substring(0, 50) + '...');
-      console.log('📋 Token payload:', {
-        roles: loginResponse.authRoles,
-        partnerId: loginResponse.idPartner || 'N/A',
-        sessionStart: loginResponse.sessionStartDateTime,
-      });
+        console.log('\n🔵 STEP 3: Logging in to get JWT token...');
 
-      // Small delay to ensure token is propagated
-      console.log('⏳ Waiting 2 seconds for token to be active...');
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+        const loginResponse = await loginPartner(
+          verifiedEmail,
+          '11111111'
+        );
+
+        jwtToken = loginResponse.token;
+        if (!jwtToken) {
+          console.error('❌ Login response:', loginResponse);
+          throw new Error('JWT token missing in login response');
+        }
+        setPartnerJwtToken(jwtToken);
+        console.log('✅ JWT token received:', jwtToken.substring(0, 50) + '...');
+
+        // Small delay to ensure token is propagated
+        console.log('⏳ Waiting 2 seconds for token to be active...');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } else {
+        console.log('⏩ Skipping login (JWT token already obtained)');
+      }
 
       // 4. Third call: add partner details (WITH TOKEN)
       console.log('\n🔵 STEP 4: Adding partner documents with JWT token...');

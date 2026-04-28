@@ -769,7 +769,7 @@ export default function RegisterPage() {
 
         const partnerResponse = await createPartner(partnerPayload);
 
-        idPartner = partnerResponse?.idPartner || partnerResponse?.id;
+        idPartner = partnerResponse?.idPartner || partnerResponse?.id || null;
         if (!idPartner) {
           console.error('❌ Partner response:', partnerResponse);
           throw new Error('Partner ID missing in createPartner response');

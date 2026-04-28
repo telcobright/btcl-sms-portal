@@ -2099,6 +2099,7 @@ export default function Dashboard() {
               <Loader2 className="w-8 h-8 text-[#067a3e] animate-spin" />
             </div>
           ) : purchaseHistory && purchaseHistory.length > 0 ? (
+            <>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -2312,6 +2313,7 @@ export default function Dashboard() {
                 </div>
               );
             })()}
+            </>
           ) : (
             <div className="text-center py-12 text-gray-500">
               <svg

@@ -322,6 +322,8 @@ export default function Dashboard() {
   }>({ pbx: false, hcc: false, vbs: false });
   const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [invoicePage, setInvoicePage] = useState(1);
+  const INVOICES_PER_PAGE = 10;
 
   // Mandatory documents — users cannot upload/replace these (admin only)
   const MANDATORY_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
@@ -2131,11 +2133,15 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {purchaseHistory
-                    .filter(
-                      (purchase) =>
-                        isPrepaid || purchase.packageName !== 'TopUp'
-                    )
+                  {(() => {
+                    const filtered = purchaseHistory.filter(
+                      (purchase) => isPrepaid || purchase.packageName !== 'TopUp'
+                    );
+                    const totalPages = Math.ceil(filtered.length / INVOICES_PER_PAGE);
+                    const start = (invoicePage - 1) * INVOICES_PER_PAGE;
+                    const paginated = filtered.slice(start, start + INVOICES_PER_PAGE);
+                    return paginated;
+                  })()
                     .map((purchase, index) => {
                       const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
                       const pkgName = purchase.packageName || 'Package';
@@ -2262,6 +2268,50 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
+            {/* Pagination */}
+            {(() => {
+              const filtered = purchaseHistory.filter(
+                (p) => isPrepaid || p.packageName !== 'TopUp'
+              );
+              const totalPages = Math.ceil(filtered.length / INVOICES_PER_PAGE);
+              if (totalPages <= 1) return null;
+              return (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 mt-2">
+                  <p className="text-sm text-gray-600">
+                    Showing {((invoicePage - 1) * INVOICES_PER_PAGE) + 1}–{Math.min(invoicePage * INVOICES_PER_PAGE, filtered.length)} of {filtered.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
+                      disabled={invoicePage === 1}
+                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setInvoicePage(page)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                          page === invoicePage
+                            ? 'bg-[#067a3e] text-white'
+                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setInvoicePage((p) => Math.min(totalPages, p + 1))}
+                      disabled={invoicePage === totalPages}
+                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           ) : (
             <div className="text-center py-12 text-gray-500">
               <svg

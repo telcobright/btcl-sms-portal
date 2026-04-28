@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
   partner: {
     validate: '/admin/DashBoard/partner/validate',
     createPartner: '/partner/create-partner',
+    rollbackRegistration: '/partner/rollback-registration',
     partnerDocuments: '/partner/partner-documents',
     getPartner: '/partner/get-partner',
     getPartnerExtra: '/partner/get-partner-extra',

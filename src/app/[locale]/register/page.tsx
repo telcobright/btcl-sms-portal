@@ -5,6 +5,7 @@ import {
   addPartnerDetails,
   createPartner,
   loginPartner,
+  rollbackRegistration,
   sendOtp,
   verifyOtp,
   sendEmailOtp,
@@ -175,6 +176,47 @@ export default function RegisterPage() {
   const watchedNidFrontSide = useWatch({ control: personalInfoForm.control, name: 'identityCardFrontSide' });
   const watchedCustomerType = useWatch({ control: otherInfoForm.control, name: 'customerType' });
   const isNidFrontUploaded = !!watchedNidFrontSide;
+
+  // Warn user before leaving if partner was partially created
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (createdPartnerId && !showSuccessPopup) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [createdPartnerId, showSuccessPopup]);
+
+  // Rollback partially created partner and reset state
+  const handleRollbackAndReset = async () => {
+    if (createdPartnerId && verifiedEmail) {
+      toast.loading('Rolling back registration...', { id: 'rollback' });
+      await rollbackRegistration(createdPartnerId, verifiedEmail);
+      toast.dismiss('rollback');
+      toast.success('Registration cancelled. You can start over.');
+    }
+    // Reset all state
+    setCreatedPartnerId(null);
+    setPartnerJwtToken(null);
+    setStep(1);
+    setEmailOtpSent(false);
+    setEmailOtpVerified(false);
+    setPhoneOtpSent(false);
+    setPhoneOtpVerified(false);
+    setOtpSent(false);
+    setOtpVerified(false);
+    setVerifiedPhone('');
+    setVerifiedEmail('');
+    setNidVerified(false);
+    setNidVerificationFailed(false);
+    setNidVerificationData(null);
+    setOcrResult(null);
+    setNidExtractedFromOcr(false);
+    verificationForm.reset();
+    personalInfoForm.reset();
+    otherInfoForm.reset();
+  };
 
   // Watch verification form fields for Send OTP button
   useEffect(() => {
@@ -817,6 +859,13 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('❌ Registration failed:', error);
+      // Rollback the partially created partner so the user can retry from scratch
+      if (createdPartnerId && verifiedEmail) {
+        console.log('🔄 Rolling back partially created partner...');
+        await rollbackRegistration(createdPartnerId, verifiedEmail);
+        setCreatedPartnerId(null);
+        setPartnerJwtToken(null);
+      }
       // Provide more specific error messages
       if (error instanceof Error) {
         toast.error(error.message);
@@ -2088,15 +2137,14 @@ export default function RegisterPage() {
               />
 
               <div className="flex justify-between pt-4 gap-4">
-                {!nidVerified && (
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    className="bg-gray-300 px-4 py-2 rounded-md w-full"
-                  >
-                    Back
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleRollbackAndReset}
+                  disabled={isSubmitting}
+                  className="bg-red-500 text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel Registration
+                </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !otherInfoForm.formState.isValid}

@@ -51,7 +51,7 @@ const PackageMigrationPolicyPage = () => {
                 { en: 'Hosted IP PBX', bn: 'হোস্টেড আইপি পিবিএক্স', icon: '📞' },
                 { en: 'Contact Center', bn: 'কন্টাক্ট সেন্টার', icon: '🎧' },
                 { en: 'Voice Broadcast', bn: 'ভয়েস ব্রডকাস্ট', icon: '📢' },
-                { en: 'Bulk SMS', bn: 'বাল্ক এসএমএস', icon: '💬' },
+                // { en: 'Bulk SMS', bn: 'বাল্ক এসএমএস', icon: '💬' },
               ].map((service) => (
                 <div
                   key={service.en}

@@ -177,16 +177,36 @@ export default function RegisterPage() {
   const watchedCustomerType = useWatch({ control: otherInfoForm.control, name: 'customerType' });
   const isNidFrontUploaded = !!watchedNidFrontSide;
 
-  // Warn user before leaving if partner was partially created
+  // Rollback on page close/refresh and warn user if partner was partially created
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (createdPartnerId && !showSuccessPopup) {
+        // Fire rollback via beacon API (works even when page is closing)
+        const payload = JSON.stringify({ idPartner: createdPartnerId, email: verifiedEmail });
+        navigator.sendBeacon(
+          `${API_BASE_URL}${API_ENDPOINTS.partner.rollbackRegistration}`,
+          new Blob([payload], { type: 'application/json' })
+        );
         e.preventDefault();
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [createdPartnerId, showSuccessPopup]);
+  }, [createdPartnerId, verifiedEmail, showSuccessPopup]);
+
+  // Rollback on component unmount (client-side navigation away)
+  useEffect(() => {
+    return () => {
+      if (createdPartnerId && verifiedEmail && !showSuccessPopup) {
+        const payload = JSON.stringify({ idPartner: createdPartnerId, email: verifiedEmail });
+        navigator.sendBeacon(
+          `${API_BASE_URL}${API_ENDPOINTS.partner.rollbackRegistration}`,
+          new Blob([payload], { type: 'application/json' })
+        );
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createdPartnerId, verifiedEmail, showSuccessPopup]);
 
   // Rollback partially created partner and reset state
   const handleRollbackAndReset = async () => {

@@ -98,6 +98,7 @@ export const API_ENDPOINTS = {
   // NID endpoints
   nid: {
     verify: '/api/v1/nid/verify',
+    checkNid: '/partner/check-nid',
   },
 
   // Package endpoints

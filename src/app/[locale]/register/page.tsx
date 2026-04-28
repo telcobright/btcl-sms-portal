@@ -516,6 +516,23 @@ export default function RegisterPage() {
       // NID verification is enabled - proceed with actual verification
       const { fullName, dateOfBirth, nidNumber, nidDigitType } = personalInfoForm.getValues();
 
+      // Check if NID is already registered
+      try {
+        const checkRes = await fetch(`${API_BASE_URL}${API_ENDPOINTS.nid.checkNid}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nid: nidNumber }),
+        });
+        const checkData = await checkRes.json();
+        if (checkData.exists) {
+          toast.error('This NID is already registered. Please use a different NID.');
+          setIsVerifyingNid(false);
+          return;
+        }
+      } catch (err) {
+        console.error('NID uniqueness check failed:', err);
+      }
+
       // Build the verification payload
       const payload = {
         identify: {

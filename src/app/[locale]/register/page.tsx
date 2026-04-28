@@ -584,23 +584,6 @@ export default function RegisterPage() {
       // NID verification is enabled - proceed with actual verification
       const { fullName, dateOfBirth, nidNumber, nidDigitType } = personalInfoForm.getValues();
 
-      // Check if NID is already registered
-      try {
-        const checkRes = await fetch(`${API_BASE_URL}${API_ENDPOINTS.nid.checkNid}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nid: nidNumber }),
-        });
-        const checkData = await checkRes.json();
-        if (checkData.exists) {
-          toast.error('This NID is already registered. Please use a different NID.');
-          setIsVerifyingNid(false);
-          return;
-        }
-      } catch (err) {
-        console.error('NID uniqueness check failed:', err);
-      }
-
       // Build the verification payload
       const payload = {
         identify: {
@@ -1621,7 +1604,7 @@ export default function RegisterPage() {
                       control={personalInfoForm.control}
                       rules={{
                         required: 'NID number is required',
-                        validate: (value) => {
+                        validate: async (value) => {
                           const digitType = watchedNidDigitType;
                           if (digitType === '10' && value.length !== 10) {
                             return 'NID must be exactly 10 digits';
@@ -1631,6 +1614,20 @@ export default function RegisterPage() {
                           }
                           if (!/^\d+$/.test(value)) {
                             return 'NID must contain only numbers';
+                          }
+                          // Check NID uniqueness when length is valid
+                          try {
+                            const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.nid.checkNid}`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ nid: value }),
+                            });
+                            const data = await res.json();
+                            if (data.exists) {
+                              return 'This NID is already registered';
+                            }
+                          } catch {
+                            // If check fails, allow to proceed
                           }
                           return true;
                         },

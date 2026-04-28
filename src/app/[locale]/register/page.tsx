@@ -241,13 +241,16 @@ export default function RegisterPage() {
   // Watch verification form fields for Send OTP button
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const subscription = verificationForm.watch((value) => {
+      const subscription = verificationForm.watch(async (value) => {
         if (!emailOtpSent) {
-          // For Send Email OTP button
+          // For Send Email OTP button — trigger validation then check
           const hasAllFields = !!(value.companyName && value.email && value.phone);
-          const emailValid = !verificationForm.formState.errors.email;
-          const phoneValid = !verificationForm.formState.errors.phone;
-          setCanSendOtp(hasAllFields && emailValid && phoneValid);
+          if (hasAllFields) {
+            const valid = await verificationForm.trigger(['companyName', 'email', 'phone']);
+            setCanSendOtp(valid);
+          } else {
+            setCanSendOtp(false);
+          }
         } else if (!emailOtpVerified) {
           // For Verify Email OTP button
           const hasEmailOtp = !!(value.emailOtp);

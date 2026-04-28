@@ -15,14 +15,18 @@ import {
   ExternalLink,
   Eye,
   Loader2,
+  Lock,
   Maximize2,
   Package,
   RotateCw,
+  Upload,
   X,
   XCircle,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
+import { uploadPartnerDocument } from '@/lib/api-client/admin';
+import toast from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 
 // Mock packages data
@@ -317,6 +321,10 @@ export default function Dashboard() {
     vbs: boolean;
   }>({ pbx: false, hcc: false, vbs: false });
   const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+
+  // Mandatory documents — users cannot upload/replace these (admin only)
+  const MANDATORY_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
   const [purchaseBlocked, setPurchaseBlocked] = useState(false);
 
   // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
@@ -1043,6 +1051,26 @@ export default function Dashboard() {
       alert('Failed to download document. Please try again.');
     } finally {
       setDownloadingDoc(null);
+    }
+  };
+
+  const handleUserUpload = async (docType: string, file: File) => {
+    try {
+      setUploadingDoc(docType);
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken || !partnerID) {
+        toast.error('Authentication required');
+        return;
+      }
+      await uploadPartnerDocument(+partnerID, docType, file, authToken);
+      toast.success('Document uploaded successfully');
+      // Refresh partner extra and doc statuses
+      await fetchPartnerExtra(+partnerID);
+      await fetchDocStatuses(+partnerID);
+    } catch {
+      toast.error('Failed to upload document');
+    } finally {
+      setUploadingDoc(null);
     }
   };
 
@@ -1980,61 +2008,57 @@ export default function Dashboard() {
                           {/* Actions */}
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() =>
-                                  doc.available &&
-                                  viewDocument(doc.type, `${doc.name}`)
-                                }
-                                disabled={
-                                  !doc.available || viewingDoc === doc.type
-                                }
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
-                                title={
-                                  doc.available
-                                    ? 'View Document'
-                                    : 'Document not available'
-                                }
-                              >
-                                {viewingDoc === doc.type ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Loading
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="w-3.5 h-3.5" />
-                                    View
-                                  </>
-                                )}
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  doc.available &&
-                                  downloadDocument(doc.type, `${doc.name}`)
-                                }
-                                disabled={
-                                  !doc.available || downloadingDoc === doc.type
-                                }
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#067a3e] bg-white hover:bg-green-50 border-2 border-[#067a3e] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
-                                title={
-                                  doc.available
-                                    ? 'Download Document'
-                                    : 'Document not available'
-                                }
-                              >
-                                {downloadingDoc === doc.type ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Downloading
-                                  </>
-                                ) : (
-                                  <>
-                                    <Download className="w-3.5 h-3.5" />
-                                    Download
-                                  </>
-                                )}
-                              </button>
+                              {doc.available ? (
+                                <>
+                                  <button
+                                    onClick={() => viewDocument(doc.type, `${doc.name}`)}
+                                    disabled={viewingDoc === doc.type}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="View Document"
+                                  >
+                                    {viewingDoc === doc.type ? (
+                                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading</>
+                                    ) : (
+                                      <><Eye className="w-3.5 h-3.5" /> View</>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => downloadDocument(doc.type, `${doc.name}`)}
+                                    disabled={downloadingDoc === doc.type}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#067a3e] bg-white hover:bg-green-50 border-2 border-[#067a3e] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
+                                    title="Download Document"
+                                  >
+                                    {downloadingDoc === doc.type ? (
+                                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Downloading</>
+                                    ) : (
+                                      <><Download className="w-3.5 h-3.5" /> Download</>
+                                    )}
+                                  </button>
+                                </>
+                              ) : MANDATORY_DOCS.has(doc.type) ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                                  <Lock className="w-3.5 h-3.5" />
+                                  Contact Admin
+                                </span>
+                              ) : (
+                                <label className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      if (f) handleUserUpload(doc.type, f);
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  {uploadingDoc === doc.type ? (
+                                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading</>
+                                  ) : (
+                                    <><Upload className="w-3.5 h-3.5" /> Upload</>
+                                  )}
+                                </label>
+                              )}
                             </div>
                           </td>
                         </tr>

@@ -268,7 +268,7 @@ export default function RegisterPage() {
   // Watch personal info form fields for Next Step button
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const subscription = personalInfoForm.watch((value) => {
+      const subscription = personalInfoForm.watch(async (value) => {
         const hasAllFields = !!(
           value.fullName &&
           value.dateOfBirth &&
@@ -276,7 +276,12 @@ export default function RegisterPage() {
           value.identityCardFrontSide &&
           value.identityCardBackSide
         );
-        setCanProceedPersonal(hasAllFields);
+        if (hasAllFields) {
+          const valid = await personalInfoForm.trigger();
+          setCanProceedPersonal(valid);
+        } else {
+          setCanProceedPersonal(false);
+        }
       });
       return () => subscription.unsubscribe();
     }

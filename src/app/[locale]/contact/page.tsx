@@ -420,7 +420,7 @@ function ContactForm({ locale }: { locale: string }) {
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                {getLocalizedText(locale, 'Phone Number', 'ফোন নম্বর')} *
+                {getLocalizedText(locale, 'Mobile Number', 'মোবাইল নম্বর')} *
               </label>
               <input
                 type="tel"

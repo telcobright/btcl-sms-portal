@@ -86,7 +86,7 @@
       "company": "Company Name",
       "name": "Full Name",
       "email": "Email Address",
-      "phone": "Phone Number",
+      "phone": "Mobile Number",
       "password": "Password",
       "confirm_password": "Confirm Password",
       "next": "Next Step",

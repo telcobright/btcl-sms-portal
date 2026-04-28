@@ -351,8 +351,8 @@ export default function RegisterPage() {
 
       if (!validateResponse.ok || validateData === false) {
         if (validateData.errorCode === '400 BAD_REQUEST') {
-          if (validateData.message === 'Telephone number already exists') {
-            verificationForm.setError('phone', { type: 'manual', message: 'Telephone number already exists' });
+          if (validateData.message === 'Mobile number already exists') {
+            verificationForm.setError('phone', { type: 'manual', message: 'Mobile number already exists' });
           } else if (validateData.message === 'Email already exists') {
             verificationForm.setError('email', { type: 'manual', message: 'Email already exists' });
           } else if (validateData.message === 'Partner Name already exists') {
@@ -997,17 +997,17 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="block text-black font-medium mb-1">
-                  Phone Number
+                  Mobile Number
                 </label>
                 <Controller
                   name="phone"
                   control={verificationForm.control}
                   rules={{
-                    required: 'Phone number is required',
+                    required: 'Mobile number is required',
                     pattern: {
                       value: /^\+8801[3-9]\d{8}$/,
                       message:
-                        'Must be a valid Bangladeshi phone number (+8801XXXXXXXXX)',
+                        'Must be a valid Bangladeshi Mobile number (+8801XXXXXXXXX)',
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1032,7 +1032,7 @@ export default function RegisterPage() {
                           else if (value.startsWith('8801') && !value.startsWith('+')) {
                             value = '+' + value;
                           }
-                          // If starts with 1 and length suggests it's a phone number, add +880
+                          // If starts with 1 and length suggests it's a Mobile number, add +880
                           else if (value.startsWith('1') && value.length >= 10 && value.length <= 11) {
                             value = '+880' + value;
                           }
@@ -1150,7 +1150,7 @@ export default function RegisterPage() {
                 <>
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
                     <p className="text-blue-800 text-sm">
-                      <strong>Step 2 of 2:</strong> Verify your phone number
+                      <strong>Step 2 of 2:</strong> Verify your Mobile number
                     </p>
                   </div>
                   <div>

@@ -1578,7 +1578,7 @@ export default function Dashboard() {
             </div>
             <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
               <label className="block text-sm font-semibold text-gray-600 mb-2">
-                Phone Number
+                Mobile Number
               </label>
               <p className="text-gray-900 font-bold">{displayUserData.phone}</p>
             </div>

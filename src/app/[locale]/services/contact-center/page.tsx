@@ -33,7 +33,7 @@ export default async function ContactCenterPage({ params }: ContactCenterPagePro
       icon: '📱',
       title: locale === 'en' ? 'Click-to-Call' : 'ক্লিক-টু-কল',
       description: locale === 'en'
-        ? 'Click any phone number in the CRM to instantly initiate calls with automatic customer information popup'
+        ? 'Click any Mobile number in the CRM to instantly initiate calls with automatic customer information popup'
         : 'স্বয়ংক্রিয় গ্রাহক তথ্য পপআপ সহ তাৎক্ষণিক কল শুরু করতে CRM-এ যেকোনো ফোন নম্বরে ক্লিক করুন',
     },
     {

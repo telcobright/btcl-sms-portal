@@ -11,6 +11,18 @@ axios.interceptors.response.use(
         const status = error.response?.status;
         const errorMessage = error.response?.data?.message || '';
 
+        // Deactivated account — clear session and redirect to login with banner
+        if (status === 403 && error.response?.data?.error === 'ACCOUNT_DEACTIVATED') {
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+                localStorage.removeItem('authToken');
+                delete axios.defaults.headers.common['Authorization'];
+                sessionStorage.setItem('deactivated', '1');
+                const locale = window.location.pathname.startsWith('/bn') ? 'bn' : 'en';
+                window.location.href = `/${locale}/login`;
+            }
+            return Promise.reject(error);
+        }
+
         // Only auto-logout for 401 errors that indicate actual token expiration
         // Skip logout for API-specific authorization errors
         if (status === 401) {

@@ -42,8 +42,10 @@ export default function LoginPage() {
         email: ""
     })
     const [isLoading, setIsLoading] = useState(false)
-    const [loginError, setLoginError] = useState('')
-    const [isDeactivated, setIsDeactivated] = useState(false)
+    const wasDeactivated = typeof window !== 'undefined' && !!sessionStorage.getItem('deactivated')
+    if (wasDeactivated) sessionStorage.removeItem('deactivated')
+    const [loginError, setLoginError] = useState(wasDeactivated ? 'Your account has been deactivated. Please contact support.' : '')
+    const [isDeactivated, setIsDeactivated] = useState(wasDeactivated)
 
     const validateForm = () => {
         const newErrors: any = {}

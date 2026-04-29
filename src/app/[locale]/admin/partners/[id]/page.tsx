@@ -74,6 +74,7 @@ export default function PartnerDetailsPage() {
   const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
   const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -172,28 +173,30 @@ export default function PartnerDetailsPage() {
     finally { setDownloadingDoc(null); }
   };
 
-  const handleToggleStatus = async () => {
+  const handleToggleStatus = () => {
+    if (!partner) return;
+    setConfirmModal(true);
+  };
+
+  const handleConfirmToggle = async () => {
     const authToken = localStorage.getItem('authToken');
     if (!authToken || !partner) return;
     const isDeactivated = partner.status === 'DEACTIVATED';
-    const confirmed = window.confirm(
-      isDeactivated
-        ? `Reactivate ${partner.partnerName}? They will be able to log in again.`
-        : `Deactivate ${partner.partnerName}? They will be blocked from logging in.`
-    );
-    if (!confirmed) return;
+    setConfirmModal(false);
     try {
       setDeactivating(true);
       if (isDeactivated) {
         await reactivatePartner(partnerId, authToken);
         setPartner((p) => p ? { ...p, status: 'ACTIVE', deactivatedAt: null } : p);
+        toast.success('Partner reactivated successfully');
       } else {
         await deactivatePartner(partnerId, authToken);
         setPartner((p) => p ? { ...p, status: 'DEACTIVATED', deactivatedAt: new Date().toISOString() } : p);
+        toast.success('Partner deactivated successfully');
       }
     } catch (err) {
       console.error('Failed to toggle partner status:', err);
-      alert('Action failed. Please try again.');
+      toast.error('Action failed. Please try again.');
     } finally {
       setDeactivating(false);
     }
@@ -797,6 +800,59 @@ function DocumentsTab({
           </div>
         )}
       </div>
+
+      {/* Deactivate / Reactivate Confirmation Modal */}
+      {confirmModal && partner && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setConfirmModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${partner.status === 'DEACTIVATED' ? 'bg-green-100' : 'bg-red-100'}`}>
+                {partner.status === 'DEACTIVATED' ? '✅' : '⚠️'}
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {partner.status === 'DEACTIVATED' ? 'Reactivate Partner' : 'Deactivate Partner'}
+            </h2>
+
+            {/* Partner name */}
+            <p className={`text-base font-semibold text-center mb-4 ${partner.status === 'DEACTIVATED' ? 'text-green-600' : 'text-red-600'}`}>
+              {partner.partnerName}
+            </p>
+
+            {/* Description box */}
+            <div className={`rounded-xl p-4 mb-6 border text-sm text-gray-700 leading-relaxed ${partner.status === 'DEACTIVATED' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              {partner.status === 'DEACTIVATED'
+                ? 'This partner will be reactivated and will be able to log in again. All their data, calls, billing, and documents remain intact.'
+                : 'This partner will be blocked from logging in immediately. All their data, calls, billing, and documents are preserved and can be restored by reactivating.'}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmToggle}
+                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors ${partner.status === 'DEACTIVATED' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                {partner.status === 'DEACTIVATED' ? 'Yes, Reactivate' : 'Yes, Deactivate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Missing Documents */}
       {missing.length > 0 && (

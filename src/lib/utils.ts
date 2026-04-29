@@ -33,7 +33,7 @@ export function formatPhoneNumber(phone: string): string {
 export function validateBangladeshPhone(phone: string): boolean {
   const cleaned = phone.replace(/\D/g, '')
   
-  // Check various valid formats for Bangladesh phone numbers
+  // Check various valid formats for Bangladesh Mobile numbers
   if (cleaned.startsWith('880') && cleaned.length === 13) {
     return true
   } else if (cleaned.startsWith('0') && cleaned.length === 11) {

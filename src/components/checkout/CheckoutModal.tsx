@@ -689,6 +689,7 @@ export default function CheckoutModal({
               packageIdInt: getPackageIdInt(pkg.id, serviceType),
               packageName: pkg.name,
               price: pkg.price,
+              purchaseAction,
             })
           );
           window.location.href = redirectUrl;
@@ -865,8 +866,8 @@ export default function CheckoutModal({
                       <p className="text-xs text-amber-800">
                         <strong>{locale === 'en' ? 'Note:' : 'নোট:'}</strong>{' '}
                         {locale === 'en'
-                          ? 'Please change your password after first login for security.'
-                          : 'নিরাপত্তার জন্য প্রথম লগইনের পর আপনার পাসওয়ার্ড পরিবর্তন করুন।'}
+                          ? 'Your username and password are included in the email. Please change your password after first login for security.'
+                          : 'আপনার ইউজারনেম ও পাসওয়ার্ড ইমেইলে পাঠানো হয়েছে। নিরাপত্তার জন্য প্রথম লগইনের পর পাসওয়ার্ড পরিবর্তন করুন।'}
                       </p>
                     </div>
                   </div>

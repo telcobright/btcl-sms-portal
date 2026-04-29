@@ -205,8 +205,8 @@ export default async function HomePage({ params }: HomePageProps) {
         {/* Pricing Preview Section */}
         <PricingPreviewSection pricingPlans={pricingPlans} locale={locale} t={t} />
 
-        {/* Testimonials Section */}
-        <TestimonialsSection locale={locale} t={t} />
+        {/* Testimonials Section - hidden */}
+        {/* <TestimonialsSection locale={locale} t={t} /> */}
 
         <Footer />
       </div>

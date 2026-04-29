@@ -156,7 +156,7 @@ src/
 
 ## Bangladesh-Specific Considerations
 - **Language Support**: Complete Bangla and English internationalization
-- **Phone Numbers**: +880 format validation
+- **Mobile Numbers**: +880 format validation
 - **Business Hours**: Bangladesh timezone (GMT+6)
 - **Currency**: Bangladeshi Taka (BDT) formatting
 - **Local Payment Methods**: Mobile banking (bKash, Nagad, Rocket) via SSL Commerz

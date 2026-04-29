@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useParams } from 'next/navigation';
 
@@ -16,7 +17,12 @@ interface NavSection {
   items: NavItem[];
 }
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
   const params = useParams();
   const locale = params.locale || 'en';
@@ -60,61 +66,61 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="w-72 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 min-h-screen flex flex-col">
-      {/* Logo Section */}
-      <div className="p-6">
-        <Link href={`/${locale}/admin`} className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#00A651] to-[#00833f] rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">BTCL Admin</h1>
-            <p className="text-xs text-gray-400 font-medium">Management Portal</p>
-          </div>
+    <aside className={`${collapsed ? 'w-[72px]' : 'w-64'} bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 min-h-screen flex flex-col transition-all duration-300 shrink-0`}>
+      {/* Logo + Toggle */}
+      <div className={`${collapsed ? 'p-3' : 'p-5'} flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        <Link href={`/${locale}/admin`} className="flex items-center justify-center min-w-0">
+          {collapsed ? (
+            <Image src="/btcllogo.png" alt="BTCL" width={48} height={40} className="rounded object-contain" />
+          ) : (
+            <Image src="/btcllogo.png" alt="BTCL" width={120} height={40} className="rounded object-contain" />
+          )}
         </Link>
-      </div>
-
-      {/* Search Box */}
-      <div className="px-4 mb-4">
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <button
+          onClick={onToggle}
+          className={`p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors ${collapsed ? '' : 'shrink-0'}`}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <svg className={`w-4 h-4 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
           </svg>
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00A651]/50 focus:border-transparent transition-all"
-          />
-        </div>
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 overflow-y-auto">
+      <nav className="flex-1 px-2 overflow-y-auto">
         {navSections.map((section) => (
-          <div key={section.title} className="mb-6">
-            <p className="px-4 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              {section.title}
-            </p>
+          <div key={section.title} className="mb-4">
+            {!collapsed && (
+              <p className="px-3 mb-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                {section.title}
+              </p>
+            )}
             <ul className="space-y-1">
               {section.items.map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                    className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-[#00A651] to-[#00833f] text-white shadow-lg shadow-green-500/20'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                     }`}
+                    title={collapsed ? item.name : undefined}
                   >
-                    <span className={isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'}>
+                    <span className={`shrink-0 ${isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'}`}>
                       {item.icon}
                     </span>
-                    <span className="font-medium">{item.name}</span>
-                    {item.badge && (
+                    {!collapsed && <span className="font-medium text-sm">{item.name}</span>}
+                    {!collapsed && item.badge && (
                       <span className="ml-auto px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded-full">
                         {item.badge}
+                      </span>
+                    )}
+                    {/* Tooltip when collapsed */}
+                    {collapsed && (
+                      <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
+                        {item.name}
                       </span>
                     )}
                   </Link>
@@ -126,31 +132,20 @@ export default function AdminSidebar() {
       </nav>
 
       {/* Admin Info Card */}
-      <div className="p-4 mx-3 mb-4 bg-gradient-to-r from-gray-800 to-gray-800/50 rounded-xl border border-gray-700/50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#00A651] to-[#00833f] rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className={`${collapsed ? 'p-2 mx-1' : 'p-3 mx-2'} mb-3 bg-gray-800/50 rounded-lg border border-gray-700/50`}>
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+          <div className={`${collapsed ? 'w-8 h-8' : 'w-9 h-9'} bg-gradient-to-br from-[#00A651] to-[#00833f] rounded-lg flex items-center justify-center shrink-0`}>
+            <svg className={`${collapsed ? 'w-4 h-4' : 'w-4 h-4'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">Administrator</p>
-            <p className="text-xs text-gray-500">Super Admin Access</p>
-          </div>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-white truncate">Administrator</p>
+              <p className="text-[10px] text-gray-500">Super Admin</p>
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Back to User Dashboard */}
-      <div className="p-3 border-t border-gray-800">
-        <Link
-          href={`/${locale}/dashboard`}
-          className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-xl transition-all duration-200 group"
-        >
-          <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-          </svg>
-          <span className="font-medium">Back to Dashboard</span>
-        </Link>
       </div>
     </aside>
   );

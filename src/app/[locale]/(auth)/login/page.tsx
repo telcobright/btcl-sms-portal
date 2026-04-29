@@ -112,6 +112,16 @@ export default function LoginPage() {
             await checkAuth()
             toast.success('Login successful!')
 
+            // Check if user has ROLE_ADMIN
+            const isAdmin = decodedToken.roles?.some(
+                (role: { name: string }) => role.name === 'ROLE_ADMIN'
+            )
+
+            if (isAdmin) {
+                router.push(`/${locale}/admin`)
+                return
+            }
+
             const customerPrePaid = decodedToken.customerPrePaid
             if (customerPrePaid === 2) {
                 router.push(`/${locale}/postpaid-pending`)

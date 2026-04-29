@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import {
   getPartnerById,
   getUsersByPartner,
@@ -11,6 +12,12 @@ import {
   getServiceStatus,
   getPartnerTypeLabel,
   getCustomerPrePaidLabel,
+  updatePartner,
+  createUser,
+  editUser,
+  deleteUser,
+  uploadPartnerDocument,
+  deletePartnerDocument,
   deactivatePartner,
   reactivatePartner,
   Partner,
@@ -18,11 +25,30 @@ import {
   PurchaseHistory,
   PartnerDocument,
   ServiceStatus,
+  CreateUserPayload,
 } from '@/lib/api-client/admin';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 type TabType = 'overview' | 'users' | 'purchases' | 'subscriptions' | 'documents';
 
+/* ─── Spinner ─── */
+const Spinner = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={`${className} animate-spin`} fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
+
+/* ─── Shared button styles ─── */
+const btn = {
+  primary: 'px-4 py-2 text-sm font-medium text-white bg-[#00A651] hover:bg-[#004D28] rounded-md transition-colors disabled:opacity-50',
+  secondary: 'px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors',
+  outline: 'px-3 py-1.5 text-xs font-medium border rounded-md transition-colors disabled:opacity-50',
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   Main Page
+   ═══════════════════════════════════════════════════════════════════ */
 export default function PartnerDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -53,12 +79,8 @@ export default function PartnerDetailsPage() {
     try {
       setLoading(true);
       const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        router.push(`/${locale}/login`);
-        return;
-      }
+      if (!authToken) { router.push(`/${locale}/login`); return; }
 
-      // Fetch all data in parallel
       const [partnerData, usersData, purchasesData, documentsData, serviceStatusData, docStatusesRes] =
         await Promise.all([
           getPartnerById(partnerId, authToken),
@@ -74,20 +96,16 @@ export default function PartnerDetailsPage() {
         ]);
 
       setPartner(partnerData);
-      // Ensure all arrays are actually arrays
       setUsers(Array.isArray(usersData) ? usersData : []);
       setPurchases(Array.isArray(purchasesData) ? purchasesData : []);
       setDocuments(Array.isArray(documentsData) ? documentsData : []);
       setServiceStatus(serviceStatusData);
       setDocStatuses(docStatusesRes || {});
-
-      // Derive subscriptions from serviceStatus (combine all active purchases from all services)
-      const allSubscriptions = [
+      setSubscriptions([
         ...serviceStatusData.pbx.purchases,
         ...serviceStatusData.hcc.purchases,
         ...serviceStatusData.vbs.purchases,
-      ];
-      setSubscriptions(allSubscriptions);
+      ]);
     } catch (error) {
       console.error('Failed to fetch partner data:', error);
     } finally {
@@ -95,153 +113,63 @@ export default function PartnerDetailsPage() {
     }
   }, [partnerId, locale, router]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Helper function to detect file type from blob
+  /* ── Document helpers ── */
   const detectFileType = async (blob: Blob): Promise<string> => {
     const arr = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
-    const header = arr.reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
-
-    if (header.startsWith('89504e47')) return '.png';
-    if (header.startsWith('ffd8ff')) return '.jpg';
-    if (header.startsWith('47494638')) return '.gif';
-    if (header.startsWith('25504446')) return '.pdf';
-    if (header.startsWith('52494646')) return '.webp';
+    const h = arr.reduce((a, b) => a + b.toString(16).padStart(2, '0'), '');
+    if (h.startsWith('89504e47')) return '.png';
+    if (h.startsWith('ffd8ff')) return '.jpg';
+    if (h.startsWith('25504446')) return '.pdf';
     return '.pdf';
   };
 
-  const isImageFile = (extension: string): boolean => {
-    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].includes(extension.toLowerCase());
+  const isImageExt = (ext: string) => ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext.toLowerCase());
+
+  const openBlob = async (blob: Blob, documentName: string) => {
+    const mime = blob.type;
+    let ext = '.pdf';
+    let isImg = false;
+    if (mime?.startsWith('image/')) { isImg = true; ext = mime.includes('png') ? '.png' : '.jpg'; }
+    else if (mime?.includes('pdf')) { ext = '.pdf'; }
+    else { ext = await detectFileType(blob); isImg = isImageExt(ext); }
+
+    const name = documentName.replace(/\.[^/.]+$/, '') + ext;
+    const url = window.URL.createObjectURL(isImg ? blob : new Blob([blob], { type: 'application/pdf' }));
+
+    if (isImg) setImageViewerData({ url, name });
+    else if (ext === '.pdf') setPdfViewerData({ url, name });
+    else { const a = document.createElement('a'); a.href = url; a.download = name; a.click(); window.URL.revokeObjectURL(url); }
+  };
+
+  const fetchDoc = async (documentType: string) => {
+    const authToken = localStorage.getItem('authToken');
+    const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerDocument}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ partnerId, documentType }),
+    });
+    if (!res.ok) throw new Error('Failed to load document');
+    return res.blob();
   };
 
   const viewDocument = async (documentType: string, documentName: string) => {
-    try {
-      setViewingDoc(documentType);
-      const authToken = localStorage.getItem('authToken');
-
-      const response = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerDocument}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            partnerId: partnerId,
-            documentType: documentType,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to load document');
-      }
-
-      const blob = await response.blob();
-      const mimeType = blob.type;
-
-      let extension = '.pdf';
-      let isImage = false;
-
-      if (mimeType && mimeType.startsWith('image/')) {
-        isImage = true;
-        if (mimeType.includes('jpeg') || mimeType.includes('jpg')) extension = '.jpg';
-        else if (mimeType.includes('png')) extension = '.png';
-        else if (mimeType.includes('gif')) extension = '.gif';
-        else if (mimeType.includes('webp')) extension = '.webp';
-      } else if (mimeType && mimeType.includes('application/pdf')) {
-        extension = '.pdf';
-      } else {
-        extension = await detectFileType(blob);
-        isImage = isImageFile(extension);
-      }
-
-      const baseFileName = documentName.replace(/\.[^/.]+$/, '');
-      const finalFileName = `${baseFileName}${extension}`;
-
-      if (isImage || isImageFile(extension)) {
-        const url = window.URL.createObjectURL(blob);
-        setImageViewerData({ url, name: finalFileName });
-      } else if (extension === '.pdf') {
-        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(pdfBlob);
-        setPdfViewerData({ url, name: finalFileName });
-      } else {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = finalFileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
-    } catch (err) {
-      console.error('Error viewing document:', err);
-      alert('Failed to load document. Please try again.');
-    } finally {
-      setViewingDoc(null);
-    }
+    try { setViewingDoc(documentType); await openBlob(await fetchDoc(documentType), documentName); }
+    catch { toast.error('Failed to load document'); }
+    finally { setViewingDoc(null); }
   };
 
   const downloadDocument = async (documentType: string, documentName: string) => {
     try {
       setDownloadingDoc(documentType);
-      const authToken = localStorage.getItem('authToken');
-
-      const response = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerDocument}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            partnerId: partnerId,
-            documentType: documentType,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to download document');
-      }
-
-      const blob = await response.blob();
-      const mimeType = blob.type;
-
-      let extension = '.pdf';
-      if (mimeType && mimeType !== 'application/octet-stream') {
-        if (mimeType.includes('image/jpeg') || mimeType.includes('image/jpg')) extension = '.jpg';
-        else if (mimeType.includes('image/png')) extension = '.png';
-        else if (mimeType.includes('image/gif')) extension = '.gif';
-        else if (mimeType.includes('image/webp')) extension = '.webp';
-        else if (mimeType.includes('application/pdf')) extension = '.pdf';
-      } else {
-        extension = await detectFileType(blob);
-      }
-
-      const baseFileName = documentName.replace(/\.[^/.]+$/, '');
-      const finalFileName = `${baseFileName}${extension}`;
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = finalFileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      console.error('Error downloading document:', err);
-      alert('Failed to download document. Please try again.');
-    } finally {
-      setDownloadingDoc(null);
-    }
+      const blob = await fetchDoc(documentType);
+      const ext = await detectFileType(blob);
+      const name = documentName.replace(/\.[^/.]+$/, '') + ext;
+      const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = name; a.click();
+      window.URL.revokeObjectURL(a.href);
+    } catch { toast.error('Failed to download'); }
+    finally { setDownloadingDoc(null); }
   };
 
   const handleToggleStatus = async () => {
@@ -280,28 +208,13 @@ export default function PartnerDetailsPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ partnerId, documentType: docType, status, rejectionReason }),
       });
-      if (res.ok) {
-        setDocStatuses((prev) => ({
-          ...prev,
-          [docType]: { status, rejectionReason: status === 'APPROVED' ? '' : rejectionReason },
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update document status:', err);
-    } finally {
-      setUpdatingDocStatus(null);
-    }
+      if (res.ok) setDocStatuses((p) => ({ ...p, [docType]: { status, rejectionReason: status === 'APPROVED' ? '' : rejectionReason } }));
+    } catch { /* silent */ }
+    finally { setUpdatingDocStatus(null); }
   };
 
-  // Count available documents
   const availableDocumentsCount = documents.filter((d) => d.available).length;
-
-  // Count active services
-  const activeServicesCount = [
-    serviceStatus.pbx.active,
-    serviceStatus.hcc.active,
-    serviceStatus.vbs.active,
-  ].filter(Boolean).length;
+  const activeServicesCount = [serviceStatus.pbx.active, serviceStatus.hcc.active, serviceStatus.vbs.active].filter(Boolean).length;
 
   const tabs: { id: TabType; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
@@ -311,132 +224,78 @@ export default function PartnerDetailsPage() {
     { id: 'documents', label: 'Documents', count: availableDocumentsCount },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-[#00A651] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <Spinner className="w-8 h-8 text-[#00A651]" />
+    </div>
+  );
 
-  if (!partner) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-gray-900">Partner not found</h2>
-        <p className="text-gray-500 mt-2">The requested partner does not exist.</p>
-        <Link
-          href={`/${locale}/admin/partners`}
-          className="inline-flex items-center gap-2 mt-4 text-[#00A651] hover:underline"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Partners
-        </Link>
-      </div>
-    );
-  }
+  if (!partner) return (
+    <div className="text-center py-16">
+      <p className="text-gray-500">Partner not found.</p>
+      <Link href={`/${locale}/admin/partners`} className="text-[#00A651] hover:underline text-sm mt-2 inline-block">Back to Partners</Link>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-500">
-        <Link href={`/${locale}/admin`} className="hover:text-gray-700">
-          Dashboard
-        </Link>
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        <Link href={`/${locale}/admin/partners`} className="hover:text-gray-700">
-          Partners
-        </Link>
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        <span className="text-gray-900 font-medium">{partner.partnerName}</span>
+      <nav className="flex items-center gap-1.5 text-sm text-gray-400">
+        <Link href={`/${locale}/admin`} className="hover:text-[#00A651]">Dashboard</Link>
+        <span>/</span>
+        <Link href={`/${locale}/admin/partners`} className="hover:text-[#00A651]">Partners</Link>
+        <span>/</span>
+        <span className="text-gray-700 font-medium">{partner.partnerName}</span>
       </nav>
 
-      {/* Partner Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-[#00A651] rounded-xl flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">
-                {partner.partnerName?.charAt(0).toUpperCase() || '?'}
-              </span>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{partner.partnerName}</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-sm text-gray-500">ID: {partner.idPartner}</span>
-                <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                  {getPartnerTypeLabel(partner.partnerType)}
-                </span>
-                <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                  {getCustomerPrePaidLabel(partner.customerPrePaid)}
-                </span>
-                {partner.status === 'DEACTIVATED' && (
-                  <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                    Deactivated
-                  </span>
-                )}
-              </div>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#00A651] to-[#004D28] rounded-xl p-5 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white text-xl font-bold border border-white/20">
+            {partner.partnerName?.charAt(0).toUpperCase() || '?'}
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">{partner.partnerName}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-white/60">#{partner.idPartner}</span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getPartnerTypeLabel(partner.partnerType)}</span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getCustomerPrePaidLabel(partner.customerPrePaid)}</span>
+              {partner.status === 'DEACTIVATED' && (
+                <span className="px-2 py-0.5 rounded-full bg-red-500/80 text-white text-xs font-medium">Deactivated</span>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleToggleStatus}
-              disabled={deactivating}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                partner.status === 'DEACTIVATED'
-                  ? 'bg-green-50 hover:bg-green-100 text-green-700 border border-green-200'
-                  : 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200'
-              }`}
-            >
-              {deactivating
-                ? 'Processing...'
-                : partner.status === 'DEACTIVATED'
-                ? 'Reactivate'
-                : 'Deactivate'}
-            </button>
-            <button
-              onClick={fetchData}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Refresh
-            </button>
-          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggleStatus}
+            disabled={deactivating}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors disabled:opacity-50"
+          >
+            {deactivating ? 'Processing...' : partner.status === 'DEACTIVATED' ? 'Reactivate' : 'Deactivate'}
+          </button>
+          <button onClick={fetchData} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Refresh">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          </button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="flex gap-4">
+        <nav className="flex gap-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-[#00A651] text-[#00A651]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
               {tab.label}
               {tab.count !== undefined && (
-                <span
-                  className={`px-2 py-0.5 text-xs rounded-full ${
-                    activeTab === tab.id ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-green-50 text-[#00A651]' : 'bg-gray-100 text-gray-500'}`}>
                   {tab.count}
                 </span>
               )}
@@ -446,64 +305,31 @@ export default function PartnerDetailsPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        {activeTab === 'overview' && <OverviewTab partner={partner} />}
-        {activeTab === 'users' && <UsersTab users={users} />}
+      <div className="bg-white rounded-lg border border-gray-200">
+        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} />}
+        {activeTab === 'users' && <UsersTab users={users} partnerId={partnerId} onRefresh={fetchData} />}
         {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
-        {activeTab === 'subscriptions' && (
-          <SubscriptionsTab
-            subscriptions={subscriptions}
-            serviceStatus={serviceStatus}
-            partnerName={partner?.partnerName || ''}
-          />
-        )}
+        {activeTab === 'subscriptions' && <SubscriptionsTab subscriptions={subscriptions} serviceStatus={serviceStatus} partnerName={partner.partnerName || ''} />}
         {activeTab === 'documents' && (
-          <DocumentsTab
-            documents={documents}
-            viewDocument={viewDocument}
-            downloadDocument={downloadDocument}
-            viewingDoc={viewingDoc}
-            downloadingDoc={downloadingDoc}
-            docStatuses={docStatuses}
-            onUpdateStatus={updateDocStatus}
-            updatingDocStatus={updatingDocStatus}
-          />
+          <DocumentsTab documents={documents} viewDocument={viewDocument} downloadDocument={downloadDocument}
+            viewingDoc={viewingDoc} downloadingDoc={downloadingDoc} docStatuses={docStatuses}
+            onUpdateStatus={updateDocStatus} updatingDocStatus={updatingDocStatus}
+            partnerId={partnerId} onRefresh={fetchData} />
         )}
       </div>
 
       {/* Image Viewer Modal */}
       {imageViewerData && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            window.URL.revokeObjectURL(imageViewerData.url);
-            setImageViewerData(null);
-          }}
-        >
-          <div
-            className="relative max-w-4xl max-h-[90vh] bg-white rounded-xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold text-gray-900">{imageViewerData.name}</h3>
-              <button
-                onClick={() => {
-                  window.URL.revokeObjectURL(imageViewerData.url);
-                  setImageViewerData(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => { window.URL.revokeObjectURL(imageViewerData.url); setImageViewerData(null); }}>
+          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <span className="text-sm font-medium text-gray-700">{imageViewerData.name}</span>
+              <button onClick={() => { window.URL.revokeObjectURL(imageViewerData.url); setImageViewerData(null); }} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
-              <img
-                src={imageViewerData.url}
-                alt={imageViewerData.name}
-                className="max-w-full h-auto mx-auto"
-              />
+            <div className="p-4 overflow-auto max-h-[calc(90vh-60px)]">
+              <img src={imageViewerData.url} alt={imageViewerData.name} className="max-w-full h-auto mx-auto" />
             </div>
           </div>
         </div>
@@ -511,49 +337,19 @@ export default function PartnerDetailsPage() {
 
       {/* PDF Viewer Modal */}
       {pdfViewerData && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            window.URL.revokeObjectURL(pdfViewerData.url);
-            setPdfViewerData(null);
-          }}
-        >
-          <div
-            className="relative w-full max-w-5xl h-[90vh] bg-white rounded-xl overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b shrink-0">
-              <h3 className="font-semibold text-gray-900">{pdfViewerData.name}</h3>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => { window.URL.revokeObjectURL(pdfViewerData.url); setPdfViewerData(null); }}>
+          <div className="relative w-full max-w-5xl h-[90vh] bg-white rounded-lg overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+              <span className="text-sm font-medium text-gray-700">{pdfViewerData.name}</span>
               <div className="flex items-center gap-2">
-                <a
-                  href={pdfViewerData.url}
-                  download={pdfViewerData.name}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#00A651] hover:bg-green-50 border border-[#00A651] rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download
-                </a>
-                <button
-                  onClick={() => {
-                    window.URL.revokeObjectURL(pdfViewerData.url);
-                    setPdfViewerData(null);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <a href={pdfViewerData.url} download={pdfViewerData.name} className="text-xs text-[#00A651] hover:underline">Download</a>
+                <button onClick={() => { window.URL.revokeObjectURL(pdfViewerData.url); setPdfViewerData(null); }} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             </div>
             <div className="flex-1 overflow-hidden">
-              <iframe
-                src={pdfViewerData.url}
-                title={pdfViewerData.name}
-                className="w-full h-full border-0"
-              />
+              <iframe src={pdfViewerData.url} title={pdfViewerData.name} className="w-full h-full border-0" />
             </div>
           </div>
         </div>
@@ -562,36 +358,97 @@ export default function PartnerDetailsPage() {
   );
 }
 
-// Overview Tab Component
-function OverviewTab({ partner }: { partner: Partner }) {
-  const infoItems = [
-    { label: 'Partner ID', value: partner.idPartner },
-    { label: 'Partner Name', value: partner.partnerName },
-    { label: 'Alternate Name (Invoice)', value: partner.alternateNameInvoice },
-    { label: 'Email', value: partner.email },
-    { label: 'Telephone', value: partner.telephone },
-    { label: 'Address', value: [partner.address1, partner.address2].filter(Boolean).join(', ') },
-    { label: 'City', value: partner.city },
-    { label: 'State', value: partner.state },
-    { label: 'Postal Code', value: partner.postalCode },
-    { label: 'Country', value: partner.country },
-    { label: 'Partner Type', value: getPartnerTypeLabel(partner.partnerType) },
-    { label: 'Payment Type', value: getCustomerPrePaidLabel(partner.customerPrePaid) },
-    { label: 'VAT Registration No', value: partner.vatRegistrationNo },
-    { label: 'Invoice Address', value: partner.invoiceAddress },
-    { label: 'Registration Date', value: partner.date1 ? new Date(partner.date1).toLocaleDateString() : null },
+/* ═══════════════════════════════════════════════════════════════════
+   Overview Tab
+   ═══════════════════════════════════════════════════════════════════ */
+function OverviewTab({ partner, onPartnerUpdate }: { partner: Partner; onPartnerUpdate: (p: Partner) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState<Partner>({ ...partner });
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+      await updatePartner(formData, authToken);
+      onPartnerUpdate(formData);
+      setIsEditing(false);
+      toast.success('Partner updated');
+    } catch { toast.error('Failed to update partner'); }
+    finally { setSaving(false); }
+  };
+
+  const handleChange = (field: keyof Partner, value: string | number | null) => {
+    setFormData((p) => ({ ...p, [field]: value }));
+  };
+
+  const fields: { label: string; field: keyof Partner; type?: 'select'; options?: { value: number; label: string }[] }[] = [
+    { label: 'Partner Name', field: 'partnerName' },
+    { label: 'Alternate Name (Invoice)', field: 'alternateNameInvoice' },
+    { label: 'Email', field: 'email' },
+    { label: 'Telephone', field: 'telephone' },
+    { label: 'Address 1', field: 'address1' },
+    { label: 'Address 2', field: 'address2' },
+    { label: 'City', field: 'city' },
+    { label: 'State', field: 'state' },
+    { label: 'Postal Code', field: 'postalCode' },
+    { label: 'Country', field: 'country' },
+    { label: 'Payment Type', field: 'customerPrePaid', type: 'select', options: [{ value: 1, label: 'Prepaid' }, { value: 2, label: 'Postpaid' }] },
+    { label: 'VAT Registration No', field: 'vatRegistrationNo' },
+    { label: 'Invoice Address', field: 'invoiceAddress' },
   ];
 
   return (
     <div className="p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Partner Information</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {infoItems.map((item) => (
-          <div key={item.label} className="py-3 border-b border-gray-100">
-            <p className="text-sm text-gray-500">{item.label}</p>
-            <p className="text-sm font-medium text-gray-900 mt-1">
-              {item.value || <span className="text-gray-400">N/A</span>}
-            </p>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-base font-semibold text-gray-900">Partner Information</h2>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} className={`${btn.outline} text-[#00A651] border-[#00A651] hover:bg-green-50`}>Edit</button>
+        ) : (
+          <div className="flex gap-2">
+            <button onClick={() => { setFormData({ ...partner }); setIsEditing(false); }} className={btn.secondary}>Cancel</button>
+            <button onClick={handleSave} disabled={saving} className={btn.primary}>
+              {saving ? <Spinner /> : 'Save'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Read-only */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-1 mb-4 pb-4 border-b border-gray-100">
+        {[
+          { label: 'Partner ID', value: partner.idPartner },
+          { label: 'Partner Type', value: getPartnerTypeLabel(partner.partnerType) },
+          { label: 'Registration Date', value: partner.date1 ? new Date(partner.date1).toLocaleDateString() : 'N/A' },
+        ].map((item) => (
+          <div key={item.label} className="py-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
+            <p className="text-sm text-gray-900 mt-0.5">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Editable */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+        {fields.map((f) => (
+          <div key={f.field} className="py-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wide">{f.label}</p>
+            {isEditing ? (
+              f.type === 'select' ? (
+                <select value={(formData[f.field] as number) ?? ''} onChange={(e) => handleChange(f.field, Number(e.target.value))}
+                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#00A651] focus:border-[#00A651] outline-none">
+                  {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : (
+                <input type="text" value={(formData[f.field] as string) ?? ''} onChange={(e) => handleChange(f.field, e.target.value || null)}
+                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#00A651] focus:border-[#00A651] outline-none" />
+              )
+            ) : (
+              <p className="text-sm text-gray-900 mt-0.5">
+                {f.type === 'select' ? getCustomerPrePaidLabel(partner[f.field] as number) : (partner[f.field] as string) || <span className="text-gray-300">--</span>}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -599,597 +456,334 @@ function OverviewTab({ partner }: { partner: Partner }) {
   );
 }
 
-// Users Tab Component
-function UsersTab({ users }: { users: PartnerUser[] }) {
-  if (users.length === 0) {
-    return (
-      <div className="p-12 text-center">
-        <svg className="w-12 h-12 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-        <p className="text-gray-500 mt-4">No users found for this partner</p>
-      </div>
-    );
-  }
+/* ═══════════════════════════════════════════════════════════════════
+   Users Tab
+   ═══════════════════════════════════════════════════════════════════ */
+interface UserFormData { firstName: string; lastName: string; email: string; password: string; phoneNo: string; userStatus: string; }
+const EMPTY_USER: UserFormData = { firstName: '', lastName: '', email: '', password: '', phoneNo: '', userStatus: 'ACTIVE' };
+
+function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partnerId: number; onRefresh: () => void }) {
+  const [showForm, setShowForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<PartnerUser | null>(null);
+  const [form, setForm] = useState<UserFormData>(EMPTY_USER);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const openAdd = () => { setEditingUser(null); setForm(EMPTY_USER); setShowForm(true); };
+  const openEdit = (u: PartnerUser) => { setEditingUser(u); setForm({ firstName: u.firstName || '', lastName: u.lastName || '', email: u.email || '', password: '', phoneNo: u.phoneNo || '', userStatus: u.userStatus || 'ACTIVE' }); setShowForm(true); };
+  const close = () => { setShowForm(false); setEditingUser(null); };
+
+  const handleSave = async () => {
+    if (!form.firstName || !form.email) { toast.error('First name and email are required'); return; }
+    if (!editingUser && !form.password) { toast.error('Password is required'); return; }
+    try {
+      setSaving(true);
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+      if (editingUser) {
+        const payload: any = { id: editingUser.id, firstName: form.firstName, lastName: form.lastName, email: form.email, phoneNo: form.phoneNo, userStatus: form.userStatus, idPartner: partnerId };
+        if (form.password) payload.password = form.password;
+        await editUser(payload, authToken);
+        toast.success('User updated');
+      } else {
+        await createUser({ ...form, partnerId } as CreateUserPayload, authToken);
+        toast.success('User created');
+      }
+      close(); onRefresh();
+    } catch { toast.error('Operation failed'); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async (u: PartnerUser) => {
+    if (!confirm(`Delete ${u.firstName} ${u.lastName}?`)) return;
+    try { setDeletingId(u.id); const t = localStorage.getItem('authToken'); if (t) { await deleteUser(u.id, t); toast.success('Deleted'); onRefresh(); } }
+    catch { toast.error('Delete failed'); }
+    finally { setDeletingId(null); }
+  };
+
+  const inputCls = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#00A651] focus:border-[#00A651] outline-none';
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Roles</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {users.map((user) => (
-            <tr key={user.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600">
-                      {user.firstName?.charAt(0) || '?'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {user.firstName} {user.lastName}
-                    </p>
-                    <p className="text-sm text-gray-500">ID: {user.id}</p>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <p className="text-sm text-gray-900">{user.email}</p>
-                <p className="text-sm text-gray-500">{user.phoneNo}</p>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.userStatus === 'ACTIVE'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {user.userStatus}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex flex-wrap gap-1">
-                  {user.authRoles?.map((role) => (
-                    <span
-                      key={role.id}
-                      className="inline-flex px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded"
-                    >
-                      {role.name.replace('ROLE_', '')}
-                    </span>
-                  ))}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {user.createdOn ? new Date(user.createdOn).toLocaleDateString() : 'N/A'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// Purchases Tab Component
-function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
-  if (purchases.length === 0) {
-    return (
-      <div className="p-12 text-center">
-        <svg className="w-12 h-12 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
-        <p className="text-gray-500 mt-4">No purchase history found</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchase Date</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expire Date</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">VAT</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {purchases.map((purchase) => (
-            <tr key={purchase.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <p className="text-sm font-medium text-gray-900">
-                  {purchase.packageName || purchase.packageAccounts?.[0]?.name || 'N/A'}
-                </p>
-                <p className="text-sm text-gray-500">ID: {purchase.idPackage}</p>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {purchase.purchaseDate ? new Date(purchase.purchaseDate).toLocaleDateString() : 'N/A'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {purchase.expireDate ? new Date(purchase.expireDate).toLocaleDateString() : 'N/A'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                ৳{purchase.price?.toLocaleString() || 0}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                ৳{purchase.vat?.toLocaleString() || 0}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                ৳{purchase.total?.toLocaleString() || 0}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    purchase.status === 'ACTIVE'
-                      ? 'bg-green-100 text-green-800'
-                      : purchase.status === 'EXPIRED'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}
-                >
-                  {purchase.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// Subscriptions Tab Component
-interface SubscriptionsTabProps {
-  subscriptions: PurchaseHistory[];
-  serviceStatus: ServiceStatus;
-  partnerName: string;
-}
-
-function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: SubscriptionsTabProps) {
-  const servicePortals = [
-    {
-      id: 'pbx',
-      name: 'Hosted PBX',
-      icon: '📞',
-      url: 'https://hippbx.btcliptelephony.gov.bd:5174/',
-      activeColor: 'from-blue-50 to-blue-100 border-blue-200',
-      activeBg: 'from-blue-500 to-blue-600',
-      activeText: 'text-blue-700',
-    },
-    {
-      id: 'hcc',
-      name: 'Contact Center',
-      icon: '👥',
-      url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`,
-      activeColor: 'from-purple-50 to-purple-100 border-purple-200',
-      activeBg: 'from-purple-500 to-purple-600',
-      activeText: 'text-purple-700',
-    },
-    {
-      id: 'vbs',
-      name: 'Voice Broadcast',
-      icon: '📢',
-      url: 'https://vbs.btcliptelephony.gov.bd/',
-      activeColor: 'from-orange-50 to-orange-100 border-orange-200',
-      activeBg: 'from-orange-500 to-orange-600',
-      activeText: 'text-orange-700',
-    },
-  ];
-
-  return (
-    <div className="p-6 space-y-6">
-      {/* Service Portals Section */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          Service Portals
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {servicePortals.map((portal) => {
-            const status = serviceStatus[portal.id as keyof ServiceStatus];
-            const isActive = status?.active;
-
-            return (
-              <div
-                key={portal.id}
-                className={`rounded-xl p-4 border-2 ${
-                  isActive
-                    ? `bg-gradient-to-r ${portal.activeColor}`
-                    : 'bg-gray-50 border-gray-200 border-dashed'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-3 rounded-lg ${
-                      isActive ? `bg-gradient-to-br ${portal.activeBg}` : 'bg-gray-300'
-                    }`}
-                  >
-                    <span className="text-xl">{portal.icon}</span>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className={`font-bold ${isActive ? portal.activeText : 'text-gray-500'}`}>
-                      {portal.name}
-                    </h4>
-                    <p className={`text-xs ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {isActive ? 'Active' : 'Not Active'}
-                    </p>
-                  </div>
-                  {isActive ? (
-                    <a
-                      href={portal.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  ) : (
-                    <span className="px-2 py-1 text-xs bg-gray-200 text-gray-500 rounded-full">
-                      No Package
-                    </span>
-                  )}
-                </div>
-
-                {/* Show active packages for this service */}
-                {isActive && status.purchases.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200/50">
-                    <p className="text-xs text-gray-500 mb-2">Active Packages:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {status.purchases.slice(0, 3).map((p, idx) => (
-                        <span key={idx} className="text-xs px-2 py-0.5 bg-white/80 rounded text-gray-700">
-                          {p.packageName || p.packageAccounts?.[0]?.name || 'Package'}
-                        </span>
-                      ))}
-                      {status.purchases.length > 3 && (
-                        <span className="text-xs px-2 py-0.5 bg-white/80 rounded text-gray-500">
-                          +{status.purchases.length - 3} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-gray-900">Users</h2>
+        {!showForm && <button onClick={openAdd} className={btn.primary}>+ Add User</button>}
       </div>
 
-      {/* All Subscriptions */}
-      {subscriptions.filter((s) => s.idPackage !== 9999).length > 0 ? (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">All Subscriptions</h3>
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Start</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {subscriptions
-                  .filter((sub) => sub.idPackage !== 9999)
-                  .map((sub) => (
-                    <tr key={sub.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 font-medium text-gray-900">
-                        {sub.packageName || sub.packageAccounts?.[0]?.name || 'N/A'}
-                      </td>
-                      <td className="px-4 py-2 text-gray-500">
-                        {sub.purchaseDate ? new Date(sub.purchaseDate).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="px-4 py-2 text-gray-500">
-                        {sub.expireDate ? new Date(sub.expireDate).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="px-4 py-2 text-right text-gray-900">৳{sub.price?.toLocaleString() || 0}</td>
-                      <td className="px-4 py-2 text-center">
-                        <span
-                          className={`inline-flex px-2 py-0.5 text-xs rounded-full ${
-                            sub.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {sub.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+      {showForm && (
+        <div className="mb-6 p-5 border border-gray-200 rounded-lg bg-gray-50/50">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">{editingUser ? 'Edit User' : 'New User'}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label className="text-xs text-gray-500">First Name *</label><input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={inputCls} /></div>
+            <div><label className="text-xs text-gray-500">Last Name</label><input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={inputCls} /></div>
+            <div><label className="text-xs text-gray-500">Email *</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} /></div>
+            <div><label className="text-xs text-gray-500">Password {editingUser ? '(optional)' : '*'}</label><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputCls} /></div>
+            <div><label className="text-xs text-gray-500">Phone</label><input value={form.phoneNo} onChange={(e) => setForm({ ...form, phoneNo: e.target.value })} className={inputCls} /></div>
+            <div><label className="text-xs text-gray-500">Status</label><select value={form.userStatus} onChange={(e) => setForm({ ...form, userStatus: e.target.value })} className={inputCls}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSave} disabled={saving} className={btn.primary}>{saving ? <Spinner /> : editingUser ? 'Save' : 'Create'}</button>
+            <button onClick={close} className={btn.secondary}>Cancel</button>
           </div>
         </div>
+      )}
+
+      {users.length === 0 ? (
+        <p className="text-center text-gray-400 py-12 text-sm">No users found</p>
       ) : (
-        <div className="text-center py-8 text-gray-500">
-          <p>No subscription data available</p>
+        <div className="overflow-x-auto -mx-6">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
+              <th className="text-left px-6 py-2 font-medium">User</th>
+              <th className="text-left px-6 py-2 font-medium">Contact</th>
+              <th className="text-left px-6 py-2 font-medium">Status</th>
+              <th className="text-left px-6 py-2 font-medium">Roles</th>
+              <th className="text-right px-6 py-2 font-medium">Actions</th>
+            </tr></thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <td className="px-6 py-3">
+                    <p className="font-medium text-gray-900">{u.firstName} {u.lastName}</p>
+                    <p className="text-xs text-gray-400">#{u.id}</p>
+                  </td>
+                  <td className="px-6 py-3">
+                    <p className="text-gray-700">{u.email}</p>
+                    <p className="text-xs text-gray-400">{u.phoneNo}</p>
+                  </td>
+                  <td className="px-6 py-3">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${u.userStatus === 'ACTIVE' ? 'bg-green-50 text-[#00A651]' : 'bg-red-50 text-red-600'}`}>{u.userStatus}</span>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="flex flex-wrap gap-1">{u.authRoles?.map((r) => <span key={r.id} className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{r.name.replace('ROLE_', '')}</span>)}</div>
+                  </td>
+                  <td className="px-6 py-3 text-right whitespace-nowrap">
+                    <button onClick={() => openEdit(u)} className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#00A651]/10 text-[#00A651] hover:bg-[#00A651] hover:text-white transition-colors mr-1.5">Edit</button>
+                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id} className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50">
+                      {deletingId === u.id ? '...' : 'Delete'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
   );
 }
 
-// Documents Tab Component
-const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
-
-interface DocumentsTabProps {
-  documents: PartnerDocument[];
-  viewDocument: (documentType: string, documentName: string) => Promise<void>;
-  downloadDocument: (documentType: string, documentName: string) => Promise<void>;
-  viewingDoc: string | null;
-  downloadingDoc: string | null;
-  docStatuses: Record<string, { status: string; rejectionReason: string }>;
-  onUpdateStatus: (docType: string, status: string, rejectionReason: string) => Promise<void>;
-  updatingDocStatus: string | null;
+/* ═══════════════════════════════════════════════════════════════════
+   Purchases Tab
+   ═══════════════════════════════════════════════════════════════════ */
+function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
+  if (purchases.length === 0) return <p className="text-center text-gray-400 py-12 text-sm">No purchase history</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
+          <th className="text-left px-6 py-2 font-medium">Package</th>
+          <th className="text-left px-6 py-2 font-medium">Purchased</th>
+          <th className="text-left px-6 py-2 font-medium">Expires</th>
+          <th className="text-right px-6 py-2 font-medium">Price</th>
+          <th className="text-right px-6 py-2 font-medium">Total</th>
+          <th className="text-left px-6 py-2 font-medium">Status</th>
+        </tr></thead>
+        <tbody>
+          {purchases.map((p) => (
+            <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+              <td className="px-6 py-3 font-medium text-gray-900">{p.packageName || p.packageAccounts?.[0]?.name || 'N/A'}</td>
+              <td className="px-6 py-3 text-gray-500">{p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString() : '--'}</td>
+              <td className="px-6 py-3 text-gray-500">{p.expireDate ? new Date(p.expireDate).toLocaleDateString() : '--'}</td>
+              <td className="px-6 py-3 text-right text-gray-700">৳{p.price?.toLocaleString() || 0}</td>
+              <td className="px-6 py-3 text-right font-medium text-gray-900">৳{p.total?.toLocaleString() || 0}</td>
+              <td className="px-6 py-3">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded ${p.status === 'ACTIVE' ? 'bg-green-50 text-[#00A651]' : p.status === 'EXPIRED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'}`}>{p.status}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
-function DocumentsTab({
-  documents,
-  viewDocument,
-  downloadDocument,
-  viewingDoc,
-  downloadingDoc,
-  docStatuses,
-  onUpdateStatus,
-  updatingDocStatus,
-}: DocumentsTabProps) {
-  const [rejectingDoc, setRejectingDoc] = useState<string | null>(null);
-  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
-
-  const availableDocs = documents.filter((doc) => doc.available);
-  const unavailableDocs = documents.filter((doc) => !doc.available);
-
-  const getDocTypeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'nidfront':
-      case 'nidback':
-        return '🪪';
-      case 'tradelicense':
-        return '📜';
-      case 'tin':
-      case 'taxreturn':
-        return '🧾';
-      case 'photo':
-        return '📷';
-      case 'bin':
-      case 'vat':
-        return '📋';
-      case 'btrc':
-        return '📡';
-      case 'sla':
-        return '📝';
-      default:
-        return '📄';
-    }
-  };
-
-  const getStatusBadge = (docType: string) => {
-    const statusInfo = docStatuses[docType];
-    const status = statusInfo?.status || 'PENDING';
-    switch (status) {
-      case 'APPROVED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            Approved
-          </span>
-        );
-      case 'REJECTED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-            Rejected
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-            </svg>
-            Pending
-          </span>
-        );
-    }
-  };
-
-  const handleApprove = async (docType: string) => {
-    setRejectingDoc(null);
-    await onUpdateStatus(docType, 'APPROVED', '');
-  };
-
-  const handleRejectSubmit = async (docType: string) => {
-    const reason = rejectionReasons[docType] || '';
-    await onUpdateStatus(docType, 'REJECTED', reason);
-    setRejectingDoc(null);
-  };
-
-  const borderColorByStatus = (docType: string) => {
-    const status = docStatuses[docType]?.status || 'PENDING';
-    if (status === 'APPROVED') return 'border-green-200 bg-green-50';
-    if (status === 'REJECTED') return 'border-red-200 bg-red-50';
-    return 'border-yellow-200 bg-yellow-50';
-  };
+/* ═══════════════════════════════════════════════════════════════════
+   Services / Subscriptions Tab
+   ═══════════════════════════════════════════════════════════════════ */
+function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subscriptions: PurchaseHistory[]; serviceStatus: ServiceStatus; partnerName: string }) {
+  const services = [
+    { id: 'pbx' as const, name: 'Hosted PBX', icon: '📞', url: 'https://hippbx.btcliptelephony.gov.bd:5174/', gradient: 'from-blue-500 to-blue-600', lightBg: 'bg-blue-50 border-blue-200', lightText: 'text-blue-700' },
+    { id: 'hcc' as const, name: 'Contact Center', icon: '👥', url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`, gradient: 'from-purple-500 to-purple-600', lightBg: 'bg-purple-50 border-purple-200', lightText: 'text-purple-700' },
+    { id: 'vbs' as const, name: 'Voice Broadcast', icon: '📢', url: 'https://vbs.btcliptelephony.gov.bd/', gradient: 'from-orange-500 to-orange-600', lightBg: 'bg-orange-50 border-orange-200', lightText: 'text-orange-700' },
+  ];
 
   return (
-    <div className="p-6">
-      {/* Available Documents */}
-      <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">
-          Uploaded Documents ({availableDocs.length})
-        </h3>
-        {availableDocs.length === 0 ? (
-          <p className="text-gray-500 text-sm">No documents uploaded yet</p>
+    <div className="p-6 space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {services.map((s) => {
+          const active = serviceStatus[s.id]?.active;
+          return (
+            <div key={s.id} className={`rounded-xl border overflow-hidden ${active ? s.lightBg : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`px-4 py-3 ${active ? `bg-gradient-to-r ${s.gradient}` : 'bg-gray-100'}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{s.icon}</span>
+                  <p className={`text-sm font-bold ${active ? 'text-white' : 'text-gray-400'}`}>{s.name}</p>
+                </div>
+              </div>
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                    {active ? 'Active' : 'Inactive'}
+                  </span>
+                  {active && (
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className={`text-xs font-medium ${s.lightText} hover:underline`}>
+                      Open Portal →
+                    </a>
+                  )}
+                </div>
+                {active && serviceStatus[s.id].purchases.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {serviceStatus[s.id].purchases.slice(0, 3).map((p, i) => (
+                      <span key={i} className="text-xs px-2 py-0.5 bg-white rounded-full text-gray-600 border border-gray-100">{p.packageName || 'Package'}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {subscriptions.filter((s) => s.idPackage !== 9999).length > 0 && (
+        <div className="overflow-x-auto border border-gray-100 rounded-lg">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
+              <th className="text-left px-4 py-2 font-medium">Package</th>
+              <th className="text-left px-4 py-2 font-medium">Start</th>
+              <th className="text-left px-4 py-2 font-medium">Expires</th>
+              <th className="text-right px-4 py-2 font-medium">Price</th>
+              <th className="text-center px-4 py-2 font-medium">Status</th>
+            </tr></thead>
+            <tbody>{subscriptions.filter((s) => s.idPackage !== 9999).map((s) => (
+              <tr key={s.id} className="border-b border-gray-50">
+                <td className="px-4 py-2 font-medium text-gray-900">{s.packageName || s.packageAccounts?.[0]?.name || 'N/A'}</td>
+                <td className="px-4 py-2 text-gray-500">{s.purchaseDate ? new Date(s.purchaseDate).toLocaleDateString() : '--'}</td>
+                <td className="px-4 py-2 text-gray-500">{s.expireDate ? new Date(s.expireDate).toLocaleDateString() : '--'}</td>
+                <td className="px-4 py-2 text-right text-gray-700">৳{s.price?.toLocaleString() || 0}</td>
+                <td className="px-4 py-2 text-center"><span className={`text-xs px-2 py-0.5 rounded ${s.status === 'ACTIVE' ? 'bg-green-50 text-[#00A651]' : 'bg-red-50 text-red-600'}`}>{s.status}</span></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Documents Tab
+   ═══════════════════════════════════════════════════════════════════ */
+const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
+
+function DocumentsTab({
+  documents, viewDocument, downloadDocument, viewingDoc, downloadingDoc,
+  docStatuses, onUpdateStatus, updatingDocStatus, partnerId, onRefresh,
+}: {
+  documents: PartnerDocument[]; viewDocument: (t: string, n: string) => Promise<void>;
+  downloadDocument: (t: string, n: string) => Promise<void>; viewingDoc: string | null;
+  downloadingDoc: string | null; docStatuses: Record<string, { status: string; rejectionReason: string }>;
+  onUpdateStatus: (t: string, s: string, r: string) => Promise<void>; updatingDocStatus: string | null;
+  partnerId: number; onRefresh: () => void;
+}) {
+  const [rejectingDoc, setRejectingDoc] = useState<string | null>(null);
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
+
+  const available = documents.filter((d) => d.available);
+  const missing = documents.filter((d) => !d.available);
+
+  const handleUpload = async (docType: string, file: File) => {
+    try { setUploadingDoc(docType); const t = localStorage.getItem('authToken'); if (t) { await uploadPartnerDocument(partnerId, docType, file, t); toast.success('Uploaded'); onRefresh(); } }
+    catch { toast.error('Upload failed'); }
+    finally { setUploadingDoc(null); }
+  };
+
+  const handleDeleteDoc = async (docType: string, docName: string) => {
+    if (!confirm(`Delete "${docName}"?`)) return;
+    try { setDeletingDoc(docType); const t = localStorage.getItem('authToken'); if (t) { await deletePartnerDocument(partnerId, docType, t); toast.success('Deleted'); onRefresh(); } }
+    catch { toast.error('Delete failed'); }
+    finally { setDeletingDoc(null); }
+  };
+
+  const statusColor = (s: string) => s === 'APPROVED' ? 'bg-green-50 text-[#00A651]' : s === 'REJECTED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700';
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Uploaded Documents */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Uploaded ({available.length})</h3>
+        {available.length === 0 ? (
+          <p className="text-sm text-gray-400">No documents uploaded</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {availableDocs.map((doc) => {
-              const currentStatus = docStatuses[doc.type]?.status || 'PENDING';
-              const rejectionReason = docStatuses[doc.type]?.rejectionReason || '';
+          <div className="space-y-3">
+            {available.map((doc) => {
+              const status = docStatuses[doc.type]?.status || 'PENDING';
+              const reason = docStatuses[doc.type]?.rejectionReason || '';
               const isUpdating = updatingDocStatus === doc.type;
               const isRejecting = rejectingDoc === doc.type;
 
               return (
-                <div
-                  key={doc.type}
-                  className={`border rounded-lg p-4 ${borderColorByStatus(doc.type)}`}
-                >
-                  {/* Header row */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl">{getDocTypeIcon(doc.type)}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                        {MAJOR_DOCS.has(doc.type) && (
-                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded bg-orange-100 text-orange-700 uppercase tracking-wide">
-                            Major
-                          </span>
-                        )}
-                      </div>
+                <div key={doc.type} className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg hover:border-gray-200 transition-colors">
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                      {MAJOR_DOCS.has(doc.type) && <span className="text-[10px] font-bold uppercase tracking-wide text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">Required</span>}
+                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${statusColor(status)}`}>{status}</span>
                     </div>
-                    {getStatusBadge(doc.type)}
+                    {status === 'REJECTED' && reason && !isRejecting && (
+                      <p className="text-xs text-red-500 mt-1">Rejected: {reason}</p>
+                    )}
+
+                    {/* Reject form */}
+                    {isRejecting && (
+                      <div className="mt-2 flex gap-2 items-start">
+                        <input type="text" placeholder="Rejection reason..." value={rejectionReasons[doc.type] || ''} onChange={(e) => setRejectionReasons((p) => ({ ...p, [doc.type]: e.target.value }))}
+                          className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-md outline-none focus:border-red-300" />
+                        <button onClick={async () => { await onUpdateStatus(doc.type, 'REJECTED', rejectionReasons[doc.type] || ''); setRejectingDoc(null); }} disabled={isUpdating}
+                          className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50">Confirm</button>
+                        <button onClick={() => setRejectingDoc(null)} className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700">Cancel</button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Rejection reason (when rejected) */}
-                  {currentStatus === 'REJECTED' && rejectionReason && !isRejecting && (
-                    <p className="text-xs text-red-600 mb-3 bg-red-100 rounded px-2 py-1">
-                      <span className="font-semibold">Reason:</span> {rejectionReason}
-                    </p>
-                  )}
-
-                  {/* Reject reason input form */}
-                  {isRejecting && (
-                    <div className="mb-3">
-                      <textarea
-                        className="w-full text-xs border border-red-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-400 resize-none"
-                        rows={2}
-                        placeholder="Enter rejection reason..."
-                        value={rejectionReasons[doc.type] || ''}
-                        onChange={(e) =>
-                          setRejectionReasons((prev) => ({ ...prev, [doc.type]: e.target.value }))
-                        }
-                      />
-                      <div className="flex gap-2 mt-1">
-                        <button
-                          onClick={() => handleRejectSubmit(doc.type)}
-                          disabled={isUpdating}
-                          className="flex-1 text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-                        >
-                          {isUpdating ? 'Saving...' : 'Confirm Reject'}
-                        </button>
-                        <button
-                          onClick={() => setRejectingDoc(null)}
-                          className="flex-1 text-xs px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
-                    {/* View */}
-                    <button
-                      onClick={() => viewDocument(doc.type, doc.name)}
-                      disabled={viewingDoc === doc.type}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#00A651] hover:bg-[#008040] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {viewingDoc === doc.type ? (
-                        <>
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          View
-                        </>
-                      )}
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                    <button onClick={() => viewDocument(doc.type, doc.name)} disabled={viewingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#00A651] text-white hover:bg-[#004D28] disabled:opacity-50 transition-colors">
+                      {viewingDoc === doc.type ? '...' : 'View'}
                     </button>
-                    {/* Download */}
-                    <button
-                      onClick={() => downloadDocument(doc.type, doc.name)}
-                      disabled={downloadingDoc === doc.type}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#00A651] bg-white hover:bg-green-50 border-2 border-[#00A651] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {downloadingDoc === doc.type ? (
-                        <>
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          Download
-                        </>
-                      )}
+                    <button onClick={() => downloadDocument(doc.type, doc.name)} disabled={downloadingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-colors">
+                      {downloadingDoc === doc.type ? '...' : 'Download'}
                     </button>
-                    {/* Approve */}
+                    <label className={`px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(doc.type, f); e.target.value = ''; }} />
+                      {uploadingDoc === doc.type ? '...' : 'Replace'}
+                    </label>
+                    <button onClick={() => handleDeleteDoc(doc.type, doc.name)} disabled={deletingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors">
+                      {deletingDoc === doc.type ? '...' : 'Delete'}
+                    </button>
                     {!isRejecting && (
-                      <button
-                        onClick={() => handleApprove(doc.type)}
-                        disabled={isUpdating || currentStatus === 'APPROVED'}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isUpdating && currentStatus !== 'REJECTED' ? (
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        ) : (
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                        Approve
-                      </button>
-                    )}
-                    {/* Reject */}
-                    {!isRejecting && (
-                      <button
-                        onClick={() => setRejectingDoc(doc.type)}
-                        disabled={isUpdating || currentStatus === 'REJECTED'}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                        Reject
-                      </button>
+                      <>
+                        <button onClick={async () => { setRejectingDoc(null); await onUpdateStatus(doc.type, 'APPROVED', ''); }} disabled={isUpdating || status === 'APPROVED'}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-30 transition-colors">Approve</button>
+                        <button onClick={() => setRejectingDoc(doc.type)} disabled={isUpdating || status === 'REJECTED'}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-30 transition-colors">Reject</button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -1200,26 +794,17 @@ function DocumentsTab({
       </div>
 
       {/* Missing Documents */}
-      {unavailableDocs.length > 0 && (
+      {missing.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Missing Documents ({unavailableDocs.length})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {unavailableDocs.map((doc) => (
-              <div
-                key={doc.type}
-                className="border border-gray-200 bg-gray-50 rounded-lg p-4 opacity-60"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl grayscale">{getDocTypeIcon(doc.type)}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600">{doc.name}</p>
-                  </div>
-                  <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-600">
-                    Not Uploaded
-                  </span>
-                </div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Missing ({missing.length})</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {missing.map((doc) => (
+              <div key={doc.type} className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                <span className="text-sm text-gray-500">{doc.name}</span>
+                <label className={`px-3 py-1 text-xs font-medium rounded-full bg-[#00A651] text-white hover:bg-[#004D28] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(doc.type, f); e.target.value = ''; }} />
+                  {uploadingDoc === doc.type ? 'Uploading...' : 'Upload'}
+                </label>
               </div>
             ))}
           </div>

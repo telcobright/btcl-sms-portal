@@ -5,6 +5,7 @@ import {
   addPartnerDetails,
   createPartner,
   loginPartner,
+  rollbackRegistration,
   sendOtp,
   verifyOtp,
   sendEmailOtp,
@@ -94,6 +95,9 @@ export default function RegisterPage() {
   const [isVerifyingNid, setIsVerifyingNid] = useState(false);
   const [nidVerificationData, setNidVerificationData] = useState<any>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  // Track sub-steps in final registration to allow retry on partial failure
+  const [createdPartnerId, setCreatedPartnerId] = useState<number | null>(null);
+  const [partnerJwtToken, setPartnerJwtToken] = useState<string | null>(null);
   // OCR states
   const [isExtractingOcr, setIsExtractingOcr] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
@@ -173,16 +177,80 @@ export default function RegisterPage() {
   const watchedCustomerType = useWatch({ control: otherInfoForm.control, name: 'customerType' });
   const isNidFrontUploaded = !!watchedNidFrontSide;
 
+  // Rollback on page close/refresh and warn user if partner was partially created
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (createdPartnerId && !showSuccessPopup) {
+        // Fire rollback via beacon API (works even when page is closing)
+        const payload = JSON.stringify({ idPartner: createdPartnerId, email: verifiedEmail });
+        navigator.sendBeacon(
+          `${API_BASE_URL}${API_ENDPOINTS.partner.rollbackRegistration}`,
+          new Blob([payload], { type: 'application/json' })
+        );
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [createdPartnerId, verifiedEmail, showSuccessPopup]);
+
+  // Rollback on component unmount (client-side navigation away)
+  useEffect(() => {
+    return () => {
+      if (createdPartnerId && verifiedEmail && !showSuccessPopup) {
+        const payload = JSON.stringify({ idPartner: createdPartnerId, email: verifiedEmail });
+        navigator.sendBeacon(
+          `${API_BASE_URL}${API_ENDPOINTS.partner.rollbackRegistration}`,
+          new Blob([payload], { type: 'application/json' })
+        );
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createdPartnerId, verifiedEmail, showSuccessPopup]);
+
+  // Rollback partially created partner and reset state
+  const handleRollbackAndReset = async () => {
+    if (createdPartnerId && verifiedEmail) {
+      toast.loading('Rolling back registration...', { id: 'rollback' });
+      await rollbackRegistration(createdPartnerId, verifiedEmail);
+      toast.dismiss('rollback');
+      toast.success('Registration cancelled. You can start over.');
+    }
+    // Reset all state
+    setCreatedPartnerId(null);
+    setPartnerJwtToken(null);
+    setStep(1);
+    setEmailOtpSent(false);
+    setEmailOtpVerified(false);
+    setPhoneOtpSent(false);
+    setPhoneOtpVerified(false);
+    setOtpSent(false);
+    setOtpVerified(false);
+    setVerifiedPhone('');
+    setVerifiedEmail('');
+    setNidVerified(false);
+    setNidVerificationFailed(false);
+    setNidVerificationData(null);
+    setOcrResult(null);
+    setNidExtractedFromOcr(false);
+    verificationForm.reset();
+    personalInfoForm.reset();
+    otherInfoForm.reset();
+  };
+
   // Watch verification form fields for Send OTP button
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const subscription = verificationForm.watch((value) => {
+      const subscription = verificationForm.watch(async (value) => {
         if (!emailOtpSent) {
-          // For Send Email OTP button
+          // For Send Email OTP button — trigger validation then check
           const hasAllFields = !!(value.companyName && value.email && value.phone);
-          const emailValid = !verificationForm.formState.errors.email;
-          const phoneValid = !verificationForm.formState.errors.phone;
-          setCanSendOtp(hasAllFields && emailValid && phoneValid);
+          if (hasAllFields) {
+            const valid = await verificationForm.trigger(['companyName', 'email', 'phone']);
+            setCanSendOtp(valid);
+          } else {
+            setCanSendOtp(false);
+          }
         } else if (!emailOtpVerified) {
           // For Verify Email OTP button
           const hasEmailOtp = !!(value.emailOtp);
@@ -200,7 +268,7 @@ export default function RegisterPage() {
   // Watch personal info form fields for Next Step button
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const subscription = personalInfoForm.watch((value) => {
+      const subscription = personalInfoForm.watch(async (value) => {
         const hasAllFields = !!(
           value.fullName &&
           value.dateOfBirth &&
@@ -208,7 +276,12 @@ export default function RegisterPage() {
           value.identityCardFrontSide &&
           value.identityCardBackSide
         );
-        setCanProceedPersonal(hasAllFields);
+        if (hasAllFields) {
+          const valid = await personalInfoForm.trigger();
+          setCanProceedPersonal(valid);
+        } else {
+          setCanProceedPersonal(false);
+        }
       });
       return () => subscription.unsubscribe();
     }
@@ -351,8 +424,8 @@ export default function RegisterPage() {
 
       if (!validateResponse.ok || validateData === false) {
         if (validateData.errorCode === '400 BAD_REQUEST') {
-          if (validateData.message === 'Telephone number already exists') {
-            verificationForm.setError('phone', { type: 'manual', message: 'Telephone number already exists' });
+          if (validateData.message === 'Mobile number already exists') {
+            verificationForm.setError('phone', { type: 'manual', message: 'Mobile number already exists' });
           } else if (validateData.message === 'Email already exists') {
             verificationForm.setError('email', { type: 'manual', message: 'Email already exists' });
           } else if (validateData.message === 'Partner Name already exists') {
@@ -656,10 +729,12 @@ export default function RegisterPage() {
       // Get company name from localStorage
       const companyName = localStorage.getItem('companyName');
 
-        const fullName = personalInfoData.fullName;
-      // 2. First call: create partner (NO TOKEN REQUIRED)
-      console.log('\n🔵 STEP 2: Creating partner account...');
-        // Set customerPrePaid based on customer type selection
+      const fullName = personalInfoData.fullName;
+
+      // 2. First call: create partner (skip if already created on a previous attempt)
+      let idPartner = createdPartnerId;
+      if (!idPartner) {
+        console.log('\n🔵 STEP 2: Creating partner account...');
         const customerPrePaidValue = otherInfoData.customerType === 'prepaid' ? 1 : 2;
 
         const partnerPayload = {
@@ -683,43 +758,43 @@ export default function RegisterPage() {
             callSrcId: 2,
         };
 
-      const partnerResponse = await createPartner(partnerPayload);
+        const partnerResponse = await createPartner(partnerPayload);
 
-      // Extract partnerId
-      const idPartner = partnerResponse?.idPartner || partnerResponse?.id;
-      if (!idPartner) {
-        console.error('❌ Partner response:', partnerResponse);
-        throw new Error('Partner ID missing in createPartner response');
+        idPartner = partnerResponse?.idPartner || partnerResponse?.id || null;
+        if (!idPartner) {
+          console.error('❌ Partner response:', partnerResponse);
+          throw new Error('Partner ID missing in createPartner response');
+        }
+        setCreatedPartnerId(idPartner);
+        console.log('✅ Partner created with ID:', idPartner);
+      } else {
+        console.log('⏩ Skipping partner creation (already created with ID:', idPartner, ')');
       }
-      console.log('✅ Partner created with ID:', idPartner);
 
-      // 3. Second call: login to get JWT token
-      console.log('\n🔵 STEP 3: Logging in to get JWT token...');
-      console.log('Login credentials:', {
-        email: verifiedEmail,
-        passwordLength: 8,
-      });
-
-      const loginResponse = await loginPartner(
-        verifiedEmail,
-        '11111111'
-      );
-
-      const jwtToken = loginResponse.token;
+      // 3. Second call: login to get JWT token (skip if already obtained)
+      let jwtToken = partnerJwtToken;
       if (!jwtToken) {
-        console.error('❌ Login response:', loginResponse);
-        throw new Error('JWT token missing in login response');
-      }
-      console.log('✅ JWT token received:', jwtToken.substring(0, 50) + '...');
-      console.log('📋 Token payload:', {
-        roles: loginResponse.authRoles,
-        partnerId: loginResponse.idPartner || 'N/A',
-        sessionStart: loginResponse.sessionStartDateTime,
-      });
+        console.log('\n🔵 STEP 3: Logging in to get JWT token...');
 
-      // Small delay to ensure token is propagated
-      console.log('⏳ Waiting 2 seconds for token to be active...');
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+        const loginResponse = await loginPartner(
+          verifiedEmail,
+          '11111111'
+        );
+
+        jwtToken = loginResponse.token;
+        if (!jwtToken) {
+          console.error('❌ Login response:', loginResponse);
+          throw new Error('JWT token missing in login response');
+        }
+        setPartnerJwtToken(jwtToken);
+        console.log('✅ JWT token received:', jwtToken.substring(0, 50) + '...');
+
+        // Small delay to ensure token is propagated
+        console.log('⏳ Waiting 2 seconds for token to be active...');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } else {
+        console.log('⏩ Skipping login (JWT token already obtained)');
+      }
 
       // 4. Third call: add partner details (WITH TOKEN)
       console.log('\n🔵 STEP 4: Adding partner documents with JWT token...');
@@ -795,6 +870,13 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('❌ Registration failed:', error);
+      // Rollback the partially created partner so the user can retry from scratch
+      if (createdPartnerId && verifiedEmail) {
+        console.log('🔄 Rolling back partially created partner...');
+        await rollbackRegistration(createdPartnerId, verifiedEmail);
+        setCreatedPartnerId(null);
+        setPartnerJwtToken(null);
+      }
       // Provide more specific error messages
       if (error instanceof Error) {
         toast.error(error.message);
@@ -997,17 +1079,17 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="block text-black font-medium mb-1">
-                  Phone Number
+                  Mobile Number
                 </label>
                 <Controller
                   name="phone"
                   control={verificationForm.control}
                   rules={{
-                    required: 'Phone number is required',
+                    required: 'Mobile number is required',
                     pattern: {
                       value: /^\+8801[3-9]\d{8}$/,
                       message:
-                        'Must be a valid Bangladeshi phone number (+8801XXXXXXXXX)',
+                        'Must be a valid Bangladeshi Mobile number (+8801XXXXXXXXX)',
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1032,7 +1114,7 @@ export default function RegisterPage() {
                           else if (value.startsWith('8801') && !value.startsWith('+')) {
                             value = '+' + value;
                           }
-                          // If starts with 1 and length suggests it's a phone number, add +880
+                          // If starts with 1 and length suggests it's a Mobile number, add +880
                           else if (value.startsWith('1') && value.length >= 10 && value.length <= 11) {
                             value = '+880' + value;
                           }
@@ -1150,7 +1232,7 @@ export default function RegisterPage() {
                 <>
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
                     <p className="text-blue-800 text-sm">
-                      <strong>Step 2 of 2:</strong> Verify your phone number
+                      <strong>Step 2 of 2:</strong> Verify your Mobile number
                     </p>
                   </div>
                   <div>
@@ -1527,7 +1609,7 @@ export default function RegisterPage() {
                       control={personalInfoForm.control}
                       rules={{
                         required: 'NID number is required',
-                        validate: (value) => {
+                        validate: async (value) => {
                           const digitType = watchedNidDigitType;
                           if (digitType === '10' && value.length !== 10) {
                             return 'NID must be exactly 10 digits';
@@ -1537,6 +1619,20 @@ export default function RegisterPage() {
                           }
                           if (!/^\d+$/.test(value)) {
                             return 'NID must contain only numbers';
+                          }
+                          // Check NID uniqueness when length is valid
+                          try {
+                            const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.nid.checkNid}`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ nid: value }),
+                            });
+                            const data = await res.json();
+                            if (data.exists) {
+                              return 'This NID is already registered';
+                            }
+                          } catch {
+                            // If check fails, allow to proceed
                           }
                           return true;
                         },
@@ -2066,15 +2162,14 @@ export default function RegisterPage() {
               />
 
               <div className="flex justify-between pt-4 gap-4">
-                {!nidVerified && (
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    className="bg-gray-300 px-4 py-2 rounded-md w-full"
-                  >
-                    Back
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleRollbackAndReset}
+                  disabled={isSubmitting}
+                  className="bg-red-500 text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel Registration
+                </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !otherInfoForm.formState.isValid}

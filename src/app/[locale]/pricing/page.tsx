@@ -499,7 +499,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                         </>
                       ) : serviceId === 'hosted-pbx' ? (
                         <>
-                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
+                          <span className="text-4xl font-bold text-gray-900">৳{(isPostpaid
+                            ? (pkg.id === 'bronze' ? 1200 : pkg.id === 'silver' ? 2500 : pkg.id === 'gold' ? 4500 : pkg.price)
+                            : pkg.price
+                          ).toLocaleString()}</span>
                           <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
                           <div className="text-sm text-gray-500 mt-2">
                             {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
@@ -517,7 +520,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                       ) : (
                         /* contact-center */
                         <>
-                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
+                          <span className="text-4xl font-bold text-gray-900">৳{(isPostpaid
+                            ? (pkg.id === 'basic' ? 8500 : pkg.price)
+                            : pkg.price
+                          ).toLocaleString()}</span>
                           <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
                           <div className="text-sm text-gray-500 mt-2">{typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}</div>
                           {isPostpaid && (

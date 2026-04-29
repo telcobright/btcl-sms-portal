@@ -43,6 +43,7 @@ export default function LoginPage() {
     })
     const [isLoading, setIsLoading] = useState(false)
     const [loginError, setLoginError] = useState('')
+    const [isDeactivated, setIsDeactivated] = useState(false)
 
     const validateForm = () => {
         const newErrors: any = {}
@@ -61,7 +62,7 @@ export default function LoginPage() {
         if (errors[field as keyof typeof errors]) {
             setErrors(prev => ({ ...prev, [field]: '' }))
         }
-        if (loginError) setLoginError('')
+        if (loginError) { setLoginError(''); setIsDeactivated(false); }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +71,7 @@ export default function LoginPage() {
 
         setIsLoading(true)
         setLoginError('')
+        setIsDeactivated(false)
 
         try {
             const response = await loginUser({
@@ -130,8 +132,10 @@ export default function LoginPage() {
             }
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || error.message || 'Invalid email or password. Please try again.'
+            const deactivated = error.response?.status === 403
+            setIsDeactivated(deactivated)
             setLoginError(errorMessage)
-            toast.error(errorMessage)
+            if (!deactivated) toast.error(errorMessage)
         } finally {
             setIsLoading(false)
         }
@@ -150,8 +154,26 @@ export default function LoginPage() {
                         <CardContent>
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {loginError && (
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-                                        {loginError}
+                                    <div className={`flex items-start gap-3 rounded-xl p-4 border ${isDeactivated ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-xl flex-shrink-0 leading-none mt-0.5">
+                                            {isDeactivated ? '🚫' : '⚠️'}
+                                        </span>
+                                        <div className="flex-1">
+                                            <p className={`font-bold text-sm ${isDeactivated ? 'text-orange-800' : 'text-red-800'}`}>
+                                                {isDeactivated ? 'Account Deactivated' : 'Login Failed'}
+                                            </p>
+                                            <p className={`text-sm mt-0.5 ${isDeactivated ? 'text-orange-700' : 'text-red-700'}`}>
+                                                {loginError}
+                                            </p>
+                                            {isDeactivated && (
+                                                <p className="text-sm mt-2 text-orange-800 font-medium">
+                                                    For support, call{' '}
+                                                    <a href="tel:+88028831115000" className="font-bold text-orange-900 hover:underline">
+                                                        +880-2-4831115000
+                                                    </a>
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 

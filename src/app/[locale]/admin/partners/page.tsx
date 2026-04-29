@@ -16,6 +16,7 @@ export default function PartnersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [partnerTypeFilter, setPartnerTypeFilter] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(0);
 
   const fetchPartners = useCallback(async () => {
@@ -63,9 +64,15 @@ export default function PartnersPage() {
       result = result.filter((p) => p.partnerType === partnerTypeFilter);
     }
 
+    if (statusFilter === 'ACTIVE') {
+      result = result.filter((p) => p.status !== 'DEACTIVATED');
+    } else if (statusFilter === 'DEACTIVATED') {
+      result = result.filter((p) => p.status === 'DEACTIVATED');
+    }
+
     setFilteredPartners(result);
     setCurrentPage(0); // Reset to first page when filters change
-  }, [searchTerm, partnerTypeFilter, partners]);
+  }, [searchTerm, partnerTypeFilter, statusFilter, partners]);
 
   // Pagination
   const totalPages = Math.ceil(filteredPartners.length / PAGE_SIZE);
@@ -155,6 +162,19 @@ export default function PartnersPage() {
             </select>
           </div>
 
+          {/* Status Filter */}
+          <div className="w-full md:w-40">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A651] focus:border-transparent"
+            >
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="DEACTIVATED">Deactivated</option>
+            </select>
+          </div>
+
           {/* Refresh Button */}
           <button
             onClick={fetchPartners}
@@ -194,6 +214,9 @@ export default function PartnersPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -202,7 +225,7 @@ export default function PartnersPage() {
             <tbody className="divide-y divide-gray-200">
               {paginatedPartners.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     No partners found
                   </td>
                 </tr>
@@ -224,11 +247,6 @@ export default function PartnersPage() {
                             <p className="text-sm font-medium text-gray-900">
                               {partner.partnerName || 'N/A'}
                             </p>
-                            {partner.status === 'DEACTIVATED' && (
-                              <span className="inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                                Deactivated
-                              </span>
-                            )}
                           </div>
                           <p className="text-sm text-gray-500">
                             {partner.city || partner.country || 'No location'}
@@ -253,6 +271,11 @@ export default function PartnersPage() {
                       {partner.date1
                         ? new Date(partner.date1).toLocaleDateString()
                         : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${partner.status === 'DEACTIVATED' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {partner.status === 'DEACTIVATED' ? 'Deactivated' : 'Active'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <Link

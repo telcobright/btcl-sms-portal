@@ -260,9 +260,9 @@ export default function PartnerDetailsPage() {
               <span className="text-xs text-white/60">#{partner.idPartner}</span>
               <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getPartnerTypeLabel(partner.partnerType)}</span>
               <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getCustomerPrePaidLabel(partner.customerPrePaid)}</span>
-              {partner.status === 'DEACTIVATED' && (
-                <span className="px-2 py-0.5 rounded-full bg-red-500/80 text-white text-xs font-medium">Deactivated</span>
-              )}
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${partner.status === 'DEACTIVATED' ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white'}`}>
+                {partner.status === 'DEACTIVATED' ? 'Deactivated' : 'Active'}
+              </span>
             </div>
           </div>
         </div>

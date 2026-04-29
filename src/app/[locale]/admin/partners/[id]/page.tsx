@@ -11,6 +11,8 @@ import {
   getServiceStatus,
   getPartnerTypeLabel,
   getCustomerPrePaidLabel,
+  deactivatePartner,
+  reactivatePartner,
   Partner,
   PartnerUser,
   PurchaseHistory,
@@ -45,6 +47,7 @@ export default function PartnerDetailsPage() {
   const [pdfViewerData, setPdfViewerData] = useState<{ url: string; name: string } | null>(null);
   const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
   const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -241,6 +244,33 @@ export default function PartnerDetailsPage() {
     }
   };
 
+  const handleToggleStatus = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken || !partner) return;
+    const isDeactivated = partner.status === 'DEACTIVATED';
+    const confirmed = window.confirm(
+      isDeactivated
+        ? `Reactivate ${partner.partnerName}? They will be able to log in again.`
+        : `Deactivate ${partner.partnerName}? They will be blocked from logging in.`
+    );
+    if (!confirmed) return;
+    try {
+      setDeactivating(true);
+      if (isDeactivated) {
+        await reactivatePartner(partnerId, authToken);
+        setPartner((p) => p ? { ...p, status: 'ACTIVE' } : p);
+      } else {
+        await deactivatePartner(partnerId, authToken);
+        setPartner((p) => p ? { ...p, status: 'DEACTIVATED' } : p);
+      }
+    } catch (err) {
+      console.error('Failed to toggle partner status:', err);
+      alert('Action failed. Please try again.');
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
   const updateDocStatus = async (docType: string, status: string, rejectionReason: string) => {
     try {
       setUpdatingDocStatus(docType);
@@ -345,23 +375,45 @@ export default function PartnerDetailsPage() {
                 <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                   {getCustomerPrePaidLabel(partner.customerPrePaid)}
                 </span>
+                {partner.status === 'DEACTIVATED' && (
+                  <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                    Deactivated
+                  </span>
+                )}
               </div>
             </div>
           </div>
-          <button
-            onClick={fetchData}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleStatus}
+              disabled={deactivating}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                partner.status === 'DEACTIVATED'
+                  ? 'bg-green-50 hover:bg-green-100 text-green-700 border border-green-200'
+                  : 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200'
+              }`}
+            >
+              {deactivating
+                ? 'Processing...'
+                : partner.status === 'DEACTIVATED'
+                ? 'Reactivate'
+                : 'Deactivate'}
+            </button>
+            <button
+              onClick={fetchData}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 

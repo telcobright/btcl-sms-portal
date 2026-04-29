@@ -90,6 +90,8 @@ export const API_ENDPOINTS = {
     getDocumentStatuses: '/partner/get-document-statuses',
     updateDocumentStatus: '/partner/update-document-status',
     checkPurchaseEligibility: '/partner/check-purchase-eligibility',
+    deactivatePartner: '/partner/deactivate-partner',
+    reactivatePartner: '/partner/reactivate-partner',
   },
 
   // NID endpoints

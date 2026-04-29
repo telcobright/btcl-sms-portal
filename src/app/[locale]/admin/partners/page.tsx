@@ -215,9 +215,16 @@ export default function PartnersPage() {
                           </span>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {partner.partnerName || 'N/A'}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900">
+                              {partner.partnerName || 'N/A'}
+                            </p>
+                            {partner.status === 'DEACTIVATED' && (
+                              <span className="inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                                Deactivated
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500">
                             {partner.city || partner.country || 'No location'}
                           </p>

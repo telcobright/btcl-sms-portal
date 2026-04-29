@@ -186,10 +186,10 @@ export default function PartnerDetailsPage() {
       setDeactivating(true);
       if (isDeactivated) {
         await reactivatePartner(partnerId, authToken);
-        setPartner((p) => p ? { ...p, status: 'ACTIVE' } : p);
+        setPartner((p) => p ? { ...p, status: 'ACTIVE', deactivatedAt: null } : p);
       } else {
         await deactivatePartner(partnerId, authToken);
-        setPartner((p) => p ? { ...p, status: 'DEACTIVATED' } : p);
+        setPartner((p) => p ? { ...p, status: 'DEACTIVATED', deactivatedAt: new Date().toISOString() } : p);
       }
     } catch (err) {
       console.error('Failed to toggle partner status:', err);
@@ -263,6 +263,11 @@ export default function PartnerDetailsPage() {
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${partner.status === 'DEACTIVATED' ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white'}`}>
                 {partner.status === 'DEACTIVATED' ? 'Deactivated' : 'Active'}
               </span>
+              {partner.status === 'DEACTIVATED' && partner.deactivatedAt && (
+                <span className="text-xs text-white/60">
+                  since {new Date(partner.deactivatedAt).toLocaleDateString()}
+                </span>
+              )}
             </div>
           </div>
         </div>

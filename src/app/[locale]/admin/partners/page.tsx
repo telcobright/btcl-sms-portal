@@ -276,6 +276,11 @@ export default function PartnersPage() {
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${partner.status === 'DEACTIVATED' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                         {partner.status === 'DEACTIVATED' ? 'Deactivated' : 'Active'}
                       </span>
+                      {partner.status === 'DEACTIVATED' && partner.deactivatedAt && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(partner.deactivatedAt).toLocaleDateString()}
+                        </p>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <Link

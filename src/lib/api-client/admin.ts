@@ -26,6 +26,7 @@ export interface Partner {
   paymentAdvice: string | null;
   userPassword: string | null;
   status: string | null;
+  deactivatedAt: string | null;
 }
 
 export interface PartnerUser {

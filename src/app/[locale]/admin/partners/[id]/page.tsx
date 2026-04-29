@@ -314,8 +314,8 @@ export default function PartnerDetailsPage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg border border-gray-200">
-        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} />}
-        {activeTab === 'users' && <UsersTab users={users} partnerId={partnerId} onRefresh={fetchData} />}
+        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} isDeactivated={partner.status === 'DEACTIVATED'} />}
+        {activeTab === 'users' && <UsersTab users={users} partnerId={partnerId} onRefresh={fetchData} isDeactivated={partner.status === 'DEACTIVATED'} />}
         {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
         {activeTab === 'subscriptions' && <SubscriptionsTab subscriptions={subscriptions} serviceStatus={serviceStatus} partnerName={partner.partnerName || ''} />}
         {activeTab === 'documents' && (
@@ -369,7 +369,7 @@ export default function PartnerDetailsPage() {
 /* ═══════════════════════════════════════════════════════════════════
    Overview Tab
    ═══════════════════════════════════════════════════════════════════ */
-function OverviewTab({ partner, onPartnerUpdate }: { partner: Partner; onPartnerUpdate: (p: Partner) => void }) {
+function OverviewTab({ partner, onPartnerUpdate, isDeactivated }: { partner: Partner; onPartnerUpdate: (p: Partner) => void; isDeactivated?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partner>({ ...partner });
@@ -412,7 +412,7 @@ function OverviewTab({ partner, onPartnerUpdate }: { partner: Partner; onPartner
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-semibold text-gray-900">Partner Information</h2>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className={`${btn.outline} text-[#00A651] border-[#00A651] hover:bg-green-50`}>Edit</button>
+          <button onClick={() => setIsEditing(true)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before editing' : undefined} className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#00A651] border-[#00A651] hover:bg-green-50'}`}>Edit</button>
         ) : (
           <div className="flex gap-2">
             <button onClick={() => { setFormData({ ...partner }); setIsEditing(false); }} className={btn.secondary}>Cancel</button>
@@ -470,7 +470,7 @@ function OverviewTab({ partner, onPartnerUpdate }: { partner: Partner; onPartner
 interface UserFormData { firstName: string; lastName: string; email: string; password: string; phoneNo: string; userStatus: string; }
 const EMPTY_USER: UserFormData = { firstName: '', lastName: '', email: '', password: '', phoneNo: '', userStatus: 'ACTIVE' };
 
-function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partnerId: number; onRefresh: () => void }) {
+function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: PartnerUser[]; partnerId: number; onRefresh: () => void; isDeactivated?: boolean }) {
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<PartnerUser | null>(null);
   const [form, setForm] = useState<UserFormData>(EMPTY_USER);
@@ -515,7 +515,7 @@ function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partn
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900">Users</h2>
-        {!showForm && <button onClick={openAdd} className={btn.primary}>+ Add User</button>}
+        {!showForm && <button onClick={openAdd} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before adding users' : undefined} className={`${btn.primary} ${isDeactivated ? 'opacity-40 cursor-not-allowed' : ''}`}>+ Add User</button>}
       </div>
 
       {showForm && (
@@ -566,8 +566,8 @@ function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partn
                     <div className="flex flex-wrap gap-1">{u.authRoles?.map((r) => <span key={r.id} className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{r.name.replace('ROLE_', '')}</span>)}</div>
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(u)} className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#00A651]/10 text-[#00A651] hover:bg-[#00A651] hover:text-white transition-colors mr-1.5">Edit</button>
-                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id} className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50">
+                    <button onClick={() => openEdit(u)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#00A651]/10 text-[#00A651] hover:bg-[#00A651] hover:text-white'}`}>Edit</button>
+                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id || isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors disabled:opacity-50 ${isDeactivated ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'}`}>
                       {deletingId === u.id ? '...' : 'Delete'}
                     </button>
                   </td>

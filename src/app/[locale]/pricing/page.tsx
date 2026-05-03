@@ -220,7 +220,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       id: 'basic',
       name: locale === 'en' ? 'Basic' : 'বেসিক',
       users: locale === 'en' ? 'Per Agent' : 'প্রতি এজেন্ট',
-      price: 8.5,
+      price: 8500,
       popular: true,
       features: [
         locale === 'en' ? 'Audio Call' : 'অডিও কল',
@@ -245,7 +245,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ivr: 2,
       freeTalktime: 500,
       callCharge: 0.45,
-      price: 12,
+      price: 1200,
       postpaidCredit: 5000,
       popular: false,
       features: [
@@ -270,7 +270,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ivr: 5,
       freeTalktime: 1000,
       callCharge: 0.40,
-      price: 25,
+      price: 2500,
       postpaidCredit: 10000,
       popular: true,
       features: [
@@ -295,7 +295,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       ivr: 10,
       freeTalktime: 3000,
       callCharge: 0.35,
-      price: 45,
+      price: 4500,
       postpaidCredit: 20000,
       popular: false,
       features: [
@@ -499,10 +499,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                         </>
                       ) : serviceId === 'hosted-pbx' ? (
                         <>
-                          <span className="text-4xl font-bold text-gray-900">৳{(isPostpaid
-                            ? (pkg.id === 'bronze' ? 1200 : pkg.id === 'silver' ? 2500 : pkg.id === 'gold' ? 4500 : pkg.price)
-                            : pkg.price
-                          ).toLocaleString()}</span>
+                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
                           <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
                           <div className="text-sm text-gray-500 mt-2">
                             {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
@@ -511,7 +508,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                             <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
                               <div className="text-xs text-blue-600 font-medium mb-1">{locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}</div>
                               <div className="text-lg font-bold text-blue-900">
-                                ৳{pkg.id === 'bronze' ? '84' : pkg.id === 'silver' ? '174' : '312'}
+                                ৳{Math.ceil(pkg.price * 1.15 * 2).toLocaleString()}
                                 <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
                               </div>
                             </div>
@@ -520,17 +517,14 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                       ) : (
                         /* contact-center */
                         <>
-                          <span className="text-4xl font-bold text-gray-900">৳{(isPostpaid
-                            ? (pkg.id === 'basic' ? 8500 : pkg.price)
-                            : pkg.price
-                          ).toLocaleString()}</span>
+                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
                           <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
                           <div className="text-sm text-gray-500 mt-2">{typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}</div>
                           {isPostpaid && (
                             <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
                               <div className="text-xs text-blue-600 font-medium mb-1">{locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}</div>
                               <div className="text-lg font-bold text-blue-900">
-                                ৳{Math.ceil(45 * 1.15 * 6)}
+                                ৳{Math.ceil(pkg.price * 1.15 * 2).toLocaleString()}
                                 <span className="text-sm font-normal text-blue-700">/{locale === 'en' ? 'month' : 'মাস'}</span>
                               </div>
                             </div>

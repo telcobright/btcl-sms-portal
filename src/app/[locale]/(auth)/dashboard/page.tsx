@@ -2147,9 +2147,10 @@ export default function Dashboard() {
                       const amount = purchase.price || 0;
                       const vat = purchase.vat || 0;
                       const total = amount + vat;
+                      const rawStatus = purchase.status || 'ACTIVE';
                       const status = purchase.expireDate && new Date(purchase.expireDate) < new Date()
       ? 'EXPIRED'
-      : 'ACTIVE';
+      : rawStatus;
                       const invoiceDueDate = getInvoiceDueDate(purchaseDate);
 
                       return (
@@ -2243,7 +2244,9 @@ export default function Dashboard() {
                                   ? 'bg-green-100 text-green-700'
                                   : status === 'EXPIRED'
                                     ? 'bg-red-100 text-red-700'
-                                    : 'bg-yellow-100 text-yellow-700'
+                                    : status === 'INACTIVE'
+                                      ? 'bg-gray-100 text-gray-600'
+                                      : 'bg-yellow-100 text-yellow-700'
                               }`}
                             >
                               {status}

@@ -167,6 +167,7 @@ export default function CheckoutModal({
             (p: any) =>
               p.idPackage &&
               p.idPackage !== 9999 &&
+              p.status === 'ACTIVE' &&
               (!p.expireDate || new Date(p.expireDate) > new Date())
           );
 

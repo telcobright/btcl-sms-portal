@@ -133,6 +133,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               const purchases = Array.isArray(data) ? data : (data?.content ?? data?.data ?? [])
               const active = purchases.find((p: any) =>
                 p.idPackage && p.idPackage !== 9999 &&
+                p.status === 'ACTIVE' &&
                 (!p.expireDate || new Date(p.expireDate) > new Date())
               )
               if (active) {

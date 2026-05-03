@@ -548,7 +548,7 @@ export default function Dashboard() {
     try {
       setLoadingInvoices(true);
       const authToken = localStorage.getItem('authToken');
-      const endpoint = API_ENDPOINTS.package.getAllPurchasePartnerWise;
+      const endpoint = API_ENDPOINTS.package.getPurchaseForPartner;
 
       // Define all three API endpoints to fetch from with service identifiers
       const apiConfigs = [
@@ -565,11 +565,7 @@ export default function Dashboard() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify({
-            page: 0,
-            size: 20,
-            idPartner: partnerId,
-          }),
+          body: JSON.stringify({ idPartner: partnerId }),
         }).then(async (response) => {
           if (!response.ok) {
             throw new Error(`Failed to fetch from ${url}`);

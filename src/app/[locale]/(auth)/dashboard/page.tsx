@@ -29,6 +29,17 @@ import { uploadPartnerDocument } from '@/lib/api-client/admin';
 import toast from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 
+// Map idPackage to human-readable names (backend returns packageName=null)
+const PACKAGE_NAMES: Record<number, string> = {
+  9132: 'PBX Bronze',
+  9133: 'PBX Silver',
+  9134: 'PBX Gold',
+  9135: 'VBS Basic',
+  9136: 'VBS Standard',
+  9137: 'VBS Enterprise',
+  9140: 'Contact Center Basic',
+};
+
 // Mock packages data
 const packages = [
   {
@@ -595,6 +606,12 @@ export default function Dashboard() {
           );
           if (filteredList.length > 0) {
             historyByService[service] = true;
+            // Enrich with package name if backend returns null
+            filteredList.forEach((p: PurchaseHistory) => {
+              if (!p.packageName && p.idPackage) {
+                p.packageName = PACKAGE_NAMES[p.idPackage] || 'Package';
+              }
+            });
             allPurchases.push(...filteredList);
           }
         } else {

@@ -2052,9 +2052,15 @@ export default function RegisterPage() {
                         className="mr-2 text-black"
                       />
                       <span className="text-black">Check our </span>
-                      <span className="text-[#00A651] ml-1 cursor-pointer">
+                      <a
+                        href={`/${locale}/terms-and-privacy`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[#00A651] ml-1 cursor-pointer hover:underline"
+                      >
                         terms &amp; conditions
-                      </span>
+                      </a>
                     </label>
                     {fieldState.error && (
                       <p className="text-red-500 text-sm mt-1">

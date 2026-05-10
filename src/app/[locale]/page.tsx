@@ -425,7 +425,7 @@ function PricingPreviewSection({
       id: 'hosted-pbx',
       icon: '☎️',
       name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
-      price: '৳12',
+      price: '৳1,200',
       unit: locale === 'en' ? '/month' : '/মাস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [
@@ -439,7 +439,7 @@ function PricingPreviewSection({
       id: 'voice-broadcast',
       icon: '📢',
       name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট',
-      price: '৳0.60',
+      price: '৳0.90',
       unit: locale === 'en' ? '/message' : '/মেসেজ',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [
@@ -453,7 +453,7 @@ function PricingPreviewSection({
       id: 'contact-center',
       icon: '🎧',
       name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার',
-      price: '৳8.5',
+      price: '৳8,500',
       unit: locale === 'en' ? '/agent/month' : '/এজেন্ট/মাস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [

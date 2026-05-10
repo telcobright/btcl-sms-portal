@@ -25,6 +25,8 @@ export interface Partner {
   vatRegistrationNo: string | null;
   paymentAdvice: string | null;
   userPassword: string | null;
+  status: string | null;
+  deactivatedAt: string | null;
 }
 
 export interface PartnerUser {
@@ -666,4 +668,20 @@ export const getServiceStatus = async (
 
   await Promise.allSettled(fetchPromises);
   return result;
+};
+
+export const deactivatePartner = async (idPartner: number, authToken: string): Promise<void> => {
+  await axios.post(
+    `${API_BASE_URL}${API_ENDPOINTS.partner.deactivatePartner}`,
+    { idPartner },
+    { headers: { Authorization: `Bearer ${authToken}` } }
+  );
+};
+
+export const reactivatePartner = async (idPartner: number, authToken: string): Promise<void> => {
+  await axios.post(
+    `${API_BASE_URL}${API_ENDPOINTS.partner.reactivatePartner}`,
+    { idPartner },
+    { headers: { Authorization: `Bearer ${authToken}` } }
+  );
 };

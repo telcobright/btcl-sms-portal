@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
   partner: {
     validate: '/admin/DashBoard/partner/validate',
     createPartner: '/partner/create-partner',
+    rollbackRegistration: '/partner/rollback-registration',
     partnerDocuments: '/partner/partner-documents',
     getPartner: '/partner/get-partner',
     getPartnerExtra: '/partner/get-partner-extra',
@@ -93,11 +94,14 @@ export const API_ENDPOINTS = {
     updatePartnerDocument: '/partner/update-partner-document',
     deletePartnerDocument: '/partner/delete-partner-document',
     checkPurchaseEligibility: '/partner/check-purchase-eligibility',
+    deactivatePartner: '/partner/deactivate-partner',
+    reactivatePartner: '/partner/reactivate-partner',
   },
 
   // NID endpoints
   nid: {
     verify: '/api/v1/nid/verify',
+    checkNid: '/partner/check-nid',
   },
 
   // Package endpoints

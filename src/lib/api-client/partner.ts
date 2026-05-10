@@ -245,6 +245,21 @@ export const createPartner = async (payload: {
   }
 };
 
+// ---------------------- ROLLBACK REGISTRATION ----------------------
+
+export const rollbackRegistration = async (idPartner: number, email: string): Promise<void> => {
+  try {
+    await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.rollbackRegistration}`,
+      { idPartner, email },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    console.log('✅ Registration rolled back for partner:', idPartner);
+  } catch (error) {
+    console.error('❌ Rollback failed:', error);
+  }
+};
+
 // ---------------------- LOGIN PARTNER ----------------------
 
 export const loginPartner = async (email: string, password: string): Promise<LoginResponse> => {

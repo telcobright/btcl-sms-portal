@@ -15,15 +15,30 @@ import {
   ExternalLink,
   Eye,
   Loader2,
+  Lock,
   Maximize2,
   Package,
   RotateCw,
+  Upload,
   X,
   XCircle,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
+import { uploadPartnerDocument } from '@/lib/api-client/admin';
+import toast from 'react-hot-toast';
 import { useEffect, useState } from 'react';
+
+// Map idPackage to human-readable names (backend returns packageName=null)
+const PACKAGE_NAMES: Record<number, string> = {
+  9132: 'PBX Bronze',
+  9133: 'PBX Silver',
+  9134: 'PBX Gold',
+  9135: 'VBS Basic',
+  9136: 'VBS Standard',
+  9137: 'VBS Enterprise',
+  9140: 'Contact Center Basic',
+};
 
 // Mock packages data
 const packages = [
@@ -317,6 +332,12 @@ export default function Dashboard() {
     vbs: boolean;
   }>({ pbx: false, hcc: false, vbs: false });
   const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [invoicePage, setInvoicePage] = useState(1);
+  const INVOICES_PER_PAGE = 10;
+
+  // Mandatory documents — users cannot upload/replace these (admin only)
+  const MANDATORY_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
   const [purchaseBlocked, setPurchaseBlocked] = useState(false);
 
   // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
@@ -538,7 +559,7 @@ export default function Dashboard() {
     try {
       setLoadingInvoices(true);
       const authToken = localStorage.getItem('authToken');
-      const endpoint = API_ENDPOINTS.package.getAllPurchasePartnerWise;
+      const endpoint = API_ENDPOINTS.package.getPurchaseForPartner;
 
       // Define all three API endpoints to fetch from with service identifiers
       const apiConfigs = [
@@ -555,11 +576,7 @@ export default function Dashboard() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify({
-            page: 0,
-            size: 20,
-            idPartner: partnerId,
-          }),
+          body: JSON.stringify({ idPartner: partnerId }),
         }).then(async (response) => {
           if (!response.ok) {
             throw new Error(`Failed to fetch from ${url}`);
@@ -589,6 +606,12 @@ export default function Dashboard() {
           );
           if (filteredList.length > 0) {
             historyByService[service] = true;
+            // Enrich with package name if backend returns null
+            filteredList.forEach((p: PurchaseHistory) => {
+              if (!p.packageName && p.idPackage) {
+                p.packageName = PACKAGE_NAMES[p.idPackage] || 'Package';
+              }
+            });
             allPurchases.push(...filteredList);
           }
         } else {
@@ -1043,6 +1066,26 @@ export default function Dashboard() {
       alert('Failed to download document. Please try again.');
     } finally {
       setDownloadingDoc(null);
+    }
+  };
+
+  const handleUserUpload = async (docType: string, file: File) => {
+    try {
+      setUploadingDoc(docType);
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken || !partnerID) {
+        toast.error('Authentication required');
+        return;
+      }
+      await uploadPartnerDocument(+partnerID, docType, file, authToken);
+      toast.success('Document uploaded successfully');
+      // Refresh partner extra and doc statuses
+      await fetchPartnerExtra(+partnerID);
+      await fetchDocStatuses(+partnerID);
+    } catch {
+      toast.error('Failed to upload document');
+    } finally {
+      setUploadingDoc(null);
     }
   };
 
@@ -1980,61 +2023,57 @@ export default function Dashboard() {
                           {/* Actions */}
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() =>
-                                  doc.available &&
-                                  viewDocument(doc.type, `${doc.name}`)
-                                }
-                                disabled={
-                                  !doc.available || viewingDoc === doc.type
-                                }
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
-                                title={
-                                  doc.available
-                                    ? 'View Document'
-                                    : 'Document not available'
-                                }
-                              >
-                                {viewingDoc === doc.type ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Loading
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="w-3.5 h-3.5" />
-                                    View
-                                  </>
-                                )}
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  doc.available &&
-                                  downloadDocument(doc.type, `${doc.name}`)
-                                }
-                                disabled={
-                                  !doc.available || downloadingDoc === doc.type
-                                }
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#067a3e] bg-white hover:bg-green-50 border-2 border-[#067a3e] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
-                                title={
-                                  doc.available
-                                    ? 'Download Document'
-                                    : 'Document not available'
-                                }
-                              >
-                                {downloadingDoc === doc.type ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Downloading
-                                  </>
-                                ) : (
-                                  <>
-                                    <Download className="w-3.5 h-3.5" />
-                                    Download
-                                  </>
-                                )}
-                              </button>
+                              {doc.available ? (
+                                <>
+                                  <button
+                                    onClick={() => viewDocument(doc.type, `${doc.name}`)}
+                                    disabled={viewingDoc === doc.type}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="View Document"
+                                  >
+                                    {viewingDoc === doc.type ? (
+                                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading</>
+                                    ) : (
+                                      <><Eye className="w-3.5 h-3.5" /> View</>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => downloadDocument(doc.type, `${doc.name}`)}
+                                    disabled={downloadingDoc === doc.type}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#067a3e] bg-white hover:bg-green-50 border-2 border-[#067a3e] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
+                                    title="Download Document"
+                                  >
+                                    {downloadingDoc === doc.type ? (
+                                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Downloading</>
+                                    ) : (
+                                      <><Download className="w-3.5 h-3.5" /> Download</>
+                                    )}
+                                  </button>
+                                </>
+                              ) : MANDATORY_DOCS.has(doc.type) ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                                  <Lock className="w-3.5 h-3.5" />
+                                  Contact Admin
+                                </span>
+                              ) : (
+                                <label className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      if (f) handleUserUpload(doc.type, f);
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  {uploadingDoc === doc.type ? (
+                                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading</>
+                                  ) : (
+                                    <><Upload className="w-3.5 h-3.5" /> Upload</>
+                                  )}
+                                </label>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -2073,6 +2112,7 @@ export default function Dashboard() {
               <Loader2 className="w-8 h-8 text-[#067a3e] animate-spin" />
             </div>
           ) : purchaseHistory && purchaseHistory.length > 0 ? (
+            <>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -2107,11 +2147,15 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {purchaseHistory
-                    .filter(
-                      (purchase) =>
-                        isPrepaid || purchase.packageName !== 'TopUp'
-                    )
+                  {(() => {
+                    const filtered = purchaseHistory.filter(
+                      (purchase) => isPrepaid || purchase.packageName !== 'TopUp'
+                    );
+                    const totalPages = Math.ceil(filtered.length / INVOICES_PER_PAGE);
+                    const start = (invoicePage - 1) * INVOICES_PER_PAGE;
+                    const paginated = filtered.slice(start, start + INVOICES_PER_PAGE);
+                    return paginated;
+                  })()
                     .map((purchase, index) => {
                       const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
                       const pkgName = purchase.packageName || 'Package';
@@ -2120,9 +2164,10 @@ export default function Dashboard() {
                       const amount = purchase.price || 0;
                       const vat = purchase.vat || 0;
                       const total = amount + vat;
+                      const rawStatus = purchase.status || 'ACTIVE';
                       const status = purchase.expireDate && new Date(purchase.expireDate) < new Date()
       ? 'EXPIRED'
-      : 'ACTIVE';
+      : rawStatus;
                       const invoiceDueDate = getInvoiceDueDate(purchaseDate);
 
                       return (
@@ -2216,7 +2261,9 @@ export default function Dashboard() {
                                   ? 'bg-green-100 text-green-700'
                                   : status === 'EXPIRED'
                                     ? 'bg-red-100 text-red-700'
-                                    : 'bg-yellow-100 text-yellow-700'
+                                    : status === 'INACTIVE'
+                                      ? 'bg-gray-100 text-gray-600'
+                                      : 'bg-yellow-100 text-yellow-700'
                               }`}
                             >
                               {status}
@@ -2238,6 +2285,51 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
+            {/* Pagination */}
+            {(() => {
+              const filtered = purchaseHistory.filter(
+                (p) => isPrepaid || p.packageName !== 'TopUp'
+              );
+              const totalPages = Math.ceil(filtered.length / INVOICES_PER_PAGE);
+              if (totalPages <= 1) return null;
+              return (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 mt-2">
+                  <p className="text-sm text-gray-600">
+                    Showing {((invoicePage - 1) * INVOICES_PER_PAGE) + 1}–{Math.min(invoicePage * INVOICES_PER_PAGE, filtered.length)} of {filtered.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
+                      disabled={invoicePage === 1}
+                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setInvoicePage(page)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                          page === invoicePage
+                            ? 'bg-[#067a3e] text-white'
+                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setInvoicePage((p) => Math.min(totalPages, p + 1))}
+                      disabled={invoicePage === totalPages}
+                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+            </>
           ) : (
             <div className="text-center py-12 text-gray-500">
               <svg

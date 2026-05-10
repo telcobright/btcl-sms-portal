@@ -18,6 +18,8 @@ import {
   deleteUser,
   uploadPartnerDocument,
   deletePartnerDocument,
+  deactivatePartner,
+  reactivatePartner,
   Partner,
   PartnerUser,
   PurchaseHistory,
@@ -71,6 +73,8 @@ export default function PartnerDetailsPage() {
   const [pdfViewerData, setPdfViewerData] = useState<{ url: string; name: string } | null>(null);
   const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
   const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -169,6 +173,35 @@ export default function PartnerDetailsPage() {
     finally { setDownloadingDoc(null); }
   };
 
+  const handleToggleStatus = () => {
+    if (!partner) return;
+    setConfirmModal(true);
+  };
+
+  const handleConfirmToggle = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken || !partner) return;
+    const isDeactivated = partner.status === 'DEACTIVATED';
+    setConfirmModal(false);
+    try {
+      setDeactivating(true);
+      if (isDeactivated) {
+        await reactivatePartner(partnerId, authToken);
+        setPartner((p) => p ? { ...p, status: 'ACTIVE', deactivatedAt: null } : p);
+        toast.success('Partner reactivated successfully');
+      } else {
+        await deactivatePartner(partnerId, authToken);
+        setPartner((p) => p ? { ...p, status: 'DEACTIVATED', deactivatedAt: new Date().toISOString() } : p);
+        toast.success('Partner deactivated successfully');
+      }
+    } catch (err) {
+      console.error('Failed to toggle partner status:', err);
+      toast.error('Action failed. Please try again.');
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
   const updateDocStatus = async (docType: string, status: string, rejectionReason: string) => {
     try {
       setUpdatingDocStatus(docType);
@@ -230,12 +263,29 @@ export default function PartnerDetailsPage() {
               <span className="text-xs text-white/60">#{partner.idPartner}</span>
               <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getPartnerTypeLabel(partner.partnerType)}</span>
               <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getCustomerPrePaidLabel(partner.customerPrePaid)}</span>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${partner.status === 'DEACTIVATED' ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white'}`}>
+                {partner.status === 'DEACTIVATED' ? 'Deactivated' : 'Active'}
+              </span>
+              {partner.status === 'DEACTIVATED' && partner.deactivatedAt && (
+                <span className="text-xs text-white/60">
+                  since {new Date(partner.deactivatedAt).toLocaleDateString()}
+                </span>
+              )}
             </div>
           </div>
         </div>
-        <button onClick={fetchData} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Refresh">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggleStatus}
+            disabled={deactivating}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors disabled:opacity-50"
+          >
+            {deactivating ? 'Processing...' : partner.status === 'DEACTIVATED' ? 'Reactivate' : 'Deactivate'}
+          </button>
+          <button onClick={fetchData} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Refresh">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -264,8 +314,8 @@ export default function PartnerDetailsPage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg border border-gray-200">
-        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} />}
-        {activeTab === 'users' && <UsersTab users={users} partnerId={partnerId} onRefresh={fetchData} />}
+        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} isDeactivated={partner.status === 'DEACTIVATED'} />}
+        {activeTab === 'users' && <UsersTab users={users} partnerId={partnerId} onRefresh={fetchData} isDeactivated={partner.status === 'DEACTIVATED'} />}
         {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
         {activeTab === 'subscriptions' && <SubscriptionsTab subscriptions={subscriptions} serviceStatus={serviceStatus} partnerName={partner.partnerName || ''} />}
         {activeTab === 'documents' && (
@@ -312,6 +362,50 @@ export default function PartnerDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* Deactivate / Reactivate Confirmation Modal */}
+      {confirmModal && partner && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setConfirmModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-center mb-4">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${partner.status === 'DEACTIVATED' ? 'bg-green-100' : 'bg-red-100'}`}>
+                {partner.status === 'DEACTIVATED' ? '✅' : '⚠️'}
+              </div>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {partner.status === 'DEACTIVATED' ? 'Reactivate Partner' : 'Deactivate Partner'}
+            </h2>
+            <p className={`text-base font-semibold text-center mb-4 ${partner.status === 'DEACTIVATED' ? 'text-green-600' : 'text-red-600'}`}>
+              {partner.partnerName}
+            </p>
+            <div className={`rounded-xl p-4 mb-6 border text-sm text-gray-700 leading-relaxed ${partner.status === 'DEACTIVATED' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              {partner.status === 'DEACTIVATED'
+                ? 'This partner will be reactivated and will be able to log in again. All their data, calls, billing, and documents remain intact.'
+                : 'This partner will be blocked from logging in immediately. All their data, calls, billing, and documents are preserved and can be restored by reactivating.'}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmToggle}
+                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors ${partner.status === 'DEACTIVATED' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                {partner.status === 'DEACTIVATED' ? 'Yes, Reactivate' : 'Yes, Deactivate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -319,7 +413,7 @@ export default function PartnerDetailsPage() {
 /* ═══════════════════════════════════════════════════════════════════
    Overview Tab
    ═══════════════════════════════════════════════════════════════════ */
-function OverviewTab({ partner, onPartnerUpdate }: { partner: Partner; onPartnerUpdate: (p: Partner) => void }) {
+function OverviewTab({ partner, onPartnerUpdate, isDeactivated }: { partner: Partner; onPartnerUpdate: (p: Partner) => void; isDeactivated?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partner>({ ...partner });
@@ -362,7 +456,7 @@ function OverviewTab({ partner, onPartnerUpdate }: { partner: Partner; onPartner
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-semibold text-gray-900">Partner Information</h2>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className={`${btn.outline} text-[#00A651] border-[#00A651] hover:bg-green-50`}>Edit</button>
+          <button onClick={() => setIsEditing(true)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before editing' : undefined} className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#00A651] border-[#00A651] hover:bg-green-50'}`}>Edit</button>
         ) : (
           <div className="flex gap-2">
             <button onClick={() => { setFormData({ ...partner }); setIsEditing(false); }} className={btn.secondary}>Cancel</button>
@@ -420,7 +514,7 @@ function OverviewTab({ partner, onPartnerUpdate }: { partner: Partner; onPartner
 interface UserFormData { firstName: string; lastName: string; email: string; password: string; phoneNo: string; userStatus: string; }
 const EMPTY_USER: UserFormData = { firstName: '', lastName: '', email: '', password: '', phoneNo: '', userStatus: 'ACTIVE' };
 
-function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partnerId: number; onRefresh: () => void }) {
+function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: PartnerUser[]; partnerId: number; onRefresh: () => void; isDeactivated?: boolean }) {
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<PartnerUser | null>(null);
   const [form, setForm] = useState<UserFormData>(EMPTY_USER);
@@ -465,7 +559,7 @@ function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partn
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900">Users</h2>
-        {!showForm && <button onClick={openAdd} className={btn.primary}>+ Add User</button>}
+        {!showForm && <button onClick={openAdd} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before adding users' : undefined} className={`${btn.primary} ${isDeactivated ? 'opacity-40 cursor-not-allowed' : ''}`}>+ Add User</button>}
       </div>
 
       {showForm && (
@@ -516,8 +610,8 @@ function UsersTab({ users, partnerId, onRefresh }: { users: PartnerUser[]; partn
                     <div className="flex flex-wrap gap-1">{u.authRoles?.map((r) => <span key={r.id} className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{r.name.replace('ROLE_', '')}</span>)}</div>
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(u)} className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#00A651]/10 text-[#00A651] hover:bg-[#00A651] hover:text-white transition-colors mr-1.5">Edit</button>
-                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id} className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50">
+                    <button onClick={() => openEdit(u)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#00A651]/10 text-[#00A651] hover:bg-[#00A651] hover:text-white'}`}>Edit</button>
+                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id || isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors disabled:opacity-50 ${isDeactivated ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'}`}>
                       {deletingId === u.id ? '...' : 'Delete'}
                     </button>
                   </td>

@@ -212,6 +212,8 @@ export default function SettingsPage() {
                 email, otp: otp.trim(), newPassword,
             })
             if (data.success) {
+                localStorage.removeItem('passwordExpired')
+                localStorage.removeItem('daysUntilExpiry')
                 setPwSuccess('Password changed successfully!')
                 setNewPassword(''); setConfirmPassword(''); setOtp('')
                 setSecurityStep('form')

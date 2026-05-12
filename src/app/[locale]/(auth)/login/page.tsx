@@ -83,6 +83,16 @@ export default function LoginPage() {
 
             setAuthToken(response.token)
 
+            // Store password expiry info
+            if (response.passwordExpired) {
+                localStorage.setItem('passwordExpired', 'true')
+            } else {
+                localStorage.removeItem('passwordExpired')
+            }
+            if (response.daysUntilExpiry != null) {
+                localStorage.setItem('daysUntilExpiry', String(response.daysUntilExpiry))
+            }
+
             const decodedToken = decodeToken(response.token)
 
             if (!decodedToken || !decodedToken.idPartner) {

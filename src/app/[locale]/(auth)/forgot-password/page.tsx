@@ -114,6 +114,8 @@ export default function ForgotPasswordPage() {
             )
 
             if (data.success) {
+                localStorage.removeItem('passwordExpired')
+                localStorage.removeItem('daysUntilExpiry')
                 setStep('done')
                 toast.success('Password reset successfully!')
             } else {

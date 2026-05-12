@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import AdminSidebar from './components/AdminSidebar';
+import PasswordExpiryBanner from '../../../components/PasswordExpiryBanner';
 
 interface DecodedToken {
   roles?: { id: number; name: string; description: string }[];
@@ -154,6 +155,9 @@ export default function AdminLayout({
             </div>
           </div>
         </header>
+
+        {/* Password Expiry Banner */}
+        <PasswordExpiryBanner />
 
         {/* Page Content */}
         <main className="flex-1 p-8 overflow-auto">

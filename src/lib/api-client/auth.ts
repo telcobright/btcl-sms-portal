@@ -61,8 +61,10 @@ export interface LoginResponse {
     sessionStartDateTime: string;
     userContext: string;
     message: string | null;
-    idPartner?: number;  // Add this line
-    partnerId?: number;  // Add this as fallback
+    idPartner?: number;
+    partnerId?: number;
+    passwordExpired?: boolean;
+    daysUntilExpiry?: number;
 }
 
 export interface LoginPayload {

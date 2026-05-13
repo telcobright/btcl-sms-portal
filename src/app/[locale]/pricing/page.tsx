@@ -16,6 +16,7 @@ interface DecodedToken {
   idPartner?: number;
   email?: string;
   sub?: string;
+  roles?: { name: string }[];
 }
 
 const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
@@ -25,6 +26,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [selectedPackage, setSelectedPackage] = useState<any>(null)
   const [userType, setUserType] = useState<'prepaid' | 'postpaid' | null>(null)
   const [isLoadingUserType, setIsLoadingUserType] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
   // activePackages maps service → active pkg id string (e.g. 'hosted-pbx' → 'silver')
   const [activePackages, setActivePackages] = useState<Record<string, string | null>>({})
   // expiredPackages maps service → expired pkg id string
@@ -73,9 +75,17 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       }
 
       try {
-        // Decode JWT token to get idPartner
+        // Decode JWT token to get idPartner and roles
         const decodedToken = jwtDecode<DecodedToken>(authToken)
         const idPartner = decodedToken?.idPartner
+
+        // Check for ROLE_ADMIN
+        const adminRole = decodedToken.roles?.some(
+          (role) => role.name === 'ROLE_ADMIN'
+        )
+        if (adminRole) {
+          setIsAdmin(true)
+        }
 
         if (!idPartner) {
           setIsLoadingUserType(false)
@@ -572,8 +582,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     )
   }
 
-  const showPrepaid = isLoadingUserType || userType === null || userType === 'prepaid'
-  const showPostpaid = !isLoadingUserType && (userType === 'postpaid' || (userType === null && !isLoggedIn()))
+  const showPrepaid = isAdmin || isLoadingUserType || userType === null || userType === 'prepaid'
+  const showPostpaid = isAdmin || (!isLoadingUserType && (userType === 'postpaid' || (userType === null && !isLoggedIn())))
 
   return (
       <div className="min-h-screen bg-gray-50">

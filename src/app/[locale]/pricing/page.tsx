@@ -606,6 +606,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 { id: 'hosted-pbx', icon: '☎️', en: 'Hosted PBX', bn: 'হোস্টেড PBX' },
                 { id: 'voice-broadcast', icon: '📢', en: 'Voice Broadcast', bn: 'ভয়েস ব্রডকাস্ট' },
                 { id: 'contact-center', icon: '🎧', en: 'Contact Center', bn: 'কন্টাক্ট সেন্টার' },
+                { id: 'short-code', icon: '🔢', en: 'Short Code Parking', bn: 'শর্ট কোড পার্কিং' },
               ].map(s => (
                 <a key={s.id} href={`#${s.id}`} className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-sm font-medium transition-colors">
                   <span>{s.icon}</span>
@@ -654,6 +655,152 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             )}
           </>
         )}
+
+        {/* ── Short Code Parking Service ── */}
+        <div id="short-code" className="py-20 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Section Header - matches other sections */}
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-blue-50 text-blue-800">
+                <span className="text-4xl">🔢</span>
+                <h2 className="text-2xl font-bold">
+                  {locale === 'en' ? 'Short Code Parking Service' : 'শর্ট কোড পার্কিং সেবা'}
+                </h2>
+              </div>
+              <p className="text-gray-600 text-lg">
+                {locale === 'en' ? 'Under IPTSP License — One-Time Charges (OTC)' : 'IPTSP লাইসেন্সের অধীনে — এককালীন চার্জ (OTC)'}
+              </p>
+            </div>
+
+            {/* Cards Grid - 3 cards matching theme */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Security Deposit */}
+              <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 p-8">
+                <div className="text-center mb-6">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-3xl transition-all duration-300 group-hover:scale-110">
+                    🔒
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {locale === 'en' ? 'Security Deposit' : 'সিকিউরিটি ডিপোজিট'}
+                  </h3>
+                  <div className="text-sm text-gray-500 mb-4">{locale === 'en' ? 'Per Number' : 'প্রতি নম্বর'}</div>
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold text-gray-900">৳1,000</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Refundable deposit' : 'ফেরতযোগ্য ডিপোজিট'}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Installation Charge */}
+              <div className="relative bg-white rounded-2xl shadow-lg border-2 border-blue-400 hover:shadow-2xl transition-all duration-300 transform scale-105 shadow-2xl p-8">
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
+                    {locale === 'en' ? 'REQUIRED' : 'আবশ্যিক'}
+                  </div>
+                </div>
+                <div className="text-center mb-6">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-3xl transition-all duration-300 group-hover:scale-110">
+                    🔧
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {locale === 'en' ? 'Installation Charge' : 'ইনস্টলেশন চার্জ'}
+                  </h3>
+                  <div className="text-sm text-gray-500 mb-4">{locale === 'en' ? 'One-Time' : 'এককালীন'}</div>
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold text-gray-900">৳5,000</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Full setup & configuration' : 'সম্পূর্ণ সেটআপ ও কনফিগারেশন'}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Technical integration' : 'টেকনিক্যাল ইন্টিগ্রেশন'}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Under IPTSP License' : 'IPTSP লাইসেন্সের অধীনে'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Connection Charge */}
+              <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 p-8">
+                <div className="text-center mb-6">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-3xl transition-all duration-300 group-hover:scale-110">
+                    🔗
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {locale === 'en' ? 'Connection Charge' : 'কানেকশন চার্জ'}
+                  </h3>
+                  <div className="text-sm text-gray-500 mb-4">{locale === 'en' ? 'Per Number' : 'প্রতি নম্বর'}</div>
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold text-gray-900">৳1,000</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Network activation' : 'নেটওয়ার্ক অ্যাক্টিভেশন'}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* VAT Notice */}
+            <div className="mt-10 text-center">
+              <div className="inline-flex items-center rounded-xl border border-yellow-200 bg-yellow-50 px-6 py-3">
+                <svg className="mr-2 h-5 w-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                </svg>
+                <span className="text-sm font-semibold text-yellow-800">
+                  {locale === 'en' ? '* VAT Applicable on all charges' : '* সকল চার্জে ভ্যাট প্রযোজ্য'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Contact CTA */}
         <div className="py-16 bg-gradient-to-r from-btcl-primary to-green-700">

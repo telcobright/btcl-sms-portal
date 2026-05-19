@@ -48,7 +48,9 @@ export default function OrderSummary({
       case 'contact-center':
         return `${pkg.quantity || 1} ${locale === 'en' ? 'Agent(s)' : 'এজেন্ট'}`;
       case 'voice-broadcast':
-        return `${pkg.minutes?.toLocaleString()} ${locale === 'en' ? 'Minutes' : 'মিনিট'}`;
+        return pkg.vbsQuantity
+          ? `${pkg.vbsQuantity.toLocaleString()} ${locale === 'en' ? 'Messages' : 'মেসেজ'}`
+          : `${pkg.minutes?.toLocaleString()} ${locale === 'en' ? 'Minutes' : 'মিনিট'}`;
       default:
         return `${pkg.sms?.toLocaleString()} SMS`;
     }
@@ -118,13 +120,20 @@ export default function OrderSummary({
             <span>৳{pkg.price.toLocaleString()} × {pkg.quantity}</span>
           </div>
         )}
+        {/* Show quantity and rate for Voice Broadcast */}
+        {serviceType === 'voice-broadcast' && pkg.vbsQuantity && (
+          <div className="flex justify-between">
+            <span>{locale === 'en' ? 'Messages' : 'মেসেজ'}</span>
+            <span>{pkg.vbsQuantity.toLocaleString()} × ৳{pkg.rate?.toFixed(2)}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span>{locale === 'en' ? 'Subtotal' : 'সাবটোটাল'}</span>
           <span>৳{basePrice.toLocaleString()}</span>
         </div>
         <div className="flex justify-between text-btcl-gray-600">
           <span>{locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}</span>
-          <span>৳{Math.round(basePrice * 0.15).toLocaleString()}</span>
+          <span>৳{Math.ceil(basePrice * 0.15).toLocaleString()}</span>
         </div>
         {(serviceType === 'hosted-pbx' || serviceType === 'contact-center') && (
           <div className="flex justify-between text-btcl-gray-600">
@@ -132,11 +141,17 @@ export default function OrderSummary({
             <span>{locale === 'en' ? 'Monthly' : 'মাসিক'}</span>
           </div>
         )}
+        {serviceType === 'voice-broadcast' && (
+          <div className="flex justify-between text-btcl-gray-600">
+            <span>{locale === 'en' ? 'Validity' : 'মেয়াদ'}</span>
+            <span>{locale === 'en' ? '5 Years' : '৫ বছর'}</span>
+          </div>
+        )}
         <hr className="border-btcl-gray-300" />
         <div className="flex justify-between font-bold text-lg">
           <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
           <span className="text-btcl-primary">
-            ৳{(basePrice + Math.round(basePrice * 0.15)).toLocaleString()}
+            ৳{(basePrice + Math.ceil(basePrice * 0.15)).toLocaleString()}
           </span>
         </div>
         {serviceType === 'hosted-pbx' && pkg.callCharge && (

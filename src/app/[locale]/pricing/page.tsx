@@ -377,58 +377,54 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
   ]
 
-  // Voice Broadcast Pricing (per VB message)
-  const voiceBroadcastPackages = [
-    {
-      id: 'basic',
-      name: locale === 'en' ? 'Basic' : 'বেসিক',
-      messages: '1-20,000',
-      rate: 0.90,
-      price: 18,
-      popular: false,
-      features: [
-        locale === 'en' ? '1 - 20,000 VB Messages' : '১ - ২০,০০০ ভিবি মেসেজ',
-        locale === 'en' ? '৳0.90 per message' : '৳০.৯০ প্রতি মেসেজ',
-        locale === 'en' ? 'Text-to-Speech' : 'টেক্সট-টু-স্পিচ',
-        locale === 'en' ? 'Basic Scheduling' : 'বেসিক সময়সূচী',
-        locale === 'en' ? 'Delivery Reports' : 'ডেলিভারি রিপোর্ট',
-        locale === 'en' ? 'Email Support' : 'ইমেইল সাপোর্ট'
-      ]
-    },
-    {
-      id: 'standard',
-      name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড',
-      messages: '20,001-50,000',
-      rate: 0.80,
-      price: 40,
-      popular: true,
-      features: [
-        locale === 'en' ? '20,001 - 50,000 VB Messages' : '২০,০০১ - ৫০,০০০ ভিবি মেসেজ',
-        locale === 'en' ? '৳0.80 per message' : '৳০.৮০ প্রতি মেসেজ',
-        locale === 'en' ? 'Text-to-Speech & Audio Upload' : 'টেক্সট-টু-স্পিচ ও অডিও আপলোড',
-        locale === 'en' ? 'Advanced Scheduling' : 'উন্নত সময়সূচী',
-        locale === 'en' ? 'Detailed Analytics' : 'বিস্তারিত বিশ্লেষণ',
-        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট'
-      ]
-    },
-    {
-      id: 'enterprise',
-      name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ',
-      messages: '50,000+',
-      rate: 0.60,
-      price: 60,
-      popular: false,
-      features: [
-        locale === 'en' ? '50,000+ VB Messages' : '৫০,০০০+ ভিবি মেসেজ',
-        locale === 'en' ? '৳0.60 per message' : '৳০.৬০ প্রতি মেসেজ',
-        locale === 'en' ? 'All Features Included' : 'সব বৈশিষ্ট্য অন্তর্ভুক্ত',
-        locale === 'en' ? 'API Access' : 'API অ্যাক্সেস',
-        locale === 'en' ? 'Custom Integration' : 'কাস্টম ইন্টিগ্রেশন',
-        locale === 'en' ? '24/7 Support' : '২৪/৭ সাপোর্ট',
-        locale === 'en' ? 'Dedicated Manager' : 'ডেডিকেটেড ম্যানেজার'
-      ]
-    }
+  // Voice Broadcast slab pricing
+  const vbsSlabs = [
+    { min: 1, max: 20000, rate: 0.90, packageId: 'basic', packageIdInt: 9135, name: locale === 'en' ? 'Basic' : 'বেসিক' },
+    { min: 20001, max: 50000, rate: 0.80, packageId: 'standard', packageIdInt: 9136, name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড' },
+    { min: 50001, max: Infinity, rate: 0.60, packageId: 'enterprise', packageIdInt: 9137, name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ' },
   ]
+
+  const [vbsQuantity, setVbsQuantity] = useState<number | ''>('')
+
+  const getVbsSlab = (qty: number) => vbsSlabs.find(s => qty >= s.min && qty <= s.max) || vbsSlabs[0]
+
+  const vbsCurrentSlab = typeof vbsQuantity === 'number' && vbsQuantity >= 1 ? getVbsSlab(vbsQuantity) : null
+  const vbsBasePrice = vbsCurrentSlab && typeof vbsQuantity === 'number' ? Math.ceil(vbsQuantity * vbsCurrentSlab.rate) : 0
+  const vbsVat = Math.ceil(vbsBasePrice * 0.15)
+  const vbsTotal = vbsBasePrice + vbsVat
+
+  const handleVbsBuyNow = () => {
+    if (!isLoggedIn()) {
+      toast.error(locale === 'en' ? 'Please login to purchase' : 'ক্রয় করতে অনুগ্রহ করে লগইন করুন')
+      router.push(`/${locale}/login`)
+      return
+    }
+    if (purchaseBlocked) {
+      if (docBlockReason === 'rejected') {
+        toast.error(locale === 'en' ? 'Purchase restricted: Documents rejected.' : 'ক্রয় সীমাবদ্ধ: নথি প্রত্যাখ্যাত।')
+      } else {
+        toast.error(locale === 'en' ? 'Purchase restricted: Documents under review.' : 'ক্রয় সীমাবদ্ধ: নথি পর্যালোচনাধীন।')
+      }
+      return
+    }
+    if (!vbsCurrentSlab || typeof vbsQuantity !== 'number' || vbsQuantity < 1) {
+      toast.error(locale === 'en' ? 'Please enter a valid quantity (minimum 1)' : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)')
+      return
+    }
+    setSelectedService('voice-broadcast')
+    setSelectedPackage({
+      id: vbsCurrentSlab.packageId,
+      name: vbsCurrentSlab.name,
+      price: vbsBasePrice,
+      rate: vbsCurrentSlab.rate,
+      vbsQuantity: vbsQuantity,
+      features: [],
+    })
+    setIsCheckoutOpen(true)
+  }
+
+  // Kept for compatibility with renderSection/getCurrentPackages
+  const voiceBroadcastPackages: any[] = []
 
   const getCurrentPackages = () => {
     switch (selectedService) {
@@ -724,11 +720,108 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
               pbxPackages, 'bg-white', 'bg-green-50 text-green-800'
             )}
-            {renderSection('voice-broadcast', '📢',
-              'Voice Broadcast', 'ভয়েস ব্রডকাস্ট',
-              'Pay per message pricing', 'প্রতি মেসেজ মূল্য',
-              voiceBroadcastPackages, 'bg-orange-50', 'bg-orange-100 text-orange-800'
-            )}
+            {/* Voice Broadcast — Slab-based pricing */}
+            <div id="voice-broadcast" className="py-20 bg-orange-50">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12">
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-orange-100 text-orange-800">
+                    <span className="text-4xl">📢</span>
+                    <h2 className="text-2xl font-bold">{locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট'}</h2>
+                  </div>
+                  <p className="text-gray-600 text-lg">{locale === 'en' ? 'Pay per message — volume-based pricing' : 'প্রতি মেসেজ মূল্য — পরিমাণ ভিত্তিক'}</p>
+                </div>
+
+                {/* Slab Rate Table */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-orange-50">
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Message Range' : 'মেসেজ পরিসীমা'}</th>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Slab' : 'স্ল্যাব'}</th>
+                        <th className="px-6 py-4 text-right font-semibold text-gray-700">{locale === 'en' ? 'Rate / Message' : 'প্রতি মেসেজ রেট'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vbsSlabs.map((slab, idx) => (
+                        <tr key={idx} className={`border-t border-gray-100 ${vbsCurrentSlab === slab ? 'bg-orange-50 font-semibold' : ''}`}>
+                          <td className="px-6 py-3 text-gray-800">
+                            {slab.max === Infinity
+                              ? `${slab.min.toLocaleString()}+`
+                              : `${slab.min.toLocaleString()} – ${slab.max.toLocaleString()}`}
+                          </td>
+                          <td className="px-6 py-3 text-gray-600">{slab.name}</td>
+                          <td className="px-6 py-3 text-right text-gray-800">৳{slab.rate.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Quantity Input + Price Calculator */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left — Input */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        {locale === 'en' ? 'Enter Number of Messages' : 'মেসেজ সংখ্যা লিখুন'}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={vbsQuantity}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setVbsQuantity(val === '' ? '' : Math.max(1, parseInt(val) || 1))
+                        }}
+                        placeholder={locale === 'en' ? 'e.g. 15000' : 'যেমন ১৫০০০'}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+                      />
+                      {vbsCurrentSlab && (
+                        <p className="mt-2 text-sm text-orange-600 font-medium">
+                          {locale === 'en' ? `Slab: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/message` : `স্ল্যাব: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Right — Price Breakdown */}
+                    <div className="space-y-3">
+                      {vbsCurrentSlab && typeof vbsQuantity === 'number' && vbsQuantity >= 1 ? (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">{typeof vbsQuantity === 'number' ? vbsQuantity.toLocaleString() : 0} × ৳{vbsCurrentSlab.rate.toFixed(2)}</span>
+                            <span className="font-medium">৳{vbsBasePrice.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">{locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}</span>
+                            <span>৳{vbsVat.toLocaleString()}</span>
+                          </div>
+                          <hr className="border-gray-200" />
+                          <div className="flex justify-between text-lg font-bold">
+                            <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
+                            <span className="text-orange-600">৳{vbsTotal.toLocaleString()}</span>
+                          </div>
+                          <div className="text-xs text-gray-500">{locale === 'en' ? 'Validity: 5 Years' : 'মেয়াদ: ৫ বছর'}</div>
+
+                          {purchaseBlocked && isLoggedIn() ? (
+                            <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed">
+                              {locale === 'en' ? 'Purchase Disabled' : 'ক্রয় নিষ্ক্রিয়'}
+                            </button>
+                          ) : (
+                            <button onClick={handleVbsBuyNow} className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg">
+                              {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                          {locale === 'en' ? 'Enter quantity to see pricing' : 'মূল্য দেখতে পরিমাণ লিখুন'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {renderSection('contact-center', '🎧',
               'Contact Center', 'কন্টাক্ট সেন্টার',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',

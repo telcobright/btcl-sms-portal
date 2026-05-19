@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter, useParams } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
@@ -42,6 +42,54 @@ export default function LoginPage() {
         email: ""
     })
     const [isLoading, setIsLoading] = useState(false)
+    const [captchaA, setCaptchaA] = useState(() => Math.floor(Math.random() * 20) + 1)
+    const [captchaB, setCaptchaB] = useState(() => Math.floor(Math.random() * 20) + 1)
+    const [captchaAnswer, setCaptchaAnswer] = useState('')
+    const [captchaError, setCaptchaError] = useState('')
+    const [captchaAttempts, setCaptchaAttempts] = useState(0)
+    const [lockedUntil, setLockedUntil] = useState<number | null>(null)
+    const [lockCountdown, setLockCountdown] = useState('')
+    const lockTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+    const generateCaptcha = () => {
+        setCaptchaA(Math.floor(Math.random() * 20) + 1)
+        setCaptchaB(Math.floor(Math.random() * 20) + 1)
+        setCaptchaAnswer('')
+        setCaptchaError('')
+    }
+
+    const startLockCountdown = (until: number) => {
+        if (lockTimerRef.current) clearInterval(lockTimerRef.current)
+        const update = () => {
+            const remaining = until - Date.now()
+            if (remaining <= 0) {
+                clearInterval(lockTimerRef.current!)
+                setLockedUntil(null)
+                setLockCountdown('')
+                setCaptchaAttempts(0)
+                localStorage.removeItem('captchaLockedUntil')
+                generateCaptcha()
+                return
+            }
+            const mins = Math.floor(remaining / 60000)
+            const secs = Math.floor((remaining % 60000) / 1000)
+            setLockCountdown(`${mins}:${secs.toString().padStart(2, '0')}`)
+        }
+        update()
+        lockTimerRef.current = setInterval(update, 1000)
+    }
+
+    useEffect(() => {
+        const savedLock = localStorage.getItem('captchaLockedUntil')
+        if (savedLock && Date.now() < parseInt(savedLock, 10)) {
+            setLockedUntil(parseInt(savedLock, 10))
+            startLockCountdown(parseInt(savedLock, 10))
+        } else {
+            localStorage.removeItem('captchaLockedUntil')
+        }
+        return () => { if (lockTimerRef.current) clearInterval(lockTimerRef.current) }
+    }, [])
+
     const wasDeactivated = typeof window !== 'undefined' && !!sessionStorage.getItem('deactivated')
     if (wasDeactivated) sessionStorage.removeItem('deactivated')
     const [loginError, setLoginError] = useState(wasDeactivated ? 'Your account has been deactivated. Please contact support.' : '')
@@ -71,9 +119,31 @@ export default function LoginPage() {
         e.preventDefault()
         if (!validateForm()) return
 
+        if (lockedUntil && Date.now() < lockedUntil) return
+
+        if (parseInt(captchaAnswer, 10) !== captchaA + captchaB) {
+            const newAttempts = captchaAttempts + 1
+            const remaining = 5 - newAttempts
+            if (newAttempts >= 5) {
+                const lockUntil = Date.now() + 10 * 60 * 1000
+                localStorage.setItem('captchaLockedUntil', lockUntil.toString())
+                setCaptchaAttempts(newAttempts)
+                setLockedUntil(lockUntil)
+                setCaptchaError('')
+                startLockCountdown(lockUntil)
+            } else {
+                setCaptchaAttempts(newAttempts)
+                setCaptchaError(`Incorrect answer. You have ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`)
+            }
+            generateCaptcha()
+            return
+        }
+
         setIsLoading(true)
         setLoginError('')
         setIsDeactivated(false)
+        setCaptchaError('')
+        setCaptchaAttempts(0)
 
         try {
             const response = await loginUser({
@@ -222,6 +292,43 @@ export default function LoginPage() {
                                     >
                                         Forgot password?
                                     </Link>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Security Check</label>
+                                    {lockedUntil && Date.now() < lockedUntil ? (
+                                        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+                                            <p className="text-red-600 text-sm font-semibold">Too many failed attempts</p>
+                                            <p className="text-red-800 text-sm mt-1">Please try again in <strong>{lockCountdown}</strong></p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                                                <span className="text-base font-semibold text-gray-800 whitespace-nowrap">
+                                                    {captchaA} + {captchaB} = ?
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    value={captchaAnswer}
+                                                    onChange={(e) => { setCaptchaAnswer(e.target.value); setCaptchaError(''); }}
+                                                    className="w-24 text-center text-base font-semibold px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Answer"
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={generateCaptcha}
+                                                    title="Refresh CAPTCHA"
+                                                    className="text-gray-500 hover:text-gray-700 text-lg p-1"
+                                                >
+                                                    ↻
+                                                </button>
+                                            </div>
+                                            {captchaError && (
+                                                <p className="text-red-600 text-xs font-medium mt-1.5">{captchaError}</p>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
 
                                 <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>

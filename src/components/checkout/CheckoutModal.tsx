@@ -607,11 +607,19 @@ export default function CheckoutModal({
       const effectiveAgentCount = agentCount === '' ? 1 : agentCount;
       const basePrice =
         serviceType === 'contact-center' ? pkg.price * effectiveAgentCount : pkg.price;
-      const quantity = serviceType === 'contact-center' ? effectiveAgentCount : 1;
+      const quantity = serviceType === 'contact-center' ? effectiveAgentCount
+        : serviceType === 'voice-broadcast' && pkg.vbsQuantity ? pkg.vbsQuantity : 1;
 
-      // Calculate VAT (15% of price) and total
-      const vatAmount = Math.round(basePrice * 0.15);
+      // Calculate VAT (15% of price) and total — use ceil for VBS slab pricing
+      const vatAmount = Math.ceil(basePrice * 0.15);
       const totalAmount = basePrice + vatAmount;
+
+      // VBS validity = 5 years (157680000 seconds), others = 30 days
+      const validitySeconds = serviceType === 'voice-broadcast'
+        ? 157680000 // 5 years
+        : ['hosted-pbx', 'contact-center'].includes(serviceType)
+          ? 2592000
+          : pkg.validity ? pkg.validity * 86400 : 2592000;
 
       const payload = {
         idPackage: getPackageIdInt(pkg.id, serviceType),
@@ -632,7 +640,6 @@ export default function CheckoutModal({
         status: 'ACTIVE',
         autoRenewalStatus: [
           'hosted-pbx',
-          'voice-broadcast',
           'contact-center',
         ].includes(serviceType),
         price: basePrice,
@@ -643,14 +650,9 @@ export default function CheckoutModal({
         currency: 'BDT',
         paid: 1,
         total: totalAmount,
-        validity: ['hosted-pbx', 'voice-broadcast', 'contact-center'].includes(
-          serviceType
-        )
-          ? 2592000
-          : pkg.validity
-            ? pkg.validity * 86400
-            : 2592000, // 30 days in seconds
-        ...(serviceType === 'contact-center' && { quantity: quantity }), // Include quantity for CC
+        validity: validitySeconds,
+        ...(serviceType === 'contact-center' && { quantity: quantity }),
+        ...(serviceType === 'voice-broadcast' && pkg.vbsQuantity && { quantity: pkg.vbsQuantity }),
       };
 
       console.log('Unified Purchase payload:', payload);

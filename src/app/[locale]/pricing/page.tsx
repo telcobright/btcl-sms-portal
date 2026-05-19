@@ -31,6 +31,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [activePackages, setActivePackages] = useState<Record<string, string | null>>({})
   // expiredPackages maps service → expired pkg id string
   const [expiredPackages, setExpiredPackages] = useState<Record<string, string | null>>({})
+  const [purchaseBlocked, setPurchaseBlocked] = useState(false)
+  const [docBlockReason, setDocBlockReason] = useState<'pending' | 'rejected' | null>(null)
   const router = useRouter()
 
   // Package tier order per service (higher number = higher tier)
@@ -85,11 +87,37 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         )
         if (adminRole) {
           setIsAdmin(true)
+          // Admins are not blocked by doc validation
+          setPurchaseBlocked(false)
         }
 
         if (!idPartner) {
           setIsLoadingUserType(false)
           return
+        }
+
+        // Fetch document statuses to check if purchase should be blocked
+        if (!adminRole) {
+          try {
+            const MAJOR_DOCS = ['nidfront', 'nidback', 'tradelicense', 'tin']
+            const docRes = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+              body: JSON.stringify({ id: idPartner }),
+            })
+            if (docRes.ok) {
+              const docData: Record<string, { status: string; rejectionReason: string }> = await docRes.json()
+              const hasRejected = MAJOR_DOCS.some(d => docData[d]?.status === 'REJECTED')
+              const hasPending = MAJOR_DOCS.some(d => !docData[d] || docData[d].status === 'PENDING' || docData[d].status === '')
+              if (hasRejected) {
+                setPurchaseBlocked(true)
+                setDocBlockReason('rejected')
+              } else if (hasPending) {
+                setPurchaseBlocked(true)
+                setDocBlockReason('pending')
+              }
+            }
+          } catch { /* silent */ }
         }
 
         const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getPartner}`, {
@@ -198,6 +226,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`)
       return
     }
+    if (purchaseBlocked) {
+      if (docBlockReason === 'rejected') {
+        toast.error(locale === 'en'
+          ? 'Purchase restricted: One or more required documents have been rejected. Please re-upload from your dashboard.'
+          : 'ক্রয় সীমাবদ্ধ: এক বা একাধিক প্রয়োজনীয় নথি প্রত্যাখ্যান করা হয়েছে।')
+      } else {
+        toast.error(locale === 'en'
+          ? 'Purchase restricted: Your documents are under review. BTCL will approve within 3 working days.'
+          : 'ক্রয় সীমাবদ্ধ: আপনার নথি পর্যালোচনাধীন। BTCL ৩ কার্যদিবসের মধ্যে অনুমোদন করবে।')
+      }
+      return
+    }
     setSelectedService(service)
     setSelectedPackage(pkg)
     setIsCheckoutOpen(true)
@@ -207,6 +247,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     if (!isLoggedIn()) {
       toast.error(locale === 'en' ? 'Please login to apply' : 'আবেদন করতে অনুগ্রহ করে লগইন করুন')
       router.push(`/${locale}/login`)
+      return
+    }
+    if (purchaseBlocked) {
+      if (docBlockReason === 'rejected') {
+        toast.error(locale === 'en'
+          ? 'Application restricted: One or more required documents have been rejected. Please re-upload from your dashboard.'
+          : 'আবেদন সীমাবদ্ধ: এক বা একাধিক প্রয়োজনীয় নথি প্রত্যাখ্যান করা হয়েছে।')
+      } else {
+        toast.error(locale === 'en'
+          ? 'Application restricted: Your documents are under review. BTCL will approve within 3 working days.'
+          : 'আবেদন সীমাবদ্ধ: আপনার নথি পর্যালোচনাধীন। BTCL ৩ কার্যদিবসের মধ্যে অনুমোদন করবে।')
+      }
       return
     }
     setSelectedService(service)
@@ -406,6 +458,24 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
           </Button>
         </Link>
+      )
+    }
+    // Show disabled button when purchase is blocked due to documents
+    if (purchaseBlocked && isLoggedIn()) {
+      return (
+        <div className="space-y-2">
+          <Button
+            onClick={() => handleBuyNow(pkg, serviceId)}
+            className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed opacity-75"
+          >
+            {locale === 'en' ? 'Purchase Disabled' : 'ক্রয় নিষ্ক্রিয়'}
+          </Button>
+          <p className={`text-xs text-center ${docBlockReason === 'rejected' ? 'text-red-500' : 'text-amber-600'}`}>
+            {docBlockReason === 'rejected'
+              ? (locale === 'en' ? 'Documents rejected — re-upload required' : 'নথি প্রত্যাখ্যাত — পুনরায় আপলোড প্রয়োজন')
+              : (locale === 'en' ? 'Documents under review (up to 3 working days)' : 'নথি পর্যালোচনাধীন (৩ কার্যদিবস পর্যন্ত)')}
+          </p>
+        </div>
       )
     }
     if (activePackages[serviceId] === pkg.id) {
@@ -616,6 +686,35 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             </div>
           </div>
         </div>
+
+        {/* Document Approval Banner */}
+        {purchaseBlocked && isLoggedIn() && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+            <div className={`rounded-xl border-2 p-5 flex items-start gap-4 ${docBlockReason === 'rejected' ? 'bg-red-50 border-red-300' : 'bg-amber-50 border-amber-300'}`}>
+              <div className={`p-2.5 rounded-lg ${docBlockReason === 'rejected' ? 'bg-red-100' : 'bg-amber-100'}`}>
+                <svg className={`w-6 h-6 ${docBlockReason === 'rejected' ? 'text-red-600' : 'text-amber-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className={`font-bold ${docBlockReason === 'rejected' ? 'text-red-800' : 'text-amber-800'}`}>
+                  {docBlockReason === 'rejected'
+                    ? (locale === 'en' ? 'Purchase Disabled — Documents Rejected' : 'ক্রয় নিষ্ক্রিয় — নথি প্রত্যাখ্যাত')
+                    : (locale === 'en' ? 'Purchase Disabled — Documents Under Review' : 'ক্রয় নিষ্ক্রিয় — নথি পর্যালোচনাধীন')}
+                </h3>
+                <p className={`text-sm mt-1 ${docBlockReason === 'rejected' ? 'text-red-700' : 'text-amber-700'}`}>
+                  {docBlockReason === 'rejected'
+                    ? (locale === 'en'
+                      ? 'One or more required documents (NID Front, NID Back, Trade License, TIN) have been rejected. Please re-upload corrected documents from your dashboard. BTCL will review within 3 working days.'
+                      : 'এক বা একাধিক প্রয়োজনীয় নথি প্রত্যাখ্যান করা হয়েছে। অনুগ্রহ করে আপনার ড্যাশবোর্ড থেকে সংশোধিত নথি পুনরায় আপলোড করুন।')
+                    : (locale === 'en'
+                      ? 'BTCL will review and approve your required documents (NID Front, NID Back, Trade License, TIN) within 3 working days. Document approval is mandatory before making any purchase.'
+                      : 'BTCL আপনার প্রয়োজনীয় নথি (NID সামনে, NID পিছনে, ট্রেড লাইসেন্স, TIN) ৩ কার্যদিবসের মধ্যে পর্যালোচনা ও অনুমোদন করবে। যেকোনো ক্রয়ের আগে নথি অনুমোদন বাধ্যতামূলক।')}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Prepaid Sections ── */}
         {showPrepaid && (

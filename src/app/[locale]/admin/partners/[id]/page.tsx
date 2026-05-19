@@ -75,6 +75,7 @@ export default function PartnerDetailsPage() {
   const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
   const [confirmModal, setConfirmModal] = useState(false);
+  const [partnerExtra, setPartnerExtra] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -82,7 +83,7 @@ export default function PartnerDetailsPage() {
       const authToken = localStorage.getItem('authToken');
       if (!authToken) { router.push(`/${locale}/login`); return; }
 
-      const [partnerData, usersData, purchasesData, documentsData, serviceStatusData, docStatusesRes] =
+      const [partnerData, usersData, purchasesData, documentsData, serviceStatusData, docStatusesRes, partnerExtraRes] =
         await Promise.all([
           getPartnerById(partnerId, authToken),
           getUsersByPartner(partnerId, authToken),
@@ -94,6 +95,11 @@ export default function PartnerDetailsPage() {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
             body: JSON.stringify({ id: partnerId }),
           }).then((r) => r.json()).catch(() => ({})),
+          fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ id: partnerId }),
+          }).then((r) => r.ok ? r.json() : null).catch(() => null),
         ]);
 
       setPartner(partnerData);
@@ -102,6 +108,7 @@ export default function PartnerDetailsPage() {
       setDocuments(Array.isArray(documentsData) ? documentsData : []);
       setServiceStatus(serviceStatusData);
       setDocStatuses(docStatusesRes || {});
+      setPartnerExtra(partnerExtraRes);
       setSubscriptions([
         ...serviceStatusData.pbx.purchases,
         ...serviceStatusData.hcc.purchases,
@@ -314,7 +321,7 @@ export default function PartnerDetailsPage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg border border-gray-200">
-        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} isDeactivated={partner.status === 'DEACTIVATED'} />}
+        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} isDeactivated={partner.status === 'DEACTIVATED'} partnerExtra={partnerExtra} users={users} />}
         {activeTab === 'users' && <UsersTab users={users} partnerId={partnerId} onRefresh={fetchData} isDeactivated={partner.status === 'DEACTIVATED'} />}
         {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
         {activeTab === 'subscriptions' && <SubscriptionsTab subscriptions={subscriptions} serviceStatus={serviceStatus} partnerName={partner.partnerName || ''} />}
@@ -413,7 +420,7 @@ export default function PartnerDetailsPage() {
 /* ═══════════════════════════════════════════════════════════════════
    Overview Tab
    ═══════════════════════════════════════════════════════════════════ */
-function OverviewTab({ partner, onPartnerUpdate, isDeactivated }: { partner: Partner; onPartnerUpdate: (p: Partner) => void; isDeactivated?: boolean }) {
+function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, users }: { partner: Partner; onPartnerUpdate: (p: Partner) => void; isDeactivated?: boolean; partnerExtra?: any; users?: PartnerUser[] }) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partner>({ ...partner });
@@ -504,6 +511,80 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated }: { partner: Par
           </div>
         ))}
       </div>
+
+      {/* ── Personal Information ── */}
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <svg className="w-5 h-5 text-[#00A651]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Personal Information
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+          {[
+            { label: 'Full Name', value: users?.[0] ? `${users[0].firstName || ''} ${users[0].lastName || ''}`.trim() : partner.partnerName },
+            { label: 'Email', value: users?.[0]?.email || partner.email },
+            { label: 'Mobile Number', value: users?.[0]?.phoneNo || partner.telephone },
+            { label: 'NID Number', value: partnerExtra?.nid },
+          ].map((item) => (
+            <div key={item.label} className="py-2">
+              <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
+              <p className="text-sm text-gray-900 mt-0.5">{item.value || <span className="text-gray-300">--</span>}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Address Information ── */}
+      {partnerExtra && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-[#00A651]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Address Information
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+            {[
+              { label: 'Address', value: partnerExtra.address1 },
+              { label: 'City', value: partnerExtra.city },
+              { label: 'Postal Code', value: partnerExtra.postalCode },
+              { label: 'Country', value: partnerExtra.countryCode === 'BD' ? 'Bangladesh' : partnerExtra.countryCode },
+            ].map((item) => (
+              <div key={item.label} className="py-2">
+                <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
+                <p className="text-sm text-gray-900 mt-0.5">{item.value || <span className="text-gray-300">--</span>}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Business Information ── */}
+      {partnerExtra && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-[#00A651]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Business Information
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+            {[
+              { label: 'Trade License Number', value: partnerExtra.tradeLicenseNumber },
+              { label: 'TIN Number', value: partnerExtra.tin },
+              { label: 'Tax Return Date', value: partnerExtra.taxReturnDate ? new Date(partnerExtra.taxReturnDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null },
+              { label: 'Uploaded By', value: partnerExtra.uploadedBy },
+            ].map((item) => (
+              <div key={item.label} className="py-2">
+                <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
+                <p className="text-sm text-gray-900 mt-0.5">{item.value || <span className="text-gray-300">--</span>}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

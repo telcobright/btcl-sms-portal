@@ -339,6 +339,7 @@ export default function Dashboard() {
   // Mandatory documents — users cannot upload/replace these (admin only)
   const MANDATORY_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
   const [purchaseBlocked, setPurchaseBlocked] = useState(false);
+  const [docBlockReason, setDocBlockReason] = useState<'pending' | 'rejected' | null>(null);
 
   // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
   const isPrepaid = partnerData?.customerPrePaid === 1;
@@ -434,7 +435,11 @@ export default function Dashboard() {
   const handleBuyNow = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (purchaseBlocked) {
       e.preventDefault();
-      alert('Your package purchase is restricted because one or more major documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please contact support.');
+      if (docBlockReason === 'rejected') {
+        alert('Your package purchase is restricted because one or more required documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please re-upload the rejected documents and wait for approval.');
+      } else {
+        alert('Your package purchase is restricted. BTCL is reviewing your required documents (NID Front, NID Back, Trade License, TIN). Approval takes up to 3 working days.');
+      }
     }
   };
 
@@ -449,11 +454,24 @@ export default function Dashboard() {
       if (!res.ok) return;
       const data: Record<string, { status: string; rejectionReason: string }> = await res.json();
       setDocStatuses(data);
-      // Check if any major doc is REJECTED
-      const blocked = Object.entries(data).some(
+      // Check if any major doc is not APPROVED (REJECTED or PENDING)
+      const hasRejected = Object.entries(data).some(
         ([docType, info]) => MAJOR_DOCS.has(docType) && info.status === 'REJECTED'
       );
-      setPurchaseBlocked(blocked);
+      const hasPendingOrMissing = [...MAJOR_DOCS].some((docType) => {
+        const info = data[docType];
+        return !info || info.status === 'PENDING' || info.status === '';
+      });
+      if (hasRejected) {
+        setPurchaseBlocked(true);
+        setDocBlockReason('rejected');
+      } else if (hasPendingOrMissing) {
+        setPurchaseBlocked(true);
+        setDocBlockReason('pending');
+      } else {
+        setPurchaseBlocked(false);
+        setDocBlockReason(null);
+      }
     } catch (err) {
       console.warn('Failed to load document statuses:', err);
     }
@@ -1190,6 +1208,60 @@ export default function Dashboard() {
           <p className="text-gray-700">Here's an overview of your account</p>
         </div>
 
+        {/* Document Approval Disclaimer Banner */}
+        {purchaseBlocked && (
+          <div className={`mb-8 rounded-xl border-2 p-5 ${docBlockReason === 'rejected' ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-300'}`}>
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-xl ${docBlockReason === 'rejected' ? 'bg-red-100' : 'bg-blue-100'}`}>
+                <svg className={`w-7 h-7 ${docBlockReason === 'rejected' ? 'text-red-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className={`text-lg font-bold ${docBlockReason === 'rejected' ? 'text-red-800' : 'text-blue-800'}`}>
+                  {docBlockReason === 'rejected' ? 'Document(s) Rejected — Action Required' : 'Document Verification In Progress'}
+                </h3>
+                <p className={`text-sm mt-1 ${docBlockReason === 'rejected' ? 'text-red-700' : 'text-blue-700'}`}>
+                  {docBlockReason === 'rejected'
+                    ? 'One or more of your required documents have been rejected. Please re-upload the corrected documents from the Documents section below. Once re-uploaded, BTCL will review them within 3 working days.'
+                    : 'BTCL will review and approve your submitted documents within 3 working days. Document approval for all required documents (NID Front, NID Back, Trade License, TIN) is mandatory to make any purchase.'}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[
+                    { type: 'nidfront', label: 'NID Front' },
+                    { type: 'nidback', label: 'NID Back' },
+                    { type: 'tradelicense', label: 'Trade License' },
+                    { type: 'tin', label: 'TIN Certificate' },
+                  ].map((doc) => {
+                    const status = docStatuses[doc.type]?.status || 'PENDING';
+                    return (
+                      <span
+                        key={doc.type}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          status === 'APPROVED'
+                            ? 'bg-green-100 text-green-700 border border-green-200'
+                            : status === 'REJECTED'
+                            ? 'bg-red-100 text-red-700 border border-red-200'
+                            : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                        }`}
+                      >
+                        {status === 'APPROVED' ? (
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        ) : status === 'REJECTED' ? (
+                          <XCircle className="w-3.5 h-3.5" />
+                        ) : (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        )}
+                        {doc.label}: {status === 'APPROVED' ? 'Approved' : status === 'REJECTED' ? 'Rejected' : 'Pending'}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Account Status & Current Package */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 hover:shadow-xl transition-shadow">
@@ -1275,7 +1347,7 @@ export default function Dashboard() {
             </div>
             <h3 className="text-xl font-bold text-gray-900">Service Portals</h3>
           </div>
-          {purchaseBlocked && (
+          {purchaseBlocked && docBlockReason === 'rejected' && (
             <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
               <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -1283,7 +1355,20 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm font-semibold text-red-700">Package purchase is currently restricted</p>
                 <p className="text-xs text-red-600 mt-0.5">
-                  One or more of your major documents (NID Front, NID Back, Trade License, or TIN) have been rejected by admin. Please contact support to resolve the issue before purchasing a package.
+                  One or more of your required documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please re-upload the rejected documents from the Documents section below and wait for admin approval.
+                </p>
+              </div>
+            </div>
+          )}
+          {purchaseBlocked && docBlockReason === 'pending' && (
+            <div className="mb-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              <svg className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-amber-700">Documents under review — Purchase disabled</p>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  BTCL will review and approve your required documents (NID Front, NID Back, Trade License, TIN) within 3 working days. Document approval is mandatory before making any purchase. You will be able to purchase packages once all required documents are approved.
                 </p>
               </div>
             </div>

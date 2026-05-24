@@ -393,7 +393,9 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const vbsVat = Math.ceil(vbsBasePrice * 0.15)
   const vbsTotal = vbsBasePrice + vbsVat
   const VBS_MAX_TOTAL = 500000
+  const VBS_MIN_TOTAL = 10
   const vbsExceedsMax = vbsTotal > VBS_MAX_TOTAL
+  const vbsUnderMin = typeof vbsQuantity === 'number' && vbsQuantity >= 1 && vbsTotal < VBS_MIN_TOTAL
 
   const handleVbsBuyNow = () => {
     if (!isLoggedIn()) {
@@ -411,6 +413,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
     if (!vbsCurrentSlab || typeof vbsQuantity !== 'number' || vbsQuantity < 1) {
       toast.error(locale === 'en' ? 'Please enter a valid quantity (minimum 1)' : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)')
+      return
+    }
+    if (vbsUnderMin) {
+      toast.error(locale === 'en' ? 'Minimum purchase amount is ৳10' : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০')
       return
     }
     if (vbsExceedsMax) {
@@ -787,6 +793,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           {locale === 'en' ? `Slab: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/message` : `স্ল্যাব: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
                         </p>
                       )}
+                      {vbsUnderMin && (
+                        <p className="mt-1 text-sm text-red-600 font-medium">
+                          {locale === 'en' ? 'Minimum purchase amount is ৳10 (incl. VAT)' : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০ (ভ্যাটসহ)'}
+                        </p>
+                      )}
                       {vbsExceedsMax && (
                         <p className="mt-1 text-sm text-red-600 font-medium">
                           {locale === 'en' ? 'Maximum purchase limit is ৳5,00,000 (incl. VAT)' : 'সর্বোচ্চ ক্রয় সীমা ৳৫,০০,০০০ (ভ্যাটসহ)'}
@@ -816,6 +827,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           {purchaseBlocked && isLoggedIn() ? (
                             <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed">
                               {locale === 'en' ? 'Purchase Disabled' : 'ক্রয় নিষ্ক্রিয়'}
+                            </button>
+                          ) : vbsUnderMin ? (
+                            <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed">
+                              {locale === 'en' ? 'Minimum ৳10 Required' : 'সর্বনিম্ন ৳১০ প্রয়োজন'}
                             </button>
                           ) : vbsExceedsMax ? (
                             <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed">

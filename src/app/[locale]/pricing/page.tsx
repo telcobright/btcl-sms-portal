@@ -392,6 +392,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const vbsBasePrice = vbsCurrentSlab && typeof vbsQuantity === 'number' ? Math.ceil(vbsQuantity * vbsCurrentSlab.rate) : 0
   const vbsVat = Math.ceil(vbsBasePrice * 0.15)
   const vbsTotal = vbsBasePrice + vbsVat
+  const VBS_MAX_TOTAL = 500000
+  const vbsExceedsMax = vbsTotal > VBS_MAX_TOTAL
 
   const handleVbsBuyNow = () => {
     if (!isLoggedIn()) {
@@ -409,6 +411,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
     if (!vbsCurrentSlab || typeof vbsQuantity !== 'number' || vbsQuantity < 1) {
       toast.error(locale === 'en' ? 'Please enter a valid quantity (minimum 1)' : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)')
+      return
+    }
+    if (vbsExceedsMax) {
+      toast.error(locale === 'en' ? 'Total amount cannot exceed ৳5,00,000 per purchase' : 'প্রতি ক্রয়ে মোট পরিমাণ ৳৫,০০,০০০ এর বেশি হতে পারবে না')
       return
     }
     setSelectedService('voice-broadcast')
@@ -781,6 +787,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           {locale === 'en' ? `Slab: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/message` : `স্ল্যাব: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
                         </p>
                       )}
+                      {vbsExceedsMax && (
+                        <p className="mt-1 text-sm text-red-600 font-medium">
+                          {locale === 'en' ? 'Maximum purchase limit is ৳5,00,000 (incl. VAT)' : 'সর্বোচ্চ ক্রয় সীমা ৳৫,০০,০০০ (ভ্যাটসহ)'}
+                        </p>
+                      )}
                     </div>
 
                     {/* Right — Price Breakdown */}
@@ -805,6 +816,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           {purchaseBlocked && isLoggedIn() ? (
                             <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed">
                               {locale === 'en' ? 'Purchase Disabled' : 'ক্রয় নিষ্ক্রিয়'}
+                            </button>
+                          ) : vbsExceedsMax ? (
+                            <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed">
+                              {locale === 'en' ? 'Limit Exceeded (max ৳5,00,000)' : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৳৫,০০,০০০)'}
                             </button>
                           ) : (
                             <button onClick={handleVbsBuyNow} className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg">

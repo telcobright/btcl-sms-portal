@@ -774,7 +774,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           setVbsQuantity(val === '' ? '' : Math.max(1, parseInt(val) || 1))
                         }}
                         placeholder={locale === 'en' ? 'e.g. 15000' : 'যেমন ১৫০০০'}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
                       />
                       {vbsCurrentSlab && (
                         <p className="mt-2 text-sm text-orange-600 font-medium">

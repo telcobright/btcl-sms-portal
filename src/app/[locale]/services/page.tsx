@@ -27,8 +27,26 @@ const getLocalizedText = (locale: string, enText: string, bnText: string): strin
 export default async function ServicesPage({ params }: ServicesPageProps) {
   const { locale } = await params
 
-  // Services (SMS hidden) - Order: Hosted PBX, Voice Broadcast, Contact Center
+  // Services - Order: Bulk SMS, Hosted PBX, Voice Broadcast, Contact Center
   const services: Service[] = [
+    {
+      id: 'bulk-sms',
+      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
+      description: locale === 'en'
+        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
+        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
+      icon: '📱',
+      features: [
+        locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
+        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
+        locale === 'en' ? 'RESTful API integration' : 'RESTful API ইন্টিগ্রেশন',
+        locale === 'en' ? 'Real-time delivery reports' : 'রিয়েল-টাইম ডেলিভারি রিপোর্ট',
+        locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
+        locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
+      ],
+      color: 'from-blue-500 to-blue-600',
+      href: `/${locale}/services/bulk-sms`,
+    },
     {
       id: 'hosted-pbx',
       title: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
@@ -151,7 +169,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
             {services.map((service, index) => (
               <ServiceCard key={service.id} service={service} index={index} />
             ))}

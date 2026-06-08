@@ -270,12 +270,33 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     params.then(p => setLocale(p.locale))
   }, [params])
 
-  // Services (SMS hidden)
+  // Services
   const services = [
+    { id: 'bulk-sms', name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস', icon: '📱', color: 'blue' },
     { id: 'hosted-pbx', name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX', icon: '☎️', color: 'green' },
     { id: 'voice-broadcast', name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট', icon: '📢', color: 'orange' },
     { id: 'contact-center', name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার', icon: '🎧', color: 'purple' },
   ]
+
+  // Bulk SMS slab pricing
+  const smsSlabs = [
+    { min: 1, max: 20000, rate: 0.32, packageId: 'basic', name: locale === 'en' ? 'Basic' : 'বেসিক' },
+    { min: 20001, max: 50000, rate: 0.30, packageId: 'standard', name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড' },
+    { min: 50001, max: Infinity, rate: 0.28, packageId: 'enterprise', name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ' },
+  ]
+
+  const [smsQuantity, setSmsQuantity] = useState<number | ''>('')
+
+  const getSmsSlab = (qty: number) => smsSlabs.find(s => qty >= s.min && qty <= s.max) || smsSlabs[0]
+
+  const smsCurrentSlab = typeof smsQuantity === 'number' && smsQuantity >= 1 ? getSmsSlab(smsQuantity) : null
+  const smsBasePrice = smsCurrentSlab && typeof smsQuantity === 'number' ? Math.ceil(smsQuantity * smsCurrentSlab.rate) : 0
+  const smsVat = Math.ceil(smsBasePrice * 0.15)
+  const smsTotal = smsBasePrice + smsVat
+  const SMS_MAX_TOTAL = 500000
+  const SMS_MIN_TOTAL = 10
+  const smsExceedsMax = smsTotal > SMS_MAX_TOTAL
+  const smsUnderMin = typeof smsQuantity === 'number' && smsQuantity >= 1 && smsTotal < SMS_MIN_TOTAL
 
   // Contact Center Pricing
   const contactCenterPackages = [
@@ -681,6 +702,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             {/* Quick jump links */}
             <div className="flex flex-wrap justify-center gap-3 mt-2">
               {[
+                { id: 'bulk-sms', icon: '📱', en: 'Bulk SMS', bn: 'বাল্ক এসএমএস' },
                 { id: 'hosted-pbx', icon: '☎️', en: 'Hosted PBX', bn: 'হোস্টেড PBX' },
                 { id: 'voice-broadcast', icon: '📢', en: 'Voice Broadcast', bn: 'ভয়েস ব্রডকাস্ট' },
                 { id: 'contact-center', icon: '🎧', en: 'Contact Center', bn: 'কন্টাক্ট সেন্টার' },
@@ -727,6 +749,128 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         {/* ── Prepaid Sections ── */}
         {showPrepaid && (
           <>
+            {/* Bulk SMS — Slab-based pricing */}
+            <div id="bulk-sms" className="py-20 bg-blue-50">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12">
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-blue-100 text-blue-800">
+                    <span className="text-4xl">📱</span>
+                    <h2 className="text-2xl font-bold">{locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস'}</h2>
+                  </div>
+                  <p className="text-gray-600 text-lg">{locale === 'en' ? 'Pay per message — volume-based pricing' : 'প্রতি মেসেজ মূল্য — পরিমাণ ভিত্তিক'}</p>
+                </div>
+
+                {/* Slab Rate Table */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-blue-50">
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Message Range' : 'মেসেজ পরিসীমা'}</th>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Slab' : 'স্ল্যাব'}</th>
+                        <th className="px-6 py-4 text-right font-semibold text-gray-700">{locale === 'en' ? 'Rate / Message' : 'প্রতি মেসেজ রেট'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {smsSlabs.map((slab, idx) => (
+                        <tr key={idx} className={`border-t border-gray-100 ${smsCurrentSlab === slab ? 'bg-blue-50 font-semibold' : ''}`}>
+                          <td className="px-6 py-3 text-gray-800">
+                            {slab.max === Infinity
+                              ? `${slab.min.toLocaleString()}+`
+                              : `${slab.min.toLocaleString()} – ${slab.max.toLocaleString()}`}
+                          </td>
+                          <td className="px-6 py-3 text-gray-600">{slab.name}</td>
+                          <td className="px-6 py-3 text-right text-gray-800">৳{slab.rate.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Quantity Input + Price Calculator */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left — Input */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        {locale === 'en' ? 'Enter Number of Messages' : 'মেসেজ সংখ্যা লিখুন'}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={smsQuantity}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setSmsQuantity(val === '' ? '' : Math.max(1, parseInt(val) || 1))
+                        }}
+                        placeholder={locale === 'en' ? 'e.g. 15000' : 'যেমন ১৫০০০'}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
+                      />
+                      {smsCurrentSlab && (
+                        <p className="mt-2 text-sm text-blue-600 font-medium">
+                          {locale === 'en' ? `Slab: ${smsCurrentSlab.name} — ৳${smsCurrentSlab.rate.toFixed(2)}/message` : `স্ল্যাব: ${smsCurrentSlab.name} — ৳${smsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
+                        </p>
+                      )}
+                      {smsUnderMin && (
+                        <p className="mt-1 text-sm text-red-600 font-medium">
+                          {locale === 'en' ? 'Minimum purchase amount is ৳10 (incl. VAT)' : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০ (ভ্যাটসহ)'}
+                        </p>
+                      )}
+                      {smsExceedsMax && (
+                        <p className="mt-1 text-sm text-red-600 font-medium">
+                          {locale === 'en' ? 'Maximum purchase limit is ৳5,00,000 (incl. VAT)' : 'সর্বোচ্চ ক্রয় সীমা ৳৫,০০,০০০ (ভ্যাটসহ)'}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Right — Price Breakdown */}
+                    <div className="space-y-3">
+                      {smsCurrentSlab && typeof smsQuantity === 'number' && smsQuantity >= 1 ? (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">{typeof smsQuantity === 'number' ? smsQuantity.toLocaleString() : 0} × ৳{smsCurrentSlab.rate.toFixed(2)}</span>
+                            <span className="font-medium">৳{smsBasePrice.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">{locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}</span>
+                            <span>৳{smsVat.toLocaleString()}</span>
+                          </div>
+                          <hr className="border-gray-200" />
+                          <div className="flex justify-between text-lg font-bold">
+                            <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
+                            <span className="text-blue-600">৳{smsTotal.toLocaleString()}</span>
+                          </div>
+                          <div className="text-xs text-gray-500">{locale === 'en' ? 'Validity: 5 Years' : 'মেয়াদ: ৫ বছর'}</div>
+
+                          {purchaseBlocked && isLoggedIn() ? (
+                            <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed">
+                              {locale === 'en' ? 'Purchase Disabled' : 'ক্রয় নিষ্ক্রিয়'}
+                            </button>
+                          ) : smsUnderMin ? (
+                            <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed">
+                              {locale === 'en' ? 'Minimum ৳10 Required' : 'সর্বনিম্ন ৳১০ প্রয়োজন'}
+                            </button>
+                          ) : smsExceedsMax ? (
+                            <button disabled className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed">
+                              {locale === 'en' ? 'Limit Exceeded (max ৳5,00,000)' : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৳৫,০০,০০০)'}
+                            </button>
+                          ) : (
+                            <Link href={`/${locale}/contact`} className="block">
+                              <button className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg">
+                                {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
+                              </button>
+                            </Link>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                          {locale === 'en' ? 'Enter quantity to see pricing' : 'মূল্য দেখতে পরিমাণ লিখুন'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {renderSection('hosted-pbx', '☎️',
               'Hosted PBX', 'হোস্টেড PBX',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',

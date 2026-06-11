@@ -22,7 +22,7 @@ export default async function LocaleLayout({
         <head>
           <title>BTCL SERVICES</title>
           <meta name="description" content="Btcl cloud based services" />
-          <link rel="icon" href="/btcl_pbxFav.png" />
+          <link rel="icon" type="image/png" href="/btcl_globe_favicon.png" />
         </head>
         <body className={inter.className} suppressHydrationWarning>
         <AuthProvider>

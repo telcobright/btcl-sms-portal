@@ -55,13 +55,6 @@ export function ContactForm({ locale }: ContactFormProps) {
       return;
     }
 
-    const authToken = localStorage.getItem('authToken') || '';
-    if (!authToken) {
-      setStatus('error');
-      setErrorMsg(t('Please login to send a message.', 'বার্তা পাঠাতে অনুগ্রহ করে লগইন করুন।'));
-      return;
-    }
-
     setSending(true);
     setStatus('idle');
     setErrorMsg('');
@@ -73,7 +66,6 @@ export function ContactForm({ locale }: ContactFormProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify({
           to: 'alaapcloud@btcl.gov.bd',

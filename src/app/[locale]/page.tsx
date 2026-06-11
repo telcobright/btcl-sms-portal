@@ -90,7 +90,7 @@ export default async function HomePage({ params }: HomePageProps) {
         locale === 'en' ? 'Mobile & desktop apps' : 'মোবাইল ও ডেস্কটপ অ্যাপ',
         locale === 'en' ? 'Auto-attendant & IVR' : 'অটো-এটেন্ডেন্ট ও IVR',
       ],
-      color: 'from-green-500 to-green-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/hosted-pbx`,
     },
     {
@@ -243,7 +243,7 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
 
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute left-10 top-20 h-20 w-20 animate-pulse rounded-full bg-green-400/10 blur-xl" />
+          <div className="absolute left-10 top-20 h-20 w-20 animate-pulse rounded-full bg-btcl-primaryLight/10 blur-xl" />
           <div className="absolute bottom-32 right-16 h-32 w-32 animate-pulse rounded-full bg-blue-400/10 blur-xl delay-1000" />
           <div className="absolute left-1/4 top-1/2 h-16 w-16 animate-pulse rounded-full bg-purple-400/10 blur-xl delay-500" />
         </div>
@@ -252,19 +252,19 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
           <div className="text-center">
             {/* Badge/Announcement */}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-base text-white/90 backdrop-blur-sm transition-all duration-300 hover:bg-white/15">
-              <span className="text-green-400 text-xl">✨</span>
+              <span className="text-btcl-primaryLight text-xl">✨</span>
               <span>Enterprise Communication Solutions</span>
             </div>
 
             {/* Main Heading */}
             <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl xl:text-7xl">
-            <span className="block bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
+            <span className="block text-white">
               BTCL Enterprise Services
             </span>
             </h1>
 
             {/* Description */}
-            <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed text-green-100/80 md:text-xl lg:text-2xl">
+            <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed text-white/80 md:text-xl lg:text-2xl">
               Bangladesh's leading telecommunications provider delivering enterprise-grade communication solutions
             </p>
 
@@ -272,7 +272,7 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
             <div className="mb-4 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href={`/${locale}/register`} className="group">
                 <Button
-                    className="transform rounded-lg border-0 bg-gradient-to-r from-green-500 to-green-600 px-8 py-4 text-base md:text-lg font-semibold text-white shadow-xl transition-all duration-300 hover:scale-105 hover:from-green-600 hover:to-green-700"
+                    className="transform rounded-lg border-0 bg-gradient-to-r from-btcl-primary to-btcl-primary px-8 py-4 text-base md:text-lg font-semibold text-white shadow-xl transition-all duration-300 hover:scale-105 hover:from-btcl-primary hover:to-btcl-primaryDark"
                 >
                   <span>{t('home.hero.cta')}</span>
                   <span className="ml-2 transition-transform duration-200 group-hover:translate-x-1">→</span>
@@ -302,8 +302,8 @@ function ServicesShowcaseSection({ services, locale }: { services: Service[]; lo
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="mb-12 text-center">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-1.5 text-sm font-semibold text-green-700">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
               {locale === 'en' ? 'Our Services' : 'আমাদের সেবাসমূহ'}
             </div>
             <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
@@ -328,7 +328,7 @@ function ServicesShowcaseSection({ services, locale }: { services: Service[]; lo
             <Link href={`/${locale}/services`}>
               <Button
                   variant="outline"
-                  className="transform rounded-lg border-2 border-green-600 px-6 py-2.5 text-sm font-semibold text-green-600 transition-all duration-300 hover:scale-105 hover:bg-green-600 hover:text-white"
+                  className="transform rounded-lg border-2 border-btcl-primary px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
               >
                 {locale === 'en' ? 'Explore All Services' : 'সকল সেবা দেখুন'}
                 <span className="ml-2">→</span>
@@ -346,10 +346,10 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
     const colorMap: { [key: string]: { text: string; bg: string; border: string } } = {
       'from-blue-500 to-blue-600': { text: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
       'from-purple-500 to-purple-600': { text: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-      'from-green-500 to-green-600': { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+      'from-btcl-primary to-btcl-primary': { text: 'text-btcl-primary', bg: 'bg-btcl-primaryLight/10', border: 'border-btcl-primaryLight/30' },
       'from-orange-500 to-orange-600': { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
     }
-    return colorMap[color] || { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' }
+    return colorMap[color] || { text: 'text-btcl-primary', bg: 'bg-btcl-primaryLight/10', border: 'border-btcl-primaryLight/30' }
   }
 
   const colors = getColorClasses(service.color)
@@ -465,7 +465,7 @@ function PricingPreviewSection({
         locale === 'en' ? '500 Min Free Talktime' : '৫০০ মিনিট ফ্রি টকটাইম',
         locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
       ],
-      color: 'from-green-500 to-green-600',
+      color: 'from-btcl-primary to-btcl-primary',
     },
     {
       id: 'voice-broadcast',
@@ -528,7 +528,7 @@ function PricingPreviewSection({
                   <div className="mb-6 space-y-3">
                     {service.features.map((feature, index) => (
                         <div key={index} className="flex items-start">
-                          <svg className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-btcl-primary" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                           <span className="text-sm text-gray-600">{feature}</span>
@@ -597,13 +597,13 @@ function PricingCard({ pkg, locale }: { pkg: PricingPlan; locale: string }) {
             </div>
             <div className="space-y-2 rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
               <div className="flex items-center justify-center">
-                <svg className="mr-2 h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="mr-2 h-4 w-4 text-btcl-primary" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 </svg>
                 {pkg.sms.toLocaleString()} SMS
               </div>
               <div className="flex items-center justify-center">
-                <svg className="mr-2 h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="mr-2 h-4 w-4 text-btcl-primary" fill="currentColor" viewBox="0 0 20 20">
                   <path
                       fillRule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
@@ -633,7 +633,7 @@ function PricingCard({ pkg, locale }: { pkg: PricingPlan; locale: string }) {
             {pkg.features.map((feature, index) => (
                 <div key={index} className="flex items-start">
                   <svg
-                      className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
+                      className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-btcl-primary"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                   >

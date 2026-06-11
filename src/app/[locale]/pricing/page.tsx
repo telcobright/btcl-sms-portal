@@ -472,7 +472,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     const colors: { [key: string]: string } = {
       blue: 'from-blue-500 to-blue-600',
       purple: 'from-purple-500 to-purple-600',
-      green: 'from-green-500 to-green-600',
+      green: 'from-btcl-primary to-btcl-primary',
       orange: 'from-orange-500 to-orange-600'
     }
     return colors[color] || colors.blue
@@ -665,7 +665,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                   <div className="space-y-3">
                     {pkg.features.map((feature: string, index: number) => (
                       <div key={index} className="flex items-start">
-                        <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                         </svg>
                         <span className="text-gray-700 text-sm font-medium">{feature}</span>
@@ -689,12 +689,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         <Header />
 
         {/* Hero Section */}
-        <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-btcl-primary via-green-600 to-btcl-secondary">
+        <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary">
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
               {locale === 'en' ? 'Service Pricing' : 'সেবা মূল্য'}
             </h1>
-            <p className="text-xl text-green-100 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-white mb-8 max-w-3xl mx-auto">
               {locale === 'en'
                 ? 'Transparent pricing for all our enterprise communication services. Choose the plan that fits your business needs.'
                 : 'আমাদের সমস্ত এন্টারপ্রাইজ যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
@@ -874,7 +874,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             {renderSection('hosted-pbx', '☎️',
               'Hosted PBX', 'হোস্টেড PBX',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
-              pbxPackages, 'bg-white', 'bg-green-50 text-green-800'
+              pbxPackages, 'bg-white', 'bg-btcl-primaryLight/10 text-btcl-primaryDark'
             )}
             {/* Voice Broadcast — Slab-based pricing */}
             <div id="voice-broadcast" className="py-20 bg-orange-50">
@@ -1010,7 +1010,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             {renderSection('hosted-pbx', '☎️',
               'Hosted PBX — Postpaid', 'হোস্টেড PBX — পোস্টপেইড',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
-              pbxPackages, 'bg-gray-100', 'bg-green-50 text-green-800',
+              pbxPackages, 'bg-gray-100', 'bg-btcl-primaryLight/10 text-btcl-primaryDark',
               true
             )}
             {renderSection('contact-center', '🎧',
@@ -1056,19 +1056,19 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Refundable deposit' : 'ফেরতযোগ্য ডিপোজিট'}</span>
                   </div>
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
                   </div>
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
@@ -1097,19 +1097,19 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Full setup & configuration' : 'সম্পূর্ণ সেটআপ ও কনফিগারেশন'}</span>
                   </div>
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Technical integration' : 'টেকনিক্যাল ইন্টিগ্রেশন'}</span>
                   </div>
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Under IPTSP License' : 'IPTSP লাইসেন্সের অধীনে'}</span>
@@ -1133,19 +1133,19 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
                   </div>
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Network activation' : 'নেটওয়ার্ক অ্যাক্টিভেশন'}</span>
                   </div>
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
@@ -1169,18 +1169,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         </div>
 
         {/* Contact CTA */}
-        <div className="py-16 bg-gradient-to-r from-btcl-primary to-green-700">
+        <div className="py-16 bg-gradient-to-r from-btcl-primary to-btcl-primaryDark">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold text-white mb-4">
               {locale === 'en' ? 'Need a Custom Plan?' : 'কাস্টম পরিকল্পনা প্রয়োজন?'}
             </h2>
-            <p className="text-xl text-green-100 mb-8">
+            <p className="text-xl text-white mb-8">
               {locale === 'en'
                 ? 'Contact our sales team for enterprise pricing and custom solutions tailored to your specific requirements.'
                 : 'আপনার নির্দিষ্ট প্রয়োজনীয়তার জন্য এন্টারপ্রাইজ মূল্য এবং কাস্টম সমাধানের জন্য আমাদের সেলস টিমের সাথে যোগাযোগ করুন।'}
             </p>
             <Link href={`/${locale}/contact`}>
-              <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl">
+              <Button size="lg" className="bg-white text-btcl-primary hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl">
                 {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
               </Button>
             </Link>

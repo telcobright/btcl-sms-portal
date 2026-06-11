@@ -715,14 +715,14 @@ export default function Dashboard() {
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
           .invoice { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .header { background: linear-gradient(135deg, #067a3e, #045a2e); color: white; padding: 30px; }
+          .header { background: linear-gradient(135deg, #1F3C71, #1F3C71); color: white; padding: 30px; }
           .header h1 { font-size: 28px; margin-bottom: 5px; }
           .header p { opacity: 0.9; }
           .company-info { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 20px; }
           .company-info div { font-size: 14px; }
           .content { padding: 30px; }
           .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }
-          .invoice-meta h2 { color: #067a3e; font-size: 20px; margin-bottom: 2px; }
+          .invoice-meta h2 { color: #1F3C71; font-size: 20px; margin-bottom: 2px; }
           .invoice-meta .details { text-align: right; }
           .invoice-meta .details p { margin: 2px 0; color: #666; font-size: 13px; }
           .invoice-meta .details strong { color: #333; }
@@ -735,11 +735,11 @@ export default function Dashboard() {
           .items-table .amount { text-align: right; }
           .totals { margin-left: auto; width: 300px; }
           .totals .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-          .totals .row.total { border-bottom: none; border-top: 2px solid #067a3e; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #067a3e; }
+          .totals .row.total { border-bottom: none; border-top: 2px solid #1F3C71; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #1F3C71; }
           .status { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-          .status.paid { background: #d4edda; color: #155724; }
+          .status.paid { background: #EAF6FC; color: #1F3C71; }
           .status.pending { background: #fff3cd; color: #856404; }
-          .status.active { background: #d4edda; color: #155724; }
+          .status.active { background: #EAF6FC; color: #1F3C71; }
           .status.expired { background: #f8d7da; color: #721c24; }
           .payment-type { display: inline-block; padding: 6px 12px; border-radius: 15px; font-size: 11px; font-weight: 600; margin-left: 10px; }
           .payment-type.prepaid { background: #dbeafe; color: #1e40af; }
@@ -749,7 +749,7 @@ export default function Dashboard() {
           @media print {
             body { background: white; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
             .invoice { box-shadow: none; }
-            .header { background: linear-gradient(135deg, #067a3e, #045a2e) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .header { background: linear-gradient(135deg, #1F3C71, #1F3C71) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .status { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .items-table th { background: #f8f9fa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .footer { background: #f8f9fa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -783,7 +783,7 @@ export default function Dashboard() {
             <div class="invoice-meta">
               <div>
                 <h2>INVOICE <span class="payment-type ${isPrepaid ? 'prepaid' : 'postpaid'}">${paymentType}</span></h2>
-                <p style="color: #067a3e; font-weight: 600; font-size: 18px;">${invoiceId}</p>
+                <p style="color: #1F3C71; font-weight: 600; font-size: 18px;">${invoiceId}</p>
               </div>
               <div class="details">
                 <p><strong>Invoice Date:</strong> ${formatDate(purchaseDate)}</p>
@@ -1112,7 +1112,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2
-            className="animate-spin h-12 w-12 text-[#067a3e]
+            className="animate-spin h-12 w-12 text-[#1F3C71]
  mx-auto mb-4"
           />
           <p className="text-gray-600">Loading dashboard...</p>
@@ -1181,7 +1181,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-btcl-primaryLight/10/30">
       <Header />
 
       {/* Image Viewer Modal */}
@@ -1201,7 +1201,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-[#067a3e] to-green-700 bg-clip-text text-transparent mb-2">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-[#1F3C71] to-btcl-primaryDark bg-clip-text text-transparent mb-2">
             Welcome back, {displayUserData.firstName} {displayUserData.lastName}
             !
           </h2>
@@ -1239,7 +1239,7 @@ export default function Dashboard() {
                         key={doc.type}
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                           status === 'APPROVED'
-                            ? 'bg-green-100 text-green-700 border border-green-200'
+                            ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark border border-btcl-primaryLight/30'
                             : status === 'REJECTED'
                             ? 'bg-red-100 text-red-700 border border-red-200'
                             : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
@@ -1264,14 +1264,14 @@ export default function Dashboard() {
 
         {/* Account Status & Current Package */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 hover:shadow-xl transition-shadow">
+          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Account Status
               </h3>
               {accountStatus === 'active' ? (
-                <div className="bg-green-100 p-2 rounded-full">
-                  <CheckCircle className="w-6 h-6 text-[#067a3e]" />
+                <div className="bg-btcl-primaryLight/20 p-2 rounded-full">
+                  <CheckCircle className="w-6 h-6 text-[#1F3C71]" />
                 </div>
               ) : (
                 <div className="bg-red-100 p-2 rounded-full">
@@ -1283,7 +1283,7 @@ export default function Dashboard() {
               <div
                 className={`px-5 py-2.5 rounded-full text-sm font-bold shadow-sm ${
                   accountStatus === 'active'
-                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-[#067a3e] border border-green-200'
+                    ? 'bg-gradient-to-r from-btcl-primaryLight/20 to-btcl-primaryLight/20 text-[#1F3C71] border border-btcl-primaryLight/30'
                     : 'bg-gradient-to-r from-red-100 to-orange-100 text-red-700 border border-red-200'
                 }`}
               >
@@ -1308,12 +1308,12 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 hover:shadow-xl transition-shadow">
+          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Current Packages
               </h3>
-              <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-full">
+              <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-full">
                 <Package className="w-6 h-6 text-white" />
               </div>
             </div>
@@ -1324,10 +1324,10 @@ export default function Dashboard() {
                   .map(([service, s]) => (
                     <div
                       key={service}
-                      className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
+                      className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-btcl-primaryLight/10 to-btcl-primaryLight/10 border border-btcl-primaryLight/30"
                     >
-                      <span className="text-[#067a3e] font-bold">Package:</span>
-                      <span className="font-bold text-[#067a3e] text-lg">
+                      <span className="text-[#1F3C71] font-bold">Package:</span>
+                      <span className="font-bold text-[#1F3C71] text-lg">
                         {s.packageName ?? service.toUpperCase()}
                       </span>
                     </div>
@@ -1340,9 +1340,9 @@ export default function Dashboard() {
         </div>
 
         {/* Service Portals */}
-        <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+        <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+            <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
               <ExternalLink className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-xl font-bold text-gray-900">Service Portals</h3>
@@ -1674,9 +1674,9 @@ export default function Dashboard() {
         </div>
 
         {/* Personal Information */}
-        <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+        <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+            <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
               <svg
                 className="w-6 h-6 text-white"
                 fill="none"
@@ -1696,7 +1696,7 @@ export default function Dashboard() {
             </h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
               <label className="block text-sm font-semibold text-gray-600 mb-2">
                 Full Name
               </label>
@@ -1704,19 +1704,19 @@ export default function Dashboard() {
                 {displayUserData.firstName} {displayUserData.lastName}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
               <label className="block text-sm font-semibold text-gray-600 mb-2">
                 Mobile Number
               </label>
               <p className="text-gray-900 font-bold">{displayUserData.phone}</p>
             </div>
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
               <label className="block text-sm font-semibold text-gray-600 mb-2">
                 Email Address
               </label>
               <p className="text-gray-900 font-bold">{displayUserData.email}</p>
             </div>
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
               <label className="block text-sm font-semibold text-gray-600 mb-2">
                 NID Number
               </label>
@@ -1729,9 +1729,9 @@ export default function Dashboard() {
 
         {/* Address Information */}
         {partnerExtra && (
-          <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+              <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -1757,7 +1757,7 @@ export default function Dashboard() {
               </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Address
                 </label>
@@ -1766,13 +1766,13 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   City
                 </label>
                 <p className="text-gray-900 font-bold">{partnerExtra.city}</p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Postal Code
                 </label>
@@ -1780,7 +1780,7 @@ export default function Dashboard() {
                   {partnerExtra.postalCode}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Country
                 </label>
@@ -1796,9 +1796,9 @@ export default function Dashboard() {
 
         {/* Business Information */}
         {partnerExtra && (
-          <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+              <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -1818,7 +1818,7 @@ export default function Dashboard() {
               </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Trade License Number
                 </label>
@@ -1826,13 +1826,13 @@ export default function Dashboard() {
                   {partnerExtra.tradeLicenseNumber}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   TIN Number
                 </label>
                 <p className="text-gray-900 font-bold">{partnerExtra.tin}</p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Tax Return Date
                 </label>
@@ -1847,7 +1847,7 @@ export default function Dashboard() {
                   )}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-green-50/20 border border-gray-200 hover:border-green-300 transition-colors">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Uploaded By
                 </label>
@@ -1868,8 +1868,8 @@ export default function Dashboard() {
                     View and download your submitted documents
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#067a3e] bg-white hover:bg-green-50 border-2 border-[#067a3e] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-                  <span className="text-xs font-semibold text-[#067a3e]">
+                <div className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#1F3C71] bg-white hover:bg-btcl-primaryLight/10 border-2 border-[#1F3C71] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span className="text-xs font-semibold text-[#1F3C71]">
                     {documents?.filter((doc) => doc.available).length} Documents
                   </span>
                 </div>
@@ -1881,16 +1881,16 @@ export default function Dashboard() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                           Document Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                           Type
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -1899,12 +1899,12 @@ export default function Dashboard() {
                       {documents?.map((doc, index) => (
                         <tr
                           key={doc.type}
-                          className="hover:bg-gradient-to-r hover:from-green-50/80 hover:to-green-50/40 transition-all duration-200 group"
+                          className="hover:bg-gradient-to-r hover:from-btcl-primaryLight/10/80 hover:to-btcl-primaryLight/10/40 transition-all duration-200 group"
                         >
                           {/* Document Name */}
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="flex-shrink-0 h-11 w-11 bg-gradient-to-br from-[#067a3e] to-green-600 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+                              <div className="flex-shrink-0 h-11 w-11 bg-gradient-to-br from-[#1F3C71] to-btcl-primary rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
                                 {/* Trade License Icon - Building */}
                                 {doc.type === 'tradelicense' && (
                                   <svg
@@ -2052,7 +2052,7 @@ export default function Dashboard() {
                                 )}
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-semibold text-gray-900 group-hover:text-[#067a3e] transition-colors">
+                                <div className="text-sm font-semibold text-gray-900 group-hover:text-[#1F3C71] transition-colors">
                                   {doc.name}
                                 </div>
                               </div>
@@ -2076,7 +2076,7 @@ export default function Dashboard() {
                             ) : (() => {
                               const st = docStatuses[doc.type]?.status || 'PENDING';
                               if (st === 'APPROVED') return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-100 to-emerald-100 text-[#067a3e] border border-green-200 shadow-sm">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-btcl-primaryLight/20 to-btcl-primaryLight/20 text-[#1F3C71] border border-btcl-primaryLight/30 shadow-sm">
                                   <CheckCircle className="w-3.5 h-3.5" />
                                   Approved
                                 </span>
@@ -2113,7 +2113,7 @@ export default function Dashboard() {
                                   <button
                                     onClick={() => viewDocument(doc.type, `${doc.name}`)}
                                     disabled={viewingDoc === doc.type}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#1F3C71] to-btcl-primary hover:from-[#1F3C71] hover:to-btcl-primaryDark rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="View Document"
                                   >
                                     {viewingDoc === doc.type ? (
@@ -2125,7 +2125,7 @@ export default function Dashboard() {
                                   <button
                                     onClick={() => downloadDocument(doc.type, `${doc.name}`)}
                                     disabled={downloadingDoc === doc.type}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#067a3e] bg-white hover:bg-green-50 border-2 border-[#067a3e] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#1F3C71] bg-white hover:bg-btcl-primaryLight/10 border-2 border-[#1F3C71] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
                                     title="Download Document"
                                   >
                                     {downloadingDoc === doc.type ? (
@@ -2172,9 +2172,9 @@ export default function Dashboard() {
         )}
 
         {/* Invoice History */}
-        <div className="bg-white rounded-xl shadow-lg border border-green-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+        <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#067a3e] to-green-600 p-2 rounded-lg">
+            <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
               <svg
                 className="w-6 h-6 text-white"
                 fill="none"
@@ -2194,7 +2194,7 @@ export default function Dashboard() {
 
           {loadingInvoices ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-[#067a3e] animate-spin" />
+              <Loader2 className="w-8 h-8 text-[#1F3C71] animate-spin" />
             </div>
           ) : purchaseHistory && purchaseHistory.length > 0 ? (
             <>
@@ -2202,31 +2202,31 @@ export default function Dashboard() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Invoice ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Package
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Customer Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Purchase Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Package Expire Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Invoice Due Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-[#067a3e] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
                       Action
                     </th>
                   </tr>
@@ -2258,10 +2258,10 @@ export default function Dashboard() {
                       return (
                         <tr
                           key={purchase.id || index}
-                          className="hover:bg-gradient-to-r hover:from-green-50/80 hover:to-green-50/40 transition-all duration-200"
+                          className="hover:bg-gradient-to-r hover:from-btcl-primaryLight/10/80 hover:to-btcl-primaryLight/10/40 transition-all duration-200"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-mono font-medium text-[#067a3e]">
+                            <span className="text-sm font-mono font-medium text-[#1F3C71]">
                               {invoiceId}
                             </span>
                           </td>
@@ -2343,7 +2343,7 @@ export default function Dashboard() {
                             <span
                               className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
                                 status === 'ACTIVE'
-                                  ? 'bg-green-100 text-green-700'
+                                  ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark'
                                   : status === 'EXPIRED'
                                     ? 'bg-red-100 text-red-700'
                                     : status === 'INACTIVE'
@@ -2357,7 +2357,7 @@ export default function Dashboard() {
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <button
                               onClick={() => handleDownloadInvoice(purchase)}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#067a3e] to-green-600 hover:from-[#055a2e] hover:to-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#1F3C71] to-btcl-primary hover:from-[#1F3C71] hover:to-btcl-primaryDark rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                               title="Download Invoice"
                             >
                               <Download className="w-4 h-4" />
@@ -2396,7 +2396,7 @@ export default function Dashboard() {
                         onClick={() => setInvoicePage(page)}
                         className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                           page === invoicePage
-                            ? 'bg-[#067a3e] text-white'
+                            ? 'bg-[#1F3C71] text-white'
                             : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                         }`}
                       >

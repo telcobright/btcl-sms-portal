@@ -806,12 +806,12 @@ export default function CheckoutModal({
               className={`px-6 py-8 text-center ${
                 purchaseAction === 'downgrade'
                   ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-                  : 'bg-gradient-to-r from-[#00A651] to-[#004225]'
+                  : 'bg-gradient-to-r from-[#0D529E] to-[#1F3C71]'
               }`}
             >
               <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
                 <svg
-                  className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : 'text-[#00A651]'}`}
+                  className={`w-12 h-12 ${purchaseAction === 'downgrade' ? 'text-amber-500' : 'text-[#0D529E]'}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -896,10 +896,10 @@ export default function CheckoutModal({
                         <span
                           className={`font-semibold ${
                             purchaseAction === 'upgrade'
-                              ? 'text-[#00A651]'
+                              ? 'text-[#0D529E]'
                               : purchaseAction === 'downgrade'
                                 ? 'text-amber-600'
-                                : 'text-green-600'
+                                : 'text-btcl-primary'
                           }`}
                         >
                           {actionLabel}
@@ -909,7 +909,7 @@ export default function CheckoutModal({
                         <span className="text-gray-600">
                           {locale === 'en' ? 'Status' : 'স্ট্যাটাস'}
                         </span>
-                        <span className="font-semibold text-green-600">
+                        <span className="font-semibold text-btcl-primary">
                           {locale === 'en' ? 'Active' : 'সক্রিয়'}
                         </span>
                       </div>
@@ -924,7 +924,7 @@ export default function CheckoutModal({
                   href={portalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                  className="block w-full bg-[#0D529E] hover:bg-[#1F3C71] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
                 >
                   {portalLabel} →
                 </a>
@@ -988,7 +988,7 @@ export default function CheckoutModal({
                       ? 'bg-blue-50 border-blue-200'
                       : purchaseAction === 'downgrade'
                         ? 'bg-amber-50 border-amber-200'
-                        : 'bg-green-50 border-green-200'
+                        : 'bg-btcl-primaryLight/10 border-btcl-primaryLight/30'
                 }`}
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
@@ -1021,7 +1021,7 @@ export default function CheckoutModal({
                           ? 'bg-blue-100 text-blue-700'
                           : purchaseAction === 'downgrade'
                             ? 'bg-amber-100 text-amber-700'
-                            : 'bg-green-100 text-green-700'
+                            : 'bg-btcl-primaryLight/20 text-btcl-primaryDark'
                     }`}
                   >
                     {purchaseAction === 'renew' &&
@@ -1124,7 +1124,7 @@ export default function CheckoutModal({
                     onClick={() =>
                       setAgentCount((prev) => (prev === '' ? 1 : prev + 1))
                     }
-                    className="w-12 h-12 rounded-full bg-[#00A651] hover:bg-[#008f44] text-white font-bold text-2xl transition-colors flex items-center justify-center"
+                    className="w-12 h-12 rounded-full bg-[#0D529E] hover:bg-[#0D529E] text-white font-bold text-2xl transition-colors flex items-center justify-center"
                   >
                     +
                   </button>

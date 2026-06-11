@@ -89,15 +89,15 @@ function FailedContent() {
                                 <h4 className="text-sm font-medium text-gray-800 mb-2">You can try:</h4>
                                 <ul className="text-sm text-gray-600 space-y-1">
                                     <li className="flex items-center">
-                                        <span className="w-1.5 h-1.5 bg-[#00A651] rounded-full mr-2"></span>
+                                        <span className="w-1.5 h-1.5 bg-[#0D529E] rounded-full mr-2"></span>
                                         Using a different payment method
                                     </li>
                                     <li className="flex items-center">
-                                        <span className="w-1.5 h-1.5 bg-[#00A651] rounded-full mr-2"></span>
+                                        <span className="w-1.5 h-1.5 bg-[#0D529E] rounded-full mr-2"></span>
                                         Checking your card details
                                     </li>
                                     <li className="flex items-center">
-                                        <span className="w-1.5 h-1.5 bg-[#00A651] rounded-full mr-2"></span>
+                                        <span className="w-1.5 h-1.5 bg-[#0D529E] rounded-full mr-2"></span>
                                         Contacting your bank
                                     </li>
                                 </ul>
@@ -107,7 +107,7 @@ function FailedContent() {
                             <div className="mt-6 space-y-3">
                                 <Link
                                     href="/en/packages"
-                                    className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
+                                    className="block w-full bg-[#0D529E] hover:bg-[#1F3C71] text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
                                 >
                                     Try Again
                                 </Link>
@@ -119,7 +119,7 @@ function FailedContent() {
                                 </Link>
                                 <Link
                                     href="/en"
-                                    className="block w-full border border-[#00A651] text-[#00A651] hover:bg-[#00A651] hover:text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
+                                    className="block w-full border border-[#0D529E] text-[#0D529E] hover:bg-[#0D529E] hover:text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
                                 >
                                     Back to Home
                                 </Link>
@@ -130,7 +130,7 @@ function FailedContent() {
                     {/* Support Note */}
                     <p className="text-center text-sm text-gray-500 mt-6">
                         Need help? Contact our support at{' '}
-                        <a href="mailto:support@btcl.com.bd" className="text-[#00A651] hover:underline">
+                        <a href="mailto:support@btcl.com.bd" className="text-[#0D529E] hover:underline">
                             support@btcl.com.bd
                         </a>
                     </p>
@@ -151,7 +151,7 @@ export default function PaymentFailedPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00A651]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0D529E]"></div>
             </div>
         }>
             <FailedContent />

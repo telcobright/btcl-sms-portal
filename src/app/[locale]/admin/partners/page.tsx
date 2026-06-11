@@ -84,7 +84,7 @@ export default function PartnersPage() {
   const getPartnerTypeBadgeColor = (type: number) => {
     switch (type) {
       case 3:
-        return 'bg-green-100 text-green-800';
+        return 'bg-btcl-primaryLight/20 text-btcl-primaryDark';
       case 4:
         return 'bg-orange-100 text-orange-800';
       case 5:
@@ -99,7 +99,7 @@ export default function PartnersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-[#00A651] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-[#0D529E] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -140,7 +140,7 @@ export default function PartnersPage() {
                 placeholder="Search by name, email, or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A651] focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
               />
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function PartnersPage() {
               onChange={(e) =>
                 setPartnerTypeFilter(e.target.value ? Number(e.target.value) : null)
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A651] focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
             >
               <option value="">All Types</option>
               <option value="3">Customer</option>
@@ -167,7 +167,7 @@ export default function PartnersPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A651] focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
             >
               <option value="">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -273,7 +273,7 @@ export default function PartnersPage() {
                         : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${partner.status === 'DEACTIVATED' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${partner.status === 'DEACTIVATED' ? 'bg-red-100 text-red-700' : 'bg-btcl-primaryLight/20 text-btcl-primaryDark'}`}>
                         {partner.status === 'DEACTIVATED' ? 'Deactivated' : 'Active'}
                       </span>
                       {partner.status === 'DEACTIVATED' && partner.deactivatedAt && (
@@ -285,7 +285,7 @@ export default function PartnersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <Link
                         href={`/${locale}/admin/partners/${partner.idPartner}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-[#00A651] hover:bg-green-50 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-[#0D529E] hover:bg-btcl-primaryLight/10 rounded-lg transition-colors"
                       >
                         View Details
                         <svg
@@ -344,7 +344,7 @@ export default function PartnersPage() {
                       onClick={() => setCurrentPage(pageNum)}
                       className={`px-3 py-1.5 text-sm rounded-lg ${
                         currentPage === pageNum
-                          ? 'bg-[#00A651] text-white'
+                          ? 'bg-[#0D529E] text-white'
                           : 'border border-gray-300 hover:bg-gray-50'
                       }`}
                     >

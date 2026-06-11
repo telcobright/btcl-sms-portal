@@ -212,7 +212,7 @@ const TermsAndPrivacyPage = () => {
                 className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start space-x-4">
-                  <span className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-btcl-primary font-bold">
+                  <span className="flex-shrink-0 w-10 h-10 bg-btcl-primaryLight/20 rounded-full flex items-center justify-center text-btcl-primary font-bold">
                     {clause.id}
                   </span>
                   <p className="text-gray-700 leading-relaxed">

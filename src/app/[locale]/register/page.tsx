@@ -897,7 +897,7 @@ export default function RegisterPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
             <div className="flex flex-col items-center">
-              <div className="bg-green-500 rounded-full p-4 mb-4">
+              <div className="bg-btcl-primary rounded-full p-4 mb-4">
                 <svg
                   className="w-16 h-16 text-white"
                   fill="none"
@@ -912,7 +912,7 @@ export default function RegisterPage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-green-600 mb-2 text-center">
+              <h3 className="text-2xl font-bold text-btcl-primary mb-2 text-center">
                 Registration Successful!
               </h3>
               <p className="text-gray-700 text-center mb-2 font-medium">
@@ -945,7 +945,7 @@ export default function RegisterPage() {
                   // Clean up
                   localStorage.removeItem('customerType');
                 }}
-                className="bg-[#00A651] text-white px-6 py-3 rounded-md hover:bg-[#008f44] transition w-full font-medium"
+                className="bg-[#0D529E] text-white px-6 py-3 rounded-md hover:bg-[#0D529E] transition w-full font-medium"
               >
                 {otherInfoForm.getValues('customerType') === 'prepaid' ? 'Go to Dashboard' : 'Continue'}
               </button>
@@ -1219,11 +1219,11 @@ export default function RegisterPage() {
 
               {/* Email Verified Badge */}
               {emailOtpVerified && (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-md p-3">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2 bg-btcl-primaryLight/10 border border-btcl-primaryLight/30 rounded-md p-3">
+                  <svg className="w-5 h-5 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-green-800 font-medium">Email Verified</span>
+                  <span className="text-btcl-primaryDark font-medium">Email Verified</span>
                 </div>
               )}
 
@@ -1289,7 +1289,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleNext}
                   disabled={isSubmitting || (!emailOtpSent && !canSendOtp)}
-                  className="bg-[#00A651] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#0D529E] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting
                     ? 'Processing...'
@@ -1313,7 +1313,7 @@ export default function RegisterPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
                     <div className="flex flex-col items-center">
-                      <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#00A651] mb-4"></div>
+                      <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#0D529E] mb-4"></div>
                       <h3 className="text-2xl font-bold text-gray-800 mb-2">NID Data Verifying</h3>
                       <p className="text-gray-600 text-center">Please Wait...</p>
                     </div>
@@ -1326,7 +1326,7 @@ export default function RegisterPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
                     <div className="flex flex-col items-center">
-                      <div className="bg-green-500 rounded-full p-4 mb-4">
+                      <div className="bg-btcl-primary rounded-full p-4 mb-4">
                         <svg
                           className="w-16 h-16 text-white"
                           fill="none"
@@ -1341,7 +1341,7 @@ export default function RegisterPage() {
                           />
                         </svg>
                       </div>
-                      <h3 className="text-3xl font-bold text-green-600 mb-2 text-center">NID Verification Successful</h3>
+                      <h3 className="text-3xl font-bold text-btcl-primary mb-2 text-center">NID Verification Successful</h3>
                       <p className="text-gray-600 text-center">
                         Your National ID has been successfully verified!
                       </p>
@@ -1376,7 +1376,7 @@ export default function RegisterPage() {
                       </p>
                       <button
                         onClick={() => setNidVerificationFailed(false)}
-                        className="bg-[#00A651] text-white px-6 py-2 rounded-md hover:bg-[#008f44] transition"
+                        className="bg-[#0D529E] text-white px-6 py-2 rounded-md hover:bg-[#0D529E] transition"
                       >
                         Try Again
                       </button>
@@ -1424,14 +1424,14 @@ export default function RegisterPage() {
                             {isExtractingOcr && (
                               <div className="mt-2">
                                 <div className="flex items-center gap-2">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00A651]"></div>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0D529E]"></div>
                                   <span className="text-sm text-gray-600">
                                     Extracting data... {ocrProgress}%
                                   </span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                                   <div
-                                    className="bg-[#00A651] h-1.5 rounded-full transition-all duration-300"
+                                    className="bg-[#0D529E] h-1.5 rounded-full transition-all duration-300"
                                     style={{ width: `${ocrProgress}%` }}
                                   ></div>
                                 </div>
@@ -1655,12 +1655,12 @@ export default function RegisterPage() {
                               fieldState.error
                                 ? 'border-red-500'
                                 : nidExtractedFromOcr
-                                ? 'border-green-500 bg-green-50'
+                                ? 'border-btcl-primary bg-btcl-primaryLight/10'
                                 : 'border-gray-300'
                             } rounded-md text-black disabled:bg-gray-100 disabled:cursor-not-allowed`}
                           />
                           {nidExtractedFromOcr && (
-                            <p className="text-green-600 text-sm mt-1">
+                            <p className="text-btcl-primary text-sm mt-1">
                               NID extracted from uploaded image (you can edit if needed)
                             </p>
                           )}
@@ -1691,7 +1691,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleNext}
                   disabled={!canProceedPersonal || isVerifyingNid || nidVerified}
-                  className="bg-[#00A651] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#0D529E] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {nidVerified ? 'Proceeding to Next Step...' : 'Verify NID & Continue'}
                 </button>
@@ -2153,7 +2153,7 @@ export default function RegisterPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-[#00A651] ml-1 cursor-pointer hover:underline"
+                        className="text-[#0D529E] ml-1 cursor-pointer hover:underline"
                       >
                         terms &amp; conditions
                       </a>
@@ -2179,7 +2179,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !otherInfoForm.formState.isValid}
-                  className="bg-[#00A651] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#0D529E] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? 'Processing...' : 'Complete Registration'}
                 </button>

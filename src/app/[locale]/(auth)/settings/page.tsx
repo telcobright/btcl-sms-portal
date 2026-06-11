@@ -291,8 +291,8 @@ export default function SettingsPage() {
                             </div>
                         )}
                         {pwSuccess && (
-                            <div className="mb-5 flex items-start gap-2.5 p-3.5 bg-green-50 border border-green-200
-                                            rounded-xl text-green-700 text-sm">
+                            <div className="mb-5 flex items-start gap-2.5 p-3.5 bg-btcl-primaryLight/10 border border-btcl-primaryLight/30
+                                            rounded-xl text-btcl-primaryDark text-sm">
                                 <CheckIcon />
                                 <span>{pwSuccess}</span>
                             </div>
@@ -318,10 +318,10 @@ export default function SettingsPage() {
 
                                 {/* strength hints */}
                                 <div className="text-xs text-gray-400 bg-gray-50 rounded-lg px-4 py-3 space-y-1">
-                                    <p className={`flex items-center gap-1.5 ${newPassword.length >= 8 ? 'text-green-600' : ''}`}>
+                                    <p className={`flex items-center gap-1.5 ${newPassword.length >= 8 ? 'text-btcl-primary' : ''}`}>
                                         <span>{newPassword.length >= 8 ? '✓' : '·'}</span> At least 8 characters
                                     </p>
-                                    <p className={`flex items-center gap-1.5 ${newPassword && newPassword === confirmPassword ? 'text-green-600' : ''}`}>
+                                    <p className={`flex items-center gap-1.5 ${newPassword && newPassword === confirmPassword ? 'text-btcl-primary' : ''}`}>
                                         <span>{newPassword && newPassword === confirmPassword ? '✓' : '·'}</span> Passwords match
                                     </p>
                                 </div>

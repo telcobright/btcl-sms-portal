@@ -47,7 +47,7 @@ export default function AdminDashboard() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-[calc(100vh-120px)]">
-      <svg className="w-8 h-8 animate-spin text-[#00A651]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+      <svg className="w-8 h-8 animate-spin text-[#0D529E]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
     </div>
   );
 
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
       {/* Row 1: Header + Stats */}
       <div className="flex gap-4 shrink-0">
         {/* Banner */}
-        <div className="flex-1 bg-gradient-to-r from-[#00A651] to-[#004D28] rounded-xl p-5 flex items-center min-w-0">
+        <div className="flex-1 bg-gradient-to-r from-[#0D529E] to-[#1F3C71] rounded-xl p-5 flex items-center min-w-0">
           <div>
             <h1 className="text-lg font-bold text-white">BTCL Service Dashboard</h1>
             <p className="text-white/60 text-xs mt-0.5">IP Telephony Services Overview</p>
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
         </div>
         {/* Stats */}
         {[
-          { label: 'Customers', value: customers, icon: '👤', color: 'text-[#00A651]', bg: 'bg-green-50' },
+          { label: 'Customers', value: customers, icon: '👤', color: 'text-[#0D529E]', bg: 'bg-btcl-primaryLight/10' },
           { label: 'Active Plans', value: totalActive, icon: '📋', color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Revenue', value: `৳${totalRev.toLocaleString()}`, icon: '💰', color: 'text-orange-600', bg: 'bg-orange-50' },
         ].map((s) => (
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
         <div className="col-span-2 bg-white rounded-xl border border-gray-200 p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-3 shrink-0">
             <h2 className="text-sm font-bold text-gray-900">Recent Customers</h2>
-            <Link href={`/${locale}/admin/partners`} className="text-[10px] text-[#00A651] hover:underline font-medium">View All →</Link>
+            <Link href={`/${locale}/admin/partners`} className="text-[10px] text-[#0D529E] hover:underline font-medium">View All →</Link>
           </div>
           <div className="flex-1 overflow-hidden space-y-1">
             {recent.length === 0 ? (
@@ -133,15 +133,15 @@ export default function AdminDashboard() {
             ) : recent.map((p, i) => (
               <Link key={p.idPartner} href={`/${locale}/admin/partners/${p.idPartner}`}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors group">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${i % 3 === 0 ? 'bg-[#00A651]' : i % 3 === 1 ? 'bg-blue-500' : 'bg-purple-500'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${i % 3 === 0 ? 'bg-[#0D529E]' : i % 3 === 1 ? 'bg-blue-500' : 'bg-purple-500'}`}>
                   {p.partnerName?.charAt(0).toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{p.partnerName}</p>
                   <p className="text-[10px] text-gray-400 truncate">{p.email || 'No email'}</p>
                 </div>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-[#00A651]">{getPartnerTypeLabel(p.partnerType)}</span>
-                <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-btcl-primaryLight/10 text-[#0D529E]">{getPartnerTypeLabel(p.partnerType)}</span>
+                <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#0D529E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </Link>
             ))}
           </div>
@@ -152,12 +152,12 @@ export default function AdminDashboard() {
           <h2 className="text-sm font-bold text-gray-900 mb-3 shrink-0">Quick Links</h2>
           <div className="flex-1 overflow-hidden space-y-1">
             {[
-              { label: 'Manage Partners', href: `/${locale}/admin/partners`, icon: '👤', color: 'bg-green-50 text-[#00A651]' },
+              { label: 'Manage Partners', href: `/${locale}/admin/partners`, icon: '👤', color: 'bg-btcl-primaryLight/10 text-[#0D529E]' },
               { label: 'PBX Portal', href: 'https://hippbx.btcliptelephony.gov.bd:5174/', icon: '📞', color: 'bg-blue-50 text-blue-600', ext: true },
               { label: 'Contact Center', href: 'https://hcc.btcliptelephony.gov.bd/', icon: '👥', color: 'bg-purple-50 text-purple-600', ext: true },
               { label: 'Voice Broadcast', href: 'https://vbs.btcliptelephony.gov.bd/', icon: '📢', color: 'bg-orange-50 text-orange-600', ext: true },
               { label: 'User Dashboard', href: `/${locale}/dashboard`, icon: '🏠', color: 'bg-gray-100 text-gray-600' },
-              { label: 'Pricing Page', href: `/${locale}/pricing`, icon: '💳', color: 'bg-emerald-50 text-emerald-600' },
+              { label: 'Pricing Page', href: `/${locale}/pricing`, icon: '💳', color: 'bg-btcl-primaryLight/10 text-btcl-primary' },
             ].map((l) => {
               const cls = "flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors group";
               const inner = (
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
                   {l.ext ? (
                     <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                   ) : (
-                    <svg className="w-3 h-3 text-gray-300 group-hover:text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    <svg className="w-3 h-3 text-gray-300 group-hover:text-[#0D529E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   )}
                 </>
               );

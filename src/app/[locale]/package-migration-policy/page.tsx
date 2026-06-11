@@ -69,7 +69,7 @@ const PackageMigrationPolicyPage = () => {
           {/* Section 1: Package Renewal */}
           <section className="bg-white rounded-2xl border border-gray-200 p-8">
             <div className="flex items-start space-x-4 mb-6">
-              <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <div className="flex-shrink-0 w-12 h-12 bg-btcl-primaryLight/20 rounded-xl flex items-center justify-center">
                 <svg className="w-6 h-6 text-btcl-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -88,7 +88,7 @@ const PackageMigrationPolicyPage = () => {
 
             <div className="space-y-4 text-gray-700">
               <div className="flex items-start space-x-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-btcl-primary rounded-full flex items-center justify-center text-sm font-bold mt-0.5">&#10003;</span>
+                <span className="flex-shrink-0 w-6 h-6 bg-btcl-primaryLight/20 text-btcl-primary rounded-full flex items-center justify-center text-sm font-bold mt-0.5">&#10003;</span>
                 <p>
                   {isEn
                     ? 'Your current active package validity will be extended by the package duration (e.g., +30 days from current expiry date).'
@@ -96,7 +96,7 @@ const PackageMigrationPolicyPage = () => {
                 </p>
               </div>
               <div className="flex items-start space-x-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-btcl-primary rounded-full flex items-center justify-center text-sm font-bold mt-0.5">&#10003;</span>
+                <span className="flex-shrink-0 w-6 h-6 bg-btcl-primaryLight/20 text-btcl-primary rounded-full flex items-center justify-center text-sm font-bold mt-0.5">&#10003;</span>
                 <p>
                   {isEn
                     ? 'No new account setup is required. Your existing configurations, extensions, and settings remain unchanged.'
@@ -104,7 +104,7 @@ const PackageMigrationPolicyPage = () => {
                 </p>
               </div>
               <div className="flex items-start space-x-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-btcl-primary rounded-full flex items-center justify-center text-sm font-bold mt-0.5">&#10003;</span>
+                <span className="flex-shrink-0 w-6 h-6 bg-btcl-primaryLight/20 text-btcl-primary rounded-full flex items-center justify-center text-sm font-bold mt-0.5">&#10003;</span>
                 <p>
                   {isEn
                     ? 'A renewal invoice will be generated for your records.'
@@ -113,8 +113,8 @@ const PackageMigrationPolicyPage = () => {
               </div>
             </div>
 
-            <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-4">
-              <p className="text-sm text-green-800">
+            <div className="mt-6 bg-btcl-primaryLight/10 border border-btcl-primaryLight/30 rounded-xl p-4">
+              <p className="text-sm text-btcl-primaryDark">
                 <span className="font-semibold">{isEn ? 'Example: ' : 'উদাহরণ: '}</span>
                 {isEn
                   ? 'You have the "Starter" PBX package expiring on May 15. You renew on May 1. Your new expiry becomes June 14 (30 days added from May 15).'
@@ -178,8 +178,8 @@ const PackageMigrationPolicyPage = () => {
               </div>
             </div>
 
-            <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-4">
-              <p className="text-sm text-green-800">
+            <div className="mt-6 bg-btcl-primaryLight/10 border border-btcl-primaryLight/30 rounded-xl p-4">
+              <p className="text-sm text-btcl-primaryDark">
                 <span className="font-semibold">{isEn ? 'Example: ' : 'উদাহরণ: '}</span>
                 {isEn
                   ? 'You have the "Starter" package with 50 minutes remaining. You upgrade to "Business" which gives 200 minutes. Your new balance will be 250 minutes (200 new + 50 carried over). Validity starts fresh from the upgrade date.'
@@ -252,8 +252,8 @@ const PackageMigrationPolicyPage = () => {
               </div>
             </div>
 
-            <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-4">
-              <p className="text-sm text-green-800">
+            <div className="mt-6 bg-btcl-primaryLight/10 border border-btcl-primaryLight/30 rounded-xl p-4">
+              <p className="text-sm text-btcl-primaryDark">
                 <span className="font-semibold">{isEn ? 'Example: ' : 'উদাহরণ: '}</span>
                 {isEn
                   ? 'You have the "Business" package with 80 minutes remaining. You downgrade to "Starter" which gives 100 minutes. Your new balance will be 180 minutes (100 new + 80 carried over).'
@@ -297,7 +297,7 @@ const PackageMigrationPolicyPage = () => {
                 <tbody className="divide-y divide-gray-200">
                   <tr>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-btcl-primaryLight/20 text-btcl-primaryDark">
                         {isEn ? 'Renewal' : 'নবায়ন'}
                       </span>
                     </td>
@@ -308,7 +308,7 @@ const PackageMigrationPolicyPage = () => {
                       {isEn ? 'Same package' : 'একই প্যাকেজ'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      <span className="inline-flex items-center text-green-600 font-medium">
+                      <span className="inline-flex items-center text-btcl-primary font-medium">
                         {isEn ? 'Preserved + extended' : 'সংরক্ষিত + বর্ধিত'}
                       </span>
                     </td>
@@ -326,7 +326,7 @@ const PackageMigrationPolicyPage = () => {
                       {isEn ? 'Activated with full validity' : 'পূর্ণ মেয়াদসহ সক্রিয়'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      <span className="inline-flex items-center text-green-600 font-medium">
+                      <span className="inline-flex items-center text-btcl-primary font-medium">
                         {isEn ? 'Carried over to new package' : 'নতুন প্যাকেজে বহন'}
                       </span>
                     </td>
@@ -344,7 +344,7 @@ const PackageMigrationPolicyPage = () => {
                       {isEn ? 'Activated with full validity' : 'পূর্ণ মেয়াদসহ সক্রিয়'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      <span className="inline-flex items-center text-green-600 font-medium">
+                      <span className="inline-flex items-center text-btcl-primary font-medium">
                         {isEn ? 'Carried over to new package' : 'নতুন প্যাকেজে বহন'}
                       </span>
                     </td>

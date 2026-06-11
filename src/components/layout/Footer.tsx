@@ -42,7 +42,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en' ? 'Home' : 'হোম'}
                   </Link>
@@ -50,7 +50,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/about`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en' ? 'About Us' : 'আমাদের সম্পর্কে'}
                   </Link>
@@ -58,7 +58,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/pricing`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en' ? 'Pricing' : 'প্রাইসিং'}
                   </Link>
@@ -66,7 +66,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/services`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en' ? 'Services' : 'সেবাসমূহ'}
                   </Link>
@@ -74,7 +74,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/contact`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en' ? 'Contact Us' : 'যোগাযোগ'}
                   </Link>
@@ -91,7 +91,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/pricing#starter`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en' ? 'Starter Package' : 'স্টার্টার প্যাকেজ'}
                   </Link>
@@ -99,7 +99,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/pricing#business`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en' ? 'Business Package' : 'বিজনেস প্যাকেজ'}
                   </Link>
@@ -107,7 +107,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/pricing#enterprise`}
-                    className="text-gray-600 hover:text-[#00a651] transition-colors duration-200 text-sm"
+                    className="text-gray-600 hover:text-[#0D529E] transition-colors duration-200 text-sm"
                   >
                     {locale === 'en'
                       ? 'Enterprise Package'
@@ -138,7 +138,7 @@ export function Footer() {
                     <span className="text-gray-400">✉️</span>
                     <a
                       href="mailto:mdoffice@btcl.gov.bd"
-                      className="hover:text-[#00a651] transition-colors duration-200"
+                      className="hover:text-[#0D529E] transition-colors duration-200"
                     >
                       mdoffice@btcl.gov.bd
                     </a>
@@ -157,7 +157,7 @@ export function Footer() {
                     <span className="text-gray-400">📞</span>
                     <a
                       href="tel:+880258311616"
-                      className="hover:text-[#00a651] transition-colors duration-200"
+                      className="hover:text-[#0D529E] transition-colors duration-200"
                     >
                       +880258311616
                     </a>
@@ -166,7 +166,7 @@ export function Footer() {
                     <span>BTCL Call Center:</span>
                     <a
                       href="tel:+880258311616"
-                      className="hover:text-[#00a651] transition-colors duration-200"
+                      className="hover:text-[#0D529E] transition-colors duration-200"
                     >
                       16402
                     </a>
@@ -194,7 +194,7 @@ export function Footer() {
               <div className="flex space-x-8">
                 <Link
                   href={`/${locale}/package-migration-policy`}
-                  className="text-sm text-gray-500 hover:text-[#00a651] transition-colors duration-200"
+                  className="text-sm text-gray-500 hover:text-[#0D529E] transition-colors duration-200"
                 >
                   {locale === 'en'
                     ? 'Package Migration Policy'
@@ -203,7 +203,7 @@ export function Footer() {
 
                 <Link
                   href={`/${locale}/terms-and-privacy`}
-                  className="text-sm text-gray-500 hover:text-[#00a651] transition-colors duration-200"
+                  className="text-sm text-gray-500 hover:text-[#0D529E] transition-colors duration-200"
                 >
                   {locale === 'en'
                     ? 'Terms of Service and Privacy Policy'

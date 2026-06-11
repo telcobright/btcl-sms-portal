@@ -95,7 +95,7 @@ function CanceledContent() {
                             <div className="mt-6 space-y-3">
                                 <Link
                                     href="/en/pricing"
-                                    className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
+                                    className="block w-full bg-[#0D529E] hover:bg-[#1F3C71] text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
                                 >
                                     View Packages
                                 </Link>
@@ -107,7 +107,7 @@ function CanceledContent() {
                                 </Link>
                                 <Link
                                     href="/en"
-                                    className="block w-full border border-[#00A651] text-[#00A651] hover:bg-[#00A651] hover:text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
+                                    className="block w-full border border-[#0D529E] text-[#0D529E] hover:bg-[#0D529E] hover:text-white text-center font-medium py-3 px-4 rounded-md transition-colors"
                                 >
                                     Back to Home
                                 </Link>
@@ -118,7 +118,7 @@ function CanceledContent() {
                     {/* Support Note */}
                     <p className="text-center text-sm text-gray-500 mt-6">
                         Need help? Contact our support at{' '}
-                        <a href="mailto:support@btcl.com.bd" className="text-[#00A651] hover:underline">
+                        <a href="mailto:support@btcl.com.bd" className="text-[#0D529E] hover:underline">
                             support@btcl.com.bd
                         </a>
                     </p>
@@ -139,7 +139,7 @@ export default function PaymentCanceledPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00A651]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0D529E]"></div>
             </div>
         }>
             <CanceledContent />

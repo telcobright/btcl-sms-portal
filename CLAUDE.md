@@ -17,7 +17,7 @@ Build a modern, responsive website for Bangladesh Telecommunications Company Lim
 ## Core Features
 
 ### 1. Design & Branding
-- **Color Scheme**: Primary BTCL green (#00A651), secondary colors for contrast
+- **Color Scheme**: Alaap Cloud brand blue — primary #0D529E (Blue-1), dark navy #1F3C71 (Blue-2), light sky #28A8E0 (Blue-3), mid sky #008BC9 (Blue-4)
 - **Typography**: Modern, readable fonts suitable for Bangla and English
 - **Bangladeshi Elements**: 
   - Incorporate subtle patterns inspired by traditional Bengali art

@@ -122,7 +122,7 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
             </div>
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              <span className="block bg-gradient-to-r from-white via-orange-100 to-white bg-clip-text text-transparent">
+              <span className="block text-white">
                 {locale === 'en' ? 'BTCL Voice Broadcast Service' : 'বিটিসিএল ভয়েস ব্রডকাস্ট সেবা'}
               </span>
             </h1>

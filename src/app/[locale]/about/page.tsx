@@ -278,7 +278,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
 // Hero Section Component
 function HeroSection({ locale }: { locale: string }) {
   return (
-      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-green-600 to-btcl-secondary py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-24">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
@@ -297,12 +297,12 @@ function HeroSection({ locale }: { locale: string }) {
             </div>
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-            <span className="block bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
+            <span className="block text-white">
               {getLocalizedText(locale, 'About BTCL', 'বিটিসিএল সম্পর্কে')}
             </span>
             </h1>
 
-            <p className="mx-auto max-w-4xl text-xl leading-relaxed text-green-100/90 md:text-2xl">
+            <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
               {getLocalizedText(
                   locale,
                   'Leading Bangladesh\'s telecommunications infrastructure since 1989, now delivering enterprise-grade communication solutions including Bulk SMS, Hosted Contact Center, PBX, and Voice Broadcast services.',
@@ -335,8 +335,8 @@ function CompanyOverviewSection({ locale }: { locale: string }) {
           <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2">
             <div>
               <div className="mb-8">
-              <span className="inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-2 text-sm font-semibold text-btcl-primaryDark">
+                <span className="h-2 w-2 rounded-full bg-btcl-primary" />
                 {getLocalizedText(locale, 'Our Mission', 'আমাদের লক্ষ্য')}
               </span>
               </div>
@@ -384,7 +384,7 @@ function WhyChooseBTCLCard({ locale, items }: { locale: string; items: { icon: s
         <div className="space-y-6">
           {items.map((item, index) => (
               <div key={index} className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-xl">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-btcl-primaryLight/20 text-xl">
                   {item.icon}
                 </div>
                 <span className="font-medium text-gray-700">{item.text}</span>
@@ -398,13 +398,13 @@ function WhyChooseBTCLCard({ locale, items }: { locale: string; items: { icon: s
 // Statistics Section Component
 function StatisticsSection({ stats, locale }: { stats: Stat[]; locale: string }) {
   return (
-      <section className="bg-gradient-to-r from-btcl-primary to-green-600 py-20">
+      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primary py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center text-white">
             <h2 className="mb-4 text-4xl font-bold md:text-5xl">
               {getLocalizedText(locale, 'Our Impact in Numbers', 'সংখ্যায় আমাদের প্রভাব')}
             </h2>
-            <p className="text-xl text-green-100/90">
+            <p className="text-xl text-white/90">
               {getLocalizedText(
                   locale,
                   'Trusted by thousands of businesses across Bangladesh',
@@ -431,7 +431,7 @@ function StatCard({ stat }: { stat: Stat }) {
           {stat.icon}
         </div>
         <div className="mb-2 text-4xl font-bold md:text-5xl">{stat.number}</div>
-        <div className="text-lg text-green-100/90">{stat.label}</div>
+        <div className="text-lg text-white/90">{stat.label}</div>
       </div>
   )
 }
@@ -456,7 +456,7 @@ function TimelineSection({ milestones, locale }: { milestones: Milestone[]; loca
 
           <div className="relative">
             {/* Timeline line */}
-            <div className="absolute left-1/2 hidden h-full w-0.5 -translate-x-1/2 transform bg-gradient-to-b from-btcl-primary to-green-300 md:block" />
+            <div className="absolute left-1/2 hidden h-full w-0.5 -translate-x-1/2 transform bg-gradient-to-b from-btcl-primary to-btcl-primaryLight/60 md:block" />
 
             <div className="space-y-12 md:space-y-16">
               {milestones.map((milestone, index) => (
@@ -491,7 +491,7 @@ function TimelineItem({
           <Card className="transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
             <CardHeader>
               <div className="mb-4 flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-btcl-primary to-green-600 text-xl font-bold text-white">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-btcl-primary to-btcl-primary text-xl font-bold text-white">
                   {milestone.year}
                 </div>
                 <div>
@@ -547,7 +547,7 @@ function ValueCard({ value, locale }: { value: CompanyValue; locale: string }) {
   return (
       <Card className="group text-center transition-all duration-300 hover:scale-105 hover:shadow-xl">
         <CardHeader>
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-r from-btcl-primary to-green-600 text-4xl transition-all duration-300 group-hover:scale-110">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-4xl transition-all duration-300 group-hover:scale-110">
             {value.icon}
           </div>
           <CardTitle className="text-2xl">{value.title[locale as 'en' | 'bn']}</CardTitle>
@@ -634,7 +634,7 @@ function LeaderCard({ leader }: { leader: Leader }) {
   return (
       <Card className="group text-center transition-all duration-300 hover:scale-105 hover:shadow-xl">
         <CardHeader>
-          <div className="mx-auto mb-6 h-24 w-24 rounded-full bg-gradient-to-r from-btcl-primary to-green-600 p-1">
+          <div className="mx-auto mb-6 h-24 w-24 rounded-full bg-gradient-to-r from-btcl-primary to-btcl-primary p-1">
             <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-3xl font-bold text-btcl-primary">
               {leader.initial}
             </div>

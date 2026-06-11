@@ -103,7 +103,7 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
                     href={item.href}
                     className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
                       isActive(item.href)
-                        ? 'bg-gradient-to-r from-[#00A651] to-[#00833f] text-white shadow-lg shadow-green-500/20'
+                        ? 'bg-gradient-to-r from-[#0D529E] to-[#0D529E] text-white shadow-lg shadow-btcl-primary/20'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                     }`}
                     title={collapsed ? item.name : undefined}
@@ -134,7 +134,7 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
       {/* Admin Info Card */}
       <div className={`${collapsed ? 'p-2 mx-1' : 'p-3 mx-2'} mb-3 bg-gray-800/50 rounded-lg border border-gray-700/50`}>
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <div className={`${collapsed ? 'w-8 h-8' : 'w-9 h-9'} bg-gradient-to-br from-[#00A651] to-[#00833f] rounded-lg flex items-center justify-center shrink-0`}>
+          <div className={`${collapsed ? 'w-8 h-8' : 'w-9 h-9'} bg-gradient-to-br from-[#0D529E] to-[#0D529E] rounded-lg flex items-center justify-center shrink-0`}>
             <svg className={`${collapsed ? 'w-4 h-4' : 'w-4 h-4'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>

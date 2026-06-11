@@ -41,7 +41,7 @@ const Spinner = ({ className = 'w-4 h-4' }: { className?: string }) => (
 
 /* ─── Shared button styles ─── */
 const btn = {
-  primary: 'px-4 py-2 text-sm font-medium text-white bg-[#00A651] hover:bg-[#004D28] rounded-md transition-colors disabled:opacity-50',
+  primary: 'px-4 py-2 text-sm font-medium text-white bg-[#0D529E] hover:bg-[#1F3C71] rounded-md transition-colors disabled:opacity-50',
   secondary: 'px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors',
   outline: 'px-3 py-1.5 text-xs font-medium border rounded-md transition-colors disabled:opacity-50',
 };
@@ -236,14 +236,14 @@ export default function PartnerDetailsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <Spinner className="w-8 h-8 text-[#00A651]" />
+      <Spinner className="w-8 h-8 text-[#0D529E]" />
     </div>
   );
 
   if (!partner) return (
     <div className="text-center py-16">
       <p className="text-gray-500">Partner not found.</p>
-      <Link href={`/${locale}/admin/partners`} className="text-[#00A651] hover:underline text-sm mt-2 inline-block">Back to Partners</Link>
+      <Link href={`/${locale}/admin/partners`} className="text-[#0D529E] hover:underline text-sm mt-2 inline-block">Back to Partners</Link>
     </div>
   );
 
@@ -251,15 +251,15 @@ export default function PartnerDetailsPage() {
     <div className="space-y-5">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-gray-400">
-        <Link href={`/${locale}/admin`} className="hover:text-[#00A651]">Dashboard</Link>
+        <Link href={`/${locale}/admin`} className="hover:text-[#0D529E]">Dashboard</Link>
         <span>/</span>
-        <Link href={`/${locale}/admin/partners`} className="hover:text-[#00A651]">Partners</Link>
+        <Link href={`/${locale}/admin/partners`} className="hover:text-[#0D529E]">Partners</Link>
         <span>/</span>
         <span className="text-gray-700 font-medium">{partner.partnerName}</span>
       </nav>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#00A651] to-[#004D28] rounded-xl p-5 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#0D529E] to-[#1F3C71] rounded-xl p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white text-xl font-bold border border-white/20">
             {partner.partnerName?.charAt(0).toUpperCase() || '?'}
@@ -304,13 +304,13 @@ export default function PartnerDetailsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-[#00A651] text-[#00A651]'
+                  ? 'border-[#0D529E] text-[#0D529E]'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
               {tab.label}
               {tab.count !== undefined && (
-                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-green-50 text-[#00A651]' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-gray-100 text-gray-500'}`}>
                   {tab.count}
                 </span>
               )}
@@ -357,7 +357,7 @@ export default function PartnerDetailsPage() {
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
               <span className="text-sm font-medium text-gray-700">{pdfViewerData.name}</span>
               <div className="flex items-center gap-2">
-                <a href={pdfViewerData.url} download={pdfViewerData.name} className="text-xs text-[#00A651] hover:underline">Download</a>
+                <a href={pdfViewerData.url} download={pdfViewerData.name} className="text-xs text-[#0D529E] hover:underline">Download</a>
                 <button onClick={() => { window.URL.revokeObjectURL(pdfViewerData.url); setPdfViewerData(null); }} className="text-gray-400 hover:text-gray-600">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -381,17 +381,17 @@ export default function PartnerDetailsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-center mb-4">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${partner.status === 'DEACTIVATED' ? 'bg-green-100' : 'bg-red-100'}`}>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${partner.status === 'DEACTIVATED' ? 'bg-btcl-primaryLight/20' : 'bg-red-100'}`}>
                 {partner.status === 'DEACTIVATED' ? '✅' : '⚠️'}
               </div>
             </div>
             <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
               {partner.status === 'DEACTIVATED' ? 'Reactivate Partner' : 'Deactivate Partner'}
             </h2>
-            <p className={`text-base font-semibold text-center mb-4 ${partner.status === 'DEACTIVATED' ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-base font-semibold text-center mb-4 ${partner.status === 'DEACTIVATED' ? 'text-btcl-primary' : 'text-red-600'}`}>
               {partner.partnerName}
             </p>
-            <div className={`rounded-xl p-4 mb-6 border text-sm text-gray-700 leading-relaxed ${partner.status === 'DEACTIVATED' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <div className={`rounded-xl p-4 mb-6 border text-sm text-gray-700 leading-relaxed ${partner.status === 'DEACTIVATED' ? 'bg-btcl-primaryLight/10 border-btcl-primaryLight/30' : 'bg-red-50 border-red-200'}`}>
               {partner.status === 'DEACTIVATED'
                 ? 'This partner will be reactivated and will be able to log in again. All their data, calls, billing, and documents remain intact.'
                 : 'This partner will be blocked from logging in immediately. All their data, calls, billing, and documents are preserved and can be restored by reactivating.'}
@@ -405,7 +405,7 @@ export default function PartnerDetailsPage() {
               </button>
               <button
                 onClick={handleConfirmToggle}
-                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors ${partner.status === 'DEACTIVATED' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors ${partner.status === 'DEACTIVATED' ? 'bg-btcl-primary hover:bg-btcl-primaryDark' : 'bg-red-600 hover:bg-red-700'}`}
               >
                 {partner.status === 'DEACTIVATED' ? 'Yes, Reactivate' : 'Yes, Deactivate'}
               </button>
@@ -463,7 +463,7 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-semibold text-gray-900">Partner Information</h2>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before editing' : undefined} className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#00A651] border-[#00A651] hover:bg-green-50'}`}>Edit</button>
+          <button onClick={() => setIsEditing(true)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before editing' : undefined} className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#0D529E] border-[#0D529E] hover:bg-btcl-primaryLight/10'}`}>Edit</button>
         ) : (
           <div className="flex gap-2">
             <button onClick={() => { setFormData({ ...partner }); setIsEditing(false); }} className={btn.secondary}>Cancel</button>
@@ -496,12 +496,12 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
             {isEditing ? (
               f.type === 'select' ? (
                 <select value={(formData[f.field] as number) ?? ''} onChange={(e) => handleChange(f.field, Number(e.target.value))}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#00A651] focus:border-[#00A651] outline-none">
+                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none">
                   {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               ) : (
                 <input type="text" value={(formData[f.field] as string) ?? ''} onChange={(e) => handleChange(f.field, e.target.value || null)}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#00A651] focus:border-[#00A651] outline-none" />
+                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none" />
               )
             ) : (
               <p className="text-sm text-gray-900 mt-0.5">
@@ -515,7 +515,7 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       {/* ── Personal Information ── */}
       <div className="mt-8 pt-6 border-t border-gray-200">
         <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-[#00A651]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-[#0D529E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
           Personal Information
@@ -539,7 +539,7 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       {partnerExtra && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-[#00A651]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-[#0D529E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -565,7 +565,7 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       {partnerExtra && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-[#00A651]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-[#0D529E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             Business Information
@@ -634,7 +634,7 @@ function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: Partn
     finally { setDeletingId(null); }
   };
 
-  const inputCls = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#00A651] focus:border-[#00A651] outline-none';
+  const inputCls = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none';
 
   return (
     <div className="p-6">
@@ -685,13 +685,13 @@ function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: Partn
                     <p className="text-xs text-gray-400">{u.phoneNo}</p>
                   </td>
                   <td className="px-6 py-3">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${u.userStatus === 'ACTIVE' ? 'bg-green-50 text-[#00A651]' : 'bg-red-50 text-red-600'}`}>{u.userStatus}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${u.userStatus === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-red-50 text-red-600'}`}>{u.userStatus}</span>
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex flex-wrap gap-1">{u.authRoles?.map((r) => <span key={r.id} className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{r.name.replace('ROLE_', '')}</span>)}</div>
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(u)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#00A651]/10 text-[#00A651] hover:bg-[#00A651] hover:text-white'}`}>Edit</button>
+                    <button onClick={() => openEdit(u)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#0D529E]/10 text-[#0D529E] hover:bg-[#0D529E] hover:text-white'}`}>Edit</button>
                     <button onClick={() => handleDelete(u)} disabled={deletingId === u.id || isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors disabled:opacity-50 ${isDeactivated ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'}`}>
                       {deletingId === u.id ? '...' : 'Delete'}
                     </button>
@@ -731,7 +731,7 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
               <td className="px-6 py-3 text-right text-gray-700">৳{p.price?.toLocaleString() || 0}</td>
               <td className="px-6 py-3 text-right font-medium text-gray-900">৳{p.total?.toLocaleString() || 0}</td>
               <td className="px-6 py-3">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded ${p.status === 'ACTIVE' ? 'bg-green-50 text-[#00A651]' : p.status === 'EXPIRED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'}`}>{p.status}</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded ${p.status === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : p.status === 'EXPIRED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'}`}>{p.status}</span>
               </td>
             </tr>
           ))}
@@ -766,7 +766,7 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
               </div>
               <div className="px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${active ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark' : 'bg-gray-200 text-gray-500'}`}>
                     {active ? 'Active' : 'Inactive'}
                   </span>
                   {active && (
@@ -804,7 +804,7 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
                 <td className="px-4 py-2 text-gray-500">{s.purchaseDate ? new Date(s.purchaseDate).toLocaleDateString() : '--'}</td>
                 <td className="px-4 py-2 text-gray-500">{s.expireDate ? new Date(s.expireDate).toLocaleDateString() : '--'}</td>
                 <td className="px-4 py-2 text-right text-gray-700">৳{s.price?.toLocaleString() || 0}</td>
-                <td className="px-4 py-2 text-center"><span className={`text-xs px-2 py-0.5 rounded ${s.status === 'ACTIVE' ? 'bg-green-50 text-[#00A651]' : 'bg-red-50 text-red-600'}`}>{s.status}</span></td>
+                <td className="px-4 py-2 text-center"><span className={`text-xs px-2 py-0.5 rounded ${s.status === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-red-50 text-red-600'}`}>{s.status}</span></td>
               </tr>
             ))}</tbody>
           </table>
@@ -850,7 +850,7 @@ function DocumentsTab({
     finally { setDeletingDoc(null); }
   };
 
-  const statusColor = (s: string) => s === 'APPROVED' ? 'bg-green-50 text-[#00A651]' : s === 'REJECTED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700';
+  const statusColor = (s: string) => s === 'APPROVED' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : s === 'REJECTED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700';
 
   return (
     <div className="p-6 space-y-6">
@@ -895,7 +895,7 @@ function DocumentsTab({
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                     <button onClick={() => viewDocument(doc.type, doc.name)} disabled={viewingDoc === doc.type}
-                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#00A651] text-white hover:bg-[#004D28] disabled:opacity-50 transition-colors">
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] disabled:opacity-50 transition-colors">
                       {viewingDoc === doc.type ? '...' : 'View'}
                     </button>
                     <button onClick={() => downloadDocument(doc.type, doc.name)} disabled={downloadingDoc === doc.type}
@@ -934,7 +934,7 @@ function DocumentsTab({
             {missing.map((doc) => (
               <div key={doc.type} className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
                 <span className="text-sm text-gray-500">{doc.name}</span>
-                <label className={`px-3 py-1 text-xs font-medium rounded-full bg-[#00A651] text-white hover:bg-[#004D28] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                <label className={`px-3 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
                   <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(doc.type, f); e.target.value = ''; }} />
                   {uploadingDoc === doc.type ? 'Uploading...' : 'Upload'}
                 </label>

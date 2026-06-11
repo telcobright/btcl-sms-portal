@@ -62,7 +62,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
         locale === 'en' ? 'Mobile & desktop apps' : 'মোবাইল ও ডেস্কটপ অ্যাপ',
         locale === 'en' ? 'Auto-attendant & IVR' : 'অটো-এটেন্ডেন্ট ও IVR',
       ],
-      color: 'from-green-500 to-green-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/hosted-pbx`,
     },
     {
@@ -108,7 +108,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-green-600 to-btcl-secondary py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-24">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -125,12 +125,12 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
             </div>
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              <span className="block bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
+              <span className="block text-white">
                 {getLocalizedText(locale, 'Our Services', 'আমাদের সেবাসমূহ')}
               </span>
             </h1>
 
-            <p className="mx-auto max-w-4xl text-xl leading-relaxed text-green-100/90 md:text-2xl">
+            <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
               {getLocalizedText(
                 locale,
                 'Comprehensive enterprise communication solutions designed to meet all your business needs with reliability and performance.',
@@ -152,8 +152,8 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-20 text-center">
             <div className="mb-8">
-              <span className="inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-2 text-sm font-semibold text-btcl-primaryDark">
+                <span className="h-2 w-2 rounded-full bg-btcl-primary" />
                 {getLocalizedText(locale, 'Complete Suite', 'সম্পূর্ণ সমাধান')}
               </span>
             </div>
@@ -188,10 +188,10 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
     const colorMap: { [key: string]: { text: string; bg: string } } = {
       'from-blue-500 to-blue-600': { text: 'text-blue-600', bg: 'bg-blue-50' },
       'from-purple-500 to-purple-600': { text: 'text-purple-600', bg: 'bg-purple-50' },
-      'from-green-500 to-green-600': { text: 'text-green-600', bg: 'bg-green-50' },
+      'from-btcl-primary to-btcl-primary': { text: 'text-btcl-primary', bg: 'bg-btcl-primaryLight/10' },
       'from-orange-500 to-orange-600': { text: 'text-orange-600', bg: 'bg-orange-50' },
     }
-    return colorMap[color] || { text: 'text-green-600', bg: 'bg-green-50' }
+    return colorMap[color] || { text: 'text-btcl-primary', bg: 'bg-btcl-primaryLight/10' }
   }
 
   const colors = getColorClasses(service.color)

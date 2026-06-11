@@ -73,9 +73,9 @@ function ServiceSuccessPage({
             <main className="flex-1 flex items-center justify-center px-4 py-12">
                 <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
                     {/* Header */}
-                    <div className={`px-6 py-8 text-center ${isDowngrade ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-[#00A651] to-[#004225]'}`}>
+                    <div className={`px-6 py-8 text-center ${isDowngrade ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-[#0D529E] to-[#1F3C71]'}`}>
                         <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                            <svg className={`w-12 h-12 ${isDowngrade ? 'text-amber-500' : 'text-[#00A651]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className={`w-12 h-12 ${isDowngrade ? 'text-amber-500' : 'text-[#0D529E]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
@@ -116,14 +116,14 @@ function ServiceSuccessPage({
                                         <div className="flex justify-between items-center py-2 border-b border-gray-200">
                                             <span className="text-gray-600">Action</span>
                                             <span className={`font-semibold ${
-                                                purchaseAction === 'upgrade' ? 'text-[#00A651]' :
+                                                purchaseAction === 'upgrade' ? 'text-[#0D529E]' :
                                                 purchaseAction === 'downgrade' ? 'text-amber-600' :
-                                                'text-green-600'
+                                                'text-btcl-primary'
                                             }`}>{actionLabel}</span>
                                         </div>
                                         <div className="flex justify-between items-center py-2 border-b border-gray-200">
                                             <span className="text-gray-600">Status</span>
-                                            <span className="font-semibold text-green-600">Active</span>
+                                            <span className="font-semibold text-btcl-primary">Active</span>
                                         </div>
                                     </div>
                                 </>
@@ -136,7 +136,7 @@ function ServiceSuccessPage({
                                 href={config.portalUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
+                                className="block w-full bg-[#0D529E] hover:bg-[#1F3C71] text-white text-center font-medium py-3 px-4 rounded-lg transition-colors"
                             >
                                 {config.portalLabel} →
                             </a>
@@ -202,14 +202,14 @@ function SuccessContent() {
             <main className="flex-1 flex items-center justify-center px-4 py-12">
                 <div className="max-w-md w-full">
                     <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-                        <div className="bg-gradient-to-r from-[#00A651] to-[#004225] px-6 py-8 text-center">
+                        <div className="bg-gradient-to-r from-[#0D529E] to-[#1F3C71] px-6 py-8 text-center">
                             <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4">
-                                <svg className="w-12 h-12 text-[#00A651]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-12 h-12 text-[#0D529E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
                             <h1 className="text-2xl font-bold text-white">Payment Successful!</h1>
-                            <p className="text-green-100 mt-2">Your transaction has been completed</p>
+                            <p className="text-white mt-2">Your transaction has been completed</p>
                         </div>
                         <div className="px-6 py-6">
                             <div className="space-y-4">
@@ -222,26 +222,26 @@ function SuccessContent() {
                                 {amount && (
                                     <div className="flex justify-between items-center py-3 border-b border-gray-100">
                                         <span className="text-gray-600">Amount Paid</span>
-                                        <span className="font-semibold text-[#00A651]">BDT {amount}</span>
+                                        <span className="font-semibold text-[#0D529E]">BDT {amount}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center py-3 border-b border-gray-100">
                                     <span className="text-gray-600">Status</span>
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-btcl-primaryLight/20 text-btcl-primaryDark">
                                         Completed
                                     </span>
                                 </div>
                             </div>
-                            <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                                <p className="text-sm text-green-800">
+                            <div className="mt-6 p-4 bg-btcl-primaryLight/10 rounded-lg border border-btcl-primaryLight/30">
+                                <p className="text-sm text-btcl-primaryDark">
                                     A confirmation email has been sent to your registered email address.
                                 </p>
                             </div>
                             <div className="mt-6 space-y-3">
-                                <Link href="/en/dashboard" className="block w-full bg-[#00A651] hover:bg-[#004225] text-white text-center font-medium py-3 px-4 rounded-md transition-colors">
+                                <Link href="/en/dashboard" className="block w-full bg-[#0D529E] hover:bg-[#1F3C71] text-white text-center font-medium py-3 px-4 rounded-md transition-colors">
                                     Go to Dashboard
                                 </Link>
-                                <Link href="/en" className="block w-full border border-[#00A651] text-[#00A651] hover:bg-[#00A651] hover:text-white text-center font-medium py-3 px-4 rounded-md transition-colors">
+                                <Link href="/en" className="block w-full border border-[#0D529E] text-[#0D529E] hover:bg-[#0D529E] hover:text-white text-center font-medium py-3 px-4 rounded-md transition-colors">
                                     Back to Home
                                 </Link>
                             </div>
@@ -249,7 +249,7 @@ function SuccessContent() {
                     </div>
                     <p className="text-center text-sm text-gray-500 mt-6">
                         Need help? Contact our support at{' '}
-                        <a href="mailto:support@btcl.com.bd" className="text-[#00A651] hover:underline">support@btcl.com.bd</a>
+                        <a href="mailto:support@btcl.com.bd" className="text-[#0D529E] hover:underline">support@btcl.com.bd</a>
                     </p>
                 </div>
             </main>
@@ -266,7 +266,7 @@ export default function PaymentSuccessPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00A651]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0D529E]"></div>
             </div>
         }>
             <SuccessContent />

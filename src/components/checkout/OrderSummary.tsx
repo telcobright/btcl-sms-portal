@@ -72,7 +72,7 @@ export default function OrderSummary({
         {locale === 'en' ? 'Order Summary' : 'অর্ডার সারাংশ'}
       </h3>
       <div className="flex items-center gap-5 mb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+        <div className="w-16 h-16 bg-gradient-to-br from-btcl-primary to-btcl-primary rounded-lg flex items-center justify-center">
           <span className="text-3xl">{getServiceIcon()}</span>
         </div>
         <div>
@@ -95,7 +95,7 @@ export default function OrderSummary({
                 className="flex items-center text-xs text-btcl-gray-600"
               >
                 <svg
-                  className="w-3 h-3 text-green-500 mr-2"
+                  className="w-3 h-3 text-btcl-primary mr-2"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >

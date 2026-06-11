@@ -84,9 +84,9 @@ export default function AdminLayout({
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
           <div className="relative w-20 h-20 mx-auto mb-6">
-            <div className="absolute inset-0 border-4 border-[#00A651]/20 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-t-[#00A651] rounded-full animate-spin"></div>
-            <div className="absolute inset-3 bg-gradient-to-br from-[#00A651] to-[#00833f] rounded-full flex items-center justify-center">
+            <div className="absolute inset-0 border-4 border-[#0D529E]/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-t-[#0D529E] rounded-full animate-spin"></div>
+            <div className="absolute inset-3 bg-gradient-to-br from-[#0D529E] to-[#0D529E] rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
@@ -131,14 +131,14 @@ export default function AdminLayout({
 
               {/* User Info */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#00A651] to-[#00833f] rounded-xl flex items-center justify-center shadow-lg shadow-green-500/10">
+                <div className="w-10 h-10 bg-gradient-to-br from-[#0D529E] to-[#0D529E] rounded-xl flex items-center justify-center shadow-lg shadow-btcl-primary/10">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-gray-900">{userName}</p>
-                  <p className="text-xs text-[#00A651] font-medium">Administrator</p>
+                  <p className="text-xs text-[#0D529E] font-medium">Administrator</p>
                 </div>
               </div>
 

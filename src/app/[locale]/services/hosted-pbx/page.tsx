@@ -106,7 +106,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primaryDark to-btcl-primaryDark py-24">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -122,12 +122,12 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
             </div>
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              <span className="block bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
+              <span className="block text-white">
                 {locale === 'en' ? 'BTCL Hosted PBX' : 'বিটিসিএল হোস্টেড PBX'}
               </span>
             </h1>
 
-            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-green-100/90 md:text-2xl">
+            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
               {locale === 'en'
                 ? 'Full-featured cloud PBX with unlimited extensions, advanced IVR, call queues, conferencing, recording, and comprehensive management tools. No hardware required.'
                 : 'সীমাহীন এক্সটেনশন, উন্নত IVR, কল সারি, কনফারেন্সিং, রেকর্ডিং এবং ব্যাপক ব্যবস্থাপনা সরঞ্জাম সহ সম্পূর্ণ-বৈশিষ্ট্যযুক্ত ক্লাউড PBX। কোন হার্ডওয়্যার প্রয়োজন নেই।'}
@@ -137,7 +137,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
               <Link href={`/${locale}/register`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-green-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-btcl-primary shadow-2xl transition-all duration-300 hover:scale-105"
                 >
                   {locale === 'en' ? 'Request Demo' : 'ডেমো অনুরোধ করুন'}
                 </Button>
@@ -175,7 +175,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
             {features.map((feature, index) => (
               <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
                 <CardHeader>
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-4xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-4xl transition-all duration-300 group-hover:scale-110">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
@@ -192,13 +192,13 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-green-600 to-green-700 py-20">
+      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
             <h2 className="mb-6 text-4xl font-bold md:text-5xl">
               {locale === 'en' ? 'Transform Your Business Communications' : 'আপনার ব্যবসায়িক যোগাযোগ রূপান্তরিত করুন'}
             </h2>
-            <p className="mb-10 text-xl text-green-100">
+            <p className="mb-10 text-xl text-white">
               {locale === 'en'
                 ? 'Experience enterprise-grade telephony with unlimited extensions, advanced features, and no hardware investment required'
                 : 'সীমাহীন এক্সটেনশন, উন্নত বৈশিষ্ট্য এবং কোন হার্ডওয়্যার বিনিয়োগ প্রয়োজন ছাড়াই এন্টারপ্রাইজ-গ্রেড টেলিফোনি অভিজ্ঞতা নিন'}
@@ -206,7 +206,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
             <Link href={`/${locale}/pricing`}>
               <Button
                 size="lg"
-                className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-green-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-btcl-primary shadow-2xl transition-all duration-300 hover:scale-105"
               >
                 {locale === 'en' ? 'Purchase Now' : 'এখনই কিনুন'}
               </Button>

@@ -8,10 +8,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Alaap Cloud — brand guideline blues
         btcl: {
-          primary: '#00A651',
-          secondary: '#004225',
-          accent: '#7CB518',
+          primary: '#0D529E',        // Blue-1 — main brand
+          primaryLight: '#28A8E0',   // Blue-3 — light sky
+          primaryDark: '#1F3C71',    // Blue-2 — dark navy
+          secondary: '#1F3C71',      // Blue-2 — deep tone
+          secondaryLight: '#28A8E0', // Blue-3
+          secondaryDark: '#1F3C71',  // Blue-2
+          accent: '#28A8E0',         // Blue-3 — sky highlight
+          sky: '#008BC9',            // Blue-4 — mid sky blue
           red: '#FF0000',
           gray: {
             50: '#f9fafb',

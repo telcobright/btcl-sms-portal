@@ -45,7 +45,7 @@ interface ContactPageProps {
 // Constants
 const SUPPORT_CHANNEL_COLORS = {
   email: 'bg-blue-100 text-blue-600',
-  phone: 'bg-green-100 text-green-600',
+  phone: 'bg-btcl-primaryLight/20 text-btcl-primary',
   chat: 'bg-purple-100 text-purple-600',
 } as const;
 
@@ -243,7 +243,7 @@ export default async function ContactPage({ params }: ContactPageProps) {
 // Hero Section Component
 function HeroSection({ locale }: { locale: string }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-green-600 to-btcl-secondary py-24">
+    <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-24">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
@@ -262,12 +262,12 @@ function HeroSection({ locale }: { locale: string }) {
           </div>
 
           <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-            <span className="block bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
+            <span className="block text-white">
               {getLocalizedText(locale, 'Contact Us', 'যোগাযোগ করুন')}
             </span>
           </h1>
 
-          <p className="mx-auto max-w-4xl text-xl leading-relaxed text-green-100/90 md:text-2xl">
+          <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
             {getLocalizedText(
               locale,
               'Get in touch with our team for support, sales inquiries, or any questions about our SMS services.',
@@ -279,7 +279,7 @@ function HeroSection({ locale }: { locale: string }) {
           <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
             <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
               <div className="text-3xl font-bold">24/7</div>
-              <div className="text-green-100/90">
+              <div className="text-white/90">
                 {getLocalizedText(
                   locale,
                   'Support Available',
@@ -289,7 +289,7 @@ function HeroSection({ locale }: { locale: string }) {
             </div>
             <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
               <div className="text-3xl font-bold">&lt;1hr</div>
-              <div className="text-green-100/90">
+              <div className="text-white/90">
                 {getLocalizedText(
                   locale,
                   'Response Time',
@@ -299,7 +299,7 @@ function HeroSection({ locale }: { locale: string }) {
             </div>
             <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
               <div className="text-3xl font-bold">98%</div>
-              <div className="text-green-100/90">
+              <div className="text-white/90">
                 {getLocalizedText(
                   locale,
                   'Satisfaction Rate',
@@ -348,8 +348,8 @@ function ContactForm({ locale }: { locale: string }) {
     <Card className="h-fit">
       <CardHeader className="pb-6">
         <div className="mb-6">
-          <span className="inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-            <span className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-2 text-sm font-semibold text-btcl-primaryDark">
+            <span className="h-2 w-2 rounded-full bg-btcl-primary" />
             {getLocalizedText(locale, 'Get in Touch', 'যোগাযোগ করুন')}
           </span>
         </div>
@@ -472,7 +472,7 @@ function ContactForm({ locale }: { locale: string }) {
 
           <Button
             type="submit"
-            className="w-full transform rounded-xl bg-gradient-to-r from-btcl-primary to-green-600 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            className="w-full transform rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl"
           >
             {getLocalizedText(locale, 'Send Message', 'বার্তা পাঠান')}
           </Button>
@@ -542,7 +542,7 @@ function SupportChannelCard({ channel }: { channel: SupportChannel }) {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <div className="h-2 w-2 rounded-full bg-btcl-primary" />
                 <span className="text-sm text-gray-500">
                   {channel.response}
                 </span>
@@ -606,7 +606,7 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
     <Card
       className={`group transition-all duration-300 hover:scale-105 hover:shadow-xl ${
         isPrimary
-          ? 'border-2 border-btcl-primary/20 bg-gradient-to-br from-green-50 to-white'
+          ? 'border-2 border-btcl-primary/20 bg-gradient-to-br from-btcl-primaryLight/10 to-white'
           : ''
       }`}
     >
@@ -755,7 +755,7 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
             )}
           </p>
           <Link href="#contact-form">
-            <Button className="transform rounded-xl bg-gradient-to-r from-btcl-primary to-green-600 px-8 py-3 font-semibold transition-all duration-300 hover:scale-105">
+            <Button className="transform rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary px-8 py-3 font-semibold transition-all duration-300 hover:scale-105">
               {getLocalizedText(
                 locale,
                 'Contact Support',
@@ -783,7 +783,7 @@ function FAQCard({ faq }: { faq: FAQ }) {
       </CardHeader>
       <CardContent>
         <div className="flex items-start gap-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-btcl-primaryLight/20 text-sm font-bold text-btcl-primaryDark">
             A
           </div>
           <p className="text-gray-600">{faq.answer}</p>

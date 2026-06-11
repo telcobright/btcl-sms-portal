@@ -115,7 +115,7 @@ const useContactData = (locale: string) => {
         'Get help via email for non-urgent inquiries',
         'অজরুরি অনুসন্ধানের জন্য ইমেইলের মাধ্যমে সহায়তা পান'
       ),
-      contact: 'dgm.swmogbazar@btcl.gov.bd / noc@btcl.gov.bd',
+      contact: 'alaapcloud@btcl.gov.bd / noc@btcl.gov.bd',
       response: getLocalizedText(
         locale,
         'Response within 24 hours',
@@ -131,7 +131,7 @@ const useContactData = (locale: string) => {
         'Speak directly with our technical support team',
         'আমাদের প্রযুক্তিগত সহায়তা দলের সাথে সরাসরি কথা বলুন'
       ),
-      contact: ' +880258312233',
+      contact: '+8809696996699',
       response: getLocalizedText(locale, 'Available 24/7', '২৪/৭ উপলব্ধ'),
       icon: '📞',
       color: 'phone',

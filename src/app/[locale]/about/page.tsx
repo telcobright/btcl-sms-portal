@@ -264,11 +264,12 @@ export default async function AboutPage({ params }: AboutPageProps) {
 
         <HeroSection locale={locale} />
         <CompanyOverviewSection locale={locale} />
-        <StatisticsSection stats={stats} locale={locale} />
-        <TimelineSection milestones={milestones} locale={locale} />
+        {/* Temporarily hidden — re-enable when content is ready */}
+        {/* <StatisticsSection stats={stats} locale={locale} /> */}
+        {/* <TimelineSection milestones={milestones} locale={locale} /> */}
         <ValuesSection locale={locale} />
-        <AwardsSection awards={awards} locale={locale} />
-        <LeadershipSection leaders={leaders} locale={locale} />
+        {/* <AwardsSection awards={awards} locale={locale} /> */}
+        {/* <LeadershipSection leaders={leaders} locale={locale} /> */}
 
         <Footer />
       </div>
@@ -288,14 +289,6 @@ function HeroSection({ locale }: { locale: string }) {
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            {/* Badge */}
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 backdrop-blur-sm">
-              <span className="text-2xl">🏛️</span>
-              <span className="font-semibold">
-              {getLocalizedText(locale, 'Since 1989', '১৯৮৯ সাল থেকে')}
-            </span>
-            </div>
-
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
             <span className="block text-white">
               {getLocalizedText(locale, 'About BTCL', 'বিটিসিএল সম্পর্কে')}
@@ -305,10 +298,25 @@ function HeroSection({ locale }: { locale: string }) {
             <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
               {getLocalizedText(
                   locale,
-                  'Leading Bangladesh\'s telecommunications infrastructure since 1989, now delivering enterprise-grade communication solutions including Bulk SMS, Hosted Contact Center, PBX, and Voice Broadcast services.',
-                  '১৯৮৯ সাল থেকে বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, এখন বাল্ক এসএমএস, হোস্টেড কন্টাক্ট সেন্টার, PBX এবং ভয়েস ব্রডকাস্ট সহ এন্টারপ্রাইজ-গ্রেড যোগাযোগ সমাধান প্রদান করছি।'
+                  'Leading Bangladesh\'s telecommunications infrastructure, delivering enterprise-grade communication solutions including Bulk SMS, Hosted Contact Center, PBX, and Voice Broadcast services.',
+                  'বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, বাল্ক এসএমএস, হোস্টেড কন্টাক্ট সেন্টার, PBX এবং ভয়েস ব্রডকাস্ট সহ এন্টারপ্রাইজ-গ্রেড যোগাযোগ সমাধান প্রদান করছি।'
               )}
             </p>
+
+            <div className="mt-8 flex justify-center">
+              <a
+                  href="https://btcl.gov.bd/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/50 hover:bg-white/20 md:text-lg"
+              >
+                <span>🌐</span>
+                <span>{getLocalizedText(locale, 'Visit Official BTCL Website', 'অফিসিয়াল বিটিসিএল ওয়েবসাইট দেখুন')}</span>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
 
             {/* Scroll Indicator */}
             <div className="mt-16 animate-bounce">

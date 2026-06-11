@@ -153,19 +153,48 @@ export function Footer() {
                         : 'বিটিসিএল ডিজিএম সুইচ মগবাজার অফিস'}
                     </p>
                   </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="text-gray-400 mt-0.5">📞</span>
+                    <div className="flex flex-wrap gap-x-1">
+                      <a
+                        href="tel:+880258311616"
+                        className="hover:text-[#0D529E] transition-colors duration-200"
+                      >
+                        +880258311616,
+                      </a>
+                      <a
+                        href="tel:+8809696996699"
+                        className="hover:text-[#0D529E] transition-colors duration-200"
+                      >
+                        +8809696996699,
+                      </a>
+                      <a
+                        href="tel:+880248313366"
+                        className="hover:text-[#0D529E] transition-colors duration-200"
+                      >
+                        +880248313366,
+                      </a>
+                      <a
+                        href="tel:+880258312233"
+                        className="hover:text-[#0D529E] transition-colors duration-200"
+                      >
+                        +880258312233
+                      </a>
+                    </div>
+                  </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-gray-400">📞</span>
+                    <span>Email:</span>
                     <a
-                      href="tel:+880258311616"
+                      href="mailto:alaapcloud@btcl.gov.bd"
                       className="hover:text-[#0D529E] transition-colors duration-200"
                     >
-                      +880258311616
+                      alaapcloud@btcl.gov.bd
                     </a>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span>BTCL Call Center:</span>
                     <a
-                      href="tel:+880258311616"
+                      href="tel:16402"
                       className="hover:text-[#0D529E] transition-colors duration-200"
                     >
                       16402

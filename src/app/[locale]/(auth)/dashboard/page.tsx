@@ -1373,7 +1373,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* PBX Portal */}
             {serviceData.pbx.valid ? (
               <a
@@ -1670,6 +1670,40 @@ export default function Dashboard() {
                 </span>
               </a>
             )}
+
+            {/* Bulk SMS Portal */}
+            <a
+              href="/en/pricing#bulk-sms"
+              onClick={handleBuyNow}
+              className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-sky-400 hover:bg-sky-50 hover:shadow-lg transition-all group"
+            >
+              <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-sky-500 group-hover:to-sky-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-500 group-hover:text-sky-700 transition-colors">
+                  Bulk SMS
+                </h4>
+                <p className="text-sm text-gray-400 group-hover:text-gray-600">
+                  No active package
+                </p>
+              </div>
+              <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-sky-500 to-sky-600 rounded-full shadow-sm">
+                Buy Now
+              </span>
+            </a>
           </div>
         </div>
 

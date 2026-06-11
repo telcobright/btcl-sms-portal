@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/Button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/Card';
+import { ContactForm } from '@/components/forms/ContactForm';
 
 // Types
 interface Office {
@@ -49,13 +49,6 @@ const SUPPORT_CHANNEL_COLORS = {
   chat: 'bg-purple-100 text-purple-600',
 } as const;
 
-const FORM_SUBJECTS = [
-  { key: 'sales', icon: '💼' },
-  { key: 'support', icon: '🔧' },
-  { key: 'billing', icon: '💰' },
-  { key: 'partnership', icon: '🤝' },
-  { key: 'other', icon: '📋' },
-] as const;
 
 // Utility functions
 const getLocalizedText = (
@@ -342,145 +335,7 @@ function ContactFormSection({
   );
 }
 
-// Contact Form Component
-function ContactForm({ locale }: { locale: string }) {
-  return (
-    <Card className="h-fit">
-      <CardHeader className="pb-6">
-        <div className="mb-6">
-          <span className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-2 text-sm font-semibold text-btcl-primaryDark">
-            <span className="h-2 w-2 rounded-full bg-btcl-primary" />
-            {getLocalizedText(locale, 'Get in Touch', 'যোগাযোগ করুন')}
-          </span>
-        </div>
-        <CardTitle className="text-3xl">
-          {getLocalizedText(
-            locale,
-            'Send us a Message',
-            'আমাদের একটি বার্তা পাঠান'
-          )}
-        </CardTitle>
-        <CardDescription className="text-lg">
-          {getLocalizedText(
-            locale,
-            "Fill out the form below and we'll get back to you as soon as possible.",
-            'নিচের ফর্মটি পূরণ করুন এবং আমরা যত তাড়াতাড়ি সম্ভব আপনার কাছে ফিরে আসব।'
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                {getLocalizedText(locale, 'Full Name', 'পূর্ণ নাম')} *
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-                placeholder={getLocalizedText(
-                  locale,
-                  'Enter your full name',
-                  'আপনার পূর্ণ নাম লিখুন'
-                )}
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                {getLocalizedText(locale, 'Company', 'কোম্পানি')}
-              </label>
-              <input
-                type="text"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-                placeholder={getLocalizedText(
-                  locale,
-                  'Company name (optional)',
-                  'কোম্পানির নাম (ঐচ্ছিক)'
-                )}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                {getLocalizedText(locale, 'Email Address', 'ইমেইল ঠিকানা')} *
-              </label>
-              <input
-                type="email"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-                placeholder={getLocalizedText(
-                  locale,
-                  'your@email.com',
-                  'your@email.com'
-                )}
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                {getLocalizedText(locale, 'Mobile Number', 'মোবাইল নম্বর')} *
-              </label>
-              <input
-                type="tel"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-                placeholder="+880-1XXXXXXXXX"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              {getLocalizedText(locale, 'Subject', 'বিষয়')} *
-            </label>
-            <select
-              required
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-            >
-              <option value="">
-                {getLocalizedText(
-                  locale,
-                  'Select a subject',
-                  'একটি বিষয় নির্বাচন করুন'
-                )}
-              </option>
-              {FORM_SUBJECTS.map((subject) => (
-                <option key={subject.key} value={subject.key}>
-                  {subject.icon} {getSubjectText(locale, subject.key)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              {getLocalizedText(locale, 'Message', 'বার্তা')} *
-            </label>
-            <textarea
-              required
-              rows={6}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-              placeholder={getLocalizedText(
-                locale,
-                'Tell us how we can help you...',
-                'আমরা আপনাকে কীভাবে সাহায্য করতে পারি তা বলুন...'
-              )}
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full transform rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl"
-          >
-            {getLocalizedText(locale, 'Send Message', 'বার্তা পাঠান')}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
+// ContactForm is now a client component imported from @/components/forms/ContactForm
 
 // Support Channels Section Component
 function SupportChannelsSection({
@@ -793,30 +648,3 @@ function FAQCard({ faq }: { faq: FAQ }) {
   );
 }
 
-// Helper function for form subjects
-function getSubjectText(locale: string, key: string): string {
-  const subjects = {
-    sales: {
-      en: 'Sales Inquiry',
-      bn: 'বিক্রয় অনুসন্ধান',
-    },
-    support: {
-      en: 'Technical Support',
-      bn: 'প্রযুক্তিগত সহায়তা',
-    },
-    billing: {
-      en: 'Billing Question',
-      bn: 'বিলিং প্রশ্ন',
-    },
-    partnership: {
-      en: 'Partnership',
-      bn: 'অংশীদারিত্ব',
-    },
-    other: {
-      en: 'Other',
-      bn: 'অন্যান্য',
-    },
-  };
-
-  return subjects[key as keyof typeof subjects]?.[locale as 'en' | 'bn'] ?? '';
-}

@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/Card';
+import { ROOT_URL } from '@/config/api';
 
 const FORM_SUBJECTS = [
   { key: 'sales', icon: '💼' },
@@ -59,14 +60,21 @@ export function ContactForm({ locale }: ContactFormProps) {
     setErrorMsg('');
 
     try {
+      const subjectLabel = SUBJECT_TEXT[formData.subject]?.en || formData.subject;
       const authToken = localStorage.getItem('authToken') || '';
-      const res = await fetch('/api/contact', {
+
+      const res = await fetch(`${ROOT_URL}/FREESWITCHREST/api/v1/email/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          to: 'alaapcloud@btcl.gov.bd',
+          subject: `[Alaap Cloud Contact] ${subjectLabel} - ${formData.name}`,
+          body: `Name: ${formData.name}\nCompany: ${formData.company || 'N/A'}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nSubject: ${subjectLabel}\n\nMessage:\n${formData.message}`,
+          isHtml: false,
+        }),
       });
 
       const data = await res.json();
@@ -76,11 +84,11 @@ export function ContactForm({ locale }: ContactFormProps) {
         setFormData({ name: '', company: '', email: '', phone: '', subject: '', message: '' });
       } else {
         setStatus('error');
-        setErrorMsg(data.error || 'Failed to send message');
+        setErrorMsg(t('Failed to send message. Please try again later.', 'বার্তা পাঠাতে ব্যর্থ। পরে আবার চেষ্টা করুন।'));
       }
     } catch {
       setStatus('error');
-      setErrorMsg('Network error. Please try again.');
+      setErrorMsg(t('Network error. Please try again.', 'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
     } finally {
       setSending(false);
     }
@@ -117,10 +125,7 @@ export function ContactForm({ locale }: ContactFormProps) {
               </span>
             </div>
             <p className="mt-1 text-sm">
-              {t(
-                "We'll get back to you at your email address shortly.",
-                'আমরা শীঘ্রই আপনার ইমেইলে যোগাযোগ করব।'
-              )}
+              {t("We'll get back to you at your email address shortly.", 'আমরা শীঘ্রই আপনার ইমেইলে যোগাযোগ করব।')}
             </p>
           </div>
         )}
@@ -136,7 +141,7 @@ export function ContactForm({ locale }: ContactFormProps) {
           </div>
         )}
 
-        <form id="contact-form" onSubmit={handleSubmit} className="space-y-6" action="#">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">

@@ -17,7 +17,7 @@ const SUBJECT_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
-const EMAIL_API_URL = 'https://services.btcliptelephony.gov.bd/FREESWITCHREST/api/v1/email/send';
+const EMAIL_API_URL = (process.env.INTERNAL_API_URL || 'https://services.btcliptelephony.gov.bd') + '/FREESWITCHREST/api/v1/email/send';
 
 export async function POST(request: NextRequest) {
   try {

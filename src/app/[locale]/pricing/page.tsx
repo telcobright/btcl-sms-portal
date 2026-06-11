@@ -33,6 +33,9 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [expiredPackages, setExpiredPackages] = useState<Record<string, string | null>>({})
   const [purchaseBlocked, setPurchaseBlocked] = useState(false)
   const [docBlockReason, setDocBlockReason] = useState<'pending' | 'rejected' | null>(null)
+  // PBX pre-purchase notice (IP-phones / IP whitelisting)
+  const [pbxNoticeOpen, setPbxNoticeOpen] = useState(false)
+  const [pbxPendingPkg, setPbxPendingPkg] = useState<{ pkg: any; mode: 'buy' | 'apply' } | null>(null)
   const router = useRouter()
 
   // Package tier order per service (higher number = higher tier)
@@ -238,6 +241,13 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       }
       return
     }
+    // Hosted PBX needs a pre-purchase notice (IP-Phones / IP whitelist heads-up)
+    if (service === 'hosted-pbx') {
+      setSelectedService(service)
+      setPbxPendingPkg({ pkg, mode: 'buy' })
+      setPbxNoticeOpen(true)
+      return
+    }
     setSelectedService(service)
     setSelectedPackage(pkg)
     setIsCheckoutOpen(true)
@@ -261,9 +271,32 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       }
       return
     }
+    // Hosted PBX needs a pre-purchase notice (IP-Phones / IP whitelist heads-up)
+    if (service === 'hosted-pbx') {
+      setSelectedService(service)
+      setPbxPendingPkg({ pkg, mode: 'apply' })
+      setPbxNoticeOpen(true)
+      return
+    }
     setSelectedService(service)
     setSelectedPackage(pkg)
     setIsCheckoutOpen(true)
+  }
+
+  const proceedWithPbxPurchase = () => {
+    if (!pbxPendingPkg) {
+      setPbxNoticeOpen(false)
+      return
+    }
+    setSelectedPackage(pbxPendingPkg.pkg)
+    setPbxNoticeOpen(false)
+    setPbxPendingPkg(null)
+    setIsCheckoutOpen(true)
+  }
+
+  const cancelPbxPurchase = () => {
+    setPbxNoticeOpen(false)
+    setPbxPendingPkg(null)
   }
 
   React.useEffect(() => {
@@ -1201,6 +1234,44 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             serviceType={selectedService}
             locale={locale}
           />
+        )}
+
+        {/* Hosted PBX pre-purchase notice */}
+        {pbxNoticeOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={cancelPbxPurchase}>
+            <div
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-btcl-primary to-btcl-secondary px-6 py-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-2xl">ℹ️</div>
+                <h3 className="text-lg font-bold text-white">
+                  {locale === 'en' ? 'Before You Subscribe' : 'সাবস্ক্রাইব করার আগে'}
+                </h3>
+              </div>
+              <div className="px-6 py-6">
+                <p className="text-gray-700 leading-relaxed">
+                  {locale === 'en'
+                    ? 'Dear Subscriber, you are kindly requested to pre-arrange necessary IP-Phones and Whitelist of your internet IP at BTCL PBX Network. Here, package subscription date is the billing start date.'
+                    : 'প্রিয় গ্রাহক, আপনাকে অনুগ্রহ করে প্রয়োজনীয় আইপি-ফোন আগে থেকে ব্যবস্থা করতে এবং বিটিসিএল PBX নেটওয়ার্কে আপনার ইন্টারনেট আইপি হোয়াইটলিস্ট করতে অনুরোধ করা হচ্ছে। এখানে, প্যাকেজ সাবস্ক্রিপশনের তারিখই বিলিং শুরুর তারিখ।'}
+                </p>
+              </div>
+              <div className="px-6 pb-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                <Button
+                  onClick={cancelPbxPurchase}
+                  className="px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  {locale === 'en' ? 'Cancel' : 'বাতিল'}
+                </Button>
+                <Button
+                  onClick={proceedWithPbxPurchase}
+                  className="px-6 py-3 rounded-xl font-semibold bg-btcl-primary text-white hover:bg-btcl-secondary transition-colors"
+                >
+                  {locale === 'en' ? 'Proceed' : 'এগিয়ে যান'}
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
   );

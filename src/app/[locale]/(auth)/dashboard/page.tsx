@@ -436,9 +436,15 @@ export default function Dashboard() {
     if (purchaseBlocked) {
       e.preventDefault();
       if (docBlockReason === 'rejected') {
-        alert('Your package purchase is restricted because one or more required documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please re-upload the rejected documents and wait for approval.');
+        toast.error(
+          'Your package purchase is restricted because one or more required documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please re-upload the rejected documents and wait for approval.',
+          { duration: 6000 }
+        );
       } else {
-        alert('Your package purchase is restricted. BTCL is reviewing your required documents (NID Front, NID Back, Trade License, TIN). Approval takes up to 3 working days.');
+        toast.error(
+          'Your package purchase is restricted. BTCL is reviewing your required documents (NID Front, NID Back, Trade License, TIN). Approval takes up to 3 working days.',
+          { duration: 6000 }
+        );
       }
     }
   };

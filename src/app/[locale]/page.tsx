@@ -236,7 +236,7 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
   return (
       <section
           className="relative flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat min-h-[50vh]"
-          style={{ backgroundImage: "url('/herobg.png')" }}
+          style={{ backgroundImage: "url('/btcl_banner_2.png')" }}
       >
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/50" />

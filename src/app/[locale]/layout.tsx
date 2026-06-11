@@ -21,8 +21,8 @@ export default async function LocaleLayout({
       <html lang={locale} dir={locale === 'bn' ? 'rtl' : 'ltr'} suppressHydrationWarning>
         <head>
           <title>BTCL SERVICES</title>
-          <meta name="description" content="BTCL SMS Management System" />
-          <link rel="icon" href="/fabicon.png" />
+          <meta name="description" content="Btcl cloud based services" />
+          <link rel="icon" href="/btcl_pbxFav.png" />
         </head>
         <body className={inter.className} suppressHydrationWarning>
         <AuthProvider>

@@ -13,7 +13,7 @@ export default function PgLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
-                <link rel="icon" href="/fabicon.png" />
+                <link rel="icon" href="/btcl_pbxFav.png" />
             </head>
             <body className="font-sans" suppressHydrationWarning>
                 {children}

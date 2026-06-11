@@ -55,13 +55,19 @@ export function ContactForm({ locale }: ContactFormProps) {
       return;
     }
 
+    const authToken = localStorage.getItem('authToken') || '';
+    if (!authToken) {
+      setStatus('error');
+      setErrorMsg(t('Please login to send a message.', 'বার্তা পাঠাতে অনুগ্রহ করে লগইন করুন।'));
+      return;
+    }
+
     setSending(true);
     setStatus('idle');
     setErrorMsg('');
 
     try {
       const subjectLabel = SUBJECT_TEXT[formData.subject]?.en || formData.subject;
-      const authToken = localStorage.getItem('authToken') || '';
 
       const res = await fetch(`${ROOT_URL}/FREESWITCHREST/api/v1/email/send`, {
         method: 'POST',

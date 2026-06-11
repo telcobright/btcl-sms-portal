@@ -47,14 +47,25 @@ export function ContactForm({ locale }: ContactFormProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (!formData.name || !formData.email || !formData.phone || !formData.subject || !formData.message) {
+      setStatus('error');
+      setErrorMsg(t('Please fill in all required fields.', 'অনুগ্রহ করে সকল প্রয়োজনীয় ক্ষেত্র পূরণ করুন।'));
+      return;
+    }
+
     setSending(true);
     setStatus('idle');
     setErrorMsg('');
 
     try {
+      const authToken = localStorage.getItem('authToken') || '';
       const res = await fetch('/api/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
+        },
         body: JSON.stringify(formData),
       });
 
@@ -125,7 +136,7 @@ export function ContactForm({ locale }: ContactFormProps) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form id="contact-form" onSubmit={handleSubmit} className="space-y-6" action="#">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">

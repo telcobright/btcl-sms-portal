@@ -70,12 +70,14 @@ export default function AdminDashboard() {
             const rejected = MANDATORY.filter((d) => statuses[d]?.status === 'REJECTED').length;
             const approved = MANDATORY.filter((d) => statuses[d]?.status === 'APPROVED').length;
             const base = { id: p.idPartner, name: p.partnerName, email: p.email, partnerType: p.partnerType, date: p.date1 };
+            const daysAgo = p.date1 ? Math.floor((Date.now() - new Date(p.date1).getTime()) / 86400000) : 0;
+            const daysLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
             if (rejected > 0) {
-              reviewItems.push({ ...base, status: 'rejected', detail: `${rejected} rejected` });
+              reviewItems.push({ ...base, status: 'rejected', detail: `${rejected} rejected · ${daysLabel}` });
             } else if (pending > 0) {
-              reviewItems.push({ ...base, status: 'pending', detail: `${pending} pending` });
+              reviewItems.push({ ...base, status: 'pending', detail: `${pending} pending · ${daysLabel}` });
             } else if (approved === MANDATORY.length) {
-              reviewItems.push({ ...base, status: 'approved', detail: 'All approved' });
+              reviewItems.push({ ...base, status: 'approved', detail: `All approved · ${daysLabel}` });
             }
           } catch {}
         }));

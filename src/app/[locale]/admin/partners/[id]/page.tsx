@@ -20,6 +20,8 @@ import {
   deletePartnerDocument,
   deactivatePartner,
   reactivatePartner,
+  deactivatePartnerService,
+  reactivatePartnerService,
   Partner,
   PartnerUser,
   PurchaseHistory,
@@ -76,6 +78,8 @@ export default function PartnerDetailsPage() {
   const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
   const [confirmModal, setConfirmModal] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
+  const [serviceResults, setServiceResults] = useState<{ service: string; success: boolean; error?: string }[]>([]);
   const [partnerExtra, setPartnerExtra] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
@@ -182,27 +186,84 @@ export default function PartnerDetailsPage() {
     finally { setDownloadingDoc(null); }
   };
 
+  const SERVICE_LIST = [
+    { id: 'pbx', name: 'Hosted PBX', icon: '📞', color: 'blue' },
+    { id: 'hcc', name: 'Contact Center', icon: '👥', color: 'purple' },
+    { id: 'vbs', name: 'Voice Broadcast', icon: '📢', color: 'orange' },
+    { id: 'sms', name: 'Bulk SMS', icon: '💬', color: 'emerald' },
+  ];
+
+  const purchasedServices = SERVICE_LIST.filter(
+    (s) => serviceStatus[s.id as keyof ServiceStatus]?.purchases?.length > 0
+  );
+
   const handleToggleStatus = () => {
     if (!partner) return;
+    setSelectedServices(new Set());
+    setServiceResults([]);
     setConfirmModal(true);
+  };
+
+  const toggleServiceSelection = (serviceId: string) => {
+    setSelectedServices((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) next.delete(serviceId);
+      else next.add(serviceId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedServices.size === purchasedServices.length) {
+      setSelectedServices(new Set());
+    } else {
+      setSelectedServices(new Set(purchasedServices.map((s) => s.id)));
+    }
   };
 
   const handleConfirmToggle = async () => {
     const authToken = localStorage.getItem('authToken');
     if (!authToken || !partner) return;
     const isDeactivated = partner.status === 'DEACTIVATED';
-    setConfirmModal(false);
+
     try {
       setDeactivating(true);
-      if (isDeactivated) {
-        await reactivatePartner(partnerId, authToken);
-        setPartner((p) => p ? { ...p, status: 'ACTIVE', deactivatedAt: null } : p);
-        toast.success('Partner reactivated successfully');
+      setServiceResults([]);
+
+      const action = isDeactivated ? reactivatePartnerService : deactivatePartnerService;
+      const mainAction = isDeactivated ? reactivatePartner : deactivatePartner;
+
+      await mainAction(partnerId, authToken);
+
+      if (selectedServices.size > 0) {
+        const results = await Promise.all(
+          Array.from(selectedServices).map((svc) => action(partnerId, svc, authToken))
+        );
+        setServiceResults(results);
+
+        const successes = results.filter((r) => r.success);
+        const failures = results.filter((r) => !r.success);
+
+        if (failures.length > 0) {
+          toast.error(`${failures.length} service(s) failed: ${failures.map((f) => f.service.toUpperCase()).join(', ')}`);
+        }
+        if (successes.length > 0) {
+          toast.success(`${isDeactivated ? 'Reactivated' : 'Deactivated'}: ${successes.map((s) => s.service.toUpperCase()).join(', ')}`);
+        }
       } else {
-        await deactivatePartner(partnerId, authToken);
-        setPartner((p) => p ? { ...p, status: 'DEACTIVATED', deactivatedAt: new Date().toISOString() } : p);
-        toast.success('Partner deactivated successfully');
+        toast.success(`Partner ${isDeactivated ? 'reactivated' : 'deactivated'} successfully`);
       }
+
+      setPartner((p) => p ? {
+        ...p,
+        status: isDeactivated ? 'ACTIVE' : 'DEACTIVATED',
+        deactivatedAt: isDeactivated ? null : new Date().toISOString(),
+      } : p);
+
+      setTimeout(() => {
+        setConfirmModal(false);
+        fetchData();
+      }, 1500);
     } catch (err) {
       console.error('Failed to toggle partner status:', err);
       toast.error('Action failed. Please try again.');
@@ -373,49 +434,131 @@ export default function PartnerDetailsPage() {
         </div>
       )}
 
-      {/* Deactivate / Reactivate Confirmation Modal */}
-      {confirmModal && partner && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setConfirmModal(false)}
-        >
+      {/* Deactivate / Reactivate Confirmation Modal with Service Selection */}
+      {confirmModal && partner && (() => {
+        const isDeactivated = partner.status === 'DEACTIVATED';
+        const allPurchasedSelected = purchasedServices.length > 0 && selectedServices.size === purchasedServices.length;
+        return (
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => !deactivating && setConfirmModal(false)}
           >
-            <div className="flex justify-center mb-4">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${partner.status === 'DEACTIVATED' ? 'bg-btcl-primaryLight/20' : 'bg-red-100'}`}>
-                {partner.status === 'DEACTIVATED' ? '✅' : '⚠️'}
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center mb-4">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${isDeactivated ? 'bg-btcl-primaryLight/20' : 'bg-red-100'}`}>
+                  {isDeactivated ? '✅' : '⚠️'}
+                </div>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
+                {isDeactivated ? 'Reactivate Partner' : 'Deactivate Partner'}
+              </h2>
+              <p className={`text-base font-semibold text-center mb-4 ${isDeactivated ? 'text-btcl-primary' : 'text-red-600'}`}>
+                {partner.partnerName}
+              </p>
+
+              <div className={`rounded-xl p-4 mb-4 border text-sm text-gray-700 leading-relaxed ${isDeactivated ? 'bg-btcl-primaryLight/10 border-btcl-primaryLight/30' : 'bg-red-50 border-red-200'}`}>
+                {isDeactivated
+                  ? 'This partner will be reactivated. Select which services to reactivate alongside.'
+                  : 'This partner will be blocked from logging in. Select which services to deactivate.'}
+              </div>
+
+              {/* Service Selection */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-800">Select Services</h3>
+                  {purchasedServices.length > 0 && (
+                    <button
+                      onClick={toggleSelectAll}
+                      disabled={deactivating}
+                      className="text-xs font-medium text-[#0D529E] hover:underline disabled:opacity-50"
+                    >
+                      {allPurchasedSelected ? 'Deselect All' : 'Select All'}
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {SERVICE_LIST.map((svc) => {
+                    const hasPurchase = serviceStatus[svc.id as keyof ServiceStatus]?.purchases?.length > 0;
+                    const isSelected = selectedServices.has(svc.id);
+                    return (
+                      <button
+                        key={svc.id}
+                        onClick={() => hasPurchase && toggleServiceSelection(svc.id)}
+                        disabled={!hasPurchase || deactivating}
+                        className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all ${
+                          !hasPurchase
+                            ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                            : isSelected
+                              ? isDeactivated
+                                ? 'border-[#0D529E] bg-blue-50 shadow-sm'
+                                : 'border-red-400 bg-red-50 shadow-sm'
+                              : 'border-gray-200 bg-white hover:border-gray-300 cursor-pointer'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                          !hasPurchase
+                            ? 'border-gray-200 bg-gray-100'
+                            : isSelected
+                              ? isDeactivated ? 'border-[#0D529E] bg-[#0D529E]' : 'border-red-500 bg-red-500'
+                              : 'border-gray-300'
+                        }`}>
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-lg mr-1">{svc.icon}</span>
+                          <span className={`text-sm font-medium ${!hasPurchase ? 'text-gray-400' : 'text-gray-800'}`}>
+                            {svc.name}
+                          </span>
+                          {!hasPurchase && (
+                            <p className="text-[10px] text-gray-400 mt-0.5">No purchase</p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Results */}
+              {serviceResults.length > 0 && (
+                <div className="mb-4 space-y-1.5">
+                  {serviceResults.map((r) => (
+                    <div key={r.service} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${r.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      {r.success ? '✓' : '✗'} {r.service.toUpperCase()}: {r.success ? (isDeactivated ? 'Reactivated' : 'Deactivated') : r.error}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmModal(false)}
+                  disabled={deactivating}
+                  className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmToggle}
+                  disabled={deactivating}
+                  className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors disabled:opacity-50 ${isDeactivated ? 'bg-btcl-primary hover:bg-btcl-primaryDark' : 'bg-red-600 hover:bg-red-700'}`}
+                >
+                  {deactivating ? (
+                    <span className="flex items-center justify-center gap-2"><Spinner className="w-4 h-4" /> Processing...</span>
+                  ) : isDeactivated ? 'Yes, Reactivate' : 'Yes, Deactivate'}
+                </button>
               </div>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
-              {partner.status === 'DEACTIVATED' ? 'Reactivate Partner' : 'Deactivate Partner'}
-            </h2>
-            <p className={`text-base font-semibold text-center mb-4 ${partner.status === 'DEACTIVATED' ? 'text-btcl-primary' : 'text-red-600'}`}>
-              {partner.partnerName}
-            </p>
-            <div className={`rounded-xl p-4 mb-6 border text-sm text-gray-700 leading-relaxed ${partner.status === 'DEACTIVATED' ? 'bg-btcl-primaryLight/10 border-btcl-primaryLight/30' : 'bg-red-50 border-red-200'}`}>
-              {partner.status === 'DEACTIVATED'
-                ? 'This partner will be reactivated and will be able to log in again. All their data, calls, billing, and documents remain intact.'
-                : 'This partner will be blocked from logging in immediately. All their data, calls, billing, and documents are preserved and can be restored by reactivating.'}
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmModal(false)}
-                className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmToggle}
-                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors ${partner.status === 'DEACTIVATED' ? 'bg-btcl-primary hover:bg-btcl-primaryDark' : 'bg-red-600 hover:bg-red-700'}`}
-              >
-                {partner.status === 'DEACTIVATED' ? 'Yes, Reactivate' : 'Yes, Deactivate'}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -687,3 +687,48 @@ export const reactivatePartner = async (idPartner: number, authToken: string): P
     { headers: { Authorization: `Bearer ${authToken}` } }
   );
 };
+
+const SERVICE_BASE_URLS: Record<string, string> = {
+  pbx: PBX_BASE_URL,
+  hcc: HCC_BASE_URL,
+  vbs: VBS_BASE_URL,
+  sms: API_BASE_URL,
+};
+
+export const deactivatePartnerService = async (
+  idPartner: number,
+  service: string,
+  authToken: string
+): Promise<{ service: string; success: boolean; error?: string }> => {
+  const baseUrl = SERVICE_BASE_URLS[service];
+  if (!baseUrl) return { service, success: false, error: 'Unknown service' };
+  try {
+    await axios.post(
+      `${baseUrl}${API_ENDPOINTS.partner.deactivatePartner}`,
+      { idPartner },
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    return { service, success: true };
+  } catch (err: any) {
+    return { service, success: false, error: err?.response?.data || err.message };
+  }
+};
+
+export const reactivatePartnerService = async (
+  idPartner: number,
+  service: string,
+  authToken: string
+): Promise<{ service: string; success: boolean; error?: string }> => {
+  const baseUrl = SERVICE_BASE_URLS[service];
+  if (!baseUrl) return { service, success: false, error: 'Unknown service' };
+  try {
+    await axios.post(
+      `${baseUrl}${API_ENDPOINTS.partner.reactivatePartner}`,
+      { idPartner },
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    return { service, success: true };
+  } catch (err: any) {
+    return { service, success: false, error: err?.response?.data || err.message };
+  }
+};

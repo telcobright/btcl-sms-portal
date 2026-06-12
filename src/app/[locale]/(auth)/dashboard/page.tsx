@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useLocale } from 'next-intl';
 import { Header } from '@/components/layout/Header';
 import {
   API_ENDPOINTS,
@@ -306,6 +307,7 @@ const ImageViewerModal = ({
 };
 
 export default function Dashboard() {
+  const locale = useLocale();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [partnerExtra, setPartnerExtra] = useState<PartnerExtra | null>(null);
   const [loading, setLoading] = useState(true);
@@ -2177,7 +2179,7 @@ export default function Dashboard() {
                                   </button>
                                 </>
                               ) : MANDATORY_DOCS.has(doc.type) ? (
-                                <Link href="/contact" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors cursor-pointer">
+                                <Link href={`/${locale}/contact`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors cursor-pointer">
                                   <Lock className="w-3.5 h-3.5" />
                                   Contact Admin
                                 </Link>

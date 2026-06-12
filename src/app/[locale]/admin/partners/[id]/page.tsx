@@ -66,6 +66,7 @@ export default function PartnerDetailsPage() {
     pbx: { active: false, purchases: [] },
     hcc: { active: false, purchases: [] },
     vbs: { active: false, purchases: [] },
+    sms: { active: false, purchases: [] },
   });
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
@@ -113,6 +114,7 @@ export default function PartnerDetailsPage() {
         ...serviceStatusData.pbx.purchases,
         ...serviceStatusData.hcc.purchases,
         ...serviceStatusData.vbs.purchases,
+        ...serviceStatusData.sms.purchases,
       ]);
     } catch (error) {
       console.error('Failed to fetch partner data:', error);
@@ -224,7 +226,7 @@ export default function PartnerDetailsPage() {
   };
 
   const availableDocumentsCount = documents.filter((d) => d.available).length;
-  const activeServicesCount = [serviceStatus.pbx.active, serviceStatus.hcc.active, serviceStatus.vbs.active].filter(Boolean).length;
+  const activeServicesCount = [serviceStatus.pbx.active, serviceStatus.hcc.active, serviceStatus.vbs.active, serviceStatus.sms.active].filter(Boolean).length;
 
   const tabs: { id: TabType; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
@@ -750,11 +752,12 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
     { id: 'pbx' as const, name: 'Hosted PBX', icon: '📞', url: 'https://hippbx.btcliptelephony.gov.bd:5174/', gradient: 'from-blue-500 to-blue-600', lightBg: 'bg-blue-50 border-blue-200', lightText: 'text-blue-700' },
     { id: 'hcc' as const, name: 'Contact Center', icon: '👥', url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`, gradient: 'from-purple-500 to-purple-600', lightBg: 'bg-purple-50 border-purple-200', lightText: 'text-purple-700' },
     { id: 'vbs' as const, name: 'Voice Broadcast', icon: '📢', url: 'https://vbs.btcliptelephony.gov.bd/', gradient: 'from-orange-500 to-orange-600', lightBg: 'bg-orange-50 border-orange-200', lightText: 'text-orange-700' },
+    { id: 'sms' as const, name: 'Bulk SMS', icon: '💬', url: 'https://a2psms.btcliptelephony.gov.bd/', gradient: 'from-emerald-500 to-emerald-600', lightBg: 'bg-emerald-50 border-emerald-200', lightText: 'text-emerald-700' },
   ];
 
   return (
     <div className="p-6 space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {services.map((s) => {
           const active = serviceStatus[s.id]?.active;
           return (

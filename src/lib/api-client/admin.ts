@@ -606,6 +606,7 @@ export interface ServiceStatus {
   pbx: { active: boolean; purchases: PurchaseHistory[] };
   hcc: { active: boolean; purchases: PurchaseHistory[] };
   vbs: { active: boolean; purchases: PurchaseHistory[] };
+  sms: { active: boolean; purchases: PurchaseHistory[] };
 }
 
 /**
@@ -627,6 +628,7 @@ export const getServiceStatus = async (
     pbx: { active: false, purchases: [] },
     hcc: { active: false, purchases: [] },
     vbs: { active: false, purchases: [] },
+    sms: { active: false, purchases: [] },
   };
 
   const fetchPromises = apiConfigs.map(async ({ url, service }) => {

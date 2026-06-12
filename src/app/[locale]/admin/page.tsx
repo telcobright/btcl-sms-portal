@@ -60,12 +60,16 @@ export default function AdminDashboard() {
             const r = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-              body: JSON.stringify({ partnerId: p.idPartner }),
+              body: JSON.stringify({ id: p.idPartner }),
             });
             if (!r.ok) return;
+            const MANDATORY = ['nidfront', 'nidback', 'tradelicense', 'tin'];
             const statuses: Record<string, { status: string }> = await r.json();
-            const pending = Object.values(statuses).filter((s) => s.status === 'PENDING').length;
-            if (pending > 0) reviews.push({ id: p.idPartner, name: p.partnerName, email: p.email, partnerType: p.partnerType, date: p.date1, pendingCount: pending });
+            const allApproved = MANDATORY.every((d) => statuses[d]?.status === 'APPROVED');
+            if (!allApproved) {
+              const needsAction = MANDATORY.filter((d) => !statuses[d] || statuses[d].status !== 'APPROVED').length;
+              reviews.push({ id: p.idPartner, name: p.partnerName, email: p.email, partnerType: p.partnerType, date: p.date1, pendingCount: needsAction });
+            }
           } catch {}
         }));
         reviews.sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime());

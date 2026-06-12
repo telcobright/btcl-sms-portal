@@ -37,27 +37,30 @@ export default function AdminNotifications({ locale }: { locale: string }) {
 
       const items: NotificationItem[] = [];
 
+      const MANDATORY = ['nidfront', 'nidback', 'tradelicense', 'tin'];
+
       await Promise.allSettled(
         sorted.map(async (p) => {
           try {
             const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ partnerId: p.idPartner }),
+              body: JSON.stringify({ id: p.idPartner }),
             });
             if (!res.ok) return;
             const statuses: Record<string, { status: string }> = await res.json();
-            const entries = Object.values(statuses);
-            const pending = entries.filter((s) => s.status === 'PENDING').length;
-            if (pending > 0) {
+            const pendingCount = MANDATORY.filter((d) => !statuses[d] || statuses[d].status === 'PENDING').length;
+            const rejectedCount = MANDATORY.filter((d) => statuses[d]?.status === 'REJECTED').length;
+            const needsReview = pendingCount + rejectedCount;
+            if (needsReview > 0) {
               items.push({
                 id: p.idPartner,
                 partnerName: p.partnerName,
                 email: p.email,
                 partnerType: p.partnerType,
                 date: p.date1,
-                pendingDocs: pending,
-                totalDocs: entries.length,
+                pendingDocs: pendingCount,
+                totalDocs: rejectedCount,
               });
             }
           } catch {}
@@ -165,9 +168,16 @@ export default function AdminNotifications({ locale }: { locale: string }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#0D529E]">{n.partnerName}</p>
-                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">
-                        {n.pendingDocs} pending
-                      </span>
+                      {n.pendingDocs > 0 && (
+                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">
+                          {n.pendingDocs} pending
+                        </span>
+                      )}
+                      {n.totalDocs > 0 && (
+                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 shrink-0">
+                          {n.totalDocs} rejected
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-gray-500 truncate">{n.email || 'No email'}</p>
                     <div className="flex items-center gap-2 mt-1">

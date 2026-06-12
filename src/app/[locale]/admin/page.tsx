@@ -4,10 +4,19 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getAllPartners, Partner, getPartnerTypeLabel } from '@/lib/api-client/admin';
-import { PBX_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { PBX_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface ServiceStats { subscribers: number; active: number; revenue: number; }
 const EMPTY: ServiceStats = { subscribers: 0, active: 0, revenue: 0 };
+
+interface PendingReview {
+  id: number;
+  name: string;
+  email: string | null;
+  partnerType: number;
+  date: string | null;
+  pendingCount: number;
+}
 
 export default function AdminDashboard() {
   const params = useParams();
@@ -16,6 +25,7 @@ export default function AdminDashboard() {
   const [customers, setCustomers] = useState(0);
   const [recent, setRecent] = useState<Partner[]>([]);
   const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY });
+  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -41,6 +51,25 @@ export default function AdminDashboard() {
           stats[k] = { subscribers: subs.size, active: act, revenue: rev };
         }));
         setSvc(stats);
+
+        // Fetch pending document reviews for recent partners
+        const recentForReview = [...list].filter((p) => p.date1).sort((a, b) => new Date(b.date1!).getTime() - new Date(a.date1!).getTime()).slice(0, 15);
+        const reviews: PendingReview[] = [];
+        await Promise.allSettled(recentForReview.map(async (p) => {
+          try {
+            const r = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+              body: JSON.stringify({ partnerId: p.idPartner }),
+            });
+            if (!r.ok) return;
+            const statuses: Record<string, { status: string }> = await r.json();
+            const pending = Object.values(statuses).filter((s) => s.status === 'PENDING').length;
+            if (pending > 0) reviews.push({ id: p.idPartner, name: p.partnerName, email: p.email, partnerType: p.partnerType, date: p.date1, pendingCount: pending });
+          } catch {}
+        }));
+        reviews.sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime());
+        setPendingReviews(reviews);
       } catch {} finally { setLoading(false); }
     })();
   }, []);
@@ -119,29 +148,62 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Row 3: Recent Customers + Quick Links */}
+      {/* Row 3: Pending Reviews + Recent Customers + Quick Links */}
       <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
+        {/* Pending Reviews */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-3 shrink-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-gray-900">Pending Reviews</h2>
+              {pendingReviews.length > 0 && (
+                <span className="min-w-[20px] h-5 px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {pendingReviews.length}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-1">
+            {pendingReviews.length === 0 ? (
+              <div className="text-center py-6">
+                <svg className="w-8 h-8 mx-auto text-gray-200 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <p className="text-xs text-gray-400">All reviews complete</p>
+              </div>
+            ) : pendingReviews.map((r) => (
+              <Link key={r.id} href={`/${locale}/admin/partners/${r.id}`}
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all group">
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                  {r.name?.charAt(0).toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-900 truncate group-hover:text-amber-700">{r.name}</p>
+                  <p className="text-[10px] text-gray-400 truncate">{r.pendingCount} doc{r.pendingCount > 1 ? 's' : ''} pending</p>
+                </div>
+                <svg className="w-3 h-3 text-gray-300 group-hover:text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </Link>
+            ))}
+          </div>
+        </div>
+
         {/* Recent Customers */}
-        <div className="col-span-2 bg-white rounded-xl border border-gray-200 p-4 flex flex-col min-h-0">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-3 shrink-0">
             <h2 className="text-sm font-bold text-gray-900">Recent Customers</h2>
             <Link href={`/${locale}/admin/partners`} className="text-[10px] text-[#0D529E] hover:underline font-medium">View All →</Link>
           </div>
-          <div className="flex-1 overflow-hidden space-y-1">
+          <div className="flex-1 overflow-y-auto space-y-1">
             {recent.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-6">No customers yet</p>
             ) : recent.map((p, i) => (
               <Link key={p.idPartner} href={`/${locale}/admin/partners/${p.idPartner}`}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors group">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${i % 3 === 0 ? 'bg-[#0D529E]' : i % 3 === 1 ? 'bg-blue-500' : 'bg-purple-500'}`}>
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 transition-colors group">
+                <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white text-[10px] font-bold ${i % 3 === 0 ? 'bg-[#0D529E]' : i % 3 === 1 ? 'bg-blue-500' : 'bg-purple-500'}`}>
                   {p.partnerName?.charAt(0).toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{p.partnerName}</p>
+                  <p className="text-xs font-semibold text-gray-900 truncate">{p.partnerName}</p>
                   <p className="text-[10px] text-gray-400 truncate">{p.email || 'No email'}</p>
                 </div>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-btcl-primaryLight/10 text-[#0D529E]">{getPartnerTypeLabel(p.partnerType)}</span>
-                <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#0D529E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-btcl-primaryLight/10 text-[#0D529E]">{getPartnerTypeLabel(p.partnerType)}</span>
               </Link>
             ))}
           </div>

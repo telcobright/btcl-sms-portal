@@ -27,13 +27,16 @@ export default function AdminDashboard() {
   const [recent, setRecent] = useState<Partner[]>([]);
   const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY });
   const [docReviews, setDocReviews] = useState<DocReviewItem[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const t = localStorage.getItem('authToken');
-        if (!t) return;
+        if (!t) { setLoading(false); setReviewLoading(false); return; }
         const all = await getAllPartners({ page: 0, size: 1000, partnerName: null, partnerType: null }, t);
+        if (cancelled) return;
         const list = (Array.isArray(all) ? all : []).filter((p) => [3, 4, 5, 6].includes(p.partnerType));
         setCustomers(list.length);
         setRecent([...list].filter((p) => p.date1).sort((a, b) => new Date(b.date1!).getTime() - new Date(a.date1!).getTime()).slice(0, 4));
@@ -51,20 +54,25 @@ export default function AdminDashboard() {
           }));
           stats[k] = { subscribers: subs.size, active: act, revenue: rev };
         }));
+        if (cancelled) return;
         setSvc(stats);
 
-        // Fetch document review status for recent partners (mandatory docs only)
+        // Dashboard core is ready — render it now; doc reviews load in the background.
+        setLoading(false);
+
+        // Fetch document review status for ALL partners (mandatory docs only),
+        // throttled in batches so we don't fire hundreds of requests at once.
         const MANDATORY = ['nidfront', 'nidback', 'tradelicense', 'tin'];
-        const recentForReview = [...list].filter((p) => p.date1).sort((a, b) => new Date(b.date1!).getTime() - new Date(a.date1!).getTime());
-        const reviewItems: DocReviewItem[] = [];
-        await Promise.allSettled(recentForReview.map(async (p) => {
+        const toReview = [...list].filter((p) => p.date1).sort((a, b) => new Date(b.date1!).getTime() - new Date(a.date1!).getTime());
+
+        const buildItem = async (p: Partner): Promise<DocReviewItem | null> => {
           try {
             const r = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
               body: JSON.stringify({ id: p.idPartner }),
             });
-            if (!r.ok) return;
+            if (!r.ok) return null;
             const statuses: Record<string, { status: string }> = await r.json();
             const pending = MANDATORY.filter((d) => !statuses[d] || statuses[d].status === 'PENDING').length;
             const rejected = MANDATORY.filter((d) => statuses[d]?.status === 'REJECTED').length;
@@ -72,19 +80,29 @@ export default function AdminDashboard() {
             const base = { id: p.idPartner, name: p.partnerName, email: p.email, partnerType: p.partnerType, date: p.date1 };
             const daysAgo = p.date1 ? Math.floor((Date.now() - new Date(p.date1).getTime()) / 86400000) : 0;
             const daysLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
-            if (rejected > 0) {
-              reviewItems.push({ ...base, status: 'rejected', detail: `${rejected} rejected · ${daysLabel}` });
-            } else if (pending > 0) {
-              reviewItems.push({ ...base, status: 'pending', detail: `${pending} pending · ${daysLabel}` });
-            } else if (approved === MANDATORY.length) {
-              reviewItems.push({ ...base, status: 'approved', detail: `All approved · ${daysLabel}` });
-            }
-          } catch {}
-        }));
-        reviewItems.sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime());
-        setDocReviews(reviewItems);
-      } catch {} finally { setLoading(false); }
+            if (rejected > 0) return { ...base, status: 'rejected', detail: `${rejected} rejected · ${daysLabel}` };
+            if (pending > 0) return { ...base, status: 'pending', detail: `${pending} pending · ${daysLabel}` };
+            if (approved === MANDATORY.length) return { ...base, status: 'approved', detail: `All approved · ${daysLabel}` };
+            return null;
+          } catch { return null; }
+        };
+
+        setReviewLoading(true);
+        const collected: DocReviewItem[] = [];
+        const BATCH = 10;
+        for (let i = 0; i < toReview.length; i += BATCH) {
+          if (cancelled) return;
+          const results = await Promise.allSettled(toReview.slice(i, i + BATCH).map(buildItem));
+          results.forEach((res) => { if (res.status === 'fulfilled' && res.value) collected.push(res.value); });
+          if (cancelled) return;
+          setDocReviews([...collected].sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime()));
+        }
+        if (!cancelled) setReviewLoading(false);
+      } catch {
+        if (!cancelled) { setLoading(false); setReviewLoading(false); }
+      }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   if (loading) return (
@@ -165,7 +183,7 @@ export default function AdminDashboard() {
       {/* Row 3: Doc Reviews + Recent Customers + Quick Links */}
       <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
         {/* Document Reviews */}
-        <DocReviewPanel reviews={docReviews} locale={String(locale)} />
+        <DocReviewPanel reviews={docReviews} locale={String(locale)} loading={reviewLoading} />
 
         {/* Recent Customers */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col min-h-0">
@@ -231,7 +249,7 @@ export default function AdminDashboard() {
 }
 
 /* ─── Doc Review Panel with tabs ─── */
-function DocReviewPanel({ reviews, locale }: { reviews: DocReviewItem[]; locale: string }) {
+function DocReviewPanel({ reviews, locale, loading = false }: { reviews: DocReviewItem[]; locale: string; loading?: boolean }) {
   const [tab, setTab] = useState<'pending' | 'rejected' | 'approved'>('pending');
 
   const pending = reviews.filter((r) => r.status === 'pending');
@@ -279,22 +297,32 @@ function DocReviewPanel({ reviews, locale }: { reviews: DocReviewItem[]; locale:
             </button>
           ))}
         </div>
-        <span className="text-[10px] text-gray-400 font-medium">
-          {current.length} partner{current.length !== 1 ? 's' : ''} loaded
+        <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1.5">
+          {loading && (
+            <svg className="w-3 h-3 animate-spin text-[#0D529E]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+          )}
+          {current.length} partner{current.length !== 1 ? 's' : ''}{loading ? ' so far' : ' loaded'}
         </span>
       </div>
       <div className="flex-1 overflow-y-auto space-y-1">
         {current.length === 0 ? (
-          <div className="text-center py-6">
-            <svg className="w-8 h-8 mx-auto text-gray-200 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={
-                tab === 'approved' ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4'
-              } />
-            </svg>
-            <p className="text-xs text-gray-400">
-              {tab === 'pending' ? 'No pending reviews' : tab === 'rejected' ? 'No rejected docs' : 'No approved partners yet'}
-            </p>
-          </div>
+          loading ? (
+            <div className="text-center py-6">
+              <svg className="w-6 h-6 mx-auto animate-spin text-[#0D529E] mb-2" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              <p className="text-xs text-gray-400">Loading reviews…</p>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <svg className="w-8 h-8 mx-auto text-gray-200 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={
+                  tab === 'approved' ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4'
+                } />
+              </svg>
+              <p className="text-xs text-gray-400">
+                {tab === 'pending' ? 'No pending reviews' : tab === 'rejected' ? 'No rejected docs' : 'No approved partners yet'}
+              </p>
+            </div>
+          )
         ) : current.map((r) => (
           <Link key={r.id} href={`/${locale}/admin/partners/${r.id}`}
             className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent transition-all group ${hoverStyle}`}>

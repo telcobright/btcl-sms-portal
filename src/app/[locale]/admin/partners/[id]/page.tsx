@@ -187,14 +187,16 @@ export default function PartnerDetailsPage() {
   };
 
   const SERVICE_LIST = [
-    { id: 'pbx', name: 'Hosted PBX', icon: '📞', color: 'blue' },
-    { id: 'hcc', name: 'Contact Center', icon: '👥', color: 'purple' },
-    { id: 'vbs', name: 'Voice Broadcast', icon: '📢', color: 'orange' },
-    { id: 'sms', name: 'Bulk SMS', icon: '💬', color: 'emerald' },
+    { id: 'pbx', name: 'Hosted PBX', icon: '📞', color: 'blue', pending: false },
+    { id: 'hcc', name: 'Contact Center', icon: '👥', color: 'purple', pending: false },
+    { id: 'vbs', name: 'Voice Broadcast', icon: '📢', color: 'orange', pending: false },
+    // SMS has no deactivation endpoint yet — kept visible but not selectable.
+    { id: 'sms', name: 'Bulk SMS', icon: '💬', color: 'emerald', pending: true },
   ];
 
+  // Services the admin may toggle: must be purchased at least once AND have a backend endpoint.
   const purchasedServices = SERVICE_LIST.filter(
-    (s) => serviceStatus[s.id as keyof ServiceStatus]?.purchases?.length > 0
+    (s) => !s.pending && serviceStatus[s.id as keyof ServiceStatus]?.purchases?.length > 0
   );
 
   const handleToggleStatus = () => {
@@ -230,12 +232,10 @@ export default function PartnerDetailsPage() {
       setDeactivating(true);
       setServiceResults([]);
 
-      const action = isDeactivated ? reactivatePartnerService : deactivatePartnerService;
-      const mainAction = isDeactivated ? reactivatePartner : deactivatePartner;
-
-      await mainAction(partnerId, authToken);
-
       if (selectedServices.size > 0) {
+        // Selective mode: call ONLY the chosen service backends.
+        // The partner's portal login (main record) is left untouched.
+        const action = isDeactivated ? reactivatePartnerService : deactivatePartnerService;
         const results = await Promise.all(
           Array.from(selectedServices).map((svc) => action(partnerId, svc, authToken))
         );
@@ -250,20 +250,23 @@ export default function PartnerDetailsPage() {
         if (successes.length > 0) {
           toast.success(`${isDeactivated ? 'Reactivated' : 'Deactivated'}: ${successes.map((s) => s.service.toUpperCase()).join(', ')}`);
         }
+
+        setTimeout(() => {
+          setConfirmModal(false);
+          fetchData();
+        }, 1500);
       } else {
+        // No services selected: deactivate/reactivate the whole partner (portal login).
+        const mainAction = isDeactivated ? reactivatePartner : deactivatePartner;
+        await mainAction(partnerId, authToken);
         toast.success(`Partner ${isDeactivated ? 'reactivated' : 'deactivated'} successfully`);
-      }
-
-      setPartner((p) => p ? {
-        ...p,
-        status: isDeactivated ? 'ACTIVE' : 'DEACTIVATED',
-        deactivatedAt: isDeactivated ? null : new Date().toISOString(),
-      } : p);
-
-      setTimeout(() => {
+        setPartner((p) => p ? {
+          ...p,
+          status: isDeactivated ? 'ACTIVE' : 'DEACTIVATED',
+          deactivatedAt: isDeactivated ? null : new Date().toISOString(),
+        } : p);
         setConfirmModal(false);
-        fetchData();
-      }, 1500);
+      }
     } catch (err) {
       console.error('Failed to toggle partner status:', err);
       toast.error('Action failed. Please try again.');
@@ -460,15 +463,19 @@ export default function PartnerDetailsPage() {
               </p>
 
               <div className={`rounded-xl p-4 mb-4 border text-sm text-gray-700 leading-relaxed ${isDeactivated ? 'bg-btcl-primaryLight/10 border-btcl-primaryLight/30' : 'bg-red-50 border-red-200'}`}>
-                {isDeactivated
-                  ? 'This partner will be reactivated. Select which services to reactivate alongside.'
-                  : 'This partner will be blocked from logging in. Select which services to deactivate.'}
+                {selectedServices.size > 0
+                  ? (isDeactivated
+                      ? 'Only the selected service(s) will be reactivated on their backends. The partner\'s portal login is not affected.'
+                      : 'Only the selected service(s) will be deactivated on their backends. The partner can still log in and use other services.')
+                  : (isDeactivated
+                      ? 'No service selected — the partner\'s portal login will be reactivated. Pick services above to reactivate them instead.'
+                      : 'No service selected — the partner will be blocked from logging in to the portal. Pick services above to deactivate only those instead.')}
               </div>
 
               {/* Service Selection */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-800">Select Services</h3>
+                  <h3 className="text-sm font-semibold text-gray-800">Select Services <span className="text-xs font-normal text-gray-400">(optional)</span></h3>
                   {purchasedServices.length > 0 && (
                     <button
                       onClick={toggleSelectAll}
@@ -482,14 +489,16 @@ export default function PartnerDetailsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   {SERVICE_LIST.map((svc) => {
                     const hasPurchase = serviceStatus[svc.id as keyof ServiceStatus]?.purchases?.length > 0;
+                    const selectable = !svc.pending && hasPurchase;
                     const isSelected = selectedServices.has(svc.id);
+                    const note = svc.pending ? 'API pending' : !hasPurchase ? 'No purchase' : null;
                     return (
                       <button
                         key={svc.id}
-                        onClick={() => hasPurchase && toggleServiceSelection(svc.id)}
-                        disabled={!hasPurchase || deactivating}
+                        onClick={() => selectable && toggleServiceSelection(svc.id)}
+                        disabled={!selectable || deactivating}
                         className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all ${
-                          !hasPurchase
+                          !selectable
                             ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
                             : isSelected
                               ? isDeactivated
@@ -499,7 +508,7 @@ export default function PartnerDetailsPage() {
                         }`}
                       >
                         <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
-                          !hasPurchase
+                          !selectable
                             ? 'border-gray-200 bg-gray-100'
                             : isSelected
                               ? isDeactivated ? 'border-[#0D529E] bg-[#0D529E]' : 'border-red-500 bg-red-500'
@@ -513,11 +522,11 @@ export default function PartnerDetailsPage() {
                         </div>
                         <div>
                           <span className="text-lg mr-1">{svc.icon}</span>
-                          <span className={`text-sm font-medium ${!hasPurchase ? 'text-gray-400' : 'text-gray-800'}`}>
+                          <span className={`text-sm font-medium ${!selectable ? 'text-gray-400' : 'text-gray-800'}`}>
                             {svc.name}
                           </span>
-                          {!hasPurchase && (
-                            <p className="text-[10px] text-gray-400 mt-0.5">No purchase</p>
+                          {note && (
+                            <p className="text-[10px] text-gray-400 mt-0.5">{note}</p>
                           )}
                         </div>
                       </button>
@@ -552,7 +561,9 @@ export default function PartnerDetailsPage() {
                 >
                   {deactivating ? (
                     <span className="flex items-center justify-center gap-2"><Spinner className="w-4 h-4" /> Processing...</span>
-                  ) : isDeactivated ? 'Yes, Reactivate' : 'Yes, Deactivate'}
+                  ) : selectedServices.size > 0
+                      ? `${isDeactivated ? 'Reactivate' : 'Deactivate'} ${selectedServices.size} Service${selectedServices.size > 1 ? 's' : ''}`
+                      : `${isDeactivated ? 'Reactivate' : 'Deactivate'} Partner Login`}
                 </button>
               </div>
             </div>

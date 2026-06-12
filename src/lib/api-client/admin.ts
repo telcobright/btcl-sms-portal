@@ -688,11 +688,15 @@ export const reactivatePartner = async (idPartner: number, authToken: string): P
   );
 };
 
+// Per-service partner deactivate/reactivate backends.
+// NOTE: SMS is intentionally omitted — the Bulk SMS portal (a2psms) is a
+// separate system with no deactivation endpoint yet. Mapping it to API_BASE_URL
+// collides with the main partner deactivate and always errors. SMS will be
+// wired here once its real endpoint is provided.
 const SERVICE_BASE_URLS: Record<string, string> = {
   pbx: PBX_BASE_URL,
   hcc: HCC_BASE_URL,
   vbs: VBS_BASE_URL,
-  sms: API_BASE_URL,
 };
 
 export const deactivatePartnerService = async (

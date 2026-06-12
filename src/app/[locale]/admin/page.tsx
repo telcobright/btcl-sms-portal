@@ -55,7 +55,7 @@ export default function AdminDashboard() {
 
         // Fetch document review status for recent partners (mandatory docs only)
         const MANDATORY = ['nidfront', 'nidback', 'tradelicense', 'tin'];
-        const recentForReview = [...list].filter((p) => p.date1).sort((a, b) => new Date(b.date1!).getTime() - new Date(a.date1!).getTime()).slice(0, 20);
+        const recentForReview = [...list].filter((p) => p.date1).sort((a, b) => new Date(b.date1!).getTime() - new Date(a.date1!).getTime());
         const reviewItems: DocReviewItem[] = [];
         await Promise.allSettled(recentForReview.map(async (p) => {
           try {
@@ -258,23 +258,28 @@ function DocReviewPanel({ reviews, locale }: { reviews: DocReviewItem[]; locale:
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col min-h-0">
-      <div className="flex items-center gap-1 mb-3 shrink-0">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
-              tab === t.key
-                ? `${t.bg} text-white shadow-sm`
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            {t.label}
-            <span className={`min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center ${
-              tab === t.key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'
-            }`}>{t.count}</span>
-          </button>
-        ))}
+      <div className="flex items-center justify-between mb-3 shrink-0">
+        <div className="flex items-center gap-1">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                tab === t.key
+                  ? `${t.bg} text-white shadow-sm`
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {t.label}
+              <span className={`min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center ${
+                tab === t.key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'
+              }`}>{t.count}</span>
+            </button>
+          ))}
+        </div>
+        <span className="text-[10px] text-gray-400 font-medium">
+          {current.length} partner{current.length !== 1 ? 's' : ''} loaded
+        </span>
       </div>
       <div className="flex-1 overflow-y-auto space-y-1">
         {current.length === 0 ? (

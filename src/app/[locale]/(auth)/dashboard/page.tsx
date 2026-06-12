@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import {
   API_ENDPOINTS,
@@ -2176,10 +2177,10 @@ export default function Dashboard() {
                                   </button>
                                 </>
                               ) : MANDATORY_DOCS.has(doc.type) ? (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                                <Link href="/contact" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors cursor-pointer">
                                   <Lock className="w-3.5 h-3.5" />
                                   Contact Admin
-                                </span>
+                                </Link>
                               ) : (
                                 <label className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
                                   <input

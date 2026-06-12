@@ -190,8 +190,7 @@ export default function PartnerDetailsPage() {
     { id: 'pbx', name: 'Hosted PBX', icon: '📞', color: 'blue', pending: false },
     { id: 'hcc', name: 'Contact Center', icon: '👥', color: 'purple', pending: false },
     { id: 'vbs', name: 'Voice Broadcast', icon: '📢', color: 'orange', pending: false },
-    // SMS has no deactivation endpoint yet — kept visible but not selectable.
-    { id: 'sms', name: 'Bulk SMS', icon: '💬', color: 'emerald', pending: true },
+    { id: 'sms', name: 'Bulk SMS', icon: '💬', color: 'emerald', pending: false },
   ];
 
   // Services the admin may toggle: must be purchased at least once AND have a backend endpoint.

@@ -25,6 +25,8 @@ export const API_BASE_URL = `${ROOT_URL}/FREESWITCHREST`;
 export const AUTH_BASE_URL = `${ROOT_URL}/AUTHENTICATION`;
 export const NID_BASE_URL = `${ROOT_URL}/NID`;
 export const BULK_SMS_PORTAL_URL = 'https://a2psms.btcliptelephony.gov.bd/';
+// Bulk SMS (a2psms) API base — same FreeSwitchREST endpoint pattern as the other services
+export const BULK_SMS_BASE_URL = 'https://a2psms.btcliptelephony.gov.bd/FREESWITCHREST';
 export const PAYMENT_BASE_URL = `${ROOT_URL}`;
 // export const PAYMENT_BASE_URL = 'http://localhost:8081';
 

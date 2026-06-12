@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS, PBX_BASE_URL, HCC_BASE_URL, VBS_BASE_URL } from '@/config/api';
+import { API_BASE_URL, AUTH_BASE_URL, API_ENDPOINTS, PBX_BASE_URL, HCC_BASE_URL, VBS_BASE_URL, BULK_SMS_BASE_URL } from '@/config/api';
 
 // ---------------------- INTERFACES ----------------------
 
@@ -610,7 +610,7 @@ export interface ServiceStatus {
 }
 
 /**
- * Get service-specific purchase data from all three services (PBX, HCC, VBS)
+ * Get service-specific purchase data from all four services (PBX, HCC, VBS, SMS)
  */
 export const getServiceStatus = async (
   idPartner: number,
@@ -622,6 +622,10 @@ export const getServiceStatus = async (
     { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },
     { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },
     { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },
+    // SMS purchases are recorded on the main backend (CheckoutModal posts SMS to
+    // API_BASE_URL), so the "purchased once" gate reads from there. Deactivation,
+    // however, targets a2psms (see SERVICE_BASE_URLS) where SMS sending lives.
+    { url: `${API_BASE_URL}${endpoint}`, service: 'sms' as const },
   ];
 
   const result: ServiceStatus = {
@@ -688,15 +692,14 @@ export const reactivatePartner = async (idPartner: number, authToken: string): P
   );
 };
 
-// Per-service partner deactivate/reactivate backends.
-// NOTE: SMS is intentionally omitted — the Bulk SMS portal (a2psms) is a
-// separate system with no deactivation endpoint yet. Mapping it to API_BASE_URL
-// collides with the main partner deactivate and always errors. SMS will be
-// wired here once its real endpoint is provided.
+// Per-service partner deactivate/reactivate backends. Each hits
+// `/partner/deactivate-partner` (or reactivate) with { idPartner } + Bearer token
+// on its own FreeSwitchREST instance.
 const SERVICE_BASE_URLS: Record<string, string> = {
   pbx: PBX_BASE_URL,
   hcc: HCC_BASE_URL,
   vbs: VBS_BASE_URL,
+  sms: BULK_SMS_BASE_URL,
 };
 
 export const deactivatePartnerService = async (

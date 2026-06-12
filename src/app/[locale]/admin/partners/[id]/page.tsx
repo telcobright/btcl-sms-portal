@@ -27,7 +27,7 @@ import {
   ServiceStatus,
   CreateUserPayload,
 } from '@/lib/api-client/admin';
-import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { API_BASE_URL, API_ENDPOINTS, ROOT_URL } from '@/config/api';
 
 type TabType = 'overview' | 'users' | 'purchases' | 'subscriptions' | 'documents';
 
@@ -329,7 +329,8 @@ export default function PartnerDetailsPage() {
           <DocumentsTab documents={documents} viewDocument={viewDocument} downloadDocument={downloadDocument}
             viewingDoc={viewingDoc} downloadingDoc={downloadingDoc} docStatuses={docStatuses}
             onUpdateStatus={updateDocStatus} updatingDocStatus={updatingDocStatus}
-            partnerId={partnerId} onRefresh={fetchData} />
+            partnerId={partnerId} onRefresh={fetchData}
+            partnerEmail={partner?.email || ''} partnerName={partner?.partnerName || ''} />
         )}
       </div>
 
@@ -822,20 +823,105 @@ const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
 function DocumentsTab({
   documents, viewDocument, downloadDocument, viewingDoc, downloadingDoc,
   docStatuses, onUpdateStatus, updatingDocStatus, partnerId, onRefresh,
+  partnerEmail, partnerName,
 }: {
   documents: PartnerDocument[]; viewDocument: (t: string, n: string) => Promise<void>;
   downloadDocument: (t: string, n: string) => Promise<void>; viewingDoc: string | null;
   downloadingDoc: string | null; docStatuses: Record<string, { status: string; rejectionReason: string }>;
   onUpdateStatus: (t: string, s: string, r: string) => Promise<void>; updatingDocStatus: string | null;
   partnerId: number; onRefresh: () => void;
+  partnerEmail: string; partnerName: string;
 }) {
   const [rejectingDoc, setRejectingDoc] = useState<string | null>(null);
   const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
+  const [sendingRejectionEmail, setSendingRejectionEmail] = useState(false);
 
   const available = documents.filter((d) => d.available);
   const missing = documents.filter((d) => !d.available);
+
+  const DOC_NAMES: Record<string, string> = {
+    nidfront: 'NID Front', nidback: 'NID Back', tradelicense: 'Trade License',
+    tin: 'TIN Certificate', taxreturn: 'Tax Return', bin: 'BIN Certificate',
+    vat: 'VAT Document', btrc: 'BTRC Registration', photo: 'Photo', sla: 'SLA Document',
+  };
+
+  const rejectedDocs = Object.entries(docStatuses)
+    .filter(([, info]) => info.status === 'REJECTED')
+    .map(([type, info]) => ({ type, name: DOC_NAMES[type] || type, reason: info.rejectionReason }));
+
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const sendRejectionEmail = async () => {
+    if (!partnerEmail || rejectedDocs.length === 0) return;
+    setSendingRejectionEmail(true);
+    try {
+      const docRows = rejectedDocs.map((d) =>
+        `<tr><td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;font-weight:600;color:#dc2626">${esc(d.name)}</td><td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;color:#374151">${esc(d.reason || 'No reason provided')}</td></tr>`
+      ).join('');
+
+      const html = `
+<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;background:#ffffff">
+  <div style="background:linear-gradient(135deg,#0D529E 0%,#1F3C71 100%);padding:28px 32px;border-radius:12px 12px 0 0">
+    <h1 style="color:#ffffff;margin:0;font-size:20px">Document Review Result</h1>
+    <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px">Bangladesh Telecommunications Company Limited (BTCL)</p>
+  </div>
+  <div style="padding:28px 32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px">Dear <strong>${esc(partnerName)}</strong>,</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px">
+      We have reviewed your submitted documents. Unfortunately, the following document(s) have been <strong style="color:#dc2626">rejected</strong> and require your attention:
+    </p>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin:0 0 24px">
+      <thead>
+        <tr style="background:#fef2f2">
+          <th style="padding:10px 14px;text-align:left;font-size:13px;color:#991b1b;border-bottom:2px solid #fecaca">Document</th>
+          <th style="padding:10px 14px;text-align:left;font-size:13px;color:#991b1b;border-bottom:2px solid #fecaca">Rejection Reason</th>
+        </tr>
+      </thead>
+      <tbody>${docRows}</tbody>
+    </table>
+    <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:16px 20px;border-radius:0 8px 8px 0;margin:0 0 24px">
+      <p style="margin:0;color:#991b1b;font-size:14px;font-weight:600">Action Required</p>
+      <p style="margin:8px 0 0;color:#374151;font-size:14px;line-height:1.6">
+        Please prepare the corrected documents and contact our team for re-submission.
+        Until all mandatory documents are approved, service purchases will remain restricted.
+      </p>
+    </div>
+    <p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 8px"><strong>Contact BTCL Team:</strong></p>
+    <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 4px">Email: alaapcloud@btcl.gov.bd</p>
+    <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 24px">Phone: 16402</p>
+    <a href="${esc(ROOT_URL)}/en/dashboard" style="display:inline-block;background:#0D529E;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600">
+      Visit Your Dashboard
+    </a>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0 20px"/>
+    <p style="color:#9ca3af;font-size:12px;margin:0;text-align:center">
+      This is an automated notification from the BTCL Alaap Cloud portal.
+    </p>
+  </div>
+</div>`;
+
+      const res = await fetch(`${ROOT_URL}/FREESWITCHREST/api/v1/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: partnerEmail,
+          subject: `[BTCL] Document(s) Rejected — Action Required`,
+          body: html,
+          isHtml: true,
+        }),
+      });
+      if (res.ok) {
+        toast.success('Rejection email sent to ' + partnerEmail);
+      } else {
+        toast.error('Failed to send rejection email');
+      }
+    } catch {
+      toast.error('Failed to send rejection email');
+    } finally {
+      setSendingRejectionEmail(false);
+    }
+  };
 
   const handleUpload = async (docType: string, file: File) => {
     try { setUploadingDoc(docType); const t = localStorage.getItem('authToken'); if (t) { await uploadPartnerDocument(partnerId, docType, file, t); toast.success('Uploaded'); onRefresh(); } }
@@ -925,6 +1011,34 @@ function DocumentsTab({
           </div>
         )}
       </div>
+
+      {/* Send Rejection Email */}
+      {rejectedDocs.length > 0 && partnerEmail && (
+        <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-red-800">{rejectedDocs.length} document{rejectedDocs.length > 1 ? 's' : ''} rejected</p>
+              <p className="text-xs text-red-600">Send rejection details to {partnerEmail}</p>
+            </div>
+          </div>
+          <button
+            onClick={sendRejectionEmail}
+            disabled={sendingRejectionEmail}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {sendingRejectionEmail ? (
+              <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg> Sending...</>
+            ) : (
+              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Send Rejection Email</>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Missing Documents */}
       {missing.length > 0 && (

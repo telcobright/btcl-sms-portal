@@ -739,3 +739,66 @@ export const reactivatePartnerService = async (
     return { service, success: false, error: err?.response?.data || err.message };
   }
 };
+
+// ============================================
+// Email Logs (admin "Sent Emails" view)
+// ============================================
+export interface EmailLogEntry {
+  id: number;
+  recipients: string;
+  subject: string | null;
+  body: string | null;
+  isHtml: boolean;
+  type: string | null;
+  status: 'SENT' | 'FAILED' | string;
+  errorMessage: string | null;
+  createdAt: string | null;
+}
+
+export interface EmailLogPage {
+  content: EmailLogEntry[];
+  totalElements: number;
+  totalPages: number;
+  number: number; // current page index
+  size: number;
+}
+
+export interface EmailLogFilter {
+  page?: number;
+  size?: number;
+  search?: string | null;
+  type?: string | null;
+  status?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+}
+
+export const getEmailLogs = async (
+  filter: EmailLogFilter,
+  authToken: string
+): Promise<EmailLogPage> => {
+  const empty: EmailLogPage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: filter.size || 20 };
+  try {
+    const response = await axios.post<EmailLogPage>(
+      `${API_BASE_URL}${API_ENDPOINTS.admin.getEmailLogs}`,
+      {
+        page: filter.page ?? 0,
+        size: filter.size ?? 20,
+        search: filter.search ?? null,
+        type: filter.type ?? null,
+        status: filter.status ?? null,
+        startTime: filter.startTime ?? null,
+        endTime: filter.endTime ?? null,
+      },
+      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` } }
+    );
+    const data = response.data;
+    if (data && typeof data === 'object' && 'content' in data) return data;
+    return empty;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Get Email Logs error:', { status: error.response?.status, data: error.response?.data });
+    }
+    throw error;
+  }
+};

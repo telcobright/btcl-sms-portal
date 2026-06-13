@@ -132,6 +132,7 @@ export const API_ENDPOINTS = {
     getPartners: '/partner/get-partners', // Get all partners with pagination
     getUsersByPartner: '/getUserByIdPartner', // Get users for a partner (uses AUTH_BASE_URL)
     getSubscriptionsByPartner: '/package/get-subscriptions-by-partner', // Get subscriptions for a partner
+    getEmailLogs: '/api/v1/email/logs', // Paginated/filterable list of sent emails
   },
 
 } as const;

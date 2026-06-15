@@ -106,7 +106,7 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-orange-600 via-orange-700 to-orange-800 py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primaryDark to-btcl-primaryDark py-24">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -123,11 +123,11 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
               <span className="block text-white">
-                {locale === 'en' ? 'BTCL Voice Broadcast Service' : 'বিটিসিএল ভয়েস ব্রডকাস্ট সেবা'}
+                {locale === 'en' ? 'Alaap Cloud Voice Broadcasting Service' : 'Alaap Cloud Voice Broadcasting Service'}
               </span>
             </h1>
 
-            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-orange-100/90 md:text-2xl">
+            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
               {locale === 'en'
                 ? 'Enterprise voice broadcasting platform with text-to-speech, audio file management, smart scheduling, interactive IVR, comprehensive analytics, and intelligent retry systems. Reach thousands with automated voice campaigns.'
                 : 'টেক্সট-টু-স্পিচ, অডিও ফাইল ম্যানেজমেন্ট, স্মার্ট সময়সূচী, ইন্টারঅ্যাক্টিভ IVR, ব্যাপক বিশ্লেষণ এবং বুদ্ধিমান পুনঃচেষ্টা সিস্টেম সহ এন্টারপ্রাইজ ভয়েস ব্রডকাস্টিং প্ল্যাটফর্ম। স্বয়ংক্রিয় ভয়েস ক্যাম্পেইনের মাধ্যমে হাজারো মানুষের কাছে পৌঁছান।'}
@@ -137,7 +137,7 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
               <Link href={`/${locale}/register`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-orange-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-btcl-primary shadow-2xl transition-all duration-300 hover:scale-105"
                 >
                   {locale === 'en' ? 'Start Campaign' : 'ক্যাম্পেইন শুরু করুন'}
                 </Button>
@@ -175,7 +175,7 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
             {features.map((feature, index) => (
               <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
                 <CardHeader>
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-4xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-4xl transition-all duration-300 group-hover:scale-110">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
@@ -192,13 +192,13 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-orange-600 to-orange-700 py-20">
+      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
             <h2 className="mb-6 text-4xl font-bold md:text-5xl">
               {locale === 'en' ? 'Ready to Launch Your Voice Campaign?' : 'আপনার ভয়েস ক্যাম্পেইন চালু করতে প্রস্তুত?'}
             </h2>
-            <p className="mb-10 text-xl text-orange-100">
+            <p className="mb-10 text-xl text-white">
               {locale === 'en'
                 ? 'Start reaching thousands with automated voice messages today'
                 : 'আজই স্বয়ংক্রিয় ভয়েস বার্তা দিয়ে হাজারো মানুষের কাছে পৌঁছাতে শুরু করুন'}
@@ -206,7 +206,7 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
             <Link href={`/${locale}/register`}>
               <Button
                 size="lg"
-                className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-orange-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
               >
                 {locale === 'en' ? 'Get Started Now' : 'এখনই শুরু করুন'}
               </Button>

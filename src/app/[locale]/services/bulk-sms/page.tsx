@@ -449,7 +449,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
               <Link href={`/${locale}/pricing`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-blue-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
                 >
                   {locale === 'en' ? 'Purchase Package Today' : 'আজই প্যাকেজ কিনুন'}
                 </Button>
@@ -457,7 +457,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
               <Link href={`/${locale}/contact`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl border-2 border-white bg-transparent px-8 py-4 text-lg font-semibold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-white/10"
+                  className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
                 >
                   {locale === 'en' ? 'Talk to Sales' : 'সেলসের সাথে কথা বলুন'}
                 </Button>

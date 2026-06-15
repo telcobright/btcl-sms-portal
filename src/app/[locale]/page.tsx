@@ -63,7 +63,7 @@ export default async function HomePage({ params }: HomePageProps) {
       description: locale === 'en'
         ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
         : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
-      icon: '📱',
+      icon: '/bulk_sms.png',
       features: [
         locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
         locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
@@ -72,16 +72,16 @@ export default async function HomePage({ params }: HomePageProps) {
         locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
         locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
       ],
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/bulk-sms`,
     },
     {
       id: 'hosted-pbx',
-      title: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
+      title: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
       description: locale === 'en'
         ? 'Enterprise phone system in the cloud with advanced call management, voicemail, unified communications, and seamless integration with your business tools.'
         : 'ক্লাউডে এন্টারপ্রাইজ ফোন সিস্টেম যাতে রয়েছে উন্নত কল ম্যানেজমেন্ট, ভয়েসমেল, ইউনিফাইড কমিউনিকেশন এবং আপনার ব্যবসায়িক সরঞ্জামের সাথে নিরবচ্ছিন্ন সংযোগ।',
-      icon: '☎️',
+      icon: '/alaap_cloud_ip_pbx.png',
       features: [
         locale === 'en' ? 'Unlimited virtual extensions' : 'সীমাহীন ভার্চুয়াল এক্সটেনশন',
         locale === 'en' ? 'Smart call forwarding & routing' : 'স্মার্ট কল ফরওয়ার্ডিং ও রাউটিং',
@@ -95,11 +95,11 @@ export default async function HomePage({ params }: HomePageProps) {
     },
     {
       id: 'voice-broadcast',
-      title: locale === 'en' ? 'Voice Broadcast Service' : 'ভয়েস ব্রডকাস্ট সেবা',
+      title: locale === 'en' ? 'Alaap Cloud Voice Broadcasting Service' : 'Alaap Cloud Voice Broadcasting Service',
       description: locale === 'en'
         ? 'Deliver pre-recorded voice messages to thousands simultaneously for announcements, alerts, and campaigns. Perfect for emergency notifications and marketing campaigns.'
         : 'ঘোষণা, সতর্কতা এবং প্রচারাভিযানের জন্য একযোগে হাজারো মানুষের কাছে পূর্ব-রেকর্ড করা ভয়েস বার্তা পৌঁছে দিন। জরুরি বিজ্ঞপ্তি এবং মার্কেটিং ক্যাম্পেইনের জন্য নিখুঁত।',
-      icon: '📢',
+      icon: '/alaap_voice_broadcasting.png',
       features: [
         locale === 'en' ? 'Mass voice calling (1000+ calls/min)' : 'গণ ভয়েস কলিং (১০০০+ কল/মিনিট)',
         locale === 'en' ? 'Text-to-speech in multiple languages' : 'একাধিক ভাষায় টেক্সট-টু-স্পিচ',
@@ -108,16 +108,16 @@ export default async function HomePage({ params }: HomePageProps) {
         locale === 'en' ? 'Detailed call analytics & reports' : 'বিস্তারিত কল বিশ্লেষণ ও রিপোর্ট',
         locale === 'en' ? 'Retry logic for failed calls' : 'ব্যর্থ কলের জন্য পুনঃচেষ্টা লজিক',
       ],
-      color: 'from-orange-500 to-orange-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/voice-broadcast`,
     },
     {
       id: 'contact-center',
-      title: locale === 'en' ? 'Hosted Contact Center' : 'হোস্টেড কন্টাক্ট সেন্টার',
+      title: locale === 'en' ? 'Alaap Cloud Contact Center' : 'Alaap Cloud Contact Center',
       description: locale === 'en'
         ? 'Cloud-based contact center solution with omnichannel support, IVR, intelligent call routing, and advanced analytics. Scale your customer service operations effortlessly.'
         : 'ক্লাউড-ভিত্তিক কন্টাক্ট সেন্টার সমাধান যাতে রয়েছে অমনিচ্যানেল সাপোর্ট, IVR, বুদ্ধিমান কল রাউটিং এবং উন্নত বিশ্লেষণ। আপনার গ্রাহক সেবা কার্যক্রম সহজে স্কেল করুন।',
-      icon: '🎧',
+      icon: '/alaap_cloud_contact_center.png',
       features: [
         locale === 'en' ? 'Omnichannel support (voice, chat, email)' : 'অমনিচ্যানেল সাপোর্ট (ভয়েস, চ্যাট, ইমেইল)',
         locale === 'en' ? 'Interactive IVR system' : 'ইন্টারঅ্যাক্টিভ IVR সিস্টেম',
@@ -126,7 +126,7 @@ export default async function HomePage({ params }: HomePageProps) {
         locale === 'en' ? 'Call recording & quality monitoring' : 'কল রেকর্ডিং ও মান নিরীক্ষণ',
         locale === 'en' ? 'Agent performance tracking' : 'এজেন্ট কর্মক্ষমতা ট্র্যাকিং',
       ],
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/contact-center`,
     },
   ]
@@ -136,22 +136,22 @@ export default async function HomePage({ params }: HomePageProps) {
     {
       title: t('home.features.reliable.title'),
       description: t('home.features.reliable.description'),
-      icon: '🔒',
+      icon: 'uptime',
     },
     {
       title: t('home.features.fast.title'),
       description: t('home.features.fast.description'),
-      icon: '⚡',
+      icon: 'delivery',
     },
     {
       title: t('home.features.secure.title'),
       description: t('home.features.secure.description'),
-      icon: '🛡️',
+      icon: 'secure',
     },
     {
       title: t('home.features.support.title'),
       description: t('home.features.support.description'),
-      icon: '📞',
+      icon: 'support',
     },
   ]
 
@@ -355,41 +355,48 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
   const colors = getColorClasses(service.color)
 
   return (
-      <Link href={service.href}>
-        <Card className="group h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+      <Link href={service.href} className="block h-full">
+        <Card className="group relative flex h-full flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           <CardHeader className="pb-3">
             <div className="mb-4 flex items-start justify-between">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r ${service.color} text-3xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}>
-                {service.icon}
-              </div>
-              <div className={`rounded-full bg-gradient-to-r ${service.color} px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm`}>
+              {service.icon.startsWith('/') ? (
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110">
+                  <img src={service.icon} alt="" className="h-full w-full object-contain" />
+                </div>
+              ) : (
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r ${service.color} text-3xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}>
+                  {service.icon}
+                </div>
+              )}
+              <div className={`rounded-full bg-gradient-to-r ${service.color} px-2.5 py-1 text-xs font-semibold text-white shadow-sm`}>
                 Enterprise
               </div>
             </div>
-            <CardTitle className="mb-2 text-lg font-bold">{service.title}</CardTitle>
-            <CardDescription className="text-xs leading-relaxed text-gray-600">
+            <CardTitle className="mb-2 text-xl font-bold">{service.title}</CardTitle>
+            <CardDescription className="text-sm leading-relaxed text-gray-600">
               {service.description}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="mb-4 space-y-1.5">
+          <CardContent className="flex flex-1 flex-col">
+            <div className="mb-4 space-y-2">
               {service.features.slice(0, 4).map((feature, featureIndex) => (
                   <div key={featureIndex} className="flex items-start gap-2">
-                    <div className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full ${colors.bg}`}>
-                      <svg className={`h-2.5 w-2.5 ${colors.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${colors.bg}`}>
+                      <svg className={`h-3 w-3 ${colors.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <span className="text-[11px] font-medium text-gray-700 leading-tight">{feature}</span>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{feature}</span>
                   </div>
               ))}
               {service.features.length > 4 && (
-                <div className="pt-1 text-[10px] text-gray-500">+{service.features.length - 4} more features</div>
+                <div className="pt-1 text-xs text-gray-500">+{service.features.length - 4} more features</div>
               )}
             </div>
-            <div className={`mt-4 flex items-center gap-2 text-xs font-bold ${colors.text} transition-all duration-300 group-hover:gap-3`}>
+            <div className={`mt-auto flex items-center gap-2 pt-4 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-3`}>
               Learn More
-              <svg className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -401,25 +408,65 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
 
 // Features Section Component
 function FeaturesSection({ features, t }: { features: Feature[]; t: any }) {
+  const renderIcon = (key: string) => {
+    const cls = "h-8 w-8 text-btcl-primary"
+    switch (key) {
+      case 'uptime':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12a9 9 0 1018 0 9 9 0 00-18 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 2" />
+          </svg>
+        )
+      case 'delivery':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 2L4.5 13h6L11 22l8.5-11h-6L13 2z" />
+          </svg>
+        )
+      case 'secure':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5l8-3z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+          </svg>
+        )
+      case 'support':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2.5a1 1 0 01.95.68l1.2 3.6a1 1 0 01-.27 1.05L8.6 10.9a12 12 0 005.5 5.5l1.57-1.78a1 1 0 011.05-.27l3.6 1.2a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.7 21 3 14.3 3 6V5z" />
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
-      <section className="bg-gray-50 py-20">
+      <section className="relative bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 md:text-4xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              Our Advantage
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {t('home.features.title')}
             </h2>
           </div>
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, index) => (
-                <Card key={index} className="text-center transition-all duration-300 hover:shadow-lg">
-                  <CardHeader>
-                    <div className="mb-4 text-4xl">{feature.icon}</div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-gray-600">{feature.description}</CardDescription>
-                  </CardContent>
-                </Card>
+                <div
+                    key={index}
+                    className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl"
+                >
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                    {renderIcon(feature.icon)}
+                  </div>
+                  <h3 className="mb-2 text-lg font-bold text-gray-900">{feature.title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-600">{feature.description}</p>
+                </div>
             ))}
           </div>
         </div>
@@ -441,7 +488,7 @@ function PricingPreviewSection({
   const servicePricing = [
     {
       id: 'bulk-sms',
-      icon: '📱',
+      icon: '/bulk_sms.png',
       name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস',
       price: '৳0.30',
       unit: locale === 'en' ? '/SMS' : '/এসএমএস',
@@ -451,12 +498,12 @@ function PricingPreviewSection({
         locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
         locale === 'en' ? 'API integration' : 'API ইন্টিগ্রেশন',
       ],
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-btcl-primary to-btcl-primary',
     },
     {
       id: 'hosted-pbx',
-      icon: '☎️',
-      name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
+      icon: '/alaap_cloud_ip_pbx.png',
+      name: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
       price: '৳1,200',
       unit: locale === 'en' ? '/month' : '/মাস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
@@ -469,7 +516,7 @@ function PricingPreviewSection({
     },
     {
       id: 'voice-broadcast',
-      icon: '📢',
+      icon: '/alaap_voice_broadcasting.png',
       name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট',
       price: '৳0.90',
       unit: locale === 'en' ? '/message' : '/মেসেজ',
@@ -479,11 +526,11 @@ function PricingPreviewSection({
         locale === 'en' ? 'Advanced Scheduling' : 'উন্নত সময়সূচী',
         locale === 'en' ? 'Delivery Reports' : 'ডেলিভারি রিপোর্ট',
       ],
-      color: 'from-orange-500 to-orange-600',
+      color: 'from-btcl-primary to-btcl-primary',
     },
     {
       id: 'contact-center',
-      icon: '🎧',
+      icon: '/alaap_cloud_contact_center.png',
       name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার',
       price: '৳8,500',
       unit: locale === 'en' ? '/agent/month' : '/এজেন্ট/মাস',
@@ -493,7 +540,7 @@ function PricingPreviewSection({
         locale === 'en' ? 'IVR & ACD' : 'IVR ও ACD',
         locale === 'en' ? 'Social Media Integration' : 'সোশ্যাল মিডিয়া ইন্টিগ্রেশন',
       ],
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-btcl-primary to-btcl-primary',
     },
   ]
 
@@ -501,9 +548,13 @@ function PricingPreviewSection({
       <section className="py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section Title */}
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900">{t('home.pricing.title')}</h2>
-            <p className="mx-auto max-w-2xl text-xl text-gray-600">{t('home.pricing.subtitle')}</p>
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              Pricing
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">{t('home.pricing.title')}</h2>
+            <p className="mx-auto max-w-3xl text-base text-gray-600">{t('home.pricing.subtitle')}</p>
           </div>
 
           {/* Pricing Cards */}
@@ -511,33 +562,42 @@ function PricingPreviewSection({
             {servicePricing.map((service) => (
                 <div
                     key={service.id}
-                    className="group relative rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl"
                 >
-                  <div className="mb-6 text-center">
-                    <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r ${service.color} text-4xl transition-all duration-300 group-hover:scale-110`}>
-                      {service.icon}
-                    </div>
-                    <h3 className="mb-2 text-2xl font-bold text-gray-900">{service.name}</h3>
-                    <div className="mb-2 text-sm text-gray-500">{service.description}</div>
-                    <div className="mb-4">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="mb-5 text-center">
+                    {service.icon.startsWith('/') ? (
+                      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110">
+                        <img src={service.icon} alt="" className="h-full w-full object-contain" />
+                      </div>
+                    ) : (
+                      <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r ${service.color} text-3xl transition-all duration-300 group-hover:scale-110`}>
+                        {service.icon}
+                      </div>
+                    )}
+                    <h3 className="mb-1 text-xl font-bold text-gray-900">{service.name}</h3>
+                    <div className="mb-2 text-xs text-gray-500">{service.description}</div>
+                    <div>
                       <span className="text-3xl font-bold text-gray-900">{service.price}</span>
-                      <span className="text-lg text-gray-600">{service.unit}</span>
+                      <span className="text-sm text-gray-600">{service.unit}</span>
                     </div>
                   </div>
 
-                  <div className="mb-6 space-y-3">
+                  <div className="mb-5 space-y-2">
                     {service.features.map((feature, index) => (
-                        <div key={index} className="flex items-start">
-                          <svg className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-btcl-primary" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          <span className="text-sm text-gray-600">{feature}</span>
+                        <div key={index} className="flex items-start gap-2">
+                          <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                            <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="text-sm font-medium text-gray-700 leading-snug">{feature}</span>
                         </div>
                     ))}
                   </div>
 
-                  <Link href={`/${locale}/pricing`}>
-                    <Button className={`w-full rounded-xl bg-gradient-to-r ${service.color} py-3 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
+                  <Link href={`/${locale}/pricing`} className="mt-auto block">
+                    <Button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
                       {locale === 'en' ? 'View Plans' : 'প্ল্যান দেখুন'}
                     </Button>
                   </Link>
@@ -618,11 +678,7 @@ function PricingCard({ pkg, locale }: { pkg: PricingPlan; locale: string }) {
           <div className="mb-4">
             <Link href={`/${locale}/packages/${pkg.id}/purchase`}>
               <Button
-                  className={`w-full rounded-xl px-6 py-4 text-lg font-semibold transition-all duration-300 ${
-                      pkg.popular
-                          ? 'transform bg-gradient-to-r from-orange-500 to-red-500 text-white hover:scale-105 hover:from-orange-600 hover:to-red-600 hover:shadow-lg'
-                          : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'
-                  }`}
+                  className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
               >
                 {locale === 'en' ? 'Get Started' : 'শুরু করুন'}
               </Button>

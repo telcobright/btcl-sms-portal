@@ -187,7 +187,7 @@ export default function PartnerDetailsPage() {
   };
 
   const SERVICE_LIST = [
-    { id: 'pbx', name: 'Hosted PBX', icon: '📞', color: 'blue', pending: false },
+    { id: 'pbx', name: 'Alaap Cloud IP PBX', icon: '📞', color: 'blue', pending: false },
     { id: 'hcc', name: 'Contact Center', icon: '👥', color: 'purple', pending: false },
     { id: 'vbs', name: 'Voice Broadcast', icon: '📢', color: 'orange', pending: false },
     { id: 'sms', name: 'Bulk SMS', icon: '💬', color: 'emerald', pending: false },
@@ -902,7 +902,7 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
    ═══════════════════════════════════════════════════════════════════ */
 function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subscriptions: PurchaseHistory[]; serviceStatus: ServiceStatus; partnerName: string }) {
   const services = [
-    { id: 'pbx' as const, name: 'Hosted PBX', icon: '📞', url: 'https://hippbx.btcliptelephony.gov.bd:5174/', gradient: 'from-blue-500 to-blue-600', lightBg: 'bg-blue-50 border-blue-200', lightText: 'text-blue-700' },
+    { id: 'pbx' as const, name: 'Alaap Cloud IP PBX', icon: '📞', url: 'https://hippbx.btcliptelephony.gov.bd:5174/', gradient: 'from-blue-500 to-blue-600', lightBg: 'bg-blue-50 border-blue-200', lightText: 'text-blue-700' },
     { id: 'hcc' as const, name: 'Contact Center', icon: '👥', url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`, gradient: 'from-purple-500 to-purple-600', lightBg: 'bg-purple-50 border-purple-200', lightText: 'text-purple-700' },
     { id: 'vbs' as const, name: 'Voice Broadcast', icon: '📢', url: 'https://vbs.btcliptelephony.gov.bd/', gradient: 'from-orange-500 to-orange-600', lightBg: 'bg-orange-50 border-orange-200', lightText: 'text-orange-700' },
     { id: 'sms' as const, name: 'Bulk SMS', icon: '💬', url: 'https://a2psms.btcliptelephony.gov.bd/', gradient: 'from-emerald-500 to-emerald-600', lightBg: 'bg-emerald-50 border-emerald-200', lightText: 'text-emerald-700' },

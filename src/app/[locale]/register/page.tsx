@@ -1755,7 +1755,7 @@ export default function RegisterPage() {
                     </div>
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                       <p className="text-amber-800 text-sm">
-                        <strong>Note:</strong> T&C applies to postpaid customers. Postpaid billing is applicable only for Hosted PBX purchases. All other services will remain prepaid.
+                        <strong>Note:</strong> T&C applies to postpaid customers. Postpaid billing is applicable only for Alaap Cloud IP PBX purchases. All other services will remain prepaid.
                       </p>
                     </div>
                   </div>

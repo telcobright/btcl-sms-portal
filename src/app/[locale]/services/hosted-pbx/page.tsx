@@ -123,7 +123,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
               <span className="block text-white">
-                {locale === 'en' ? 'BTCL Hosted PBX' : 'বিটিসিএল হোস্টেড PBX'}
+                {locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX'}
               </span>
             </h1>
 
@@ -206,7 +206,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
             <Link href={`/${locale}/pricing`}>
               <Button
                 size="lg"
-                className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-btcl-primary shadow-2xl transition-all duration-300 hover:scale-105"
+                className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
               >
                 {locale === 'en' ? 'Purchase Now' : 'এখনই কিনুন'}
               </Button>

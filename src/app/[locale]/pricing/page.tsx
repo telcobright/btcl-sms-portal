@@ -305,10 +305,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
   // Services
   const services = [
-    { id: 'bulk-sms', name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস', icon: '📱', color: 'blue' },
-    { id: 'hosted-pbx', name: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX', icon: '☎️', color: 'green' },
-    { id: 'voice-broadcast', name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট', icon: '📢', color: 'orange' },
-    { id: 'contact-center', name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার', icon: '🎧', color: 'purple' },
+    { id: 'bulk-sms', name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস', icon: '/bulk_sms.png', color: 'blue' },
+    { id: 'hosted-pbx', name: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX', icon: '/alaap_cloud_ip_pbx.png', color: 'green' },
+    { id: 'voice-broadcast', name: locale === 'en' ? 'Alaap Cloud Voice Broadcasting Service' : 'Alaap Cloud Voice Broadcasting Service', icon: '/alaap_voice_broadcasting.png', color: 'orange' },
+    { id: 'contact-center', name: locale === 'en' ? 'Alaap Cloud Contact Center' : 'Alaap Cloud Contact Center', icon: '/alaap_cloud_contact_center.png', color: 'purple' },
   ]
 
   // Bulk SMS slab pricing
@@ -501,22 +501,14 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
   }
 
-  const getServiceColor = (color: string) => {
-    const colors: { [key: string]: string } = {
-      blue: 'from-blue-500 to-blue-600',
-      purple: 'from-purple-500 to-purple-600',
-      green: 'from-btcl-primary to-btcl-primary',
-      orange: 'from-orange-500 to-orange-600'
-    }
-    return colors[color] || colors.blue
-  }
+  const getServiceColor = (_color: string) => 'from-btcl-primary to-btcl-primary'
 
   // Renders the action button for a prepaid card
   const renderPrepaidButton = (pkg: any, serviceId: string) => {
     if (typeof pkg.price !== 'number') {
       return (
         <Link href={`/${locale}/contact`}>
-          <Button className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${pkg.popular ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg' : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'}`}>
+          <Button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
             {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
           </Button>
         </Link>
@@ -528,7 +520,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         <div className="space-y-2">
           <Button
             onClick={() => handleBuyNow(pkg, serviceId)}
-            className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed opacity-75"
+            className="w-full py-3 px-6 rounded-xl font-semibold text-sm bg-gray-300 text-gray-600 cursor-not-allowed opacity-75"
           >
             {locale === 'en' ? 'Purchase Disabled' : 'ক্রয় নিষ্ক্রিয়'}
           </Button>
@@ -542,7 +534,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
     if (activePackages[serviceId] === pkg.id) {
       return (
-        <div className="w-full py-4 px-6 rounded-xl font-semibold text-lg text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
+        <div className="w-full py-3 px-6 rounded-xl font-semibold text-sm text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
           ✓ {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
         </div>
       )
@@ -555,7 +547,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       return (
         <Button
           onClick={() => handleBuyNow(pkg, serviceId)}
-          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${isUpgrade ? 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg' : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg'}`}
+          className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
         >
           {isUpgrade ? (locale === 'en' ? '↑ Upgrade Plan' : '↑ আপগ্রেড করুন') : (locale === 'en' ? '↓ Downgrade Plan' : '↓ ডাউনগ্রেড করুন')}
         </Button>
@@ -563,7 +555,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     }
     if (expiredPackages[serviceId] === pkg.id) {
       return (
-        <Button onClick={() => handleBuyNow(pkg, serviceId)} className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 hover:shadow-lg">
+        <Button onClick={() => handleBuyNow(pkg, serviceId)} className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
           ↻ {locale === 'en' ? 'Renew Plan' : 'প্ল্যান নবায়ন করুন'}
         </Button>
       )
@@ -571,7 +563,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     return (
       <Button
         onClick={() => handleBuyNow(pkg, serviceId)}
-        className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${pkg.popular ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg' : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'}`}
+        className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
       >
         {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
       </Button>
@@ -598,7 +590,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           {/* Section Header */}
           <div className="text-center mb-12">
             <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 ${accentClass}`}>
-              <span className="text-4xl">{icon}</span>
+              {icon.startsWith('/') ? (
+                <img src={icon} alt="" className="h-10 w-10 object-contain" />
+              ) : (
+                <span className="text-4xl">{icon}</span>
+              )}
               <h2 className="text-2xl font-bold">{locale === 'en' ? titleEn : titleBn}</h2>
               {isPostpaid && !FEATURE_FLAGS.POSTPAID_ENABLED && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300 uppercase tracking-wider">
@@ -621,30 +617,31 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           <div className={`grid gap-8 ${isSingle ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}>
             {packages.map((pkg: any) => (
               <div key={`${isPostpaid ? 'post' : 'pre'}-${serviceId}-${pkg.id}`}
-                   className={`relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 ${pkg.popular ? 'border-orange-400 border-2 transform scale-105 shadow-2xl' : ''}`}>
+                   className={`group relative bg-white rounded-2xl border border-gray-200 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl ${pkg.popular ? 'border-amber-400 border-2 shadow-2xl' : 'overflow-hidden'}`}>
+                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight transition-opacity duration-300 ${pkg.popular ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`} />
                 {pkg.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
+                    <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
                       {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
                     </div>
                   </div>
                 )}
-                <div className="px-8 py-8">
+                <div className="p-7">
                   {/* Price display */}
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">{pkg.name}</h3>
+                  <div className="text-center mb-5">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">{pkg.name}</h3>
                     <div className="mb-4">
                       {serviceId === 'voice-broadcast' ? (
                         <>
-                          <span className="text-4xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
-                          <span className="text-gray-600 text-lg">/{locale === 'en' ? 'message' : 'মেসেজ'}</span>
-                          <div className="text-sm text-gray-500 mt-2">{pkg.messages} {locale === 'en' ? 'VB Messages' : 'ভিবি মেসেজ'}</div>
+                          <span className="text-3xl font-bold text-gray-900">৳{pkg.rate.toFixed(2)}</span>
+                          <span className="text-sm text-gray-600">/{locale === 'en' ? 'message' : 'মেসেজ'}</span>
+                          <div className="text-xs text-gray-500 mt-2">{pkg.messages} {locale === 'en' ? 'VB Messages' : 'ভিবি মেসেজ'}</div>
                         </>
                       ) : serviceId === 'hosted-pbx' ? (
                         <>
-                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
-                          <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
-                          <div className="text-sm text-gray-500 mt-2">
+                          <span className="text-3xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
+                          <span className="text-sm text-gray-600">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                          <div className="text-xs text-gray-500 mt-2">
                             {typeof pkg.extensions === 'number' ? `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}` : pkg.extensions}
                           </div>
                           {isPostpaid && (
@@ -660,9 +657,9 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                       ) : (
                         /* contact-center */
                         <>
-                          <span className="text-4xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
-                          <span className="text-gray-600 text-lg">/{locale === 'en' ? 'month' : 'মাস'}</span>
-                          <div className="text-sm text-gray-500 mt-2">{typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}</div>
+                          <span className="text-3xl font-bold text-gray-900">৳{pkg.price.toLocaleString()}</span>
+                          <span className="text-sm text-gray-600">/{locale === 'en' ? 'month' : 'মাস'}</span>
+                          <div className="text-xs text-gray-500 mt-2">{typeof pkg.users === 'number' ? `${pkg.users} ${locale === 'en' ? 'Users' : 'ব্যবহারকারী'}` : pkg.users}</div>
                           {isPostpaid && (
                             <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
                               <div className="text-xs text-blue-600 font-medium mb-1">{locale === 'en' ? 'Postpaid Credit Limit' : 'পোস্টপেইড ক্রেডিট সীমা'}</div>
@@ -681,27 +678,29 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                   <div className="mb-6">
                     {isPostpaid ? (
                       !FEATURE_FLAGS.POSTPAID_ENABLED ? (
-                        <Button disabled className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed">
+                        <Button disabled className="w-full py-3 px-6 rounded-xl font-semibold text-sm bg-gray-300 text-gray-600 cursor-not-allowed">
                           {locale === 'en' ? 'Coming Soon' : 'শীঘ্রই আসছে'}
                         </Button>
                       ) : typeof pkg.price === 'number' ? (
-                        <Button onClick={() => handleApply(pkg, serviceId)} className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${pkg.popular ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg' : 'bg-btcl-primary text-white hover:bg-btcl-secondary hover:shadow-lg'}`}>
+                        <Button onClick={() => handleApply(pkg, serviceId)} className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
                           {locale === 'en' ? 'Apply' : 'আবেদন করুন'}
                         </Button>
                       ) : (
-                        <Link href={`/${locale}/contact`}><Button className="w-full py-4 px-6 rounded-xl font-semibold text-lg bg-btcl-primary text-white hover:bg-btcl-secondary">{locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}</Button></Link>
+                        <Link href={`/${locale}/contact`}><Button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">{locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}</Button></Link>
                       )
                     ) : renderPrepaidButton(pkg, serviceId)}
                   </div>
 
                   {/* Features */}
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {pkg.features.map((feature: string, index: number) => (
-                      <div key={index} className="flex items-start">
-                        <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                        </svg>
-                        <span className="text-gray-700 text-sm font-medium">{feature}</span>
+                      <div key={index} className="flex items-start gap-2">
+                        <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                          <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 leading-snug">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -724,6 +723,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         {/* Hero Section */}
         <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary">
           <div className="max-w-7xl mx-auto text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {locale === 'en' ? 'Plans & Pricing' : 'প্ল্যান ও মূল্য'}
+            </div>
             <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
               {locale === 'en' ? 'Service Pricing' : 'সেবা মূল্য'}
             </h1>
@@ -735,14 +738,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             {/* Quick jump links */}
             <div className="flex flex-wrap justify-center gap-3 mt-2">
               {[
-                { id: 'bulk-sms', icon: '📱', en: 'Bulk SMS', bn: 'বাল্ক এসএমএস' },
-                { id: 'hosted-pbx', icon: '☎️', en: 'Hosted PBX', bn: 'হোস্টেড PBX' },
-                { id: 'voice-broadcast', icon: '📢', en: 'Voice Broadcast', bn: 'ভয়েস ব্রডকাস্ট' },
-                { id: 'contact-center', icon: '🎧', en: 'Contact Center', bn: 'কন্টাক্ট সেন্টার' },
+                { id: 'bulk-sms', icon: '/bulk_sms.png', en: 'Bulk SMS', bn: 'বাল্ক এসএমএস' },
+                { id: 'hosted-pbx', icon: '/alaap_cloud_ip_pbx.png', en: 'Alaap Cloud IP PBX', bn: 'Alaap Cloud IP PBX' },
+                { id: 'voice-broadcast', icon: '/alaap_voice_broadcasting.png', en: 'Alaap Cloud Voice Broadcasting Service', bn: 'Alaap Cloud Voice Broadcasting Service' },
+                { id: 'contact-center', icon: '/alaap_cloud_contact_center.png', en: 'Alaap Cloud Contact Center', bn: 'Alaap Cloud Contact Center' },
                 { id: 'short-code', icon: '🔢', en: 'Short Code Parking', bn: 'শর্ট কোড পার্কিং' },
               ].map(s => (
                 <a key={s.id} href={`#${s.id}`} className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-sm font-medium transition-colors">
-                  <span>{s.icon}</span>
+                  {s.icon.startsWith('/') ? (
+                    <img src={s.icon} alt="" className="h-5 w-5 object-contain" />
+                  ) : (
+                    <span>{s.icon}</span>
+                  )}
                   <span>{locale === 'en' ? s.en : s.bn}</span>
                 </a>
               ))}
@@ -783,11 +790,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         {showPrepaid && (
           <>
             {/* Bulk SMS — Slab-based pricing */}
-            <div id="bulk-sms" className="py-20 bg-blue-50">
+            <div id="bulk-sms" className="py-20 bg-white">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-blue-100 text-blue-800">
-                    <span className="text-4xl">📱</span>
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
+                    <img src="/bulk_sms.png" alt="" className="h-10 w-10 object-contain" />
                     <h2 className="text-2xl font-bold">{locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস'}</h2>
                   </div>
                   <p className="text-gray-600 text-lg">{locale === 'en' ? 'Pay per message — volume-based pricing' : 'প্রতি মেসেজ মূল্য — পরিমাণ ভিত্তিক'}</p>
@@ -797,7 +804,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-blue-50">
+                      <tr className="bg-btcl-primaryLight/10">
                         <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Message Range' : 'মেসেজ পরিসীমা'}</th>
                         <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Slab' : 'স্ল্যাব'}</th>
                         <th className="px-6 py-4 text-right font-semibold text-gray-700">{locale === 'en' ? 'Rate / Message' : 'প্রতি মেসেজ রেট'}</th>
@@ -805,7 +812,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     </thead>
                     <tbody>
                       {smsSlabs.map((slab, idx) => (
-                        <tr key={idx} className={`border-t border-gray-100 ${smsCurrentSlab === slab ? 'bg-blue-50 font-semibold' : ''}`}>
+                        <tr key={idx} className={`border-t border-gray-100 ${smsCurrentSlab === slab ? 'bg-btcl-primaryLight/10 font-semibold' : ''}`}>
                           <td className="px-6 py-3 text-gray-800">
                             {slab.max === Infinity
                               ? `${slab.min.toLocaleString()}+`
@@ -836,10 +843,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           setSmsQuantity(val === '' ? '' : Math.max(1, parseInt(val) || 1))
                         }}
                         placeholder={locale === 'en' ? 'e.g. 15000' : 'যেমন ১৫০০০'}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-btcl-primary focus:border-btcl-primary outline-none"
                       />
                       {smsCurrentSlab && (
-                        <p className="mt-2 text-sm text-blue-600 font-medium">
+                        <p className="mt-2 text-sm text-btcl-primary font-medium">
                           {locale === 'en' ? `Slab: ${smsCurrentSlab.name} — ৳${smsCurrentSlab.rate.toFixed(2)}/message` : `স্ল্যাব: ${smsCurrentSlab.name} — ৳${smsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
                         </p>
                       )}
@@ -870,7 +877,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           <hr className="border-gray-200" />
                           <div className="flex justify-between text-lg font-bold">
                             <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
-                            <span className="text-blue-600">৳{smsTotal.toLocaleString()}</span>
+                            <span className="text-btcl-primary">৳{smsTotal.toLocaleString()}</span>
                           </div>
                           <div className="text-xs text-gray-500">{locale === 'en' ? 'Validity: 5 Years' : 'মেয়াদ: ৫ বছর'}</div>
 
@@ -888,7 +895,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                             </button>
                           ) : (
                             <Link href={`/${locale}/contact`} className="block">
-                              <button className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg">
+                              <button className="w-full mt-4 transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
                                 {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
                               </button>
                             </Link>
@@ -904,18 +911,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 </div>
               </div>
             </div>
-            {renderSection('hosted-pbx', '☎️',
-              'Hosted PBX', 'হোস্টেড PBX',
+            {renderSection('hosted-pbx', '/alaap_cloud_ip_pbx.png',
+              'Alaap Cloud IP PBX', 'Alaap Cloud IP PBX',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
-              pbxPackages, 'bg-white', 'bg-btcl-primaryLight/10 text-btcl-primaryDark'
+              pbxPackages, 'bg-btcl-primaryLight/5', 'bg-btcl-primaryLight/10 text-btcl-primaryDark'
             )}
             {/* Voice Broadcast — Slab-based pricing */}
-            <div id="voice-broadcast" className="py-20 bg-orange-50">
+            <div id="voice-broadcast" className="py-20 bg-white">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-orange-100 text-orange-800">
-                    <span className="text-4xl">📢</span>
-                    <h2 className="text-2xl font-bold">{locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট'}</h2>
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
+                    <img src="/alaap_voice_broadcasting.png" alt="" className="h-10 w-10 object-contain" />
+                    <h2 className="text-2xl font-bold">{locale === 'en' ? 'Alaap Cloud Voice Broadcasting Service' : 'Alaap Cloud Voice Broadcasting Service'}</h2>
                   </div>
                   <p className="text-gray-600 text-lg">{locale === 'en' ? 'Pay per message — volume-based pricing' : 'প্রতি মেসেজ মূল্য — পরিমাণ ভিত্তিক'}</p>
                 </div>
@@ -924,7 +931,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-orange-50">
+                      <tr className="bg-btcl-primaryLight/10">
                         <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Message Range' : 'মেসেজ পরিসীমা'}</th>
                         <th className="px-6 py-4 text-left font-semibold text-gray-700">{locale === 'en' ? 'Slab' : 'স্ল্যাব'}</th>
                         <th className="px-6 py-4 text-right font-semibold text-gray-700">{locale === 'en' ? 'Rate / Message' : 'প্রতি মেসেজ রেট'}</th>
@@ -932,7 +939,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     </thead>
                     <tbody>
                       {vbsSlabs.map((slab, idx) => (
-                        <tr key={idx} className={`border-t border-gray-100 ${vbsCurrentSlab === slab ? 'bg-orange-50 font-semibold' : ''}`}>
+                        <tr key={idx} className={`border-t border-gray-100 ${vbsCurrentSlab === slab ? 'bg-btcl-primaryLight/10 font-semibold' : ''}`}>
                           <td className="px-6 py-3 text-gray-800">
                             {slab.max === Infinity
                               ? `${slab.min.toLocaleString()}+`
@@ -963,10 +970,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           setVbsQuantity(val === '' ? '' : Math.max(1, parseInt(val) || 1))
                         }}
                         placeholder={locale === 'en' ? 'e.g. 15000' : 'যেমন ১৫০০০'}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-btcl-primary focus:border-btcl-primary outline-none"
                       />
                       {vbsCurrentSlab && (
-                        <p className="mt-2 text-sm text-orange-600 font-medium">
+                        <p className="mt-2 text-sm text-btcl-primary font-medium">
                           {locale === 'en' ? `Slab: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/message` : `স্ল্যাব: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
                         </p>
                       )}
@@ -997,7 +1004,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                           <hr className="border-gray-200" />
                           <div className="flex justify-between text-lg font-bold">
                             <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
-                            <span className="text-orange-600">৳{vbsTotal.toLocaleString()}</span>
+                            <span className="text-btcl-primary">৳{vbsTotal.toLocaleString()}</span>
                           </div>
                           <div className="text-xs text-gray-500">{locale === 'en' ? 'Validity: 5 Years' : 'মেয়াদ: ৫ বছর'}</div>
 
@@ -1014,7 +1021,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                               {locale === 'en' ? 'Limit Exceeded (max ৳5,00,000)' : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৳৫,০০,০০০)'}
                             </button>
                           ) : (
-                            <button onClick={handleVbsBuyNow} className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg">
+                            <button onClick={handleVbsBuyNow} className="w-full mt-4 transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
                               {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
                             </button>
                           )}
@@ -1029,10 +1036,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 </div>
               </div>
             </div>
-            {renderSection('contact-center', '🎧',
-              'Contact Center', 'কন্টাক্ট সেন্টার',
+            {renderSection('contact-center', '/alaap_cloud_contact_center.png',
+              'Alaap Cloud Contact Center', 'Alaap Cloud Contact Center',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
-              contactCenterPackages, 'bg-purple-50', 'bg-purple-100 text-purple-800'
+              contactCenterPackages, 'bg-btcl-primaryLight/5', 'bg-btcl-primaryLight/10 text-btcl-primaryDark'
             )}
           </>
         )}
@@ -1040,16 +1047,16 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         {/* ── Postpaid Sections ── */}
         {showPostpaid && (
           <>
-            {renderSection('hosted-pbx', '☎️',
-              'Hosted PBX — Postpaid', 'হোস্টেড PBX — পোস্টপেইড',
+            {renderSection('hosted-pbx', '/alaap_cloud_ip_pbx.png',
+              'Alaap Cloud IP PBX — Postpaid', 'Alaap Cloud IP PBX — পোস্টপেইড',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
-              pbxPackages, 'bg-gray-100', 'bg-btcl-primaryLight/10 text-btcl-primaryDark',
+              pbxPackages, 'bg-white', 'bg-btcl-primaryLight/10 text-btcl-primaryDark',
               true
             )}
-            {renderSection('contact-center', '🎧',
-              'Contact Center — Postpaid', 'কন্টাক্ট সেন্টার — পোস্টপেইড',
+            {renderSection('contact-center', '/alaap_cloud_contact_center.png',
+              'Alaap Cloud Contact Center — Postpaid', 'Alaap Cloud Contact Center — পোস্টপেইড',
               'Monthly subscription pricing', 'মাসিক সাবস্ক্রিপশন মূল্য',
-              contactCenterPackages, 'bg-white', 'bg-purple-100 text-purple-800',
+              contactCenterPackages, 'bg-btcl-primaryLight/5', 'bg-btcl-primaryLight/10 text-btcl-primaryDark',
               true
             )}
           </>
@@ -1060,7 +1067,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Section Header - matches other sections */}
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-blue-50 text-blue-800">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
                 <span className="text-4xl">🔢</span>
                 <h2 className="text-2xl font-bold">
                   {locale === 'en' ? 'Short Code Parking Service' : 'শর্ট কোড পার্কিং সেবা'}
@@ -1074,114 +1081,132 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             {/* Cards Grid - 3 cards matching theme */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Security Deposit */}
-              <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 p-8">
+              <div className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl p-7"><div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <div className="text-center mb-6">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-3xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-2xl transition-all duration-300 group-hover:scale-110">
                     🔒
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="mb-3 text-xl font-bold text-gray-900">
                     {locale === 'en' ? 'Security Deposit' : 'সিকিউরিটি ডিপোজিট'}
                   </h3>
                   <div className="text-sm text-gray-500 mb-4">{locale === 'en' ? 'Per Number' : 'প্রতি নম্বর'}</div>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">৳1,000</span>
+                    <span className="text-3xl font-bold text-gray-900">৳1,000</span>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Refundable deposit' : 'ফেরতযোগ্য ডিপোজিট'}</span>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'Refundable deposit' : 'ফেরতযোগ্য ডিপোজিট'}</span>
                   </div>
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
                   </div>
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Installation Charge */}
-              <div className="relative bg-white rounded-2xl shadow-lg border-2 border-blue-400 hover:shadow-2xl transition-all duration-300 transform scale-105 shadow-2xl p-8">
+              <div className="group relative bg-white rounded-2xl border-2 border-btcl-primary shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl p-7">
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
+                  <div className="bg-gradient-to-r from-btcl-primary to-btcl-primary text-white px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide shadow-lg">
                     {locale === 'en' ? 'REQUIRED' : 'আবশ্যিক'}
                   </div>
                 </div>
                 <div className="text-center mb-6">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-3xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-2xl transition-all duration-300 group-hover:scale-110">
                     🔧
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="mb-3 text-xl font-bold text-gray-900">
                     {locale === 'en' ? 'Installation Charge' : 'ইনস্টলেশন চার্জ'}
                   </h3>
                   <div className="text-sm text-gray-500 mb-4">{locale === 'en' ? 'One-Time' : 'এককালীন'}</div>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">৳5,000</span>
+                    <span className="text-3xl font-bold text-gray-900">৳5,000</span>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Full setup & configuration' : 'সম্পূর্ণ সেটআপ ও কনফিগারেশন'}</span>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'Full setup & configuration' : 'সম্পূর্ণ সেটআপ ও কনফিগারেশন'}</span>
                   </div>
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Technical integration' : 'টেকনিক্যাল ইন্টিগ্রেশন'}</span>
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'Technical integration' : 'টেকনিক্যাল ইন্টিগ্রেশন'}</span>
                   </div>
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Under IPTSP License' : 'IPTSP লাইসেন্সের অধীনে'}</span>
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'Under IPTSP License' : 'IPTSP লাইসেন্সের অধীনে'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Connection Charge */}
-              <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-300 p-8">
+              <div className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl p-7"><div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <div className="text-center mb-6">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-3xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-2xl transition-all duration-300 group-hover:scale-110">
                     🔗
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="mb-3 text-xl font-bold text-gray-900">
                     {locale === 'en' ? 'Connection Charge' : 'কানেকশন চার্জ'}
                   </h3>
                   <div className="text-sm text-gray-500 mb-4">{locale === 'en' ? 'Per Number' : 'প্রতি নম্বর'}</div>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">৳1,000</span>
+                    <span className="text-3xl font-bold text-gray-900">৳1,000</span>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'Per short code number' : 'প্রতি শর্ট কোড নম্বর'}</span>
                   </div>
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'Network activation' : 'নেটওয়ার্ক অ্যাক্টিভেশন'}</span>
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'Network activation' : 'নেটওয়ার্ক অ্যাক্টিভেশন'}</span>
                   </div>
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-btcl-primary mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    <span className="text-gray-700 text-sm font-medium">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                      <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 leading-snug">{locale === 'en' ? 'One-time payment' : 'এককালীন পেমেন্ট'}</span>
                   </div>
                 </div>
               </div>
@@ -1213,7 +1238,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 : 'আপনার নির্দিষ্ট প্রয়োজনীয়তার জন্য এন্টারপ্রাইজ মূল্য এবং কাস্টম সমাধানের জন্য আমাদের সেলস টিমের সাথে যোগাযোগ করুন।'}
             </p>
             <Link href={`/${locale}/contact`}>
-              <Button size="lg" className="bg-white text-btcl-primary hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl">
+              <Button size="lg" className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
                 {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
               </Button>
             </Link>
@@ -1265,7 +1290,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 </Button>
                 <Button
                   onClick={proceedWithPbxPurchase}
-                  className="px-6 py-3 rounded-xl font-semibold bg-btcl-primary text-white hover:bg-btcl-secondary transition-colors"
+                  className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
                 >
                   {locale === 'en' ? 'Proceed' : 'এগিয়ে যান'}
                 </Button>

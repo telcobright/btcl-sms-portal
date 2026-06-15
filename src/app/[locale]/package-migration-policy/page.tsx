@@ -48,16 +48,20 @@ const PackageMigrationPolicyPage = () => {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { en: 'Hosted IP PBX', bn: 'হোস্টেড আইপি পিবিএক্স', icon: '📞' },
-                { en: 'Contact Center', bn: 'কন্টাক্ট সেন্টার', icon: '🎧' },
-                { en: 'Voice Broadcast', bn: 'ভয়েস ব্রডকাস্ট', icon: '📢' },
-                // { en: 'Bulk SMS', bn: 'বাল্ক এসএমএস', icon: '💬' },
+                { en: 'Bulk SMS', bn: 'Bulk SMS', icon: '/bulk_sms.png' },
+                { en: 'Alaap Cloud IP PBX', bn: 'Alaap Cloud IP PBX', icon: '/alaap_cloud_ip_pbx.png' },
+                { en: 'Alaap Cloud Voice Broadcasting Service', bn: 'Alaap Cloud Voice Broadcasting Service', icon: '/alaap_voice_broadcasting.png' },
+                { en: 'Alaap Cloud Contact Center', bn: 'Alaap Cloud Contact Center', icon: '/alaap_cloud_contact_center.png' },
               ].map((service) => (
                 <div
                   key={service.en}
                   className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:shadow-md transition-shadow"
                 >
-                  <span className="text-2xl mb-2 block">{service.icon}</span>
+                  {service.icon.startsWith('/') ? (
+                    <img src={service.icon} alt="" className="mx-auto mb-2 h-10 w-10 object-contain" />
+                  ) : (
+                    <span className="text-2xl mb-2 block">{service.icon}</span>
+                  )}
                   <span className="text-sm font-medium text-gray-900">
                     {isEn ? service.en : service.bn}
                   </span>
@@ -400,13 +404,13 @@ const PackageMigrationPolicyPage = () => {
             </p>
             <div className="flex justify-center space-x-3">
               <a
-                href="mailto:mdoffice@btcl.gov.bd"
+                href="mailto:alaapcloud@btcl.gov.bd"
                 className="inline-flex items-center px-5 py-2.5 bg-btcl-primary text-white text-sm font-medium rounded-lg hover:bg-btcl-secondary transition-colors"
               >
                 {isEn ? 'Email Support' : 'ইমেইল সাপোর্ট'}
               </a>
               <a
-                href="tel:+88024831115000"
+                href="tel:+8809696996699"
                 className="inline-flex items-center px-5 py-2.5 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
               >
                 {isEn ? 'Call Us' : 'কল করুন'}

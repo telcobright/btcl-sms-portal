@@ -54,7 +54,7 @@ interface AboutPageProps {
 // Constants
 const COMPANY_VALUES: readonly CompanyValue[] = [
   {
-    icon: '🎯',
+    icon: 'excellence',
     title: { en: 'Excellence', bn: 'উৎকর্ষতা' },
     description: {
       en: 'We strive for excellence in every service we provide, ensuring the highest quality standards.',
@@ -62,7 +62,7 @@ const COMPANY_VALUES: readonly CompanyValue[] = [
     },
   },
   {
-    icon: '🤝',
+    icon: 'trust',
     title: { en: 'Trust', bn: 'আস্থা' },
     description: {
       en: 'Building lasting relationships through transparency, reliability, and consistent service delivery.',
@@ -70,7 +70,7 @@ const COMPANY_VALUES: readonly CompanyValue[] = [
     },
   },
   {
-    icon: '🚀',
+    icon: 'innovation',
     title: { en: 'Innovation', bn: 'উদ্ভাবন' },
     description: {
       en: 'Embracing cutting-edge technology to deliver modern solutions for contemporary challenges.',
@@ -78,7 +78,7 @@ const COMPANY_VALUES: readonly CompanyValue[] = [
     },
   },
   {
-    icon: '🌍',
+    icon: 'accessibility',
     title: { en: 'Accessibility', bn: 'সহজলভ্যতা' },
     description: {
       en: 'Making communication services accessible to all, bridging the digital divide across Bangladesh.',
@@ -89,19 +89,19 @@ const COMPANY_VALUES: readonly CompanyValue[] = [
 
 const WHY_CHOOSE_BTCL_ITEMS = [
   {
-    icon: '🏛️',
+    icon: 'government',
     key: 'government_backed',
   },
   {
-    icon: '⭐',
+    icon: 'star',
     key: 'experience',
   },
   {
-    icon: '🌐',
+    icon: 'globe',
     key: 'coverage',
   },
   {
-    icon: '💰',
+    icon: 'pricing',
     key: 'pricing',
   },
 ] as const
@@ -279,7 +279,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
 // Hero Section Component
 function HeroSection({ locale }: { locale: string }) {
   return (
-      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-16">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
@@ -289,17 +289,20 @@ function HeroSection({ locale }: { locale: string }) {
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-            <span className="block text-white">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {getLocalizedText(locale, 'Who We Are', 'আমরা কারা')}
+            </div>
+
+            <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
               {getLocalizedText(locale, 'About BTCL', 'বিটিসিএল সম্পর্কে')}
-            </span>
             </h1>
 
-            <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
+            <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {getLocalizedText(
                   locale,
-                  'Leading Bangladesh\'s telecommunications infrastructure, delivering enterprise-grade communication solutions including Bulk SMS, Hosted Contact Center, PBX, and Voice Broadcast services.',
-                  'বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, বাল্ক এসএমএস, হোস্টেড কন্টাক্ট সেন্টার, PBX এবং ভয়েস ব্রডকাস্ট সহ এন্টারপ্রাইজ-গ্রেড যোগাযোগ সমাধান প্রদান করছি।'
+                  'Leading Bangladesh\'s telecommunications infrastructure, delivering enterprise-grade communication solutions including Bulk SMS, Alaap Cloud Contact Center, PBX, and Voice Broadcast services.',
+                  'বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, বাল্ক এসএমএস, Alaap Cloud Contact Center, PBX এবং ভয়েস ব্রডকাস্ট সহ এন্টারপ্রাইজ-গ্রেড যোগাযোগ সমাধান প্রদান করছি।'
               )}
             </p>
 
@@ -318,12 +321,6 @@ function HeroSection({ locale }: { locale: string }) {
               </a>
             </div>
 
-            {/* Scroll Indicator */}
-            <div className="mt-16 animate-bounce">
-              <div className="mx-auto flex h-12 w-8 justify-center rounded-full border-2 border-white/40">
-                <div className="mt-3 h-4 w-1 animate-pulse rounded-full bg-white/60" />
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -342,14 +339,14 @@ function CompanyOverviewSection({ locale }: { locale: string }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2">
             <div>
-              <div className="mb-8">
-              <span className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-2 text-sm font-semibold text-btcl-primaryDark">
-                <span className="h-2 w-2 rounded-full bg-btcl-primary" />
+              <div className="mb-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
                 {getLocalizedText(locale, 'Our Mission', 'আমাদের লক্ষ্য')}
-              </span>
+              </div>
               </div>
 
-              <h2 className="mb-8 text-4xl font-bold text-gray-900 md:text-5xl">
+              <h2 className="mb-8 text-3xl font-bold text-gray-900 md:text-4xl">
                 {getLocalizedText(
                     locale,
                     'Connecting Bangladesh Through Innovation',
@@ -368,8 +365,8 @@ function CompanyOverviewSection({ locale }: { locale: string }) {
                 <p>
                   {getLocalizedText(
                       locale,
-                      'Our comprehensive suite of enterprise communication services represents our commitment to digital transformation. From Bulk SMS and Voice Broadcast to Hosted Contact Centers and PBX solutions, we offer businesses reliable, secure, and cost-effective ways to connect with their customers and streamline operations.',
-                      'আমাদের এন্টারপ্রাইজ যোগাযোগ সেবার ব্যাপক পরিসর ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকার প্রতিনিধিত্ব করে। বাল্ক এসএমএস ও ভয়েস ব্রডকাস্ট থেকে হোস্টেড কন্টাক্ট সেন্টার এবং PBX সমাধান পর্যন্ত, আমরা ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে সংযোগ এবং কার্যক্রম সুগম করার জন্য নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী উপায় প্রদান করি।'
+                      'Our comprehensive suite of enterprise communication services represents our commitment to digital transformation. From Bulk SMS and Voice Broadcast to Alaap Cloud Contact Center and PBX solutions, we offer businesses reliable, secure, and cost-effective ways to connect with their customers and streamline operations.',
+                      'আমাদের এন্টারপ্রাইজ যোগাযোগ সেবার ব্যাপক পরিসর ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকার প্রতিনিধিত্ব করে। বাল্ক এসএমএস ও ভয়েস ব্রডকাস্ট থেকে Alaap Cloud Contact Center এবং PBX সমাধান পর্যন্ত, আমরা ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে সংযোগ এবং কার্যক্রম সুগম করার জন্য নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী উপায় প্রদান করি।'
                   )}
                 </p>
               </div>
@@ -384,16 +381,50 @@ function CompanyOverviewSection({ locale }: { locale: string }) {
 
 // Why Choose BTCL Card Component
 function WhyChooseBTCLCard({ locale, items }: { locale: string; items: { icon: string; text: string }[] }) {
+  const cls = "h-6 w-6 text-btcl-primary"
+  const renderIcon = (key: string) => {
+    switch (key) {
+      case 'government':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 10l9-7 9 7M5 21V10m4 11V10m6 11V10m4 11V10" />
+          </svg>
+        )
+      case 'star':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7l3-7z" />
+          </svg>
+        )
+      case 'globe':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a14 14 0 010 18M12 3a14 14 0 000 18" />
+          </svg>
+        )
+      case 'pricing':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 1v22M17 5H9.5a3.5 3.5 0 100 7H14a3.5 3.5 0 110 7H6" />
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
       <div className="rounded-3xl bg-gradient-to-br from-gray-50 to-white p-8 shadow-2xl">
         <h3 className="mb-8 text-2xl font-bold text-gray-900">
           {getLocalizedText(locale, 'Why Choose BTCL?', 'কেন বিটিসিএল বেছে নেবেন?')}
         </h3>
-        <div className="space-y-6">
+        <div className="space-y-5">
           {items.map((item, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-btcl-primaryLight/20 text-xl">
-                  {item.icon}
+              <div key={index} className="group flex items-center gap-4">
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                  {renderIcon(item.icon)}
                 </div>
                 <span className="font-medium text-gray-700">{item.text}</span>
               </div>
@@ -408,11 +439,15 @@ function StatisticsSection({ stats, locale }: { stats: Stat[]; locale: string })
   return (
       <section className="bg-gradient-to-r from-btcl-primary to-btcl-primary py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-16 text-center text-white">
-            <h2 className="mb-4 text-4xl font-bold md:text-5xl">
+          <div className="mb-12 text-center text-white">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {getLocalizedText(locale, 'By the Numbers', 'সংখ্যার আলোকে')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold md:text-4xl">
               {getLocalizedText(locale, 'Our Impact in Numbers', 'সংখ্যায় আমাদের প্রভাব')}
             </h2>
-            <p className="text-xl text-white/90">
+            <p className="mx-auto max-w-3xl text-base text-white/90">
               {getLocalizedText(
                   locale,
                   'Trusted by thousands of businesses across Bangladesh',
@@ -449,11 +484,15 @@ function TimelineSection({ milestones, locale }: { milestones: Milestone[]; loca
   return (
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {getLocalizedText(locale, 'Timeline', 'সময়রেখা')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {getLocalizedText(locale, 'Our Journey', 'আমাদের যাত্রা')}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
                   locale,
                   'Key milestones in BTCL\'s evolution',
@@ -525,13 +564,17 @@ function TimelineItem({
 // Values Section Component
 function ValuesSection({ locale }: { locale: string }) {
   return (
-      <section className="bg-gray-50 py-24">
+      <section className="relative bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {getLocalizedText(locale, 'What Drives Us', 'যা আমাদের চালিত করে')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {getLocalizedText(locale, 'Our Core Values', 'আমাদের মূল্যবোধ')}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
                   locale,
                   'The principles that guide everything we do',
@@ -540,7 +583,7 @@ function ValuesSection({ locale }: { locale: string }) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {COMPANY_VALUES.map((value, index) => (
                 <ValueCard key={index} value={value} locale={locale} />
             ))}
@@ -552,20 +595,54 @@ function ValuesSection({ locale }: { locale: string }) {
 
 // Value Card Component
 function ValueCard({ value, locale }: { value: CompanyValue; locale: string }) {
+  const cls = "h-8 w-8 text-btcl-primary"
+  const renderIcon = (key: string) => {
+    switch (key) {
+      case 'excellence':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="12" cy="12" r="5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+          </svg>
+        )
+      case 'trust':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V8a2 2 0 014 0v3" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V9a2 2 0 014 0v6c0 3-2 5-5 5h-3l-4-3-3-1c-1-.5-1.5-1.5-1-2.5l1-2c.5-1 1.5-1.5 2.5-1L8 11h8z" />
+          </svg>
+        )
+      case 'innovation':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 3l-1 4-4 1 5 5-1 4 4-1 5 5-4 1-1 4-5-5-4 1 1-4-5-5 4-1 1-4 5 5z" />
+          </svg>
+        )
+      case 'accessibility':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a14 14 0 010 18M12 3a14 14 0 000 18" />
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
-      <Card className="group text-center transition-all duration-300 hover:scale-105 hover:shadow-xl">
-        <CardHeader>
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-4xl transition-all duration-300 group-hover:scale-110">
-            {value.icon}
-          </div>
-          <CardTitle className="text-2xl">{value.title[locale as 'en' | 'bn']}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardDescription className="text-lg text-gray-600">
-            {value.description[locale as 'en' | 'bn']}
-          </CardDescription>
-        </CardContent>
-      </Card>
+      <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+          {renderIcon(value.icon)}
+        </div>
+        <h3 className="mb-2 text-lg font-bold text-gray-900">{value.title[locale as 'en' | 'bn']}</h3>
+        <p className="text-sm leading-relaxed text-gray-600">
+          {value.description[locale as 'en' | 'bn']}
+        </p>
+      </div>
   )
 }
 
@@ -574,11 +651,15 @@ function AwardsSection({ awards, locale }: { awards: Award[]; locale: string }) 
   return (
       <section className="bg-gradient-to-r from-gray-900 to-gray-800 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center text-white">
-            <h2 className="mb-4 text-4xl font-bold md:text-5xl">
+          <div className="mb-12 text-center text-white">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {getLocalizedText(locale, 'Recognition', 'স্বীকৃতি')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold md:text-4xl">
               {getLocalizedText(locale, 'Awards & Recognition', 'পুরস্কার ও স্বীকৃতি')}
             </h2>
-            <p className="text-xl text-gray-300">
+            <p className="mx-auto max-w-3xl text-base text-gray-300">
               {getLocalizedText(
                   locale,
                   'Recognition for our commitment to excellence',
@@ -614,11 +695,15 @@ function LeadershipSection({ leaders, locale }: { leaders: Leader[]; locale: str
   return (
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {getLocalizedText(locale, 'Our People', 'আমাদের মানুষ')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {getLocalizedText(locale, 'Leadership Team', 'নেতৃত্ব দল')}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
                   locale,
                   'Meet the visionaries driving BTCL forward',

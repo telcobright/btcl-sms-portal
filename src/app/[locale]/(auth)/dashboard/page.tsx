@@ -1408,7 +1408,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
-                    Hosted PBX Portal
+                    Alaap Cloud IP PBX Portal
                   </h4>
                   <p className="text-sm text-gray-600">
                     Access your PBX dashboard
@@ -1439,7 +1439,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
-                    Hosted PBX
+                    Alaap Cloud IP PBX
                   </h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
@@ -1470,7 +1470,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-500 group-hover:text-blue-700 transition-colors">
-                    Hosted PBX
+                    Alaap Cloud IP PBX
                   </h4>
                   <p className="text-sm text-gray-400 group-hover:text-gray-600">
                     No active package

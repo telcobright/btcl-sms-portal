@@ -18,8 +18,8 @@ interface PendingProvision {
 
 const SERVICE_CONFIG: Record<string, { label: string; subtitle: string; portalLabel: string; portalUrl: string }> = {
     'hosted-pbx': {
-        label: 'Hosted PBX',
-        subtitle: 'Your Hosted PBX package is now active!',
+        label: 'Alaap Cloud IP PBX',
+        subtitle: 'Your Alaap Cloud IP PBX package is now active!',
         portalLabel: 'Go to PBX Portal',
         portalUrl: 'https://hippbx.btcliptelephony.gov.bd:5174/',
     },

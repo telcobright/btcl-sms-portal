@@ -372,8 +372,8 @@ export default function CheckoutModal({
       console.log('Starting Hosted PBX package purchase...');
       toast.loading(
         locale === 'en'
-          ? 'Activating your Hosted PBX package...'
-          : 'আপনার হোস্টেড PBX প্যাকেজ সক্রিয় হচ্ছে...',
+          ? 'Activating your Alaap Cloud IP PBX package...'
+          : 'আপনার Alaap Cloud IP PBX প্যাকেজ সক্রিয় হচ্ছে...',
         { id: 'pbx-purchase' }
       );
 
@@ -422,7 +422,7 @@ export default function CheckoutModal({
       );
 
       if (!response.ok) {
-        throw new Error('Failed to purchase Hosted PBX package');
+        throw new Error('Failed to purchase Alaap Cloud IP PBX package');
       }
 
       const data = await response.json();
@@ -430,8 +430,8 @@ export default function CheckoutModal({
 
       toast.success(
         locale === 'en'
-          ? 'Hosted PBX package activated successfully!'
-          : 'হোস্টেড PBX প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
+          ? 'Alaap Cloud IP PBX package activated successfully!'
+          : 'Alaap Cloud IP PBX প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
         { id: 'pbx-purchase' }
       );
 
@@ -582,7 +582,7 @@ export default function CheckoutModal({
       const getProductDetails = () => {
         switch (serviceType) {
           case 'hosted-pbx':
-            return { name: `Hosted PBX - ${pkg.name}`, category: 'Hosted PBX' };
+            return { name: `Alaap Cloud IP PBX - ${pkg.name}`, category: 'Alaap Cloud IP PBX' };
           case 'voice-broadcast':
             return {
               name: `Voice Broadcast - ${pkg.name}`,

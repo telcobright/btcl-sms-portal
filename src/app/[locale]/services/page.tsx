@@ -35,7 +35,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       description: locale === 'en'
         ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
         : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
-      icon: '📱',
+      icon: '/bulk_sms.png',
       features: [
         locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
         locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
@@ -44,16 +44,16 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
         locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
         locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
       ],
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/bulk-sms`,
     },
     {
       id: 'hosted-pbx',
-      title: locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX',
+      title: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
       description: locale === 'en'
         ? 'Enterprise phone system in the cloud with advanced call management, voicemail, unified communications, and seamless integration with your business tools.'
         : 'ক্লাউডে এন্টারপ্রাইজ ফোন সিস্টেম যাতে রয়েছে উন্নত কল ম্যানেজমেন্ট, ভয়েসমেল, ইউনিফাইড কমিউনিকেশন এবং আপনার ব্যবসায়িক সরঞ্জামের সাথে নিরবচ্ছিন্ন সংযোগ।',
-      icon: '☎️',
+      icon: '/alaap_cloud_ip_pbx.png',
       features: [
         locale === 'en' ? 'Unlimited virtual extensions' : 'সীমাহীন ভার্চুয়াল এক্সটেনশন',
         locale === 'en' ? 'Smart call forwarding & routing' : 'স্মার্ট কল ফরওয়ার্ডিং ও রাউটিং',
@@ -67,11 +67,11 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
     },
     {
       id: 'voice-broadcast',
-      title: locale === 'en' ? 'Voice Broadcast Service' : 'ভয়েস ব্রডকাস্ট সেবা',
+      title: locale === 'en' ? 'Alaap Cloud Voice Broadcasting Service' : 'Alaap Cloud Voice Broadcasting Service',
       description: locale === 'en'
         ? 'Deliver pre-recorded voice messages to thousands simultaneously for announcements, alerts, and campaigns. Perfect for emergency notifications and marketing campaigns.'
         : 'ঘোষণা, সতর্কতা এবং প্রচারাভিযানের জন্য একযোগে হাজারো মানুষের কাছে পূর্ব-রেকর্ড করা ভয়েস বার্তা পৌঁছে দিন। জরুরি বিজ্ঞপ্তি এবং মার্কেটিং ক্যাম্পেইনের জন্য নিখুঁত।',
-      icon: '📢',
+      icon: '/alaap_voice_broadcasting.png',
       features: [
         locale === 'en' ? 'Mass voice calling (1000+ calls/min)' : 'গণ ভয়েস কলিং (১০০০+ কল/মিনিট)',
         locale === 'en' ? 'Text-to-speech in multiple languages' : 'একাধিক ভাষায় টেক্সট-টু-স্পিচ',
@@ -80,16 +80,16 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
         locale === 'en' ? 'Detailed call analytics & reports' : 'বিস্তারিত কল বিশ্লেষণ ও রিপোর্ট',
         locale === 'en' ? 'Retry logic for failed calls' : 'ব্যর্থ কলের জন্য পুনঃচেষ্টা লজিক',
       ],
-      color: 'from-orange-500 to-orange-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/voice-broadcast`,
     },
     {
       id: 'contact-center',
-      title: locale === 'en' ? 'Hosted Contact Center' : 'হোস্টেড কন্টাক্ট সেন্টার',
+      title: locale === 'en' ? 'Alaap Cloud Contact Center' : 'Alaap Cloud Contact Center',
       description: locale === 'en'
         ? 'Cloud-based contact center solution with omnichannel support, IVR, intelligent call routing, and advanced analytics. Scale your customer service operations effortlessly.'
         : 'ক্লাউড-ভিত্তিক কন্টাক্ট সেন্টার সমাধান যাতে রয়েছে অমনিচ্যানেল সাপোর্ট, IVR, বুদ্ধিমান কল রাউটিং এবং উন্নত বিশ্লেষণ। আপনার গ্রাহক সেবা কার্যক্রম সহজে স্কেল করুন।',
-      icon: '🎧',
+      icon: '/alaap_cloud_contact_center.png',
       features: [
         locale === 'en' ? 'Omnichannel support (voice, chat, email)' : 'অমনিচ্যানেল সাপোর্ট (ভয়েস, চ্যাট, ইমেইল)',
         locale === 'en' ? 'Interactive IVR system' : 'ইন্টারঅ্যাক্টিভ IVR সিস্টেম',
@@ -98,7 +98,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
         locale === 'en' ? 'Call recording & quality monitoring' : 'কল রেকর্ডিং ও মান নিরীক্ষণ',
         locale === 'en' ? 'Agent performance tracking' : 'এজেন্ট কর্মক্ষমতা ট্র্যাকিং',
       ],
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/contact-center`,
     },
   ]
@@ -108,7 +108,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-16">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -117,20 +117,16 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 backdrop-blur-sm">
-              <span className="text-2xl">🚀</span>
-              <span className="font-semibold">
-                {getLocalizedText(locale, 'Enterprise Solutions', 'এন্টারপ্রাইজ সমাধান')}
-              </span>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {getLocalizedText(locale, 'Enterprise Solutions', 'এন্টারপ্রাইজ সমাধান')}
             </div>
 
-            <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              <span className="block text-white">
-                {getLocalizedText(locale, 'Our Services', 'আমাদের সেবাসমূহ')}
-              </span>
+            <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
+              {getLocalizedText(locale, 'Our Services', 'আমাদের সেবাসমূহ')}
             </h1>
 
-            <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
+            <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {getLocalizedText(
                 locale,
                 'Comprehensive enterprise communication solutions designed to meet all your business needs with reliability and performance.',
@@ -138,11 +134,6 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
               )}
             </p>
 
-            <div className="mt-16 animate-bounce">
-              <div className="mx-auto flex h-12 w-8 justify-center rounded-full border-2 border-white/40">
-                <div className="mt-3 h-4 w-1 animate-pulse rounded-full bg-white/60" />
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -150,17 +141,15 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       {/* Services Grid Section */}
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <div className="mb-8">
-              <span className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-2 text-sm font-semibold text-btcl-primaryDark">
-                <span className="h-2 w-2 rounded-full bg-btcl-primary" />
-                {getLocalizedText(locale, 'Complete Suite', 'সম্পূর্ণ সমাধান')}
-              </span>
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {getLocalizedText(locale, 'Complete Suite', 'সম্পূর্ণ সমাধান')}
             </div>
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {getLocalizedText(locale, 'Enterprise Communication Services', 'এন্টারপ্রাইজ যোগাযোগ সেবা')}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
                 locale,
                 'Discover our comprehensive range of services designed to power your business',
@@ -169,7 +158,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {services.map((service, index) => (
               <ServiceCard key={service.id} service={service} index={index} />
             ))}
@@ -197,13 +186,20 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
   const colors = getColorClasses(service.color)
 
   return (
-    <Link href={service.href}>
-      <Card className="group h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+    <Link href={service.href} className="block h-full">
+      <Card className="group relative flex h-full flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         <CardHeader className="pb-4">
           <div className="mb-6 flex items-start justify-between">
-            <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r ${service.color} text-4xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}>
-              {service.icon}
-            </div>
+            {service.icon.startsWith('/') ? (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-300 group-hover:scale-110">
+                <img src={service.icon} alt="" className="h-full w-full object-contain" />
+              </div>
+            ) : (
+              <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r ${service.color} text-4xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}>
+                {service.icon}
+              </div>
+            )}
             <div className={`rounded-full bg-gradient-to-r ${service.color} px-3 py-1 text-xs font-semibold text-white shadow-sm`}>
               Enterprise
             </div>
@@ -213,7 +209,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
             {service.description}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-1 flex-col">
           <div className="mb-6 space-y-2.5">
             {service.features.map((feature, featureIndex) => (
               <div key={featureIndex} className="flex items-start gap-2.5">
@@ -226,7 +222,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
               </div>
             ))}
           </div>
-          <div className={`mt-6 flex items-center gap-2 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-4`}>
+          <div className={`mt-auto flex items-center gap-2 pt-6 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-4`}>
             Learn More
             <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

@@ -106,7 +106,7 @@ export default async function ContactCenterPage({ params }: ContactCenterPagePro
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primaryDark to-btcl-primaryDark py-24">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -123,11 +123,11 @@ export default async function ContactCenterPage({ params }: ContactCenterPagePro
 
             <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
               <span className="block text-white">
-                {locale === 'en' ? 'BTCL Hosted Contact Center' : 'বিটিসিএল হোস্টেড কন্টাক্ট সেন্টার'}
+                {locale === 'en' ? 'Alaap Cloud Contact Center' : 'Alaap Cloud Contact Center'}
               </span>
             </h1>
 
-            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-purple-100/90 md:text-2xl">
+            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
               {locale === 'en'
                 ? 'Complete cloud contact center with WebRTC browser calling, integrated CRM, email, case management, and comprehensive customer interaction tracking. No software installation required.'
                 : 'WebRTC ব্রাউজার কলিং, ইন্টিগ্রেটেড CRM, ইমেইল, কেস ম্যানেজমেন্ট এবং ব্যাপক গ্রাহক ইন্টারঅ্যাকশন ট্র্যাকিং সহ সম্পূর্ণ ক্লাউড কন্টাক্ট সেন্টার। কোন সফটওয়্যার ইনস্টলেশন প্রয়োজন নেই।'}
@@ -137,7 +137,7 @@ export default async function ContactCenterPage({ params }: ContactCenterPagePro
               <Link href={`/${locale}/register`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-purple-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-btcl-primary shadow-2xl transition-all duration-300 hover:scale-105"
                 >
                   {locale === 'en' ? 'Request Demo' : 'ডেমো অনুরোধ করুন'}
                 </Button>
@@ -175,7 +175,7 @@ export default async function ContactCenterPage({ params }: ContactCenterPagePro
             {features.map((feature, index) => (
               <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
                 <CardHeader>
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-500 to-purple-600 text-4xl transition-all duration-300 group-hover:scale-110">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-4xl transition-all duration-300 group-hover:scale-110">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
@@ -192,13 +192,13 @@ export default async function ContactCenterPage({ params }: ContactCenterPagePro
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-purple-600 to-purple-700 py-20">
+      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
             <h2 className="mb-6 text-4xl font-bold md:text-5xl">
               {locale === 'en' ? 'Start with Browser-Based Calling Today' : 'আজই ব্রাউজার-ভিত্তিক কলিং শুরু করুন'}
             </h2>
-            <p className="mb-10 text-xl text-purple-100">
+            <p className="mb-10 text-xl text-white">
               {locale === 'en'
                 ? 'Experience WebRTC calling with integrated CRM - no downloads, no installations, just click and call'
                 : 'ইন্টিগ্রেটেড CRM সহ WebRTC কলিং অভিজ্ঞতা নিন - কোন ডাউনলোড নেই, কোন ইনস্টলেশন নেই, শুধু ক্লিক এবং কল করুন'}
@@ -206,7 +206,7 @@ export default async function ContactCenterPage({ params }: ContactCenterPagePro
             <Link href={`/${locale}/contact`}>
               <Button
                 size="lg"
-                className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-purple-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
               >
                 {locale === 'en' ? 'Request a Demo' : 'ডেমো অনুরোধ করুন'}
               </Button>

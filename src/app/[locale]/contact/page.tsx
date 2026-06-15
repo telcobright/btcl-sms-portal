@@ -4,12 +4,6 @@ import Link from 'next/link';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/Card';
 import { ContactForm } from '@/components/forms/ContactForm';
 
 // Types
@@ -41,14 +35,6 @@ interface ContactPageProps {
     locale: string;
   }>;
 }
-
-// Constants
-const SUPPORT_CHANNEL_COLORS = {
-  email: 'bg-blue-100 text-blue-600',
-  phone: 'bg-btcl-primaryLight/20 text-btcl-primary',
-  chat: 'bg-purple-100 text-purple-600',
-} as const;
-
 
 // Utility functions
 const getLocalizedText = (
@@ -236,7 +222,7 @@ export default async function ContactPage({ params }: ContactPageProps) {
 // Hero Section Component
 function HeroSection({ locale }: { locale: string }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-24">
+    <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-16">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
@@ -247,20 +233,16 @@ function HeroSection({ locale }: { locale: string }) {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center text-white">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 backdrop-blur-sm">
-            <span className="text-2xl">📞</span>
-            <span className="font-semibold">
-              {getLocalizedText(locale, '24/7 Support', '২৪/৭ সাপোর্ট')}
-            </span>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+            {getLocalizedText(locale, '24/7 Support', '২৪/৭ সাপোর্ট')}
           </div>
 
-          <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-            <span className="block text-white">
-              {getLocalizedText(locale, 'Contact Us', 'যোগাযোগ করুন')}
-            </span>
+          <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
+            {getLocalizedText(locale, 'Contact Us', 'যোগাযোগ করুন')}
           </h1>
 
-          <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
+          <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
             {getLocalizedText(
               locale,
               'Get in touch with our team for support, sales inquiries, or any questions about our SMS services.',
@@ -268,39 +250,6 @@ function HeroSection({ locale }: { locale: string }) {
             )}
           </p>
 
-          {/* Contact Stats */}
-          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-              <div className="text-3xl font-bold">24/7</div>
-              <div className="text-white/90">
-                {getLocalizedText(
-                  locale,
-                  'Support Available',
-                  'সাপোর্ট উপলব্ধ'
-                )}
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-              <div className="text-3xl font-bold">&lt;1hr</div>
-              <div className="text-white/90">
-                {getLocalizedText(
-                  locale,
-                  'Response Time',
-                  'প্রতিক্রিয়ার সময়'
-                )}
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-              <div className="text-3xl font-bold">98%</div>
-              <div className="text-white/90">
-                {getLocalizedText(
-                  locale,
-                  'Satisfaction Rate',
-                  'সন্তুষ্টির হার'
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -348,12 +297,12 @@ function SupportChannelsSection({
   return (
     <div>
       <div className="mb-8">
-        <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
-          <span className="h-2 w-2 rounded-full bg-blue-500" />
+        <div className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
           {getLocalizedText(locale, 'Support Channels', 'সাপোর্ট চ্যানেল')}
-        </span>
+        </div>
       </div>
-      <h2 className="mb-8 text-3xl font-bold text-gray-900">
+      <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
         {getLocalizedText(
           locale,
           'How to Reach Us',
@@ -371,42 +320,60 @@ function SupportChannelsSection({
 
 // Support Channel Card Component
 function SupportChannelCard({ channel }: { channel: SupportChannel }) {
+  const renderIcon = () => {
+    const cls = "h-7 w-7 text-btcl-primary";
+    switch (channel.color) {
+      case 'email':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        );
+      case 'phone':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2.5a1 1 0 01.95.68l1.2 3.6a1 1 0 01-.27 1.05L8.6 10.9a12 12 0 005.5 5.5l1.57-1.78a1 1 0 011.05-.27l3.6 1.2a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.7 21 3 14.3 3 6V5z" />
+          </svg>
+        );
+      case 'chat':
+        return (
+          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a8 8 0 01-11.6 7.15L4 21l1.85-5.4A8 8 0 1121 12z" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <Card className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <div
-            className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl ${
-              SUPPORT_CHANNEL_COLORS[
-                channel.color as keyof typeof SUPPORT_CHANNEL_COLORS
-              ]
-            }`}
-          >
-            {channel.icon}
-          </div>
-          <div className="flex-1">
-            <h3 className="mb-2 text-xl font-bold text-gray-900">
-              {channel.title}
-            </h3>
-            <p className="mb-4 text-gray-600">{channel.description}</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-btcl-primary" />
-                <span className="font-medium text-btcl-primary">
-                  {channel.contact}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-btcl-primary" />
-                <span className="text-sm text-gray-500">
-                  {channel.response}
-                </span>
-              </div>
+    <div className="rounded-2xl border border-gray-200 bg-white p-7">
+      <div className="flex items-start gap-4">
+        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
+          {renderIcon()}
+        </div>
+        <div className="flex-1">
+          <h3 className="mb-2 text-xl font-bold text-gray-900">
+            {channel.title}
+          </h3>
+          <p className="mb-4 text-sm leading-relaxed text-gray-600">{channel.description}</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-btcl-primary" />
+              <span className="text-sm font-medium text-btcl-primary">
+                {channel.contact}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-btcl-primary" />
+              <span className="text-xs text-gray-500">
+                {channel.response}
+              </span>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -422,20 +389,20 @@ function OfficeLocationsFullSection({
     <section className="bg-gray-50 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
-          <div className="mb-8">
-            <span className="inline-flex items-center gap-2 rounded-full bg-purple-100 px-4 py-2 text-sm font-semibold text-purple-700">
-              <span className="h-2 w-2 rounded-full bg-purple-500" />
+          <div className="mb-4">
+            <div className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
               {getLocalizedText(locale, 'Office Locations', 'অফিসের অবস্থান')}
-            </span>
+            </div>
           </div>
-          <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
             {getLocalizedText(
               locale,
               'Visit Our Offices',
               'আমাদের অফিস ভিজিট করুন'
             )}
           </h2>
-          <p className="mx-auto max-w-2xl text-xl text-gray-600">
+          <p className="mx-auto max-w-3xl text-base text-gray-600">
             {getLocalizedText(
               locale,
               "Find us at our locations across Bangladesh. We're here to serve you better.",
@@ -458,27 +425,29 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
   const isPrimary = office.type === 'primary';
 
   return (
-    <Card
-      className={`group transition-all duration-300 hover:scale-105 hover:shadow-xl ${
+    <div
+      className={`group relative ${isPrimary ? '' : 'overflow-hidden'} rounded-2xl border bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl ${
         isPrimary
-          ? 'border-2 border-btcl-primary/20 bg-gradient-to-br from-btcl-primaryLight/10 to-white'
-          : ''
+          ? 'border-2 border-btcl-primary bg-gradient-to-br from-btcl-primaryLight/10 to-white'
+          : 'border-gray-200'
       }`}
     >
-      <CardContent className="p-6">
-        <div className="mb-4 flex items-start justify-between">
-          <h3 className="text-xl font-bold text-gray-900">{office.name}</h3>
-          {isPrimary && (
-            <span className="rounded-full bg-btcl-primary px-3 py-1 text-xs font-semibold text-white">
-              PRIMARY
-            </span>
-          )}
-        </div>
-        <div className="space-y-3">
+      {!isPrimary && (
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      )}
+      <div className="mb-4 flex items-start justify-between">
+        <h3 className="text-xl font-bold text-gray-900">{office.name}</h3>
+        {isPrimary && (
+          <span className="rounded-full bg-btcl-primary px-3 py-1 text-xs font-semibold text-white">
+            PRIMARY
+          </span>
+        )}
+      </div>
+      <div className="space-y-2">
           <div className="flex items-start gap-3">
             <div className="flex h-6 w-6 items-center justify-center">
               <svg
-                className="h-5 w-5 text-gray-400"
+                className="h-5 w-5 text-btcl-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -497,13 +466,13 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
                 />
               </svg>
             </div>
-            <span className="text-gray-700">{office.address}</span>
+            <span className="text-sm text-gray-700 leading-snug">{office.address}</span>
           </div>
           {idx !== 0 && (
             <div className="flex items-center gap-3">
               <div className="flex h-6 w-6 items-center justify-center">
                 <svg
-                  className="h-5 w-5 text-gray-400"
+                  className="h-5 w-5 text-btcl-primary"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -516,7 +485,7 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
                   />
                 </svg>
               </div>
-              <span className="font-medium text-btcl-primary">
+              <span className="text-sm font-medium text-btcl-primary">
                 {office.phone}
               </span>
             </div>
@@ -525,7 +494,7 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
             <div className="flex items-center gap-3">
               <div className="flex h-6 w-6 items-center justify-center">
                 <svg
-                  className="h-5 w-5 text-gray-400"
+                  className="h-5 w-5 text-btcl-primary"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -538,7 +507,7 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
                   />
                 </svg>
               </div>
-              <span className="font-medium text-btcl-primary">
+              <span className="text-sm font-medium text-btcl-primary">
                 {office.email}
               </span>
             </div>
@@ -546,7 +515,7 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
           <div className="flex items-center gap-3">
             <div className="flex h-6 w-6 items-center justify-center">
               <svg
-                className="h-5 w-5 text-gray-400"
+                className="h-5 w-5 text-btcl-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -559,11 +528,10 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
                 />
               </svg>
             </div>
-            <span className="text-gray-700">{office.hours}</span>
+            <span className="text-sm text-gray-700">{office.hours}</span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 
@@ -574,19 +542,19 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="mb-20 text-center">
           <div className="mb-8">
-            <span className="inline-flex items-center gap-2 rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700">
-              <span className="h-2 w-2 rounded-full bg-yellow-500" />
+            <div className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
               {getLocalizedText(locale, 'Help Center', 'সাহায্য কেন্দ্র')}
-            </span>
+            </div>
           </div>
-          <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
             {getLocalizedText(
               locale,
               'Frequently Asked Questions',
               'প্রায়শই জিজ্ঞাসিত প্রশ্ন'
             )}
           </h2>
-          <p className="text-xl text-gray-600">
+          <p className="mx-auto max-w-3xl text-base text-gray-600">
             {getLocalizedText(
               locale,
               'Quick answers to common questions',
@@ -601,8 +569,8 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
           ))}
         </div>
 
-        <div className="mt-12 text-center">
-          <p className="mb-6 text-lg text-gray-600">
+        <div className="mt-10 text-center">
+          <p className="mb-4 text-base text-gray-600">
             {getLocalizedText(
               locale,
               "Can't find what you're looking for?",
@@ -610,7 +578,7 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
             )}
           </p>
           <Link href="#contact-form">
-            <Button className="transform rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary px-8 py-3 font-semibold transition-all duration-300 hover:scale-105">
+            <Button className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
               {getLocalizedText(
                 locale,
                 'Contact Support',
@@ -627,24 +595,20 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
 // FAQ Card Component
 function FAQCard({ faq }: { faq: FAQ }) {
   return (
-    <Card className="transition-all duration-300 hover:shadow-lg">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-start gap-4 text-xl">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-btcl-primary text-sm font-bold text-white">
-            Q
-          </div>
-          {faq.question}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-start gap-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-btcl-primaryLight/20 text-sm font-bold text-btcl-primaryDark">
-            A
-          </div>
-          <p className="text-gray-600">{faq.answer}</p>
+    <div className="rounded-2xl border border-gray-200 bg-white p-7">
+      <div className="mb-3 flex items-start gap-3">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primary text-sm font-bold text-white">
+          Q
         </div>
-      </CardContent>
-    </Card>
+        <h3 className="pt-0.5 text-xl font-bold text-gray-900 leading-snug">{faq.question}</h3>
+      </div>
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/20 text-sm font-bold text-btcl-primaryDark">
+          A
+        </div>
+        <p className="pt-0.5 text-sm leading-relaxed text-gray-600">{faq.answer}</p>
+      </div>
+    </div>
   );
 }
 

@@ -26,15 +26,15 @@
         "description": "Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway."
       },
       "contact_center": {
-        "title": "Hosted Contact Center",
+        "title": "Alaap Cloud Contact Center",
         "description": "Cloud-based contact center solution with omnichannel support, IVR, call routing, and advanced analytics."
       },
       "hosted_pbx": {
-        "title": "Hosted PBX",
+        "title": "Alaap Cloud IP PBX",
         "description": "Enterprise phone system in the cloud with advanced call management, voicemail, and unified communications."
       },
       "voice_broadcast": {
-        "title": "Voice Broadcast Service",
+        "title": "Alaap Cloud Voice Broadcasting Service",
         "description": "Deliver pre-recorded voice messages to thousands simultaneously for announcements, alerts, and campaigns."
       }
     },

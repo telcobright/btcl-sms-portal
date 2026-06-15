@@ -42,8 +42,8 @@ export default function LoginPage() {
         email: ""
     })
     const [isLoading, setIsLoading] = useState(false)
-    const [captchaA, setCaptchaA] = useState(() => Math.floor(Math.random() * 20) + 1)
-    const [captchaB, setCaptchaB] = useState(() => Math.floor(Math.random() * 20) + 1)
+    const [captchaA, setCaptchaA] = useState(0)
+    const [captchaB, setCaptchaB] = useState(0)
     const [captchaAnswer, setCaptchaAnswer] = useState('')
     const [captchaError, setCaptchaError] = useState('')
     const [captchaAttempts, setCaptchaAttempts] = useState(0)
@@ -57,6 +57,11 @@ export default function LoginPage() {
         setCaptchaAnswer('')
         setCaptchaError('')
     }
+
+    useEffect(() => {
+        generateCaptcha()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const startLockCountdown = (until: number) => {
         if (lockTimerRef.current) clearInterval(lockTimerRef.current)

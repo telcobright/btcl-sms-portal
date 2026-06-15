@@ -31,7 +31,7 @@ export default function OrderSummary({
   const getServiceName = () => {
     switch (serviceType) {
       case 'hosted-pbx':
-        return locale === 'en' ? 'Hosted PBX' : 'হোস্টেড PBX';
+        return locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX';
       case 'contact-center':
         return locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার';
       case 'voice-broadcast':

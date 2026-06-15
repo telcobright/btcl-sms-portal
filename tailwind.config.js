@@ -35,6 +35,9 @@ module.exports = {
       },
       fontFamily: {
         bengali: ['Kalpurush', 'SolaimanLipi', 'sans-serif'],
+      },
+      maxWidth: {
+        '7xl': '1364px',
       }
     },
   },

@@ -49,9 +49,9 @@ export function Footer() {
               <Image
                 src="/btcllogo.png"
                 alt="BTCL Logo"
-                width={140}
-                height={112}
-                className="h-14 w-auto object-contain"
+                width={192}
+                height={192}
+                className="h-24 w-auto object-contain"
               />
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-gray-600">
@@ -91,10 +91,10 @@ export function Footer() {
               {locale === 'en' ? 'Services' : 'সেবাসমূহ'}
             </h3>
             <ul className="space-y-3">
-              <li><Link href={`/${locale}/services/bulk-sms`} className={linkBase}>{locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা'}</Link></li>
               <li><Link href={`/${locale}/services/hosted-pbx`} className={linkBase}>Alaap Cloud IP PBX</Link></li>
               <li><Link href={`/${locale}/services/voice-broadcast`} className={linkBase}>Alaap Cloud Voice Broadcasting</Link></li>
               <li><Link href={`/${locale}/services/contact-center`} className={linkBase}>Alaap Cloud Contact Center</Link></li>
+              <li><Link href={`/${locale}/services/bulk-sms`} className={linkBase}>{locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা'}</Link></li>
             </ul>
           </div>
 

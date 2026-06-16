@@ -4,6 +4,8 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { AggregatorTag } from '@/components/ui/AggregatorTag'
+import { Building2 } from 'lucide-react'
 
 // Types
 interface Feature {
@@ -20,6 +22,7 @@ interface Service {
   features: string[]
   color: string
   href: string
+  restricted?: boolean
 }
 
 interface PricingPlan {
@@ -55,26 +58,8 @@ export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params
   const t = await getTranslations()
 
-  // Services data - Order: Bulk SMS, Hosted PBX, Voice Broadcast, Contact Center
+  // Services data - Order: Alaap Cloud IP PBX, Voice Broadcast, Contact Center, Bulk SMS
   const services: Service[] = [
-    {
-      id: 'bulk-sms',
-      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
-      description: locale === 'en'
-        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
-        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
-      icon: '/bulk_sms.png',
-      features: [
-        locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
-        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
-        locale === 'en' ? 'RESTful API integration' : 'RESTful API ইন্টিগ্রেশন',
-        locale === 'en' ? 'Real-time delivery reports' : 'রিয়েল-টাইম ডেলিভারি রিপোর্ট',
-        locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
-        locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
-      ],
-      color: 'from-btcl-primary to-btcl-primary',
-      href: `/${locale}/services/bulk-sms`,
-    },
     {
       id: 'hosted-pbx',
       title: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
@@ -128,6 +113,25 @@ export default async function HomePage({ params }: HomePageProps) {
       ],
       color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/contact-center`,
+    },
+    {
+      id: 'bulk-sms',
+      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
+      description: locale === 'en'
+        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
+        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
+      icon: '/bulk_sms.png',
+      features: [
+        locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
+        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
+        locale === 'en' ? 'RESTful API integration' : 'RESTful API ইন্টিগ্রেশন',
+        locale === 'en' ? 'Real-time delivery reports' : 'রিয়েল-টাইম ডেলিভারি রিপোর্ট',
+        locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
+        locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
+      ],
+      color: 'from-btcl-primary to-btcl-primary',
+      href: `/${locale}/services/bulk-sms`,
+      restricted: true,
     },
   ]
 
@@ -252,7 +256,7 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
           <div className="text-center">
             {/* Badge/Announcement */}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-base text-white/90 backdrop-blur-sm transition-all duration-300 hover:bg-white/15">
-              <span className="text-btcl-primaryLight text-xl">✨</span>
+              <Building2 className="h-5 w-5 text-btcl-primaryLight" strokeWidth={2} />
               <span>Enterprise Communication Solutions</span>
             </div>
 
@@ -394,7 +398,12 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
                 <div className="pt-1 text-xs text-gray-500">+{service.features.length - 4} more features</div>
               )}
             </div>
-            <div className={`mt-auto flex items-center gap-2 pt-4 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-3`}>
+            {service.restricted && (
+              <div className="mt-auto pt-4">
+                <AggregatorTag />
+              </div>
+            )}
+            <div className={`${service.restricted ? 'mt-3' : 'mt-auto'} flex items-center gap-2 pt-4 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-3`}>
               Learn More
               <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -443,7 +452,7 @@ function FeaturesSection({ features, t }: { features: Feature[]; t: any }) {
   }
 
   return (
-      <section className="relative bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white py-24">
+      <section className="relative bg-btcl-primaryLight/5 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
@@ -484,22 +493,8 @@ function PricingPreviewSection({
   locale: string
   t: any
 }) {
-  // Pricing data - Order: Bulk SMS, Hosted PBX, Voice Broadcast, Contact Center
+  // Pricing data - Order: Alaap Cloud IP PBX, Voice Broadcast, Contact Center, Bulk SMS
   const servicePricing = [
-    {
-      id: 'bulk-sms',
-      icon: '/bulk_sms.png',
-      name: locale === 'en' ? 'Bulk SMS' : 'বাল্ক এসএমএস',
-      price: '৳0.30',
-      unit: locale === 'en' ? '/SMS' : '/এসএমএস',
-      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
-      features: [
-        locale === 'en' ? '99.9% delivery rate' : '৯৯.৯% ডেলিভারি হার',
-        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
-        locale === 'en' ? 'API integration' : 'API ইন্টিগ্রেশন',
-      ],
-      color: 'from-btcl-primary to-btcl-primary',
-    },
     {
       id: 'hosted-pbx',
       icon: '/alaap_cloud_ip_pbx.png',
@@ -517,7 +512,7 @@ function PricingPreviewSection({
     {
       id: 'voice-broadcast',
       icon: '/alaap_voice_broadcasting.png',
-      name: locale === 'en' ? 'Voice Broadcast' : 'ভয়েস ব্রডকাস্ট',
+      name: locale === 'en' ? 'Alaap Cloud Voice Broadcasting Service' : 'Alaap Cloud Voice Broadcasting Service',
       price: '৳0.90',
       unit: locale === 'en' ? '/message' : '/মেসেজ',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
@@ -531,7 +526,7 @@ function PricingPreviewSection({
     {
       id: 'contact-center',
       icon: '/alaap_cloud_contact_center.png',
-      name: locale === 'en' ? 'Contact Center' : 'কন্টাক্ট সেন্টার',
+      name: locale === 'en' ? 'Alaap Cloud Contact Center' : 'Alaap Cloud Contact Center',
       price: '৳8,500',
       unit: locale === 'en' ? '/agent/month' : '/এজেন্ট/মাস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
@@ -539,6 +534,20 @@ function PricingPreviewSection({
         locale === 'en' ? 'Audio Call & Chat' : 'অডিও কল ও চ্যাট',
         locale === 'en' ? 'IVR & ACD' : 'IVR ও ACD',
         locale === 'en' ? 'Social Media Integration' : 'সোশ্যাল মিডিয়া ইন্টিগ্রেশন',
+      ],
+      color: 'from-btcl-primary to-btcl-primary',
+    },
+    {
+      id: 'bulk-sms',
+      icon: '/bulk_sms.png',
+      name: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
+      price: '৳0.30',
+      unit: locale === 'en' ? '/SMS' : '/এসএমএস',
+      description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
+      features: [
+        locale === 'en' ? '99.9% delivery rate' : '৯৯.৯% ডেলিভারি হার',
+        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
+        locale === 'en' ? 'API integration' : 'API ইন্টিগ্রেশন',
       ],
       color: 'from-btcl-primary to-btcl-primary',
     },
@@ -596,7 +605,12 @@ function PricingPreviewSection({
                     ))}
                   </div>
 
-                  <Link href={`/${locale}/pricing`} className="mt-auto block">
+                  {service.id === 'bulk-sms' && (
+                    <div className="mt-auto mb-3 flex justify-center">
+                      <AggregatorTag />
+                    </div>
+                  )}
+                  <Link href={`/${locale}/pricing`} className={`${service.id === 'bulk-sms' ? '' : 'mt-auto '}block`}>
                     <Button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
                       {locale === 'en' ? 'View Plans' : 'প্ল্যান দেখুন'}
                     </Button>

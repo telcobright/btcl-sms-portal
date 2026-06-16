@@ -1,10 +1,10 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
+import { ContactForm } from '@/components/forms/ContactForm';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
-import { ContactForm } from '@/components/forms/ContactForm';
 
 // Types
 interface Office {
@@ -245,11 +245,10 @@ function HeroSection({ locale }: { locale: string }) {
           <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
             {getLocalizedText(
               locale,
-              'Get in touch with our team for support, sales inquiries, or any questions about our SMS services.',
-              'সাপোর্ট, বিক্রয় অনুসন্ধান বা আমাদের এসএমএস সেবা সম্পর্কে যেকোনো প্রশ্নের জন্য আমাদের দলের সাথে যোগাযোগ করুন।'
+              'Get in touch with our team for support, sales inquiries, or any questions about our services.',
+              'সাপোর্ট, বিক্রয় অনুসন্ধান বা আমাদের সেবা সম্পর্কে যেকোনো প্রশ্নের জন্য আমাদের দলের সাথে যোগাযোগ করুন।'
             )}
           </p>
-
         </div>
       </div>
     </section>
@@ -321,24 +320,54 @@ function SupportChannelsSection({
 // Support Channel Card Component
 function SupportChannelCard({ channel }: { channel: SupportChannel }) {
   const renderIcon = () => {
-    const cls = "h-7 w-7 text-btcl-primary";
+    const cls = 'h-7 w-7 text-btcl-primary';
     switch (channel.color) {
       case 'email':
         return (
-          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <svg
+            className={cls}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            />
           </svg>
         );
       case 'phone':
         return (
-          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2.5a1 1 0 01.95.68l1.2 3.6a1 1 0 01-.27 1.05L8.6 10.9a12 12 0 005.5 5.5l1.57-1.78a1 1 0 011.05-.27l3.6 1.2a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.7 21 3 14.3 3 6V5z" />
+          <svg
+            className={cls}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6a2 2 0 012-2h2.5a1 1 0 01.95.68l1.2 3.6a1 1 0 01-.27 1.05L8.6 10.9a12 12 0 005.5 5.5l1.57-1.78a1 1 0 011.05-.27l3.6 1.2a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.7 21 3 14.3 3 6V5z"
+            />
           </svg>
         );
       case 'chat':
         return (
-          <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a8 8 0 01-11.6 7.15L4 21l1.85-5.4A8 8 0 1121 12z" />
+          <svg
+            className={cls}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 12a8 8 0 01-11.6 7.15L4 21l1.85-5.4A8 8 0 1121 12z"
+            />
           </svg>
         );
       default:
@@ -356,7 +385,9 @@ function SupportChannelCard({ channel }: { channel: SupportChannel }) {
           <h3 className="mb-2 text-xl font-bold text-gray-900">
             {channel.title}
           </h3>
-          <p className="mb-4 text-sm leading-relaxed text-gray-600">{channel.description}</p>
+          <p className="mb-4 text-sm leading-relaxed text-gray-600">
+            {channel.description}
+          </p>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-btcl-primary" />
@@ -366,9 +397,7 @@ function SupportChannelCard({ channel }: { channel: SupportChannel }) {
             </div>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-btcl-primary" />
-              <span className="text-xs text-gray-500">
-                {channel.response}
-              </span>
+              <span className="text-xs text-gray-500">{channel.response}</span>
             </div>
           </div>
         </div>
@@ -444,74 +473,33 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
         )}
       </div>
       <div className="space-y-2">
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 items-center justify-center">
-              <svg
-                className="h-5 w-5 text-btcl-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </div>
-            <span className="text-sm text-gray-700 leading-snug">{office.address}</span>
+        <div className="flex items-start gap-3">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <svg
+              className="h-5 w-5 text-btcl-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
           </div>
-          {idx !== 0 && (
-            <div className="flex items-center gap-3">
-              <div className="flex h-6 w-6 items-center justify-center">
-                <svg
-                  className="h-5 w-5 text-btcl-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-btcl-primary">
-                {office.phone}
-              </span>
-            </div>
-          )}
-          {idx !== 1 && (
-            <div className="flex items-center gap-3">
-              <div className="flex h-6 w-6 items-center justify-center">
-                <svg
-                  className="h-5 w-5 text-btcl-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-btcl-primary">
-                {office.email}
-              </span>
-            </div>
-          )}
+          <span className="text-sm text-gray-700 leading-snug">
+            {office.address}
+          </span>
+        </div>
+        {idx !== 0 && (
           <div className="flex items-center gap-3">
             <div className="flex h-6 w-6 items-center justify-center">
               <svg
@@ -524,13 +512,56 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                 />
               </svg>
             </div>
-            <span className="text-sm text-gray-700">{office.hours}</span>
+            <span className="text-sm font-medium text-btcl-primary">
+              {office.phone}
+            </span>
           </div>
+        )}
+        {idx !== 1 && (
+          <div className="flex items-center gap-3">
+            <div className="flex h-6 w-6 items-center justify-center">
+              <svg
+                className="h-5 w-5 text-btcl-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-medium text-btcl-primary">
+              {office.email}
+            </span>
+          </div>
+        )}
+        <div className="flex items-center gap-3">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <svg
+              className="h-5 w-5 text-btcl-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <span className="text-sm text-gray-700">{office.hours}</span>
         </div>
+      </div>
     </div>
   );
 }
@@ -600,15 +631,18 @@ function FAQCard({ faq }: { faq: FAQ }) {
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primary text-sm font-bold text-white">
           Q
         </div>
-        <h3 className="pt-0.5 text-xl font-bold text-gray-900 leading-snug">{faq.question}</h3>
+        <h3 className="pt-0.5 text-xl font-bold text-gray-900 leading-snug">
+          {faq.question}
+        </h3>
       </div>
       <div className="flex items-start gap-3">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/20 text-sm font-bold text-btcl-primaryDark">
           A
         </div>
-        <p className="pt-0.5 text-sm leading-relaxed text-gray-600">{faq.answer}</p>
+        <p className="pt-0.5 text-sm leading-relaxed text-gray-600">
+          {faq.answer}
+        </p>
       </div>
     </div>
   );
 }
-

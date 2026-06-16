@@ -4,6 +4,7 @@ import React from 'react'
 import { useLocale } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { AggregatorTag } from '@/components/ui/AggregatorTag'
 
 const PackageMigrationPolicyPage = () => {
   const locale = useLocale()
@@ -65,6 +66,11 @@ const PackageMigrationPolicyPage = () => {
                   <span className="text-sm font-medium text-gray-900">
                     {isEn ? service.en : service.bn}
                   </span>
+                  {service.en === 'Bulk SMS' && (
+                    <div className="mt-3 flex justify-center">
+                      <AggregatorTag />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

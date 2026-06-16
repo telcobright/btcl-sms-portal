@@ -128,8 +128,8 @@ const useAboutPageData = (locale: string) => {
       event: getLocalizedText(locale, 'Enterprise Services Launch', 'এন্টারপ্রাইজ সেবা চালু'),
       description: getLocalizedText(
           locale,
-          'Introduced SMS Gateway and PBX solutions for businesses',
-          'ব্যবসার জন্য এসএমএস গেটওয়ে এবং PBX সমাধান চালু'
+          'Introduced Bulk SMS Service and Alaap Cloud IP PBX solutions for businesses',
+          'ব্যবসার জন্য Bulk SMS Service এবং Alaap Cloud IP PBX সমাধান চালু'
       ),
     },
     {
@@ -137,8 +137,8 @@ const useAboutPageData = (locale: string) => {
       event: getLocalizedText(locale, 'Communication Suite Expansion', 'যোগাযোগ সমাধান সম্প্রসারণ'),
       description: getLocalizedText(
           locale,
-          'Launched Contact Center and Voice Broadcast services',
-          'কন্টাক্ট সেন্টার এবং ভয়েস ব্রডকাস্ট সেবা চালু'
+          'Launched Alaap Cloud Contact Center and Alaap Cloud Voice Broadcasting Service',
+          'Alaap Cloud Contact Center এবং Alaap Cloud Voice Broadcasting Service চালু'
       ),
     },
     {
@@ -242,8 +242,8 @@ const useAboutPageData = (locale: string) => {
       position: getLocalizedText(locale, 'Head of Enterprise Services', 'এন্টারপ্রাইজ সেবা বিভাগের প্রধান'),
       bio: getLocalizedText(
           locale,
-          'Overseeing delivery excellence across SMS, Contact Center, PBX, and Voice Broadcast services with unwavering focus on customer satisfaction.',
-          'গ্রাহক সন্তুষ্টির উপর অবিচল মনোনিবেশ সহ এসএমএস, কন্টাক্ট সেন্টার, PBX এবং ভয়েস ব্রডকাস্ট সেবায় শ্রেষ্ঠত্ব তদারকি।'
+          'Overseeing delivery excellence across Bulk SMS Service, Alaap Cloud Contact Center, Alaap Cloud IP PBX, and Alaap Cloud Voice Broadcasting Service with unwavering focus on customer satisfaction.',
+          'গ্রাহক সন্তুষ্টির উপর অবিচল মনোনিবেশ সহ Bulk SMS Service, Alaap Cloud Contact Center, Alaap Cloud IP PBX এবং Alaap Cloud Voice Broadcasting Service-এ শ্রেষ্ঠত্ব তদারকি।'
       ),
       initial: 'A',
     },
@@ -301,8 +301,8 @@ function HeroSection({ locale }: { locale: string }) {
             <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {getLocalizedText(
                   locale,
-                  'Leading Bangladesh\'s telecommunications infrastructure, delivering enterprise-grade communication solutions including Bulk SMS, Alaap Cloud Contact Center, PBX, and Voice Broadcast services.',
-                  'বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, বাল্ক এসএমএস, Alaap Cloud Contact Center, PBX এবং ভয়েস ব্রডকাস্ট সহ এন্টারপ্রাইজ-গ্রেড যোগাযোগ সমাধান প্রদান করছি।'
+                  'Leading Bangladesh\'s telecommunications infrastructure, delivering enterprise-grade communication solutions including Bulk SMS Service, Alaap Cloud Contact Center, Alaap Cloud IP PBX, and Alaap Cloud Voice Broadcasting Service.',
+                  'বাংলাদেশের টেলিযোগাযোগ অবকাঠামোর নেতৃত্ব দিচ্ছি, Bulk SMS Service, Alaap Cloud Contact Center, Alaap Cloud IP PBX এবং Alaap Cloud Voice Broadcasting Service সহ এন্টারপ্রাইজ-গ্রেড যোগাযোগ সমাধান প্রদান করছি।'
               )}
             </p>
 
@@ -365,8 +365,8 @@ function CompanyOverviewSection({ locale }: { locale: string }) {
                 <p>
                   {getLocalizedText(
                       locale,
-                      'Our comprehensive suite of enterprise communication services represents our commitment to digital transformation. From Bulk SMS and Voice Broadcast to Alaap Cloud Contact Center and PBX solutions, we offer businesses reliable, secure, and cost-effective ways to connect with their customers and streamline operations.',
-                      'আমাদের এন্টারপ্রাইজ যোগাযোগ সেবার ব্যাপক পরিসর ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকার প্রতিনিধিত্ব করে। বাল্ক এসএমএস ও ভয়েস ব্রডকাস্ট থেকে Alaap Cloud Contact Center এবং PBX সমাধান পর্যন্ত, আমরা ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে সংযোগ এবং কার্যক্রম সুগম করার জন্য নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী উপায় প্রদান করি।'
+                      'Our comprehensive suite of enterprise communication services represents our commitment to digital transformation. From Bulk SMS Service and Alaap Cloud Voice Broadcasting Service to Alaap Cloud Contact Center and Alaap Cloud IP PBX solutions, we offer businesses reliable, secure, and cost-effective ways to connect with their customers and streamline operations.',
+                      'আমাদের এন্টারপ্রাইজ যোগাযোগ সেবার ব্যাপক পরিসর ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকার প্রতিনিধিত্ব করে। Bulk SMS Service ও Alaap Cloud Voice Broadcasting Service থেকে Alaap Cloud Contact Center এবং Alaap Cloud IP PBX সমাধান পর্যন্ত, আমরা ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে সংযোগ এবং কার্যক্রম সুগম করার জন্য নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী উপায় প্রদান করি।'
                   )}
                 </p>
               </div>

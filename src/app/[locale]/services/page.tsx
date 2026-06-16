@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { AggregatorTag } from '@/components/ui/AggregatorTag'
 
 interface Service {
   id: string
@@ -12,6 +13,7 @@ interface Service {
   features: string[]
   color: string
   href: string
+  restricted?: boolean
 }
 
 interface ServicesPageProps {
@@ -27,26 +29,8 @@ const getLocalizedText = (locale: string, enText: string, bnText: string): strin
 export default async function ServicesPage({ params }: ServicesPageProps) {
   const { locale } = await params
 
-  // Services - Order: Bulk SMS, Hosted PBX, Voice Broadcast, Contact Center
+  // Services - Order: Alaap Cloud IP PBX, Voice Broadcast, Contact Center, Bulk SMS
   const services: Service[] = [
-    {
-      id: 'bulk-sms',
-      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
-      description: locale === 'en'
-        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
-        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
-      icon: '/bulk_sms.png',
-      features: [
-        locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
-        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
-        locale === 'en' ? 'RESTful API integration' : 'RESTful API ইন্টিগ্রেশন',
-        locale === 'en' ? 'Real-time delivery reports' : 'রিয়েল-টাইম ডেলিভারি রিপোর্ট',
-        locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
-        locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
-      ],
-      color: 'from-btcl-primary to-btcl-primary',
-      href: `/${locale}/services/bulk-sms`,
-    },
     {
       id: 'hosted-pbx',
       title: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
@@ -100,6 +84,25 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       ],
       color: 'from-btcl-primary to-btcl-primary',
       href: `/${locale}/services/contact-center`,
+    },
+    {
+      id: 'bulk-sms',
+      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
+      description: locale === 'en'
+        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
+        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
+      icon: '/bulk_sms.png',
+      features: [
+        locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
+        locale === 'en' ? 'Custom sender ID' : 'কাস্টম প্রেরক আইডি',
+        locale === 'en' ? 'RESTful API integration' : 'RESTful API ইন্টিগ্রেশন',
+        locale === 'en' ? 'Real-time delivery reports' : 'রিয়েল-টাইম ডেলিভারি রিপোর্ট',
+        locale === 'en' ? 'Schedule & bulk upload' : 'সময়সূচী ও বাল্ক আপলোড',
+        locale === 'en' ? '24/7 technical support' : '২৪/৭ প্রযুক্তিগত সহায়তা',
+      ],
+      color: 'from-btcl-primary to-btcl-primary',
+      href: `/${locale}/services/bulk-sms`,
+      restricted: true,
     },
   ]
 
@@ -222,7 +225,12 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
               </div>
             ))}
           </div>
-          <div className={`mt-auto flex items-center gap-2 pt-6 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-4`}>
+          {service.restricted && (
+            <div className="mt-auto pt-6">
+              <AggregatorTag />
+            </div>
+          )}
+          <div className={`${service.restricted ? 'mt-3' : 'mt-auto'} flex items-center gap-2 pt-6 text-sm font-bold ${colors.text} transition-all duration-300 group-hover:gap-4`}>
             Learn More
             <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

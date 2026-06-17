@@ -217,7 +217,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
           <div className="text-center text-white">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
               <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-              {locale === 'en' ? 'Enterprise SMS Solution' : 'এন্টারপ্রাইজ এসএমএস সমাধান'}
+              {locale === 'en' ? 'Corporate SMS Solution' : 'কর্পোরেট এসএমএস সমাধান'}
             </div>
 
             <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
@@ -398,8 +398,8 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             <p className="mx-auto max-w-3xl text-base text-white/90">
               {getLocalizedText(
                 locale,
-                'Built for scale with enterprise-grade performance',
-                'এন্টারপ্রাইজ-গ্রেড কর্মক্ষমতা সহ স্কেলের জন্য নির্মিত'
+                'Built for scale with corporate-grade performance',
+                'কর্পোরেট-গ্রেড কর্মক্ষমতা সহ স্কেলের জন্য নির্মিত'
               )}
             </p>
           </div>

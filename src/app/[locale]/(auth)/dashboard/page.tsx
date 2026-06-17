@@ -39,7 +39,7 @@ const PACKAGE_NAMES: Record<number, string> = {
   9134: 'PBX Gold',
   9135: 'VBS Basic',
   9136: 'VBS Standard',
-  9137: 'VBS Enterprise',
+  9137: 'VBS Corporate',
   9140: 'Contact Center Basic',
 };
 

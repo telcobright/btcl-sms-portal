@@ -99,7 +99,7 @@ const server = http.createServer((req, res) => {
           Reach millions of customers instantly with Bangladesh's most reliable SMS gateway
         </p>
         <p class="text-lg text-green-100 mb-10 max-w-2xl mx-auto">
-          Send promotional messages, alerts, and notifications to your customers with our enterprise-grade bulk SMS service. Trusted by thousands of businesses across Bangladesh.
+          Send promotional messages, alerts, and notifications to your customers with our corporate-grade bulk SMS service. Trusted by thousands of businesses across Bangladesh.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <button class="bg-white text-btcl-primary hover:bg-gray-100 font-medium py-3 px-6 rounded-md text-lg transition-colors">

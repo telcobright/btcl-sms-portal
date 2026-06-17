@@ -316,7 +316,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const smsSlabs = [
     { min: 1, max: 20000, rate: 0.32, packageId: 'basic', name: locale === 'en' ? 'Basic' : 'বেসিক' },
     { min: 20001, max: 50000, rate: 0.30, packageId: 'standard', name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড' },
-    { min: 50001, max: Infinity, rate: 0.28, packageId: 'enterprise', name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ' },
+    { min: 50001, max: Infinity, rate: 0.28, packageId: 'enterprise', name: locale === 'en' ? 'Corporate' : 'কর্পোরেট' },
   ]
 
   const [smsQuantity, setSmsQuantity] = useState<number | ''>('')
@@ -436,7 +436,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const vbsSlabs = [
     { min: 1, max: 20000, rate: 0.90, packageId: 'basic', packageIdInt: 9135, name: locale === 'en' ? 'Basic' : 'বেসিক' },
     { min: 20001, max: 50000, rate: 0.80, packageId: 'standard', packageIdInt: 9136, name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড' },
-    { min: 50001, max: Infinity, rate: 0.60, packageId: 'enterprise', packageIdInt: 9137, name: locale === 'en' ? 'Enterprise' : 'এন্টারপ্রাইজ' },
+    { min: 50001, max: Infinity, rate: 0.60, packageId: 'enterprise', packageIdInt: 9137, name: locale === 'en' ? 'Corporate' : 'কর্পোরেট' },
   ]
 
   const [vbsQuantity, setVbsQuantity] = useState<number | ''>('')
@@ -733,8 +733,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             </h1>
             <p className="text-xl text-white mb-8 max-w-3xl mx-auto">
               {locale === 'en'
-                ? 'Transparent pricing for all our enterprise communication services. Choose the plan that fits your business needs.'
-                : 'আমাদের সমস্ত এন্টারপ্রাইজ যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
+                ? 'Transparent pricing for all our corporate communication services. Choose the plan that fits your business needs.'
+                : 'আমাদের সমস্ত কর্পোরেট যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
             </p>
             {/* Quick jump links */}
             <div className="flex flex-wrap justify-center gap-3 mt-2">
@@ -1238,8 +1238,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             </h2>
             <p className="text-xl text-white mb-8">
               {locale === 'en'
-                ? 'Contact our sales team for enterprise pricing and custom solutions tailored to your specific requirements.'
-                : 'আপনার নির্দিষ্ট প্রয়োজনীয়তার জন্য এন্টারপ্রাইজ মূল্য এবং কাস্টম সমাধানের জন্য আমাদের সেলস টিমের সাথে যোগাযোগ করুন।'}
+                ? 'Contact our sales team for corporate pricing and custom solutions tailored to your specific requirements.'
+                : 'আপনার নির্দিষ্ট প্রয়োজনীয়তার জন্য কর্পোরেট মূল্য এবং কাস্টম সমাধানের জন্য আমাদের সেলস টিমের সাথে যোগাযোগ করুন।'}
             </p>
             <Link href={`/${locale}/contact`}>
               <Button size="lg" className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">

@@ -162,7 +162,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
               {locale === 'en' ? 'PBX Capabilities' : 'PBX সক্ষমতা'}
             </div>
             <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
-              {locale === 'en' ? 'Enterprise-Grade PBX Features' : 'এন্টারপ্রাইজ-গ্রেড PBX বৈশিষ্ট্য'}
+              {locale === 'en' ? 'Corporate-Grade PBX Features' : 'কর্পোরেট-গ্রেড PBX বৈশিষ্ট্য'}
             </h2>
             <p className="mx-auto max-w-3xl text-base text-gray-600">
               {locale === 'en'
@@ -198,8 +198,8 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
             </h2>
             <p className="mx-auto mb-8 max-w-3xl text-base text-white/90">
               {locale === 'en'
-                ? 'Experience enterprise-grade telephony with unlimited extensions, advanced features, and no hardware investment required'
-                : 'সীমাহীন এক্সটেনশন, উন্নত বৈশিষ্ট্য এবং কোন হার্ডওয়্যার বিনিয়োগ প্রয়োজন ছাড়াই এন্টারপ্রাইজ-গ্রেড টেলিফোনি অভিজ্ঞতা নিন'}
+                ? 'Experience corporate-grade telephony with unlimited extensions, advanced features, and no hardware investment required'
+                : 'সীমাহীন এক্সটেনশন, উন্নত বৈশিষ্ট্য এবং কোন হার্ডওয়্যার বিনিয়োগ প্রয়োজন ছাড়াই কর্পোরেট-গ্রেড টেলিফোনি অভিজ্ঞতা নিন'}
             </p>
             <Link href={`/${locale}/pricing`}>
               <Button

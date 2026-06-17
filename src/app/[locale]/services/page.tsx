@@ -35,8 +35,8 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       id: 'hosted-pbx',
       title: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
       description: locale === 'en'
-        ? 'Enterprise phone system in the cloud with advanced call management, voicemail, unified communications, and seamless integration with your business tools.'
-        : 'ক্লাউডে এন্টারপ্রাইজ ফোন সিস্টেম যাতে রয়েছে উন্নত কল ম্যানেজমেন্ট, ভয়েসমেল, ইউনিফাইড কমিউনিকেশন এবং আপনার ব্যবসায়িক সরঞ্জামের সাথে নিরবচ্ছিন্ন সংযোগ।',
+        ? 'Corporate phone system in the cloud with advanced call management, voicemail, unified communications, and seamless integration with your business tools.'
+        : 'ক্লাউডে কর্পোরেট ফোন সিস্টেম যাতে রয়েছে উন্নত কল ম্যানেজমেন্ট, ভয়েসমেল, ইউনিফাইড কমিউনিকেশন এবং আপনার ব্যবসায়িক সরঞ্জামের সাথে নিরবচ্ছিন্ন সংযোগ।',
       icon: '/alaap_cloud_ip_pbx.png',
       features: [
         locale === 'en' ? 'Unlimited virtual extensions' : 'সীমাহীন ভার্চুয়াল এক্সটেনশন',
@@ -89,8 +89,8 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
       id: 'bulk-sms',
       title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
       description: locale === 'en'
-        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
-        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
+        ? 'Send promotional messages, alerts, and notifications to millions with our corporate-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
+        : 'আমাদের কর্পোরেট-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
       icon: '/bulk_sms.png',
       features: [
         locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
@@ -122,7 +122,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
           <div className="text-center text-white">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
               <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-              {getLocalizedText(locale, 'Enterprise Solutions', 'এন্টারপ্রাইজ সমাধান')}
+              {getLocalizedText(locale, 'Corporate Solutions', 'কর্পোরেট সমাধান')}
             </div>
 
             <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
@@ -132,8 +132,8 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
             <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {getLocalizedText(
                 locale,
-                'Comprehensive enterprise communication solutions designed to meet all your business needs with reliability and performance.',
-                'নির্ভরযোগ্যতা এবং কর্মক্ষমতা সহ আপনার সমস্ত ব্যবসায়িক প্রয়োজন মেটাতে ডিজাইন করা ব্যাপক এন্টারপ্রাইজ যোগাযোগ সমাধান।'
+                'Comprehensive corporate communication solutions designed to meet all your business needs with reliability and performance.',
+                'নির্ভরযোগ্যতা এবং কর্মক্ষমতা সহ আপনার সমস্ত ব্যবসায়িক প্রয়োজন মেটাতে ডিজাইন করা ব্যাপক কর্পোরেট যোগাযোগ সমাধান।'
               )}
             </p>
 
@@ -150,7 +150,7 @@ export default async function ServicesPage({ params }: ServicesPageProps) {
               {getLocalizedText(locale, 'Complete Suite', 'সম্পূর্ণ সমাধান')}
             </div>
             <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
-              {getLocalizedText(locale, 'Enterprise Communication Services', 'এন্টারপ্রাইজ যোগাযোগ সেবা')}
+              {getLocalizedText(locale, 'Corporate Communication Services', 'কর্পোরেট যোগাযোগ সেবা')}
             </h2>
             <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
@@ -204,7 +204,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
               </div>
             )}
             <div className={`rounded-full bg-gradient-to-r ${service.color} px-3 py-1 text-xs font-semibold text-white shadow-sm`}>
-              Enterprise
+              Corporate
             </div>
           </div>
           <CardTitle className="mb-3 text-2xl font-bold">{service.title}</CardTitle>

@@ -53,7 +53,7 @@ export function Header() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href={`/${locale}`} className="flex items-center">
+              <Link href={`/${locale}`} className="flex items-center gap-3">
                 <Image
                     src="/btcllogo.png"
                     alt="BTCL Logo"
@@ -62,6 +62,9 @@ export function Header() {
                     className="h-14 w-auto object-contain"
                     priority
                 />
+                <span className="text-xl font-bold text-white tracking-tight">
+                  Alaap Cloud
+                </span>
               </Link>
             </div>
 

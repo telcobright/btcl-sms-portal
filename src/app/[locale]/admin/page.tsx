@@ -117,7 +117,7 @@ export default function AdminDashboard() {
   const services = [
     { k: 'pbx', name: 'Alaap Cloud IP PBX', icon: '📞', grad: 'from-blue-500 to-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', s: svc.pbx, portal: 'https://hippbx.btcliptelephony.gov.bd:5174/', plans: 'Bronze / Silver / Gold' },
     { k: 'hcc', name: 'Contact Center', icon: '👥', grad: 'from-purple-500 to-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', s: svc.hcc, portal: 'https://hcc.btcliptelephony.gov.bd/', plans: 'Basic (per agent)' },
-    { k: 'vbs', name: 'Voice Broadcast', icon: '📢', grad: 'from-orange-500 to-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', s: svc.vbs, portal: 'https://vbs.btcliptelephony.gov.bd/', plans: 'Basic / Standard / Enterprise' },
+    { k: 'vbs', name: 'Voice Broadcast', icon: '📢', grad: 'from-orange-500 to-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', s: svc.vbs, portal: 'https://vbs.btcliptelephony.gov.bd/', plans: 'Basic / Standard / Corporate' },
     { k: 'sms', name: 'Bulk SMS', icon: '💬', grad: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', s: EMPTY, portal: BULK_SMS_PORTAL_URL, plans: 'Slab-based pricing' },
   ];
 

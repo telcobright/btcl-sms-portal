@@ -64,8 +64,8 @@ export default async function HomePage({ params }: HomePageProps) {
       id: 'hosted-pbx',
       title: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
       description: locale === 'en'
-        ? 'Enterprise phone system in the cloud with advanced call management, voicemail, unified communications, and seamless integration with your business tools.'
-        : 'ক্লাউডে এন্টারপ্রাইজ ফোন সিস্টেম যাতে রয়েছে উন্নত কল ম্যানেজমেন্ট, ভয়েসমেল, ইউনিফাইড কমিউনিকেশন এবং আপনার ব্যবসায়িক সরঞ্জামের সাথে নিরবচ্ছিন্ন সংযোগ।',
+        ? 'Corporate phone system in the cloud with advanced call management, voicemail, unified communications, and seamless integration with your business tools.'
+        : 'ক্লাউডে কর্পোরেট ফোন সিস্টেম যাতে রয়েছে উন্নত কল ম্যানেজমেন্ট, ভয়েসমেল, ইউনিফাইড কমিউনিকেশন এবং আপনার ব্যবসায়িক সরঞ্জামের সাথে নিরবচ্ছিন্ন সংযোগ।',
       icon: '/alaap_cloud_ip_pbx.png',
       features: [
         locale === 'en' ? 'Unlimited virtual extensions' : 'সীমাহীন ভার্চুয়াল এক্সটেনশন',
@@ -118,8 +118,8 @@ export default async function HomePage({ params }: HomePageProps) {
       id: 'bulk-sms',
       title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
       description: locale === 'en'
-        ? 'Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
-        : 'আমাদের এন্টারপ্রাইজ-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
+        ? 'Send promotional messages, alerts, and notifications to millions with our corporate-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
+        : 'আমাদের কর্পোরেট-গ্রেড বাল্ক এসএমএস গেটওয়ে দিয়ে লাখো মানুষকে প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান। বাংলাদেশের সব নেটওয়ার্কে ৯৯.৯% ডেলিভারি হার।',
       icon: '/bulk_sms.png',
       features: [
         locale === 'en' ? '99.9% High delivery rate' : '৯৯.৯% উচ্চ ডেলিভারি হার',
@@ -257,19 +257,19 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
             {/* Badge/Announcement */}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-base text-white/90 backdrop-blur-sm transition-all duration-300 hover:bg-white/15">
               <Building2 className="h-5 w-5 text-btcl-primaryLight" strokeWidth={2} />
-              <span>Enterprise Communication Solutions</span>
+              <span>Cloud Based Corporate Service</span>
             </div>
 
             {/* Main Heading */}
             <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl xl:text-7xl">
             <span className="block text-white">
-              BTCL Enterprise Services
+              Alaap Cloud Corporate Service
             </span>
             </h1>
 
             {/* Description */}
             <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed text-white/80 md:text-xl lg:text-2xl">
-              Bangladesh's leading telecommunications provider delivering enterprise-grade communication solutions
+              Bangladesh's leading telecommunications provider delivering corporate-grade communication solutions
             </p>
 
             {/* CTA Buttons */}
@@ -315,8 +315,8 @@ function ServicesShowcaseSection({ services, locale }: { services: Service[]; lo
             </h2>
             <p className="mx-auto max-w-3xl text-base text-gray-600">
               {locale === 'en'
-                ? 'Discover our comprehensive range of enterprise communication solutions designed to power your business'
-                : 'আপনার ব্যবসা পরিচালনার জন্য ডিজাইন করা এন্টারপ্রাইজ যোগাযোগ সমাধানের আমাদের বিস্তৃত পরিসর আবিষ্কার করুন'}
+                ? 'Discover our comprehensive range of corporate communication solutions designed to power your business'
+                : 'আপনার ব্যবসা পরিচালনার জন্য ডিজাইন করা কর্পোরেট যোগাযোগ সমাধানের আমাদের বিস্তৃত পরিসর আবিষ্কার করুন'}
             </p>
           </div>
 
@@ -374,7 +374,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
                 </div>
               )}
               <div className={`rounded-full bg-gradient-to-r ${service.color} px-2.5 py-1 text-xs font-semibold text-white shadow-sm`}>
-                Enterprise
+                Corporate
               </div>
             </div>
             <CardTitle className="mb-2 text-xl font-bold">{service.title}</CardTitle>
@@ -467,10 +467,9 @@ function FeaturesSection({ features, t }: { features: Feature[]; t: any }) {
             {features.map((feature, index) => (
                 <div
                     key={index}
-                    className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl"
+                    className="relative rounded-2xl border border-gray-200 bg-white p-7"
                 >
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
                     {renderIcon(feature.icon)}
                   </div>
                   <h3 className="mb-2 text-lg font-bold text-gray-900">{feature.title}</h3>

@@ -11,19 +11,19 @@
   },
   "home": {
     "hero": {
-      "title": "BTCL Enterprise Communication Solutions",
+      "title": "BTCL Corporate Communication Solutions",
       "subtitle": "Empower your business with Bangladesh's leading telecommunications provider",
-      "description": "From bulk SMS to hosted contact centers, PBX systems, and voice broadcast — we deliver enterprise-grade communication solutions trusted by thousands nationwide.",
+      "description": "From bulk SMS to hosted contact centers, PBX systems, and voice broadcast — we deliver corporate-grade communication solutions trusted by thousands nationwide.",
       "cta": "Get Started Today",
       "learn_more": "Explore Services"
     },
     "services": {
       "title": "Our Services",
       "subtitle": "Complete Communication Suite",
-      "description": "Discover our comprehensive range of enterprise communication solutions",
+      "description": "Discover our comprehensive range of corporate communication solutions",
       "bulk_sms": {
         "title": "Bulk SMS Service",
-        "description": "Send promotional messages, alerts, and notifications to millions with our enterprise-grade bulk SMS gateway."
+        "description": "Send promotional messages, alerts, and notifications to millions with our corporate-grade bulk SMS gateway."
       },
       "contact_center": {
         "title": "Alaap Cloud Contact Center",
@@ -31,7 +31,7 @@
       },
       "hosted_pbx": {
         "title": "Alaap Cloud IP PBX",
-        "description": "Enterprise phone system in the cloud with advanced call management, voicemail, and unified communications."
+        "description": "Corporate phone system in the cloud with advanced call management, voicemail, and unified communications."
       },
       "voice_broadcast": {
         "title": "Alaap Cloud Voice Broadcasting Service",

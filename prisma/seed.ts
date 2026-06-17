@@ -65,9 +65,9 @@ async function main() {
       update: {},
       create: {
         id: 'enterprise',
-        name: 'Enterprise',
-        nameEn: 'Enterprise Package',
-        nameBn: 'এন্টারপ্রাইজ প্যাকেজ',
+        name: 'Corporate',
+        nameEn: 'Corporate Package',
+        nameBn: 'কর্পোরেট প্যাকেজ',
         description: 'Complete solution for large organizations',
         descriptionEn: 'Complete SMS solution for large organizations with premium support',
         descriptionBn: 'প্রিমিয়াম সাপোর্ট সহ বড় সংস্থার জন্য সম্পূর্ণ এসএমএস সমাধান',

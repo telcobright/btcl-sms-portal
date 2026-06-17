@@ -19,8 +19,8 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
       icon: '📞',
       title: locale === 'en' ? 'High Volume Capacity' : 'উচ্চ ভলিউম ক্ষমতা',
       description: locale === 'en'
-        ? 'Broadcast voice messages to thousands of recipients simultaneously with enterprise-grade infrastructure'
-        : 'এন্টারপ্রাইজ-গ্রেড অবকাঠামো সহ একসাথে হাজারো প্রাপকের কাছে ভয়েস বার্তা ব্রডকাস্ট করুন',
+        ? 'Broadcast voice messages to thousands of recipients simultaneously with corporate-grade infrastructure'
+        : 'কর্পোরেট-গ্রেড অবকাঠামো সহ একসাথে হাজারো প্রাপকের কাছে ভয়েস বার্তা ব্রডকাস্ট করুন',
     },
     {
       icon: '🎙️',
@@ -125,8 +125,8 @@ export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageP
 
             <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {locale === 'en'
-                ? 'Enterprise voice broadcasting platform with text-to-speech, audio file management, smart scheduling, interactive IVR, comprehensive analytics, and intelligent retry systems. Reach thousands with automated voice campaigns.'
-                : 'টেক্সট-টু-স্পিচ, অডিও ফাইল ম্যানেজমেন্ট, স্মার্ট সময়সূচী, ইন্টারঅ্যাক্টিভ IVR, ব্যাপক বিশ্লেষণ এবং বুদ্ধিমান পুনঃচেষ্টা সিস্টেম সহ এন্টারপ্রাইজ ভয়েস ব্রডকাস্টিং প্ল্যাটফর্ম। স্বয়ংক্রিয় ভয়েস ক্যাম্পেইনের মাধ্যমে হাজারো মানুষের কাছে পৌঁছান।'}
+                ? 'Corporate voice broadcasting platform with text-to-speech, audio file management, smart scheduling, interactive IVR, comprehensive analytics, and intelligent retry systems. Reach thousands with automated voice campaigns.'
+                : 'টেক্সট-টু-স্পিচ, অডিও ফাইল ম্যানেজমেন্ট, স্মার্ট সময়সূচী, ইন্টারঅ্যাক্টিভ IVR, ব্যাপক বিশ্লেষণ এবং বুদ্ধিমান পুনঃচেষ্টা সিস্টেম সহ কর্পোরেট ভয়েস ব্রডকাস্টিং প্ল্যাটফর্ম। স্বয়ংক্রিয় ভয়েস ক্যাম্পেইনের মাধ্যমে হাজারো মানুষের কাছে পৌঁছান।'}
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">

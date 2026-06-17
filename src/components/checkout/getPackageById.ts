@@ -34,7 +34,7 @@ export const getPackages = (locale: string) => [
     },
     {
         id: 'enterprise',
-        name: locale === 'en' ? 'Enterprise Package' : 'এন্টারপ্রাইজ প্যাকেজ',
+        name: locale === 'en' ? 'Corporate Package' : 'কর্পোরেট প্যাকেজ',
         price: 8000,
         sms: 25000,
         validity: 90,

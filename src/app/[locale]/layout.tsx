@@ -20,7 +20,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      dir={locale === 'bn' ? 'rtl' : 'ltr'}
+      dir="ltr"
       suppressHydrationWarning
     >
       <head>

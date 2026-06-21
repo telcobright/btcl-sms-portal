@@ -221,7 +221,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             </div>
 
             <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
-              {locale === 'en' ? 'BTCL Bulk SMS Service' : 'বিটিসিএল বাল্ক এসএমএস সেবা'}
+              {locale === 'en' ? 'BTCL Bulk SMS Service' : 'BTCL Bulk SMS Service'}
             </h1>
 
             <p className="mx-auto mb-8 max-w-3xl text-xl text-white">

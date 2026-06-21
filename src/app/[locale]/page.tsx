@@ -159,7 +159,7 @@ export default async function HomePage({ params }: HomePageProps) {
     },
     {
       id: 'bulk-sms',
-      title: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
+      title: locale === 'en' ? 'Bulk SMS Service' : 'Bulk SMS Service',
       description:
         locale === 'en'
           ? 'Send promotional messages, alerts, and notifications to millions with our corporate-grade bulk SMS gateway. 99.9% delivery rate across all networks in Bangladesh.'
@@ -728,7 +728,7 @@ function PricingPreviewSection({
     {
       id: 'bulk-sms',
       icon: '/bulk_sms.png',
-      name: locale === 'en' ? 'Bulk SMS Service' : 'বাল্ক এসএমএস সেবা',
+      name: locale === 'en' ? 'Bulk SMS Service' : 'Bulk SMS Service',
       price: '৳0.30',
       unit: locale === 'en' ? '/SMS' : '/এসএমএস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',

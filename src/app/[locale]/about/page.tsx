@@ -424,8 +424,8 @@ function CompanyOverviewSection({ locale }: { locale: string }) {
               <p>
                 {getLocalizedText(
                   locale,
-                  'Our comprehensive suite of corporate communication services represents our commitment to digital transformation. From Bulk SMS Service and Alaap Cloud Voice Broadcasting Service to Alaap Cloud Contact Center and Alaap Cloud IP PBX solutions, we offer businesses reliable, secure, and cost-effective ways to connect with their customers and streamline operations.',
-                  'আমাদের কর্পোরেট যোগাযোগ সেবার ব্যাপক পরিসর ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকার প্রতিনিধিত্ব করে। Bulk SMS Service ও Alaap Cloud Voice Broadcasting Service থেকে Alaap Cloud Contact Center এবং Alaap Cloud IP PBX সমাধান পর্যন্ত, আমরা ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে সংযোগ এবং কার্যক্রম সুগম করার জন্য নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী উপায় প্রদান করি।'
+                  'Our comprehensive suite of corporate communication services represents our commitment to digital transformation. From Alaap Cloud IP PBX and Alaap Cloud Voice Broadcasting Service to Alaap Cloud Contact Center and Bulk SMS Service solutions, we offer businesses reliable, secure, and cost-effective ways to connect with their customers and streamline operations.',
+                  'আমাদের কর্পোরেট যোগাযোগ সেবার ব্যাপক পরিসর ডিজিটাল রূপান্তরের প্রতি আমাদের অঙ্গীকার প্রতিনিধিত্ব করে। Alaap Cloud IP PBX,Alaap Cloud Voice Broadcasting Service থেকে Alaap Cloud Contact Center এবং Bulk SMS সমাধান পর্যন্ত, আমরা ব্যবসায়িক প্রতিষ্ঠানগুলোকে তাদের গ্রাহকদের সাথে সংযোগ এবং কার্যক্রম সুগম করার জন্য নির্ভরযোগ্য, নিরাপদ এবং সাশ্রয়ী উপায় প্রদান করি।'
                 )}
               </p>
             </div>

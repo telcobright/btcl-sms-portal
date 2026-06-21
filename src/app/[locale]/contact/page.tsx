@@ -1,6 +1,10 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
+import {
+  FAQAccordion,
+  type FAQItem,
+} from '@/components/contact/FAQAccordion';
 import { ContactForm } from '@/components/forms/ContactForm';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
@@ -23,11 +27,6 @@ interface SupportChannel {
   response: string;
   icon: string;
   color: string;
-}
-
-interface FAQ {
-  question: string;
-  answer: string;
 }
 
 interface ContactPageProps {
@@ -133,65 +132,265 @@ const useContactData = (locale: string) => {
     },
   ];
 
-  const faqs: FAQ[] = [
+  const faqs: FAQItem[] = [
     {
       question: getLocalizedText(
         locale,
-        'How quickly can I get started?',
-        'আমি কত তাড়াতাড়ি শুরু করতে পারি?'
+        'What is Alaap Cloud?',
+        'আলাপ ক্লাউড কী?'
       ),
-      answer: getLocalizedText(
-        locale,
-        'You can start sending SMS immediately after account verification and package purchase. The entire process typically takes 1-2 business days.',
-        'অ্যাকাউন্ট যাচাইকরণ এবং প্যাকেজ ক্রয়ের পর আপনি অবিলম্বে এসএমএস পাঠানো শুরু করতে পারেন। সম্পূর্ণ প্রক্রিয়া সাধারণত ১-২ কার্যদিবস সময় নেয়।'
+      answer: (
+        <p>
+          {getLocalizedText(
+            locale,
+            "'Alaap Cloud' is an IP (Internet Protocol) telephony service of Bangladesh Telecommunications Company Limited (BTCL).",
+            "'আলাপ ক্লাউড' হলো বাংলাদেশ টেলিকমিউনিকেশনস কোম্পানি লিমিটেড (বিটিসিএল)-এর একটি আইপি (ইন্টারনেট প্রোটোকল) টেলিফোনি সেবা।"
+          )}
+        </p>
       ),
     },
     {
       question: getLocalizedText(
         locale,
-        'What payment methods do you accept?',
-        'আপনারা কী কী পেমেন্ট পদ্ধতি গ্রহণ করেন?'
+        'What are the Alaap Cloud services?',
+        'আলাপ ক্লাউডের সেবাসমূহ কী কী?'
       ),
-      answer: getLocalizedText(
-        locale,
-        'We accept all major payment methods including mobile banking (bKash, Nagad, Rocket), credit/debit cards, and bank transfers through SSL Commerz.',
-        'আমরা SSL Commerz এর মাধ্যমে মোবাইল ব্যাংকিং (বিকাশ, নগদ, রকেট), ক্রেডিট/ডেবিট কার্ড এবং ব্যাংক ট্রান্সফার সহ সকল প্রধান পেমেন্ট পদ্ধতি গ্রহণ করি।'
-      ),
-    },
-    {
-      question: getLocalizedText(
-        locale,
-        'Do you provide API documentation?',
-        'আপনারা কি API ডকুমেন্টেশন প্রদান করেন?'
-      ),
-      answer: getLocalizedText(
-        locale,
-        'Yes, we provide comprehensive API documentation with code examples in multiple programming languages, along with SDKs for easy integration.',
-        'হ্যাঁ, আমরা একাধিক প্রোগ্রামিং ভাষায় কোড উদাহরণ সহ ব্যাপক API ডকুমেন্টেশন প্রদান করি, সাথে সহজ ইন্টিগ্রেশনের জন্য SDK।'
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>Alaap Cloud IP PBX</li>
+          <li>Alaap Cloud Voice Broadcasting service</li>
+          <li>Alaap Cloud Contact Center</li>
+          <li>Bulk SMS (Only for BTRC registered sms aggregators)</li>
+        </ul>
       ),
     },
     {
       question: getLocalizedText(
         locale,
-        'What is your SMS delivery rate?',
-        'আপনাদের এসএমএস ডেলিভারি রেট কত?'
+        'What is Alaap Cloud IP PBX?',
+        'আলাপ ক্লাউড আইপি পিবিএক্স কী?'
       ),
-      answer: getLocalizedText(
-        locale,
-        'We maintain a 99.9% delivery rate with an average delivery time of less than 3 seconds for transactional messages and within 30 seconds for promotional messages.',
-        'আমরা ট্রান্জেকশনাল বার্তার জন্য ৩ সেকেন্ডের কম এবং প্রমোশনাল বার্তার জন্য ৩০ সেকেন্ডের মধ্যে গড় ডেলিভারি সময় সহ ৯৯.৯% ডেলিভারি রেট বজায় রাখি।'
+      answer: (
+        <p>
+          {getLocalizedText(
+            locale,
+            'Hosted at BTCL, Alaap Cloud IP PBX (Internet Protocol Private Branch Exchange) is a secure and reliable office phone system which can be used within a company or organization.',
+            'বিটিসিএল-এ হোস্টকৃত আলাপ ক্লাউড আইপি পিবিএক্স (ইন্টারনেট প্রোটোকল প্রাইভেট ব্রাঞ্চ এক্সচেঞ্জ) একটি নিরাপদ ও নির্ভরযোগ্য অফিস ফোন সিস্টেম, যা কোনো কোম্পানি বা প্রতিষ্ঠানের ভেতরে ব্যবহার করা যায়।'
+          )}
+        </p>
       ),
     },
     {
       question: getLocalizedText(
         locale,
-        'Can I get a custom sender ID?',
-        'আমি কি কাস্টম প্রেরক আইডি পেতে পারি?'
+        'How to subscribe for Alaap Cloud Services?',
+        'আলাপ ক্লাউড সেবার জন্য সাবস্ক্রিপশন কীভাবে করব?'
       ),
-      answer: getLocalizedText(
+      answer: (
+        <div className="space-y-4">
+          <p>To subscribe to Alaap Cloud services, there are three steps:</p>
+
+          <div>
+            <p className="font-semibold text-gray-900">a) Account Registration:</p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              <li>
+                Open the Webportal{' '}
+                <a
+                  href="https://services.btcliptelephony.gov.bd/en/register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+                >
+                  https://services.btcliptelephony.gov.bd/en/register
+                </a>
+                .
+              </li>
+              <li>Enter your company name, official email, and mobile number.</li>
+              <li>Verify your account using the Email OTP sent to your inbox.</li>
+              <li>Verify your account using the SMS OTP sent to your mobile.</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-900">b) Identity Verification:</p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              <li>
+                Submit your National Identity (NID) details e.g. NID front part
+                and NID back part of authorized officer of the organization
+                (pdf, jpg) for Bangladesh NID portal authentication.
+              </li>
+              <li>Verify your NID.</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-900">
+              c) Other Documents Submission:
+            </p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              <li>
+                Select Customer Type: Prepaid or Postpaid (Postpaid for only
+                Government/Semi-government/Autonomous Organization)
+              </li>
+              <li>Enter address, city, postal code and country.</li>
+              <li>
+                Enter trade license number and upload trade license of the
+                organization (pdf/jpg)
+              </li>
+              <li>
+                Enter TIN number and upload TIN certificate of the organization
+                (pdf/jpg)
+              </li>
+              <li>
+                Enter BIN number and upload BIN certificate of the organization
+                (pdf/jpg)
+              </li>
+              <li>Photo of the authorized officer of the organization (pdf/jpg)</li>
+              <li>
+                Enter last tax return date and upload last tax return document
+                (pdf/jpg)
+              </li>
+              <li>Check BTCL&apos;s terms and conditions</li>
+              <li>Enter complete registration.</li>
+            </ul>
+          </div>
+
+          <p>
+            You will get the username and password of the mentioned webportal
+            through email. Within 03 working days you will get approval for
+            purchasing services upon successful verification of your documents
+            mentioned above.
+          </p>
+          <p>
+            You are kindly requested to purchase Alaap Cloud IP PBX package when
+            you have IP-phones ready for installation as the package
+            subscription date will be the billing date. Alaap Cloud Voice
+            Broadcasting and Contact Center services can be readily operable
+            through a computer / laptop.
+          </p>
+        </div>
+      ),
+    },
+    {
+      question: getLocalizedText(
         locale,
-        'Yes, we provide custom sender ID services. You can use your company name or brand as the sender ID after verification process which typically takes 2-3 business days.',
-        'হ্যাঁ, আমরা কাস্টম প্রেরক আইডি সেবা প্রদান করি। যাচাইকরণ প্রক্রিয়ার পর আপনি আপনার কোম্পানির নাম বা ব্র্যান্ড প্রেরক আইডি হিসেবে ব্যবহার করতে পারেন যা সাধারণত ২-৩ কার্যদিবস সময় নেয়।'
+        'How to purchase Alaap Cloud service package?',
+        'আলাপ ক্লাউড সেবা প্যাকেজ কীভাবে কিনবো?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            Login to the webportal{' '}
+            <a
+              href="https://services.btcliptelephony.gov.bd/en/login"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              https://services.btcliptelephony.gov.bd/en/login
+            </a>
+          </li>
+          <li>Navigate to the Dashboard.</li>
+          <li>
+            Choose your desired product (Alaap Cloud IP PBX, Alaap Cloud Voice
+            Broadcast, or Alaap Cloud Contact Center).
+          </li>
+          <li>Select Buy Now.</li>
+          <li>Review the package details, features and monthly subscription fees.</li>
+          <li>
+            Buy now, checkout and pay online using SSLCommerz (bKash, Nagad,
+            Visa, or Mastercard).
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'How to activate Alaap Cloud service package?',
+        'আলাপ ক্লাউড সেবা প্যাকেজ কীভাবে সক্রিয় করব?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>Receive services webportal credentials via email.</li>
+          <li>
+            Configure your devices as per Standard Operation Manual (SOP) given
+            in the webportal.
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'How to get assistance from BTCL for configuration and system setup?',
+        'কনফিগারেশন এবং সিস্টেম সেটআপের জন্য বিটিসিএল থেকে কীভাবে সহায়তা পাব?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            Contact the nearest BTCL office.{' '}
+            <a
+              href="https://btcl.gov.bd/pages/static-pages/6922dd18933eb65569e137b9"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              https://btcl.gov.bd/pages/static-pages/6922dd18933eb65569e137b9
+            </a>
+          </li>
+          <li>
+            Email:{' '}
+            <a
+              href="mailto:alaapcloud@btcl.gov.bd"
+              className="text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              alaapcloud@btcl.gov.bd
+            </a>
+          </li>
+          <li>Hotline: 16402</li>
+          <li>
+            Telephone: +8809696996699, +880258311616, +880248313366,
+            +880258312233
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'What about free minutes in Alaap Cloud IP PBX?',
+        'আলাপ ক্লাউড আইপি পিবিএক্স-এ ফ্রি মিনিট সম্পর্কে কী?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            During the 1st subscription of a user, free minutes will be added to
+            the account.
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'What is the package migration policy?',
+        'প্যাকেজ মাইগ্রেশন নীতিমালা কী?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            Package migration policy is given in the following link:{' '}
+            <a
+              href="https://services.btcliptelephony.gov.bd/en/package-migration-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              https://services.btcliptelephony.gov.bd/en/package-migration-policy
+            </a>
+          </li>
+        </ul>
       ),
     },
   ];
@@ -567,7 +766,7 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
 }
 
 // FAQ Section Component
-function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
+function FAQSection({ faqs, locale }: { faqs: FAQItem[]; locale: string }) {
   return (
     <section className="bg-gray-50 py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -588,17 +787,13 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
           <p className="mx-auto max-w-3xl text-base text-gray-600">
             {getLocalizedText(
               locale,
-              'Quick answers to common questions',
-              'সাধারণ প্রশ্নের দ্রুত উত্তর'
+              'Click a question to see the answer.',
+              'উত্তর দেখতে একটি প্রশ্নে ক্লিক করুন।'
             )}
           </p>
         </div>
 
-        <div className="space-y-6">
-          {faqs.map((faq, index) => (
-            <FAQCard key={index} faq={faq} />
-          ))}
-        </div>
+        <FAQAccordion faqs={faqs} />
 
         <div className="mt-10 text-center">
           <p className="mb-4 text-base text-gray-600">
@@ -620,29 +815,5 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
         </div>
       </div>
     </section>
-  );
-}
-
-// FAQ Card Component
-function FAQCard({ faq }: { faq: FAQ }) {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-7">
-      <div className="mb-3 flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primary text-sm font-bold text-white">
-          Q
-        </div>
-        <h3 className="pt-0.5 text-xl font-bold text-gray-900 leading-snug">
-          {faq.question}
-        </h3>
-      </div>
-      <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/20 text-sm font-bold text-btcl-primaryDark">
-          A
-        </div>
-        <p className="pt-0.5 text-sm leading-relaxed text-gray-600">
-          {faq.answer}
-        </p>
-      </div>
-    </div>
   );
 }

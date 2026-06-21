@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { loginUser, setAuthToken } from '@/lib/api-client/auth'
 import { useAuth } from '@/lib/contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { showApiError } from '@/lib/api-error'
 
 const decodeToken = (token: string) => {
     try {
@@ -221,7 +222,9 @@ export default function LoginPage() {
             const deactivated = error.response?.status === 403
             setIsDeactivated(deactivated)
             setLoginError(errorMessage)
-            if (!deactivated) toast.error(errorMessage)
+            if (!deactivated) {
+                showApiError(error, { fallbackMessage: 'Invalid email or password. Please try again.' })
+            }
         } finally {
             setIsLoading(false)
         }
@@ -230,8 +233,14 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white">
             <Header />
-            <div className="py-16">
-                <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="relative py-12 sm:py-16">
+                {/* Decorative blobs - consistent with home hero */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-btcl-primaryLight/10 blur-3xl" />
+                    <div className="absolute -right-24 bottom-16 h-72 w-72 rounded-full bg-btcl-primary/5 blur-3xl" />
+                </div>
+
+                <div className="relative max-w-md mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Section header */}
                     <div className="mb-8 text-center">
                         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
@@ -246,7 +255,7 @@ export default function LoginPage() {
                         </p>
                     </div>
 
-                    <div className="rounded-2xl border border-gray-200 bg-white p-7">
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-7">
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {loginError && (
                                 <div className={`flex items-start gap-3 rounded-xl p-4 border ${isDeactivated ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
@@ -291,29 +300,24 @@ export default function LoginPage() {
                                 autoComplete="email"
                             />
 
-                            <Input
-                                label={t('auth.login.password')}
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => handleInputChange('password', e.target.value)}
-                                error={errors.password as string}
-                                required
-                                autoComplete="current-password"
-                            />
-
-                            <div className="flex items-center justify-between text-sm">
-                                <Link
-                                    href={`/${locale}/register`}
-                                    className="font-medium text-btcl-primary hover:underline"
-                                >
-                                    Don&apos;t have an account? Register here
-                                </Link>
-                                <Link
-                                    href={`/${locale}/forgot-password`}
-                                    className="font-medium text-btcl-primary hover:underline"
-                                >
-                                    Forgot password?
-                                </Link>
+                            <div className="space-y-1.5">
+                                <Input
+                                    label={t('auth.login.password')}
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(e) => handleInputChange('password', e.target.value)}
+                                    error={errors.password as string}
+                                    required
+                                    autoComplete="current-password"
+                                />
+                                <div className="flex justify-end">
+                                    <Link
+                                        href={`/${locale}/forgot-password`}
+                                        className="text-sm font-medium text-btcl-primary hover:underline"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                </div>
                             </div>
 
                             <div>
@@ -333,7 +337,7 @@ export default function LoginPage() {
                                                 type="number"
                                                 value={captchaAnswer}
                                                 onChange={(e) => { setCaptchaAnswer(e.target.value); setCaptchaError(''); }}
-                                                className="w-24 text-center text-base font-semibold px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-btcl-primary focus:border-btcl-primary"
+                                                className="w-24 text-center text-base font-semibold px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-btcl-primary focus:border-btcl-primary"
                                                 placeholder="Answer"
                                                 required
                                             />
@@ -365,6 +369,16 @@ export default function LoginPage() {
                             </Button>
                         </form>
                     </div>
+
+                    <p className="mt-6 text-center text-sm text-gray-600">
+                        Don&apos;t have an account?{' '}
+                        <Link
+                            href={`/${locale}/register`}
+                            className="font-semibold text-btcl-primary hover:underline"
+                        >
+                            Register here
+                        </Link>
+                    </p>
                 </div>
             </div>
         </div>

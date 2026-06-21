@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { uploadPartnerDocument } from '@/lib/api-client/admin';
 import toast from 'react-hot-toast';
+import { showApiError } from '@/lib/api-error';
 import { useEffect, useState } from 'react';
 
 // Map idPackage to human-readable names (backend returns packageName=null)
@@ -1109,8 +1110,8 @@ export default function Dashboard() {
       // Refresh partner extra and doc statuses
       await fetchPartnerExtra(+partnerID);
       await fetchDocStatuses(+partnerID);
-    } catch {
-      toast.error('Failed to upload document');
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to upload document' });
     } finally {
       setUploadingDoc(null);
     }

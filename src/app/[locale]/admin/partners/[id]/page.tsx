@@ -30,6 +30,7 @@ import {
   CreateUserPayload,
 } from '@/lib/api-client/admin';
 import { API_BASE_URL, API_ENDPOINTS, ROOT_URL } from '@/config/api';
+import { showApiError } from '@/lib/api-error';
 
 type TabType = 'overview' | 'users' | 'purchases' | 'subscriptions' | 'documents';
 
@@ -170,7 +171,7 @@ export default function PartnerDetailsPage() {
 
   const viewDocument = async (documentType: string, documentName: string) => {
     try { setViewingDoc(documentType); await openBlob(await fetchDoc(documentType), documentName); }
-    catch { toast.error('Failed to load document'); }
+    catch (err) { showApiError(err, { fallbackMessage: 'Failed to load document' }); }
     finally { setViewingDoc(null); }
   };
 
@@ -182,7 +183,7 @@ export default function PartnerDetailsPage() {
       const name = documentName.replace(/\.[^/.]+$/, '') + ext;
       const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = name; a.click();
       window.URL.revokeObjectURL(a.href);
-    } catch { toast.error('Failed to download'); }
+    } catch (err) { showApiError(err, { fallbackMessage: 'Failed to download' }); }
     finally { setDownloadingDoc(null); }
   };
 
@@ -268,7 +269,7 @@ export default function PartnerDetailsPage() {
       }
     } catch (err) {
       console.error('Failed to toggle partner status:', err);
-      toast.error('Action failed. Please try again.');
+      showApiError(err, { fallbackMessage: 'Action failed. Please try again.' });
     } finally {
       setDeactivating(false);
     }
@@ -590,7 +591,7 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       onPartnerUpdate(formData);
       setIsEditing(false);
       toast.success('Partner updated');
-    } catch { toast.error('Failed to update partner'); }
+    } catch (err) { showApiError(err, { fallbackMessage: 'Failed to update partner' }); }
     finally { setSaving(false); }
   };
 
@@ -779,14 +780,14 @@ function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: Partn
         toast.success('User created');
       }
       close(); onRefresh();
-    } catch { toast.error('Operation failed'); }
+    } catch (err) { showApiError(err, { fallbackMessage: 'Operation failed' }); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (u: PartnerUser) => {
     if (!confirm(`Delete ${u.firstName} ${u.lastName}?`)) return;
     try { setDeletingId(u.id); const t = localStorage.getItem('authToken'); if (t) { await deleteUser(u.id, t); toast.success('Deleted'); onRefresh(); } }
-    catch { toast.error('Delete failed'); }
+    catch (err) { showApiError(err, { fallbackMessage: 'Delete failed' }); }
     finally { setDeletingId(null); }
   };
 
@@ -1070,10 +1071,11 @@ function DocumentsTab({
       if (res.ok) {
         toast.success('Rejection email sent to ' + partnerEmail);
       } else {
-        toast.error('Failed to send rejection email');
+        const body = await res.json().catch(() => ({}));
+        showApiError({ ...body, status: res.status }, { fallbackMessage: 'Failed to send rejection email' });
       }
-    } catch {
-      toast.error('Failed to send rejection email');
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to send rejection email' });
     } finally {
       setSendingRejectionEmail(false);
     }
@@ -1081,14 +1083,14 @@ function DocumentsTab({
 
   const handleUpload = async (docType: string, file: File) => {
     try { setUploadingDoc(docType); const t = localStorage.getItem('authToken'); if (t) { await uploadPartnerDocument(partnerId, docType, file, t); toast.success('Uploaded'); onRefresh(); } }
-    catch { toast.error('Upload failed'); }
+    catch (err) { showApiError(err, { fallbackMessage: 'Upload failed' }); }
     finally { setUploadingDoc(null); }
   };
 
   const handleDeleteDoc = async (docType: string, docName: string) => {
     if (!confirm(`Delete "${docName}"?`)) return;
     try { setDeletingDoc(docType); const t = localStorage.getItem('authToken'); if (t) { await deletePartnerDocument(partnerId, docType, t); toast.success('Deleted'); onRefresh(); } }
-    catch { toast.error('Delete failed'); }
+    catch (err) { showApiError(err, { fallbackMessage: 'Delete failed' }); }
     finally { setDeletingDoc(null); }
   };
 

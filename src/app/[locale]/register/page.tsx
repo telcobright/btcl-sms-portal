@@ -17,6 +17,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { showApiError } from '@/lib/api-error';
 import { FEATURE_FLAGS, API_BASE_URL, NID_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // Country list with codes
@@ -423,17 +424,23 @@ export default function RegisterPage() {
       console.log('Validation response:', validateData);
 
       if (!validateResponse.ok || validateData === false) {
-        if (validateData.errorCode === '400 BAD_REQUEST') {
-          if (validateData.message === 'Mobile number already exists') {
-            verificationForm.setError('phone', { type: 'manual', message: 'Mobile number already exists' });
-          } else if (validateData.message === 'Email already exists') {
+        const apiMessage: string = validateData?.message || 'Validation failed. Please check your information.';
+
+        if (validateData?.errorCode === '400 BAD_REQUEST') {
+          if (apiMessage === 'Mobile number already exists' || apiMessage === 'Telephone number already exists') {
+            verificationForm.setError('phone', { type: 'manual', message: apiMessage });
+          } else if (apiMessage === 'Email already exists') {
             verificationForm.setError('email', { type: 'manual', message: 'Email already exists' });
-          } else if (validateData.message === 'Partner Name already exists') {
+          } else if (apiMessage === 'Partner Name already exists') {
             verificationForm.setError('companyName', { type: 'manual', message: 'Company Name already exists' });
           }
-        } else {
-          toast.error('Validation failed. Please check your information.');
         }
+
+        showApiError(
+          { ...validateData, status: validateResponse.status },
+          { fallbackMessage: 'Validation failed. Please check your information.' }
+        );
+
         setIsSubmitting(false);
         return;
       }
@@ -451,12 +458,12 @@ export default function RegisterPage() {
         if (response.retryAfterSeconds) {
           toast.error(`Please wait ${response.retryAfterSeconds} seconds before requesting another OTP`);
         } else {
-          toast.error(response.message || 'Failed to send email OTP');
+          showApiError(response, { fallbackMessage: 'Failed to send email OTP' });
         }
       }
     } catch (error) {
       console.error('Failed to send email OTP:', error);
-      toast.error('Failed to send email OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Failed to send email OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -478,11 +485,11 @@ export default function RegisterPage() {
         // Automatically send phone OTP
         await handleSendPhoneOtp();
       } else {
-        toast.error(response.message || 'Invalid email OTP. Please try again.');
+        showApiError(response, { fallbackMessage: 'Invalid email OTP. Please try again.' });
       }
     } catch (error) {
       console.error('Failed to verify email OTP:', error);
-      toast.error('Invalid email OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Invalid email OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -503,7 +510,7 @@ export default function RegisterPage() {
       toast.success('OTP sent to your phone successfully!');
     } catch (error) {
       console.error('Failed to send phone OTP:', error);
-      toast.error('Failed to send phone OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Failed to send phone OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -526,11 +533,11 @@ export default function RegisterPage() {
         toast.success('Phone verified successfully!');
         setStep(2);
       } else {
-        toast.error('Invalid phone OTP. Please try again.');
+        showApiError(response, { fallbackMessage: 'Invalid phone OTP. Please try again.' });
       }
     } catch (error) {
       console.error('Failed to verify phone OTP:', error);
-      toast.error('Invalid phone OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Invalid phone OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -553,7 +560,7 @@ export default function RegisterPage() {
           startTimer(300);
           toast.success('OTP resent to your email!');
         } else {
-          toast.error(response.message || 'Failed to resend email OTP');
+          showApiError(response, { fallbackMessage: 'Failed to resend email OTP' });
         }
       } else if (!phoneOtpVerified) {
         // Resend phone OTP
@@ -564,7 +571,7 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('Failed to resend OTP:', error);
-      toast.error('Failed to resend OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Failed to resend OTP. Please try again.' });
     }
   };
 
@@ -708,7 +715,7 @@ export default function RegisterPage() {
     } catch (error) {
       console.error('OCR extraction error:', error);
       toast.dismiss('ocr-loading');
-      toast.error('OCR extraction failed. Please enter data manually.');
+      showApiError(error, { fallbackMessage: 'OCR extraction failed. Please enter data manually.' });
     } finally {
       setIsExtractingOcr(false);
       setOcrProgress(0);
@@ -877,12 +884,7 @@ export default function RegisterPage() {
         setCreatedPartnerId(null);
         setPartnerJwtToken(null);
       }
-      // Provide more specific error messages
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Registration failed. Please try again.');
-      }
+      showApiError(error, { fallbackMessage: 'Registration failed. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }

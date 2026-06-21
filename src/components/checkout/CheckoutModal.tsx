@@ -18,6 +18,7 @@ import { Dialog } from '@headlessui/react';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { showApiError } from '@/lib/api-error';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
 
@@ -351,12 +352,14 @@ export default function CheckoutModal({
       return { success: true, data };
     } catch (error) {
       console.error('Voice Broadcast purchase failed:', error);
-      toast.error(
-        locale === 'en'
-          ? 'Voice Broadcast activation failed. Please contact support.'
-          : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
-        { id: 'vbs-purchase' }
-      );
+      toast.dismiss('vbs-purchase');
+      showApiError(error, {
+        id: 'vbs-purchase',
+        fallbackMessage:
+          locale === 'en'
+            ? 'Voice Broadcast activation failed. Please contact support.'
+            : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
+      });
       return { success: false, error };
     }
   };
@@ -749,21 +752,22 @@ export default function CheckoutModal({
 
           onClose();
         } else {
-          toast.error(
-            response.message ||
-              (locale === 'en'
+          showApiError(response, {
+            fallbackMessage:
+              locale === 'en'
                 ? 'Purchase failed. Please try again.'
-                : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।')
-          );
+                : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।',
+          });
         }
       }
     } catch (error) {
       console.error('Purchase failed:', error);
-      toast.error(
-        locale === 'en'
-          ? 'Purchase failed. Please try again.'
-          : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।'
-      );
+      showApiError(error, {
+        fallbackMessage:
+          locale === 'en'
+            ? 'Purchase failed. Please try again.'
+            : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।',
+      });
     } finally {
       setLoading(false);
     }

@@ -125,8 +125,8 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
 
             <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {locale === 'en'
-                ? 'Full-featured cloud PBX with unlimited extensions, advanced IVR, call queues, conferencing, recording, and comprehensive management tools. No hardware required.'
-                : 'সীমাহীন এক্সটেনশন, উন্নত IVR, কল সারি, কনফারেন্সিং, রেকর্ডিং এবং ব্যাপক ব্যবস্থাপনা সরঞ্জাম সহ সম্পূর্ণ-বৈশিষ্ট্যযুক্ত ক্লাউড PBX। কোন হার্ডওয়্যার প্রয়োজন নেই।'}
+                ? 'Full-featured cloud PBX with extensions, advanced IVR, call queues, conferencing, recording, and comprehensive management tools. No hardware required.'
+                : ' এক্সটেনশন, উন্নত IVR, কল সারি, কনফারেন্সিং, রেকর্ডিং এবং ব্যাপক ব্যবস্থাপনা সরঞ্জাম সহ সম্পূর্ণ-বৈশিষ্ট্যযুক্ত ক্লাউড PBX। কোন হার্ডওয়্যার প্রয়োজন নেই।'}
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">

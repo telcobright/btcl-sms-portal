@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { getEmailLogs, EmailLogEntry, EmailLogPage } from '@/lib/api-client/admin';
 import { API_BASE_URL } from '@/config/api';
+import { showApiError } from '@/lib/api-error';
 
 const TYPE_OPTIONS = [
   'WELCOME', 'APPROVAL', 'REJECTION', 'REGISTRATION', 'CONTACT',
@@ -108,10 +109,10 @@ export default function AdminEmailsPage() {
         // The send is async + logged on a background thread — give it a moment, then refresh.
         setTimeout(() => { if (page === 0) fetchLogs(); else setPage(0); }, 1800);
       } else {
-        toast.error(result.message || 'Failed to send email');
+        showApiError({ ...result, status: res.status }, { fallbackMessage: 'Failed to send email' });
       }
-    } catch {
-      toast.error('Failed to send email');
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to send email' });
     } finally {
       setSending(false);
     }

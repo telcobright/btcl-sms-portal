@@ -65,6 +65,29 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
         },
       ],
     },
+    {
+      title: 'System',
+      items: [
+        {
+          name: 'Backend Guide',
+          href: `/${locale}/admin/backend-guide`,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Service Details',
+          href: `/${locale}/admin/service-details`,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+            </svg>
+          ),
+        },
+      ],
+    },
   ];
 
   const isActive = (href: string) => {
@@ -75,7 +98,7 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
   };
 
   return (
-    <aside className={`${collapsed ? 'w-[72px]' : 'w-64'} bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 min-h-screen flex flex-col transition-all duration-300 shrink-0`}>
+    <aside className={`${collapsed ? 'w-[72px]' : 'w-64'} bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 h-screen sticky top-0 flex flex-col transition-all duration-300 shrink-0`}>
       {/* Logo + Toggle */}
       <div className={`${collapsed ? 'p-3' : 'p-5'} flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <Link href={`/${locale}/admin`} className="flex items-center justify-center min-w-0">

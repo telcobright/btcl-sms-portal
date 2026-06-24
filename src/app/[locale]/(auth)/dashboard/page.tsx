@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
 import { Header } from '@/components/layout/Header';
+import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import {
   API_ENDPOINTS,
   buildApiUrl,
@@ -29,6 +30,7 @@ import {
 } from 'lucide-react';
 import { uploadPartnerDocument } from '@/lib/api-client/admin';
 import toast from 'react-hot-toast';
+import { showApiError } from '@/lib/api-error';
 import { useEffect, useState } from 'react';
 
 // Map idPackage to human-readable names (backend returns packageName=null)
@@ -38,7 +40,7 @@ const PACKAGE_NAMES: Record<number, string> = {
   9134: 'PBX Gold',
   9135: 'VBS Basic',
   9136: 'VBS Standard',
-  9137: 'VBS Enterprise',
+  9137: 'VBS Corporate',
   9140: 'Contact Center Basic',
 };
 
@@ -722,47 +724,46 @@ export default function Dashboard() {
         <title>Invoice ${invoiceId}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-          .invoice { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .header { background: linear-gradient(135deg, #1F3C71, #1F3C71); color: white; padding: 30px; }
-          .header h1 { font-size: 28px; margin-bottom: 5px; }
-          .header p { opacity: 0.9; }
-          .company-info { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 20px; }
-          .company-info div { font-size: 14px; }
-          .content { padding: 30px; }
-          .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }
-          .invoice-meta h2 { color: #1F3C71; font-size: 20px; margin-bottom: 2px; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; background: #F0F7FE; padding: 24px; color: #1f2937; }
+          .invoice { max-width: 820px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(13, 82, 158, 0.08); border: 1px solid #E5F2FB; }
+          .header { background: linear-gradient(135deg, #0D529E, #1F3C71); color: white; padding: 32px; position: relative; }
+          .header::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, #0D529E, #28A8E0); }
+          .header h1, .header h2 { font-size: 24px; margin-bottom: 6px; }
+          .header p { opacity: 0.92; font-size: 13px; line-height: 1.6; }
+          .company-info { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 18px; }
+          .company-info div { font-size: 13px; }
+          .content { padding: 32px; }
+          .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #E5F2FB; }
+          .invoice-meta h2 { color: #0D529E; font-size: 22px; margin-bottom: 4px; font-weight: 700; }
           .invoice-meta .details { text-align: right; }
-          .invoice-meta .details p { margin: 2px 0; color: #666; font-size: 13px; }
-          .invoice-meta .details strong { color: #333; }
-          .bill-to { margin-bottom: 15px; }
-          .bill-to h3 { color: #333; margin-bottom: 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
-          .bill-to p { color: #666; }
-          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-          .items-table th { background: #f8f9fa; padding: 15px; text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #e0e0e0; }
-          .items-table td { padding: 15px; border-bottom: 1px solid #f0f0f0; color: #555; }
-          .items-table .amount { text-align: right; }
-          .totals { margin-left: auto; width: 300px; }
-          .totals .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-          .totals .row.total { border-bottom: none; border-top: 2px solid #1F3C71; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #1F3C71; }
-          .status { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-          .status.paid { background: #EAF6FC; color: #1F3C71; }
-          .status.pending { background: #fff3cd; color: #856404; }
-          .status.active { background: #EAF6FC; color: #1F3C71; }
-          .status.expired { background: #f8d7da; color: #721c24; }
-          .payment-type { display: inline-block; padding: 6px 12px; border-radius: 15px; font-size: 11px; font-weight: 600; margin-left: 10px; }
-          .payment-type.prepaid { background: #dbeafe; color: #1e40af; }
-          .payment-type.postpaid { background: #f3e8ff; color: #7c3aed; }
-          .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; color: #666; font-size: 12px; }
-          .footer p { margin: 5px 0; }
+          .invoice-meta .details p { margin: 3px 0; color: #6b7280; font-size: 13px; }
+          .invoice-meta .details strong { color: #1f2937; font-weight: 600; }
+          .bill-to { margin-bottom: 20px; padding: 16px 20px; background: rgba(40, 168, 224, 0.05); border: 1px solid rgba(40, 168, 224, 0.2); border-radius: 12px; }
+          .bill-to h3 { color: #0D529E; margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
+          .bill-to p { color: #1f2937; font-size: 15px; font-weight: 500; }
+          .items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 24px; border: 1px solid #E5F2FB; border-radius: 12px; overflow: hidden; }
+          .items-table th { background: rgba(40, 168, 224, 0.1); padding: 14px 16px; text-align: left; font-weight: 600; color: #1F3C71; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .items-table td { padding: 16px; border-top: 1px solid #f3f4f6; color: #374151; font-size: 14px; }
+          .items-table .amount { text-align: right; font-weight: 600; color: #1f2937; }
+          .totals { margin-left: auto; width: 320px; }
+          .totals .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #4b5563; }
+          .totals .row.total { border-bottom: none; border-top: 2px solid #0D529E; margin-top: 12px; padding-top: 16px; font-size: 18px; font-weight: 700; color: #0D529E; }
+          .status { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid; }
+          .status.paid, .status.active { background: rgba(40, 168, 224, 0.15); color: #1F3C71; border-color: rgba(40, 168, 224, 0.3); }
+          .status.pending { background: #FEF3C7; color: #B45309; border-color: #FDE68A; }
+          .status.expired { background: #FEE2E2; color: #B91C1C; border-color: #FECACA; }
+          .payment-type { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 10px; font-weight: 600; margin-left: 10px; border: 1px solid; text-transform: uppercase; letter-spacing: 0.5px; }
+          .payment-type.prepaid { background: rgba(40, 168, 224, 0.15); color: #0D529E; border-color: rgba(40, 168, 224, 0.3); }
+          .payment-type.postpaid { background: rgba(40, 168, 224, 0.25); color: #1F3C71; border-color: rgba(40, 168, 224, 0.5); }
+          .footer { background: rgba(40, 168, 224, 0.05); padding: 20px 32px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #E5F2FB; }
+          .footer p { margin: 4px 0; }
+          .footer h5 { color: #0D529E; font-weight: 600; }
           @media print {
             body { background: white; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-            .invoice { box-shadow: none; }
-            .header { background: linear-gradient(135deg, #1F3C71, #1F3C71) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .status { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .items-table th { background: #f8f9fa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .footer { background: #f8f9fa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .payment-type { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .invoice { box-shadow: none; border-color: transparent; }
+            .header { background: linear-gradient(135deg, #0D529E, #1F3C71) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .header::after { background: linear-gradient(90deg, #0D529E, #28A8E0) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .status, .payment-type, .bill-to, .items-table th, .footer { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           }
         </style>
       </head>
@@ -792,7 +793,7 @@ export default function Dashboard() {
             <div class="invoice-meta">
               <div>
                 <h2>INVOICE <span class="payment-type ${isPrepaid ? 'prepaid' : 'postpaid'}">${paymentType}</span></h2>
-                <p style="color: #1F3C71; font-weight: 600; font-size: 18px;">${invoiceId}</p>
+                <p style="color: #0D529E; font-weight: 600; font-size: 18px; margin-top: 4px;">${invoiceId}</p>
               </div>
               <div class="details">
                 <p><strong>Invoice Date:</strong> ${formatDate(purchaseDate)}</p>
@@ -820,8 +821,8 @@ export default function Dashboard() {
               <tbody>
                 <tr>
                   <td>
-                    <strong>${pkgName}</strong><br>
-                    <span style="color: #888; font-size: 13px;">Package Subscription</span>
+                    <strong style="color: #1f2937;">${pkgName}</strong><br>
+                    <span style="color: #6b7280; font-size: 12px;">Package Subscription</span>
                   </td>
                   <td>${formatDate(purchaseDate)}</td>
                   <td>${formatDate(expireDate)}</td>
@@ -1109,8 +1110,8 @@ export default function Dashboard() {
       // Refresh partner extra and doc statuses
       await fetchPartnerExtra(+partnerID);
       await fetchDocStatuses(+partnerID);
-    } catch {
-      toast.error('Failed to upload document');
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to upload document' });
     } finally {
       setUploadingDoc(null);
     }
@@ -1121,7 +1122,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2
-            className="animate-spin h-12 w-12 text-[#1F3C71]
+            className="animate-spin h-12 w-12 text-btcl-primaryDark
  mx-auto mb-4"
           />
           <p className="text-gray-600">Loading dashboard...</p>
@@ -1190,7 +1191,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-btcl-primaryLight/10/30">
+    <div className="min-h-screen bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white">
       <Header />
 
       {/* Image Viewer Modal */}
@@ -1210,32 +1211,35 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-[#1F3C71] to-btcl-primaryDark bg-clip-text text-transparent mb-2">
-            Welcome back, {displayUserData.firstName} {displayUserData.lastName}
-            !
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+            Your Dashboard
+          </div>
+          <h2 className="mb-2 text-3xl font-bold text-gray-900 md:text-4xl">
+            Welcome back, {displayUserData.firstName} {displayUserData.lastName}!
           </h2>
-          <p className="text-gray-700">Here's an overview of your account</p>
+          <p className="text-base text-gray-600">Here's an overview of your account</p>
         </div>
 
         {/* Document Approval Disclaimer Banner */}
         {purchaseBlocked && (
-          <div className={`mb-8 rounded-xl border-2 p-5 ${docBlockReason === 'rejected' ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-300'}`}>
+          <div className={`mb-8 rounded-2xl border-2 p-6 ${docBlockReason === 'rejected' ? 'bg-red-50 border-red-300' : 'bg-btcl-primaryLight/5 border-btcl-primaryLight/30'}`}>
             <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-xl ${docBlockReason === 'rejected' ? 'bg-red-100' : 'bg-blue-100'}`}>
-                <svg className={`w-7 h-7 ${docBlockReason === 'rejected' ? 'text-red-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${docBlockReason === 'rejected' ? 'bg-red-100' : 'bg-btcl-primaryLight/10'}`}>
+                <svg className={`w-6 h-6 ${docBlockReason === 'rejected' ? 'text-red-600' : 'text-btcl-primary'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className={`text-lg font-bold ${docBlockReason === 'rejected' ? 'text-red-800' : 'text-blue-800'}`}>
+                <h3 className={`text-xl font-bold ${docBlockReason === 'rejected' ? 'text-red-800' : 'text-btcl-primaryDark'}`}>
                   {docBlockReason === 'rejected' ? 'Document(s) Rejected — Action Required' : 'Document Verification In Progress'}
                 </h3>
-                <p className={`text-sm mt-1 ${docBlockReason === 'rejected' ? 'text-red-700' : 'text-blue-700'}`}>
+                <p className={`text-sm leading-relaxed mt-1 ${docBlockReason === 'rejected' ? 'text-red-700' : 'text-gray-600'}`}>
                   {docBlockReason === 'rejected'
                     ? 'One or more of your required documents have been rejected. Please re-upload the corrected documents from the Documents section below. Once re-uploaded, BTCL will review them within 3 working days.'
                     : 'BTCL will review and approve your submitted documents within 3 working days. Document approval for all required documents (NID Front, NID Back, Trade License, TIN) is mandatory to make any purchase.'}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {[
                     { type: 'nidfront', label: 'NID Front' },
                     { type: 'nidback', label: 'NID Back' },
@@ -1246,12 +1250,12 @@ export default function Dashboard() {
                     return (
                       <span
                         key={doc.type}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
                           status === 'APPROVED'
-                            ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark border border-btcl-primaryLight/30'
+                            ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark border-btcl-primaryLight/30'
                             : status === 'REJECTED'
-                            ? 'bg-red-100 text-red-700 border border-red-200'
-                            : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                            ? 'bg-red-100 text-red-700 border-red-200'
+                            : 'bg-amber-100 text-amber-700 border-amber-200'
                         }`}
                       >
                         {status === 'APPROVED' ? (
@@ -1273,57 +1277,55 @@ export default function Dashboard() {
 
         {/* Account Status & Current Package */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 hover:shadow-xl transition-shadow">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-xl font-bold text-gray-900">
                 Account Status
               </h3>
-              {accountStatus === 'active' ? (
-                <div className="bg-btcl-primaryLight/20 p-2 rounded-full">
-                  <CheckCircle className="w-6 h-6 text-[#1F3C71]" />
-                </div>
-              ) : (
-                <div className="bg-red-100 p-2 rounded-full">
-                  <XCircle className="w-6 h-6 text-red-500" />
-                </div>
-              )}
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${accountStatus === 'active' ? 'bg-btcl-primaryLight/10' : 'bg-red-100'}`}>
+                {accountStatus === 'active' ? (
+                  <CheckCircle className="w-5 h-5 text-btcl-primary" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div
-                className={`px-5 py-2.5 rounded-full text-sm font-bold shadow-sm ${
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold border ${
                   accountStatus === 'active'
-                    ? 'bg-gradient-to-r from-btcl-primaryLight/20 to-btcl-primaryLight/20 text-[#1F3C71] border border-btcl-primaryLight/30'
-                    : 'bg-gradient-to-r from-red-100 to-orange-100 text-red-700 border border-red-200'
+                    ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark border-btcl-primaryLight/30'
+                    : 'bg-red-100 text-red-700 border-red-200'
                 }`}
               >
                 {accountStatus === 'active' ? 'Active' : 'Inactive'}
               </div>
               {partnerData && (
                 <div
-                  className={`px-5 py-2.5 rounded-full text-sm font-bold shadow-sm ${
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold border ${
                     isPrepaid
-                      ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-200'
-                      : 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 border border-purple-200'
+                      ? 'bg-btcl-primaryLight/20 text-btcl-primary border-btcl-primaryLight/30'
+                      : 'bg-btcl-primaryLight/30 text-btcl-primaryDark border-btcl-primaryLight/50'
                   }`}
                 >
                   {paymentType}
                 </div>
               )}
             </div>
-            <p className="text-gray-600 text-sm mt-4">
+            <p className="text-sm leading-relaxed text-gray-600 mt-4">
               {accountStatus === 'active'
                 ? 'Your account is active and ready to use'
                 : 'Please contact support to activate your account'}
             </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 hover:shadow-xl transition-shadow">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-xl font-bold text-gray-900">
                 Current Packages
               </h3>
-              <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-full">
-                <Package className="w-6 h-6 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
+                <Package className="w-5 h-5 text-btcl-primary" />
               </div>
             </div>
             {(Object.entries(serviceData) as [string, ServiceEntry][]).some(([, s]) => s.valid) ? (
@@ -1333,117 +1335,93 @@ export default function Dashboard() {
                   .map(([service, s]) => (
                     <div
                       key={service}
-                      className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-btcl-primaryLight/10 to-btcl-primaryLight/10 border border-btcl-primaryLight/30"
+                      className="flex justify-between items-center px-4 py-3 rounded-lg bg-btcl-primaryLight/10 border border-btcl-primaryLight/30"
                     >
-                      <span className="text-[#1F3C71] font-bold">Package:</span>
-                      <span className="font-bold text-[#1F3C71] text-lg">
+                      <span className="text-sm font-semibold text-btcl-primaryDark">Package:</span>
+                      <span className="text-base font-bold text-btcl-primaryDark">
                         {s.packageName ?? service.toUpperCase()}
                       </span>
                     </div>
                   ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">No active package found</p>
+              <p className="text-sm text-gray-500">No active package found</p>
             )}
           </div>
         </div>
 
         {/* Service Portals */}
-        <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
+        <div className="rounded-2xl border border-gray-200 bg-white p-7 mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
-              <ExternalLink className="w-6 h-6 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
+              <ExternalLink className="w-5 h-5 text-btcl-primary" />
             </div>
             <h3 className="text-xl font-bold text-gray-900">Service Portals</h3>
           </div>
           {purchaseBlocked && docBlockReason === 'rejected' && (
-            <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-              <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+              <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
               <div>
                 <p className="text-sm font-semibold text-red-700">Package purchase is currently restricted</p>
-                <p className="text-xs text-red-600 mt-0.5">
+                <p className="text-xs leading-relaxed text-red-600 mt-1">
                   One or more of your required documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please re-upload the rejected documents from the Documents section below and wait for admin approval.
                 </p>
               </div>
             </div>
           )}
           {purchaseBlocked && docBlockReason === 'pending' && (
-            <div className="mb-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-              <svg className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div className="mb-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
               </svg>
               <div>
                 <p className="text-sm font-semibold text-amber-700">Documents under review — Purchase disabled</p>
-                <p className="text-xs text-amber-600 mt-0.5">
+                <p className="text-xs leading-relaxed text-amber-600 mt-1">
                   BTCL will review and approve your required documents (NID Front, NID Back, Trade License, TIN) within 3 working days. Document approval is mandatory before making any purchase. You will be able to purchase packages once all required documents are approved.
                 </p>
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* PBX Portal */}
             {serviceData.pbx.valid ? (
               <a
                 href="https://hippbx.btcliptelephony.gov.bd:5174/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
-                    Hosted PBX Portal
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
+                    Alaap Cloud IP PBX
                   </h4>
-                  <p className="text-sm text-gray-600">
-                    Access your PBX dashboard
-                  </p>
+                  <p className="text-sm text-gray-600">Access your PBX dashboard</p>
                 </div>
-                <ExternalLink className="w-5 h-5 text-blue-500 group-hover:text-blue-700 transition-colors" />
+                <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
               </a>
             ) : serviceHistory.pbx ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
-                    Hosted PBX
-                  </h4>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-amber-800">Alaap Cloud IP PBX</h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
-                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
                   Renew Now
                 </span>
               </a>
@@ -1451,32 +1429,20 @@ export default function Dashboard() {
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-blue-400 hover:bg-blue-50 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-blue-500 group-hover:to-blue-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-500 group-hover:text-blue-700 transition-colors">
-                    Hosted PBX
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-700 group-hover:text-btcl-primary transition-colors">
+                    Alaap Cloud IP PBX
                   </h4>
-                  <p className="text-sm text-gray-400 group-hover:text-gray-600">
-                    No active package
-                  </p>
+                  <p className="text-sm text-gray-500">No active package</p>
                 </div>
-                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm">
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
                   Buy Now
                 </span>
               </a>
@@ -1488,61 +1454,37 @@ export default function Dashboard() {
                 href={`https://hcc.btcliptelephony.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
-                    Contact Center Portal
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
+                    Alaap Cloud Contact Center
                   </h4>
-                  <p className="text-sm text-gray-600">
-                    Access your HCC dashboard
-                  </p>
+                  <p className="text-sm text-gray-600">Access your HCC dashboard</p>
                 </div>
-                <ExternalLink className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" />
+                <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
               </a>
             ) : serviceHistory.hcc ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
-                    Contact Center
-                  </h4>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-amber-800">Alaap Cloud Contact Center</h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
-                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
                   Renew Now
                 </span>
               </a>
@@ -1550,32 +1492,20 @@ export default function Dashboard() {
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-purple-400 hover:bg-purple-50 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-purple-500 group-hover:to-purple-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-500 group-hover:text-purple-700 transition-colors">
-                    Contact Center
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-700 group-hover:text-btcl-primary transition-colors">
+                    Alaap Cloud Contact Center
                   </h4>
-                  <p className="text-sm text-gray-400 group-hover:text-gray-600">
-                    No active package
-                  </p>
+                  <p className="text-sm text-gray-500">No active package</p>
                 </div>
-                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-sm">
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
                   Buy Now
                 </span>
               </a>
@@ -1587,61 +1517,37 @@ export default function Dashboard() {
                 href="https://vbs.btcliptelephony.gov.bd/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors">
-                    Voice Broadcast Portal
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
+                    Alaap Cloud Voice Broadcasting Service
                   </h4>
-                  <p className="text-sm text-gray-600">
-                    Access your VBS dashboard
-                  </p>
+                  <p className="text-sm text-gray-600">Access your VBS dashboard</p>
                 </div>
-                <ExternalLink className="w-5 h-5 text-orange-500 group-hover:text-orange-700 transition-colors" />
+                <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
               </a>
             ) : serviceHistory.vbs ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
-                    Voice Broadcast
-                  </h4>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-amber-800">Alaap Cloud Voice Broadcasting Service</h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
-                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-sm">
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
                   Renew Now
                 </span>
               </a>
@@ -1649,32 +1555,20 @@ export default function Dashboard() {
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
-                className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-orange-400 hover:bg-orange-50 hover:shadow-lg transition-all group"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
               >
-                <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-orange-500 group-hover:to-orange-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                    />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-500 group-hover:text-orange-700 transition-colors">
-                    Voice Broadcast
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-700 group-hover:text-btcl-primary transition-colors">
+                    Alaap Cloud Voice Broadcasting Service
                   </h4>
-                  <p className="text-sm text-gray-400 group-hover:text-gray-600">
-                    No active package
-                  </p>
+                  <p className="text-sm text-gray-500">No active package</p>
                 </div>
-                <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-full shadow-sm">
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
                   Buy Now
                 </span>
               </a>
@@ -1684,32 +1578,23 @@ export default function Dashboard() {
             <a
               href="/en/pricing#bulk-sms"
               onClick={handleBuyNow}
-              className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 border-dashed hover:border-sky-400 hover:bg-sky-50 hover:shadow-lg transition-all group"
+              className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
             >
-              <div className="bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-sky-500 group-hover:to-sky-600 p-3 rounded-lg shadow-sm group-hover:shadow-md transition-all">
-                <svg
-                  className="w-6 h-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-500 group-hover:text-sky-700 transition-colors">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-gray-700 group-hover:text-btcl-primary transition-colors">
                   Bulk SMS
                 </h4>
-                <p className="text-sm text-gray-400 group-hover:text-gray-600">
-                  No active package
-                </p>
+                <p className="text-sm text-gray-500">No active package</p>
+                <div className="mt-1.5">
+                  <AggregatorTag />
+                </div>
               </div>
-              <span className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-sky-500 to-sky-600 rounded-full shadow-sm">
+              <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
                 Buy Now
               </span>
             </a>
@@ -1717,11 +1602,11 @@ export default function Dashboard() {
         </div>
 
         {/* Personal Information */}
-        <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
+        <div className="rounded-2xl border border-gray-200 bg-white p-7 mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
               <svg
-                className="w-6 h-6 text-white"
+                className="w-5 h-5 text-btcl-primary"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -1739,31 +1624,31 @@ export default function Dashboard() {
             </h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+            <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+              <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                 Full Name
               </label>
-              <p className="text-gray-900 font-bold">
+              <p className="text-sm font-medium text-gray-900">
                 {displayUserData.firstName} {displayUserData.lastName}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+            <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+              <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                 Mobile Number
               </label>
-              <p className="text-gray-900 font-bold">{displayUserData.phone}</p>
+              <p className="text-sm font-medium text-gray-900">{displayUserData.phone}</p>
             </div>
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+            <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+              <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                 Email Address
               </label>
-              <p className="text-gray-900 font-bold">{displayUserData.email}</p>
+              <p className="text-sm font-medium text-gray-900">{displayUserData.email}</p>
             </div>
-            <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+            <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+              <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                 NID Number
               </label>
-              <p className="text-gray-900 font-bold">
+              <p className="text-sm font-medium text-gray-900">
                 {partnerExtra?.nid || 'N/A'}
               </p>
             </div>
@@ -1772,11 +1657,11 @@ export default function Dashboard() {
 
         {/* Address Information */}
         {partnerExtra && (
-          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7 mb-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
                 <svg
-                  className="w-6 h-6 text-white"
+                  className="w-5 h-5 text-btcl-primary"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -1800,34 +1685,34 @@ export default function Dashboard() {
               </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   Address
                 </label>
-                <p className="text-gray-900 font-bold">
+                <p className="text-sm font-medium text-gray-900">
                   {partnerExtra.address1}
                 </p>
               </div>
 
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   City
                 </label>
-                <p className="text-gray-900 font-bold">{partnerExtra.city}</p>
+                <p className="text-sm font-medium text-gray-900">{partnerExtra.city}</p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   Postal Code
                 </label>
-                <p className="text-gray-900 font-bold">
+                <p className="text-sm font-medium text-gray-900">
                   {partnerExtra.postalCode}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   Country
                 </label>
-                <p className="text-gray-900 font-bold">
+                <p className="text-sm font-medium text-gray-900">
                   {partnerExtra.countryCode === 'BD'
                     ? 'Bangladesh'
                     : partnerExtra.countryCode}
@@ -1839,11 +1724,11 @@ export default function Dashboard() {
 
         {/* Business Information */}
         {partnerExtra && (
-          <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7 mb-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
                 <svg
-                  className="w-6 h-6 text-white"
+                  className="w-5 h-5 text-btcl-primary"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -1861,25 +1746,25 @@ export default function Dashboard() {
               </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   Trade License Number
                 </label>
-                <p className="text-gray-900 font-bold">
+                <p className="text-sm font-medium text-gray-900">
                   {partnerExtra.tradeLicenseNumber}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   TIN Number
                 </label>
-                <p className="text-gray-900 font-bold">{partnerExtra.tin}</p>
+                <p className="text-sm font-medium text-gray-900">{partnerExtra.tin}</p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   Tax Return Date
                 </label>
-                <p className="text-gray-900 font-bold">
+                <p className="text-sm font-medium text-gray-900">
                   {new Date(partnerExtra.taxReturnDate).toLocaleDateString(
                     'en-US',
                     {
@@ -1890,50 +1775,49 @@ export default function Dashboard() {
                   )}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-btcl-primaryLight/10/20 border border-gray-200 hover:border-btcl-primaryLight/60 transition-colors">
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
+                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   Uploaded By
                 </label>
-                <p className="text-gray-900 font-bold">
+                <p className="text-sm font-medium text-gray-900">
                   {partnerExtra.uploadedBy}
                 </p>
               </div>
             </div>
 
             {/* Uploaded Documents */}
-            <div className="border-t pt-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                  <h4 className="text-xl font-bold text-gray-900 mb-1">
                     Uploaded Documents
                   </h4>
                   <p className="text-sm text-gray-500">
                     View and download your submitted documents
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#1F3C71] bg-white hover:bg-btcl-primaryLight/10 border-2 border-[#1F3C71] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-                  <span className="text-xs font-semibold text-[#1F3C71]">
-                    {documents?.filter((doc) => doc.available).length} Documents
-                  </span>
-                </div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-3 py-1 text-xs font-semibold text-btcl-primaryDark">
+                  <span className="h-1.5 w-1.5 rounded-full bg-btcl-primary" />
+                  {documents?.filter((doc) => doc.available).length} Documents
+                </span>
               </div>
 
               {/* Table View */}
               <div className="bg-white border-2 border-gray-100 rounded-xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-btcl-primaryLight/10">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                           Document Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                           Type
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -1942,16 +1826,16 @@ export default function Dashboard() {
                       {documents?.map((doc, index) => (
                         <tr
                           key={doc.type}
-                          className="hover:bg-gradient-to-r hover:from-btcl-primaryLight/10/80 hover:to-btcl-primaryLight/10/40 transition-all duration-200 group"
+                          className="hover:bg-btcl-primaryLight/5 transition-all duration-200 group"
                         >
                           {/* Document Name */}
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="flex-shrink-0 h-11 w-11 bg-gradient-to-br from-[#1F3C71] to-btcl-primary rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+                              <div className="flex-shrink-0 h-11 w-11 bg-btcl-primaryLight/10 rounded-xl flex items-center justify-center">
                                 {/* Trade License Icon - Building */}
                                 {doc.type === 'tradelicense' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -1967,7 +1851,7 @@ export default function Dashboard() {
                                 {/* TIN Certificate Icon - Document with lines */}
                                 {doc.type === 'tin' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -1983,7 +1867,7 @@ export default function Dashboard() {
                                 {/* Tax Return Icon - Calculator */}
                                 {doc.type === 'taxreturn' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -2000,7 +1884,7 @@ export default function Dashboard() {
                                 {(doc.type === 'nidfront' ||
                                   doc.type === 'nidback') && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -2016,7 +1900,7 @@ export default function Dashboard() {
                                 {/* BIN Certificate Icon - Clipboard with list */}
                                 {doc.type === 'bin' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -2032,7 +1916,7 @@ export default function Dashboard() {
                                 {/* VAT Document Icon - Currency/Money */}
                                 {doc.type === 'vat' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -2048,7 +1932,7 @@ export default function Dashboard() {
                                 {/* BTRC Registration Icon - Broadcast/Signal */}
                                 {doc.type === 'btrc' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -2064,7 +1948,7 @@ export default function Dashboard() {
                                 {/* Photo Icon - Camera/Image */}
                                 {doc.type === 'photo' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -2080,7 +1964,7 @@ export default function Dashboard() {
                                 {/* SLA Document Icon - Shield with check */}
                                 {doc.type === 'sla' && (
                                   <svg
-                                    className="w-5 h-5 text-white"
+                                    className="w-5 h-5 text-btcl-primary"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -2095,7 +1979,7 @@ export default function Dashboard() {
                                 )}
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-semibold text-gray-900 group-hover:text-[#1F3C71] transition-colors">
+                                <div className="text-sm font-semibold text-gray-900 group-hover:text-btcl-primaryDark transition-colors">
                                   {doc.name}
                                 </div>
                               </div>
@@ -2119,14 +2003,14 @@ export default function Dashboard() {
                             ) : (() => {
                               const st = docStatuses[doc.type]?.status || 'PENDING';
                               if (st === 'APPROVED') return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-btcl-primaryLight/20 to-btcl-primaryLight/20 text-[#1F3C71] border border-btcl-primaryLight/30 shadow-sm">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-btcl-primaryLight/20 text-btcl-primaryDark border border-btcl-primaryLight/30">
                                   <CheckCircle className="w-3.5 h-3.5" />
                                   Approved
                                 </span>
                               );
                               if (st === 'REJECTED') return (
                                 <div>
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-red-100 to-orange-100 text-red-600 border border-red-200 shadow-sm">
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
                                     <XCircle className="w-3.5 h-3.5" />
                                     Rejected
                                   </span>
@@ -2138,7 +2022,7 @@ export default function Dashboard() {
                                 </div>
                               );
                               return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200 shadow-sm">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
                                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                                   </svg>
@@ -2156,7 +2040,7 @@ export default function Dashboard() {
                                   <button
                                     onClick={() => viewDocument(doc.type, `${doc.name}`)}
                                     disabled={viewingDoc === doc.type}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#1F3C71] to-btcl-primary hover:from-[#1F3C71] hover:to-btcl-primaryDark rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-btcl-primary px-4 py-2 text-xs font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-btcl-primaryDark disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                     title="View Document"
                                   >
                                     {viewingDoc === doc.type ? (
@@ -2168,7 +2052,7 @@ export default function Dashboard() {
                                   <button
                                     onClick={() => downloadDocument(doc.type, `${doc.name}`)}
                                     disabled={downloadingDoc === doc.type}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#1F3C71] bg-white hover:bg-btcl-primaryLight/10 border-2 border-[#1F3C71] rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400"
+                                    className="transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-white px-4 py-2 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:border-gray-400 disabled:text-gray-400"
                                     title="Download Document"
                                   >
                                     {downloadingDoc === doc.type ? (
@@ -2179,12 +2063,12 @@ export default function Dashboard() {
                                   </button>
                                 </>
                               ) : MANDATORY_DOCS.has(doc.type) ? (
-                                <Link href={`/${locale}/contact`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors cursor-pointer">
+                                <Link href={`/${locale}/contact`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-btcl-primaryLight/10 hover:text-btcl-primary hover:border-btcl-primaryLight/30 transition-colors cursor-pointer">
                                   <Lock className="w-3.5 h-3.5" />
                                   Contact Admin
                                 </Link>
                               ) : (
-                                <label className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                                <label className={`transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-white px-4 py-2 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
                                   <input
                                     type="file"
                                     className="hidden"
@@ -2215,11 +2099,11 @@ export default function Dashboard() {
         )}
 
         {/* Invoice History */}
-        <div className="bg-white rounded-xl shadow-lg border border-btcl-primaryLight/20 p-6 mb-8 hover:shadow-xl transition-shadow">
+        <div className="rounded-2xl border border-gray-200 bg-white p-7 mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#1F3C71] to-btcl-primary p-2 rounded-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
               <svg
-                className="w-6 h-6 text-white"
+                className="w-5 h-5 text-btcl-primary"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2237,39 +2121,39 @@ export default function Dashboard() {
 
           {loadingInvoices ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-[#1F3C71] animate-spin" />
+              <Loader2 className="w-8 h-8 text-btcl-primaryDark animate-spin" />
             </div>
           ) : purchaseHistory && purchaseHistory.length > 0 ? (
             <>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-btcl-primaryLight/10">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Invoice ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Package
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Customer Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Purchase Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Package Expire Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Invoice Due Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-[#1F3C71] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
                       Action
                     </th>
                   </tr>
@@ -2301,10 +2185,10 @@ export default function Dashboard() {
                       return (
                         <tr
                           key={purchase.id || index}
-                          className="hover:bg-gradient-to-r hover:from-btcl-primaryLight/10/80 hover:to-btcl-primaryLight/10/40 transition-all duration-200"
+                          className="hover:bg-btcl-primaryLight/5 transition-all duration-200"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-mono font-medium text-[#1F3C71]">
+                            <span className="text-sm font-mono font-medium text-btcl-primaryDark">
                               {invoiceId}
                             </span>
                           </td>
@@ -2322,10 +2206,10 @@ export default function Dashboard() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
-                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${
                                 isPrepaid
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-purple-100 text-purple-700'
+                                  ? 'bg-btcl-primaryLight/20 text-btcl-primary border-btcl-primaryLight/30'
+                                  : 'bg-btcl-primaryLight/30 text-btcl-primaryDark border-btcl-primaryLight/50'
                               }`}
                             >
                               {paymentType}
@@ -2384,14 +2268,14 @@ export default function Dashboard() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <span
-                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${
                                 status === 'ACTIVE'
-                                  ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark'
+                                  ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark border-btcl-primaryLight/30'
                                   : status === 'EXPIRED'
-                                    ? 'bg-red-100 text-red-700'
+                                    ? 'bg-red-100 text-red-700 border-red-200'
                                     : status === 'INACTIVE'
-                                      ? 'bg-gray-100 text-gray-600'
-                                      : 'bg-yellow-100 text-yellow-700'
+                                      ? 'bg-gray-100 text-gray-600 border-gray-200'
+                                      : 'bg-amber-100 text-amber-700 border-amber-200'
                               }`}
                             >
                               {status}
@@ -2400,7 +2284,7 @@ export default function Dashboard() {
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <button
                               onClick={() => handleDownloadInvoice(purchase)}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#1F3C71] to-btcl-primary hover:from-[#1F3C71] hover:to-btcl-primaryDark rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              className="transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-white px-4 py-2 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
                               title="Download Invoice"
                             >
                               <Download className="w-4 h-4" />
@@ -2429,7 +2313,7 @@ export default function Dashboard() {
                     <button
                       onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
                       disabled={invoicePage === 1}
-                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="transform rounded-lg border-2 border-btcl-primary bg-white px-3 py-1.5 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       Previous
                     </button>
@@ -2437,10 +2321,10 @@ export default function Dashboard() {
                       <button
                         key={page}
                         onClick={() => setInvoicePage(page)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                        className={`transform rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${
                           page === invoicePage
-                            ? 'bg-[#1F3C71] text-white'
-                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                            ? 'border-btcl-primary bg-btcl-primary text-white'
+                            : 'border-btcl-primary bg-white text-btcl-primary hover:scale-105 hover:bg-btcl-primary hover:text-white'
                         }`}
                       >
                         {page}
@@ -2449,7 +2333,7 @@ export default function Dashboard() {
                     <button
                       onClick={() => setInvoicePage((p) => Math.min(totalPages, p + 1))}
                       disabled={invoicePage === totalPages}
-                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="transform rounded-lg border-2 border-btcl-primary bg-white px-3 py-1.5 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       Next
                     </button>

@@ -48,19 +48,23 @@ export function Header() {
   }
 
   return (
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href={`/${locale}`} className="flex items-center space-x-2">
+              <Link href={`/${locale}`} className="flex items-center gap-3">
                 <Image
                     src="/btcllogo.png"
                     alt="BTCL Logo"
-                    width={124}
-                    height={100}
-                    className="rounded-lg object-contain"
+                    width={128}
+                    height={128}
+                    className="h-14 w-auto object-contain"
+                    priority
                 />
+                <span className="text-xl font-bold text-white tracking-tight">
+                  Alaap Cloud
+                </span>
               </Link>
             </div>
 
@@ -70,10 +74,10 @@ export function Header() {
                   <Link
                       key={item.name}
                       href={item.href}
-                      className={`text-sm font-medium transition-colors hover:text-btcl-primary ${
+                      className={`relative text-sm font-semibold transition-colors hover:text-white ${
                           pathname === item.href
-                              ? 'text-btcl-primary'
-                              : 'text-gray-700'
+                              ? 'text-white after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-btcl-primaryLight'
+                              : 'text-white/75'
                       }`}
                   >
                     {item.name}
@@ -91,22 +95,22 @@ export function Header() {
                     // Authenticated state - Show Dashboard, Settings and Logout
                     <>
                       <Link href={dashboardHref}>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
                           Dashboard
                         </Button>
                       </Link>
                       <Link
                         href={`/${locale}/settings`}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                         title="Settings"
                       >
-                        <Settings className="w-5 h-5 text-gray-600" />
+                        <Settings className="w-5 h-5 text-white" />
                       </Link>
                       <Button
                           size="sm"
                           variant="outline"
                           onClick={handleLogout}
-                          className="border-red-500 text-red-500 hover:bg-red-50"
+                          className="border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-red-600 hover:border-white"
                       >
                         Logout
                       </Button>
@@ -115,12 +119,12 @@ export function Header() {
                     // Unauthenticated state - Show Login and Register
                     <>
                       <Link href={`/${locale}/login`}>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
                           {t('navigation.login')}
                         </Button>
                       </Link>
                       <Link href={`/${locale}/register`}>
-                        <Button size="sm">
+                        <Button size="sm" className="bg-white text-btcl-primary hover:bg-btcl-primaryLight hover:text-white border border-white">
                           {t('navigation.register')}
                         </Button>
                       </Link>
@@ -131,7 +135,7 @@ export function Header() {
               {/* Mobile Menu Button */}
               <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-btcl-primary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-btcl-primary"
+                  className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/40"
               >
                 <span className="sr-only">Open main menu</span>
                 {mobileMenuOpen ? (
@@ -149,7 +153,7 @@ export function Header() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-              <div className="md:hidden border-t border-gray-200">
+              <div className="md:hidden border-t border-white/10">
                 <div className="px-2 pt-2 pb-3 space-y-1">
                   {navigation.map((item) => (
                       <Link
@@ -157,8 +161,8 @@ export function Header() {
                           href={item.href}
                           className={`block px-3 py-2 rounded-md text-base font-medium ${
                               pathname === item.href
-                                  ? 'bg-btcl-primary/10 text-btcl-primary'
-                                  : 'text-gray-700 hover:bg-gray-100 hover:text-btcl-primary'
+                                  ? 'bg-white/15 text-white'
+                                  : 'text-white/75 hover:bg-white/10 hover:text-white'
                           }`}
                           onClick={() => setMobileMenuOpen(false)}
                       >
@@ -166,16 +170,16 @@ export function Header() {
                       </Link>
                   ))}
                 </div>
-                <div className="border-t border-gray-200 px-2 pt-4 pb-3 space-y-2">
+                <div className="border-t border-white/10 px-2 pt-4 pb-3 space-y-2">
                   {isAuthenticated ? (
                       <>
                         <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" size="sm" className="w-full">
+                          <Button variant="ghost" size="sm" className="w-full text-white hover:bg-white/10 hover:text-white">
                             Dashboard
                           </Button>
                         </Link>
                         <Link href={`/${locale}/settings`} onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" size="sm" className="w-full flex items-center gap-2">
+                          <Button variant="ghost" size="sm" className="w-full flex items-center gap-2 text-white hover:bg-white/10 hover:text-white">
                             <Settings className="w-4 h-4" />
                             Settings
                           </Button>
@@ -187,7 +191,7 @@ export function Header() {
                               setMobileMenuOpen(false)
                               handleLogout()
                             }}
-                            className="w-full border-red-500 text-red-500 hover:bg-red-50"
+                            className="w-full border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-red-600 hover:border-white"
                         >
                           Logout
                         </Button>
@@ -195,12 +199,12 @@ export function Header() {
                   ) : (
                       <>
                         <Link href={`/${locale}/login`} onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" size="sm" className="w-full">
+                          <Button variant="ghost" size="sm" className="w-full text-white hover:bg-white/10 hover:text-white">
                             {t('navigation.login')}
                           </Button>
                         </Link>
                         <Link href={`/${locale}/register`} onClick={() => setMobileMenuOpen(false)}>
-                          <Button size="sm" className="w-full">
+                          <Button size="sm" className="w-full bg-white text-btcl-primary hover:bg-btcl-primaryLight hover:text-white border border-white">
                             {t('navigation.register')}
                           </Button>
                         </Link>

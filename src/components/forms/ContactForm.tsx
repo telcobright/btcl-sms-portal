@@ -311,7 +311,7 @@ export function ContactForm({ locale }: ContactFormProps) {
           <Button
             type="submit"
             disabled={sending}
-            className="w-full transform rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+            className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
           >
             {sending ? (
               <span className="flex items-center justify-center gap-2">

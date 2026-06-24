@@ -158,7 +158,7 @@ export default function PartnersPage() {
               <option value="3">Customer</option>
               <option value="4">Reseller</option>
               <option value="5">SMS Customer</option>
-              <option value="6">Enterprise</option>
+              <option value="6">Corporate</option>
             </select>
           </div>
 

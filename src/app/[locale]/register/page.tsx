@@ -17,6 +17,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { showApiError } from '@/lib/api-error';
 import { FEATURE_FLAGS, API_BASE_URL, NID_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // Country list with codes
@@ -423,17 +424,23 @@ export default function RegisterPage() {
       console.log('Validation response:', validateData);
 
       if (!validateResponse.ok || validateData === false) {
-        if (validateData.errorCode === '400 BAD_REQUEST') {
-          if (validateData.message === 'Mobile number already exists') {
-            verificationForm.setError('phone', { type: 'manual', message: 'Mobile number already exists' });
-          } else if (validateData.message === 'Email already exists') {
+        const apiMessage: string = validateData?.message || 'Validation failed. Please check your information.';
+
+        if (validateData?.errorCode === '400 BAD_REQUEST') {
+          if (apiMessage === 'Mobile number already exists' || apiMessage === 'Telephone number already exists') {
+            verificationForm.setError('phone', { type: 'manual', message: apiMessage });
+          } else if (apiMessage === 'Email already exists') {
             verificationForm.setError('email', { type: 'manual', message: 'Email already exists' });
-          } else if (validateData.message === 'Partner Name already exists') {
+          } else if (apiMessage === 'Partner Name already exists') {
             verificationForm.setError('companyName', { type: 'manual', message: 'Company Name already exists' });
           }
-        } else {
-          toast.error('Validation failed. Please check your information.');
         }
+
+        showApiError(
+          { ...validateData, status: validateResponse.status },
+          { fallbackMessage: 'Validation failed. Please check your information.' }
+        );
+
         setIsSubmitting(false);
         return;
       }
@@ -451,12 +458,12 @@ export default function RegisterPage() {
         if (response.retryAfterSeconds) {
           toast.error(`Please wait ${response.retryAfterSeconds} seconds before requesting another OTP`);
         } else {
-          toast.error(response.message || 'Failed to send email OTP');
+          showApiError(response, { fallbackMessage: 'Failed to send email OTP' });
         }
       }
     } catch (error) {
       console.error('Failed to send email OTP:', error);
-      toast.error('Failed to send email OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Failed to send email OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -478,11 +485,11 @@ export default function RegisterPage() {
         // Automatically send phone OTP
         await handleSendPhoneOtp();
       } else {
-        toast.error(response.message || 'Invalid email OTP. Please try again.');
+        showApiError(response, { fallbackMessage: 'Invalid email OTP. Please try again.' });
       }
     } catch (error) {
       console.error('Failed to verify email OTP:', error);
-      toast.error('Invalid email OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Invalid email OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -503,7 +510,7 @@ export default function RegisterPage() {
       toast.success('OTP sent to your phone successfully!');
     } catch (error) {
       console.error('Failed to send phone OTP:', error);
-      toast.error('Failed to send phone OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Failed to send phone OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -526,11 +533,11 @@ export default function RegisterPage() {
         toast.success('Phone verified successfully!');
         setStep(2);
       } else {
-        toast.error('Invalid phone OTP. Please try again.');
+        showApiError(response, { fallbackMessage: 'Invalid phone OTP. Please try again.' });
       }
     } catch (error) {
       console.error('Failed to verify phone OTP:', error);
-      toast.error('Invalid phone OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Invalid phone OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -553,7 +560,7 @@ export default function RegisterPage() {
           startTimer(300);
           toast.success('OTP resent to your email!');
         } else {
-          toast.error(response.message || 'Failed to resend email OTP');
+          showApiError(response, { fallbackMessage: 'Failed to resend email OTP' });
         }
       } else if (!phoneOtpVerified) {
         // Resend phone OTP
@@ -564,7 +571,7 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('Failed to resend OTP:', error);
-      toast.error('Failed to resend OTP. Please try again.');
+      showApiError(error, { fallbackMessage: 'Failed to resend OTP. Please try again.' });
     }
   };
 
@@ -708,7 +715,7 @@ export default function RegisterPage() {
     } catch (error) {
       console.error('OCR extraction error:', error);
       toast.dismiss('ocr-loading');
-      toast.error('OCR extraction failed. Please enter data manually.');
+      showApiError(error, { fallbackMessage: 'OCR extraction failed. Please enter data manually.' });
     } finally {
       setIsExtractingOcr(false);
       setOcrProgress(0);
@@ -877,12 +884,7 @@ export default function RegisterPage() {
         setCreatedPartnerId(null);
         setPartnerJwtToken(null);
       }
-      // Provide more specific error messages
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Registration failed. Please try again.');
-      }
+      showApiError(error, { fallbackMessage: 'Registration failed. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -894,42 +896,36 @@ export default function RegisterPage() {
 
       {/* Success Popup */}
       {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border border-gray-200">
             <div className="flex flex-col items-center">
-              <div className="bg-btcl-primary rounded-full p-4 mb-4">
-                <svg
-                  className="w-16 h-16 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="3"
-                    d="M5 13l4 4L19 7"
-                  />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-btcl-primaryLight/10 mb-5">
+                <svg className="h-8 w-8 text-btcl-primary" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-btcl-primary mb-2 text-center">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-xs font-semibold text-btcl-primaryDark">
+                <span className="h-1.5 w-1.5 rounded-full bg-btcl-primary" />
+                Welcome Aboard
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">
                 Registration Successful!
               </h3>
-              <p className="text-gray-700 text-center mb-2 font-medium">
-                Credentials has been sent to email.
+              <p className="text-sm text-gray-600 text-center mb-1">
+                Credentials have been sent to your email.
               </p>
-              <p className="text-gray-600 text-center mb-4">
-                Please check your email.
+              <p className="text-sm text-gray-500 text-center mb-5">
+                Please check your inbox to continue.
               </p>
               {otherInfoForm.getValues('customerType') === 'postpaid' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 w-full">
-                  <p className="text-blue-800 text-sm text-center">
-                    <strong>Note:</strong> Your postpaid account is under review. Our team will verify your documents within 24-48 business hours.
+                <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/30 p-4 mb-4 w-full">
+                  <p className="text-sm leading-relaxed text-btcl-primaryDark text-center">
+                    <strong>Note:</strong> Your postpaid account is under review. Our team will verify your documents within 24–48 business hours.
                   </p>
                 </div>
               )}
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-6 w-full">
-                <p className="text-amber-800 text-sm text-center">
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-6 w-full">
+                <p className="text-sm leading-relaxed text-amber-800 text-center">
                   <strong>Important:</strong> Please change your default password after logging in for security.
                 </p>
               </div>
@@ -945,7 +941,7 @@ export default function RegisterPage() {
                   // Clean up
                   localStorage.removeItem('customerType');
                 }}
-                className="bg-[#0D529E] text-white px-6 py-3 rounded-md hover:bg-[#0D529E] transition w-full font-medium"
+                className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
               >
                 {otherInfoForm.getValues('customerType') === 'prepaid' ? 'Go to Dashboard' : 'Continue'}
               </button>
@@ -954,22 +950,27 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <div className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
+      <div className="min-h-screen bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Title */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-black">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              Create Account
+            </div>
+            <h1 className="mb-2 text-3xl font-bold text-gray-900 md:text-4xl">
               {step === 1 && 'Verify Your Email & Phone'}
               {step === 2 && 'Verify Your NID'}
               {step === 3 && 'Upload Your Documents and Additional Data'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-base text-gray-600">
               Please provide your information to get started
             </p>
           </div>
 
+          <div className="rounded-2xl border border-gray-200 bg-white p-7">
           {/* Steps header (tabs) */}
-          <div className="flex border mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6 rounded-xl bg-btcl-primaryLight/5 p-1.5">
             {['Verification', 'NID Verification', 'Other Information'].map(
               (label, i) => (
                 <div
@@ -992,10 +993,10 @@ export default function RegisterPage() {
                       setStep(i + 1);
                     }
                   }}
-                  className={`flex-1 text-center py-3 border-r last:border-r-0 ${
+                  className={`text-center py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                     step === i + 1
-                      ? 'bg-gray-100 font-medium text-black'
-                      : 'bg-white text-black'
+                      ? 'bg-btcl-primary text-white shadow-sm'
+                      : 'bg-transparent text-gray-600 hover:text-btcl-primary'
                   } ${
                     (i === 0 && otpVerified) ||
                     (i === 1 && (nidVerified || !otpVerified)) ||
@@ -1164,8 +1165,8 @@ export default function RegisterPage() {
               {/* Email OTP Section */}
               {emailOtpSent && !emailOtpVerified && (
                 <>
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                    <p className="text-blue-800 text-sm">
+                  <div className="bg-btcl-primaryLight/5 border border-btcl-primaryLight/30 rounded-xl p-4 mb-4">
+                    <p className="text-sm leading-relaxed text-btcl-primaryDark">
                       <strong>Step 1 of 2:</strong> Verify your email address
                     </p>
                   </div>
@@ -1209,7 +1210,7 @@ export default function RegisterPage() {
                     {secondsLeft > 0 ? (
                       <p>Time remaining: {formatTime(secondsLeft)}</p>
                     ) : (
-                      <button type="button" onClick={resendOtp} className="text-blue-600 hover:underline">
+                      <button type="button" onClick={resendOtp} className="font-medium text-btcl-primary hover:underline">
                         Resend Email OTP
                       </button>
                     )}
@@ -1230,8 +1231,8 @@ export default function RegisterPage() {
               {/* Phone OTP Section */}
               {phoneOtpSent && !phoneOtpVerified && (
                 <>
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                    <p className="text-blue-800 text-sm">
+                  <div className="bg-btcl-primaryLight/5 border border-btcl-primaryLight/30 rounded-xl p-4 mb-4">
+                    <p className="text-sm leading-relaxed text-btcl-primaryDark">
                       <strong>Step 2 of 2:</strong> Verify your Mobile number
                     </p>
                   </div>
@@ -1275,7 +1276,7 @@ export default function RegisterPage() {
                     {secondsLeft > 0 ? (
                       <p>Time remaining: {formatTime(secondsLeft)}</p>
                     ) : (
-                      <button type="button" onClick={resendOtp} className="text-blue-600 hover:underline">
+                      <button type="button" onClick={resendOtp} className="font-medium text-btcl-primary hover:underline">
                         Resend Phone OTP
                       </button>
                     )}
@@ -1289,7 +1290,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleNext}
                   disabled={isSubmitting || (!emailOtpSent && !canSendOtp)}
-                  className="bg-[#0D529E] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isSubmitting
                     ? 'Processing...'
@@ -1313,7 +1314,7 @@ export default function RegisterPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
                     <div className="flex flex-col items-center">
-                      <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#0D529E] mb-4"></div>
+                      <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-btcl-primary mb-4"></div>
                       <h3 className="text-2xl font-bold text-gray-800 mb-2">NID Data Verifying</h3>
                       <p className="text-gray-600 text-center">Please Wait...</p>
                     </div>
@@ -1376,7 +1377,7 @@ export default function RegisterPage() {
                       </p>
                       <button
                         onClick={() => setNidVerificationFailed(false)}
-                        className="bg-[#0D529E] text-white px-6 py-2 rounded-md hover:bg-[#0D529E] transition"
+                        className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
                       >
                         Try Again
                       </button>
@@ -1424,14 +1425,14 @@ export default function RegisterPage() {
                             {isExtractingOcr && (
                               <div className="mt-2">
                                 <div className="flex items-center gap-2">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0D529E]"></div>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-btcl-primary"></div>
                                   <span className="text-sm text-gray-600">
                                     Extracting data... {ocrProgress}%
                                   </span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                                   <div
-                                    className="bg-[#0D529E] h-1.5 rounded-full transition-all duration-300"
+                                    className="bg-btcl-primary h-1.5 rounded-full transition-all duration-300"
                                     style={{ width: `${ocrProgress}%` }}
                                   ></div>
                                 </div>
@@ -1439,7 +1440,7 @@ export default function RegisterPage() {
                             )}
                             {!isExtractingOcr && !fieldState.error && (
                               <div className="mt-1 space-y-1">
-                                <p className="text-blue-600 text-xs">
+                                <p className="text-xs text-btcl-primary">
                                   Upload NID image to auto-fill Name, NID Number & DOB
                                 </p>
                                 <p className="text-gray-500 text-xs">
@@ -1594,7 +1595,7 @@ export default function RegisterPage() {
                       )}
                     />
                     {watchedNidDigitType === '17' && (
-                      <p className="text-blue-600 text-sm mt-2">
+                      <p className="text-sm text-btcl-primary mt-2">
                         💡 Please add birth year with the NID number to match 17 digits
                       </p>
                     )}
@@ -1691,7 +1692,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleNext}
                   disabled={!canProceedPersonal || isVerifyingNid || nidVerified}
-                  className="bg-[#0D529E] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {nidVerified ? 'Proceeding to Next Step...' : 'Verify NID & Continue'}
                 </button>
@@ -1755,7 +1756,7 @@ export default function RegisterPage() {
                     </div>
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                       <p className="text-amber-800 text-sm">
-                        <strong>Note:</strong> T&C applies to postpaid customers. Postpaid billing is applicable only for Hosted PBX purchases. All other services will remain prepaid.
+                        <strong>Note:</strong> T&C applies to postpaid customers. Postpaid billing is applicable only for Alaap Cloud IP PBX purchases. All other services will remain prepaid.
                       </p>
                     </div>
                   </div>
@@ -2153,7 +2154,7 @@ export default function RegisterPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-[#0D529E] ml-1 cursor-pointer hover:underline"
+                        className="text-btcl-primary ml-1 cursor-pointer hover:underline"
                       >
                         terms &amp; conditions
                       </a>
@@ -2179,13 +2180,14 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !otherInfoForm.formState.isValid}
-                  className="bg-[#0D529E] text-white px-4 py-2 rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isSubmitting ? 'Processing...' : 'Complete Registration'}
                 </button>
               </div>
             </form>
           )}
+          </div>
         </div>
       </div>
     </div>

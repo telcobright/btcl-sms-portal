@@ -504,7 +504,7 @@ export const getPartnerTypeLabel = (partnerType: number): string => {
     case 5:
       return 'SMS Customer';
     case 6:
-      return 'Enterprise';
+      return 'Corporate';
     default:
       return 'Unknown';
   }

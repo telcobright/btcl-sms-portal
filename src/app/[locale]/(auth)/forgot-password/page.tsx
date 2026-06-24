@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api'
+import { showApiError } from '@/lib/api-error'
 
 type Step = 'email' | 'reset' | 'done'
 
@@ -44,10 +45,12 @@ export default function ForgotPasswordPage() {
                 toast.success('Verification code sent to your email')
             } else {
                 setError(data.message || 'Failed to send OTP. Please try again.')
+                showApiError(data, { fallbackMessage: 'Failed to send OTP. Please try again.' })
             }
         } catch (err: any) {
             const msg = err.response?.data?.message || 'Failed to send OTP. Please try again.'
             setError(msg)
+            showApiError(err, { fallbackMessage: 'Failed to send OTP. Please try again.' })
         } finally {
             setIsLoading(false)
         }
@@ -71,12 +74,14 @@ export default function ForgotPasswordPage() {
             } else {
                 startCooldown(data.retryAfterSeconds || 60)
                 setError(data.message || 'Please wait before requesting another code.')
+                showApiError(data, { fallbackMessage: 'Please wait before requesting another code.' })
             }
         } catch (err: any) {
             if (err.response?.status === 429) {
                 startCooldown(err.response.data?.retryAfterSeconds || 60)
             }
             setError(err.response?.data?.message || 'Failed to resend code.')
+            showApiError(err, { fallbackMessage: 'Failed to resend code.' })
         } finally {
             setIsLoading(false)
         }
@@ -120,9 +125,11 @@ export default function ForgotPasswordPage() {
                 toast.success('Password reset successfully!')
             } else {
                 setError(data.message || 'Failed to reset password. Please try again.')
+                showApiError(data, { fallbackMessage: 'Failed to reset password. Please try again.' })
             }
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to reset password. Please try again.')
+            showApiError(err, { fallbackMessage: 'Failed to reset password. Please try again.' })
         } finally {
             setIsLoading(false)
         }

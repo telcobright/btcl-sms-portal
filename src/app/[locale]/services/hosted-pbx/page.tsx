@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { FeatureIcon } from '@/components/ui/FeatureIcon'
 
 interface HostedPBXPageProps {
   params: Promise<{
@@ -106,7 +106,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primaryDark to-btcl-primaryDark py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-16">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -114,30 +114,26 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 backdrop-blur-sm">
-              <span className="text-2xl">☎️</span>
-              <span className="font-semibold">
-                {locale === 'en' ? 'Cloud Phone System' : 'ক্লাউড ফোন সিস্টেম'}
-              </span>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {locale === 'en' ? 'Cloud Phone System' : 'ক্লাউড ফোন সিস্টেম'}
             </div>
 
-            <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              <span className="block text-white">
-                {locale === 'en' ? 'BTCL Hosted PBX' : 'বিটিসিএল হোস্টেড PBX'}
-              </span>
+            <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
+              {locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX'}
             </h1>
 
-            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
+            <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {locale === 'en'
-                ? 'Full-featured cloud PBX with unlimited extensions, advanced IVR, call queues, conferencing, recording, and comprehensive management tools. No hardware required.'
-                : 'সীমাহীন এক্সটেনশন, উন্নত IVR, কল সারি, কনফারেন্সিং, রেকর্ডিং এবং ব্যাপক ব্যবস্থাপনা সরঞ্জাম সহ সম্পূর্ণ-বৈশিষ্ট্যযুক্ত ক্লাউড PBX। কোন হার্ডওয়্যার প্রয়োজন নেই।'}
+                ? 'Full-featured cloud PBX with extensions, advanced IVR, call queues, conferencing, recording, and comprehensive management tools. No hardware required.'
+                : ' এক্সটেনশন, উন্নত IVR, কল সারি, কনফারেন্সিং, রেকর্ডিং এবং ব্যাপক ব্যবস্থাপনা সরঞ্জাম সহ সম্পূর্ণ-বৈশিষ্ট্যযুক্ত ক্লাউড PBX। কোন হার্ডওয়্যার প্রয়োজন নেই।'}
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href={`/${locale}/register`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-btcl-primary shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="transform rounded-lg bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primaryLight hover:text-white"
                 >
                   {locale === 'en' ? 'Request Demo' : 'ডেমো অনুরোধ করুন'}
                 </Button>
@@ -147,7 +143,7 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="transform rounded-xl border-2 border-white/30 bg-white/5 px-8 py-4 text-lg font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-white/50 hover:bg-white/10"
+                  className="transform rounded-lg border-2 border-white/40 bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 hover:border-white hover:bg-white hover:text-btcl-primary"
                 >
                   {locale === 'en' ? 'Contact Sales' : 'সেলস যোগাযোগ'}
                 </Button>
@@ -158,55 +154,57 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
       </section>
 
       {/* Features Section */}
-      <section className="py-24">
+      <section className="bg-btcl-primaryLight/5 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
-              {locale === 'en' ? 'Enterprise-Grade PBX Features' : 'এন্টারপ্রাইজ-গ্রেড PBX বৈশিষ্ট্য'}
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {locale === 'en' ? 'PBX Capabilities' : 'PBX সক্ষমতা'}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
+              {locale === 'en' ? 'Corporate-Grade PBX Features' : 'কর্পোরেট-গ্রেড PBX বৈশিষ্ট্য'}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {locale === 'en'
                 ? 'Complete unified communications platform with advanced call management and collaboration tools'
                 : 'উন্নত কল ব্যবস্থাপনা এবং সহযোগিতা সরঞ্জাম সহ সম্পূর্ণ ইউনিফাইড কমিউনিকেশন প্ল্যাটফর্ম'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {features.map((feature, index) => (
-              <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                <CardHeader>
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-btcl-primary to-btcl-primary text-4xl transition-all duration-300 group-hover:scale-110">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base text-gray-600">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              <div
+                key={index}
+                className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                  <FeatureIcon emoji={feature.icon} className="h-7 w-7 text-btcl-primary" />
+                </div>
+                <h3 className="mb-2 text-xl font-bold text-gray-900">{feature.title}</h3>
+                <p className="text-sm leading-relaxed text-gray-600">{feature.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark py-20">
+      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <h2 className="mb-6 text-4xl font-bold md:text-5xl">
+            <h2 className="mb-3 text-3xl font-bold md:text-4xl">
               {locale === 'en' ? 'Transform Your Business Communications' : 'আপনার ব্যবসায়িক যোগাযোগ রূপান্তরিত করুন'}
             </h2>
-            <p className="mb-10 text-xl text-white">
+            <p className="mx-auto mb-8 max-w-3xl text-base text-white/90">
               {locale === 'en'
-                ? 'Experience enterprise-grade telephony with unlimited extensions, advanced features, and no hardware investment required'
-                : 'সীমাহীন এক্সটেনশন, উন্নত বৈশিষ্ট্য এবং কোন হার্ডওয়্যার বিনিয়োগ প্রয়োজন ছাড়াই এন্টারপ্রাইজ-গ্রেড টেলিফোনি অভিজ্ঞতা নিন'}
+                ? 'Experience corporate-grade telephony with unlimited extensions, advanced features, and no hardware investment required'
+                : 'সীমাহীন এক্সটেনশন, উন্নত বৈশিষ্ট্য এবং কোন হার্ডওয়্যার বিনিয়োগ প্রয়োজন ছাড়াই কর্পোরেট-গ্রেড টেলিফোনি অভিজ্ঞতা নিন'}
             </p>
             <Link href={`/${locale}/pricing`}>
               <Button
                 size="lg"
-                className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-btcl-primary shadow-2xl transition-all duration-300 hover:scale-105"
+                className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
               >
                 {locale === 'en' ? 'Purchase Now' : 'এখনই কিনুন'}
               </Button>

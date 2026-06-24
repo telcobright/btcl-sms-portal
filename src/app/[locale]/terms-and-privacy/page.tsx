@@ -247,13 +247,13 @@ const TermsAndPrivacyPage = () => {
             </p>
             <div className="flex justify-center space-x-3">
               <a
-                href="mailto:mdoffice@btcl.gov.bd"
+                href="mailto:alaapcloud@btcl.gov.bd"
                 className="inline-flex items-center px-5 py-2.5 bg-btcl-primary text-white text-sm font-medium rounded-lg hover:bg-btcl-secondary transition-colors"
               >
                 {isEn ? 'Email Support' : 'ইমেইল সাপোর্ট'}
               </a>
               <a
-                href="tel:+88024831115000"
+                href="tel:+8809696996699"
                 className="inline-flex items-center px-5 py-2.5 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
               >
                 {isEn ? 'Call Us' : 'কল করুন'}

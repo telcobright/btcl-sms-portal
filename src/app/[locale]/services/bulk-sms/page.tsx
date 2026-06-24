@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { FeatureIcon } from '@/components/ui/FeatureIcon'
+import { AggregatorTag } from '@/components/ui/AggregatorTag'
 
 interface BulkSMSPageProps {
   params: Promise<{
@@ -206,7 +207,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-16">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -right-16 top-32 h-60 w-60 animate-pulse rounded-full bg-white/5 blur-3xl delay-1000" />
@@ -214,30 +215,30 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 backdrop-blur-sm">
-              <span className="text-2xl">📱</span>
-              <span className="font-semibold">
-                {locale === 'en' ? 'Enterprise SMS Solution' : 'এন্টারপ্রাইজ এসএমএস সমাধান'}
-              </span>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {locale === 'en' ? 'Corporate SMS Solution' : 'কর্পোরেট এসএমএস সমাধান'}
             </div>
 
-            <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              <span className="block text-white">
-                {locale === 'en' ? 'BTCL Bulk SMS Service' : 'বিটিসিএল বাল্ক এসএমএস সেবা'}
-              </span>
+            <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
+              {locale === 'en' ? 'BTCL Bulk SMS Service' : 'BTCL Bulk SMS Service'}
             </h1>
 
-            <p className="mx-auto mb-12 max-w-4xl text-xl leading-relaxed text-blue-100/90 md:text-2xl">
+            <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
               {locale === 'en'
                 ? 'Reach millions instantly with Bangladesh\'s most reliable SMS gateway. Send promotional messages, alerts, and notifications with 99.9% delivery rate.'
                 : 'বাংলাদেশের সবচেয়ে নির্ভরযোগ্য এসএমএস গেটওয়ে দিয়ে লাখো মানুষের কাছে তাৎক্ষণিকভাবে পৌঁছান। ৯৯.৯% ডেলিভারি হার সহ প্রচারমূলক বার্তা, সতর্কতা এবং বিজ্ঞপ্তি পাঠান।'}
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
+            <div className="mb-6 flex justify-center">
+              <AggregatorTag tone="dark" />
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href={`/${locale}/register`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-blue-600 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-white/25"
+                  className="transform rounded-lg bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primaryLight hover:text-white"
                 >
                   {locale === 'en' ? 'Get Started Free' : 'বিনামূল্যে শুরু করুন'}
                 </Button>
@@ -247,7 +248,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="transform rounded-xl border-2 border-white/30 bg-white/5 px-8 py-4 text-lg font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-white/50 hover:bg-white/10"
+                  className="transform rounded-lg border-2 border-white/40 bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 hover:border-white hover:bg-white hover:text-btcl-primary"
                 >
                   {locale === 'en' ? 'View Pricing' : 'মূল্য দেখুন'}
                 </Button>
@@ -258,47 +259,53 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
       </section>
 
       {/* Features Section */}
-      <section className="py-24">
+      <section className="bg-btcl-primaryLight/5 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {locale === 'en' ? 'Gateway Capabilities' : 'গেটওয়ে সক্ষমতা'}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {locale === 'en' ? 'Powerful Features' : 'শক্তিশালী বৈশিষ্ট্য'}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {locale === 'en'
                 ? 'Everything you need to communicate with your customers effectively'
                 : 'আপনার গ্রাহকদের সাথে কার্যকরভাবে যোগাযোগের জন্য আপনার প্রয়োজনীয় সবকিছু'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => (
-              <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                <CardHeader>
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-4xl transition-all duration-300 group-hover:scale-110">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base text-gray-600">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              <div
+                key={index}
+                className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                  <FeatureIcon emoji={feature.icon} className="h-7 w-7 text-btcl-primary" />
+                </div>
+                <h3 className="mb-2 text-xl font-bold text-gray-900">{feature.title}</h3>
+                <p className="text-sm leading-relaxed text-gray-600">{feature.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* SMS Service Types Section */}
-      <section className="bg-gray-50 py-24">
+      <section className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {getLocalizedText(locale, 'Service Types', 'সেবার ধরন')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {getLocalizedText(locale, 'SMS Service Types', 'এসএমএস সেবার ধরন')}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
                 locale,
                 'Choose from our range of specialized SMS services',
@@ -307,42 +314,48 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {smsServiceTypes.map((service, index) => (
-              <Card key={index} className="group h-full transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                <CardHeader className="pb-4">
-                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-4xl transition-all duration-300 group-hover:scale-110">
-                    {service.icon}
-                  </div>
-                  <CardTitle className="text-2xl">{service.title}</CardTitle>
-                  <CardDescription className="text-lg text-gray-600">{service.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3">
-                    {service.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100">
-                          <span className="text-sm text-blue-600">✓</span>
-                        </div>
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+              <div
+                key={index}
+                className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                  <FeatureIcon emoji={service.icon} className="h-7 w-7 text-btcl-primary" />
+                </div>
+                <h3 className="mb-2 text-xl font-bold text-gray-900">{service.title}</h3>
+                <p className="mb-4 text-sm leading-relaxed text-gray-600">{service.description}</p>
+                <ul className="space-y-2">
+                  {service.features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-start gap-2">
+                      <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                        <svg className="h-3 w-3 text-btcl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 leading-snug">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* API Features Section */}
-      <section className="py-24">
+      <section className="bg-btcl-primaryLight/5 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {getLocalizedText(locale, 'For Developers', 'ডেভেলপারদের জন্য')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {getLocalizedText(locale, 'Developer-Friendly API', 'ডেভেলপার-বান্ধব API')}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
                 locale,
                 'Integrate SMS capabilities into your applications with our robust API',
@@ -351,51 +364,55 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {apiFeatures.map((feature, index) => (
-              <Card key={index} className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                <CardHeader>
-                  <div className="mb-4 flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-2xl">
-                      {feature.icon}
-                    </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+              <div
+                key={index}
+                className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="mb-4 flex items-center gap-4">
+                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                    <FeatureIcon emoji={feature.icon} className="h-7 w-7 text-btcl-primary" />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-lg text-gray-600">{feature.description}</CardDescription>
-                </CardContent>
-              </Card>
+                  <h3 className="text-xl font-bold text-gray-900">{feature.title}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-gray-600">{feature.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Technical Specifications Section */}
-      <section className="bg-gradient-to-r from-gray-900 to-gray-800 py-24">
+      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center text-white">
-            <h2 className="mb-4 text-4xl font-bold md:text-5xl">
+          <div className="mb-12 text-center text-white">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              {getLocalizedText(locale, 'By the Numbers', 'সংখ্যার আলোকে')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold md:text-4xl">
               {getLocalizedText(locale, 'Technical Specifications', 'প্রযুক্তিগত বিশেষত্ব')}
             </h2>
-            <p className="text-xl text-gray-300">
+            <p className="mx-auto max-w-3xl text-base text-white/90">
               {getLocalizedText(
                 locale,
-                'Built for scale with enterprise-grade performance',
-                'এন্টারপ্রাইজ-গ্রেড কর্মক্ষমতা সহ স্কেলের জন্য নির্মিত'
+                'Built for scale with corporate-grade performance',
+                'কর্পোরেট-গ্রেড কর্মক্ষমতা সহ স্কেলের জন্য নির্মিত'
               )}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
             {technicalSpecs.map((spec, index) => (
-              <div key={index} className="group text-center text-white transition-all duration-300 hover:scale-110">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20">
-                  {spec.icon}
+              <div key={index} className="group text-center text-white transition-all duration-300 hover:-translate-y-1">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20 group-hover:scale-110">
+                  <FeatureIcon emoji={spec.icon} className="h-7 w-7 text-white" />
                 </div>
-                <div className="mb-2 text-4xl font-bold text-blue-400 md:text-5xl">{spec.value}</div>
-                <div className="text-lg text-gray-300">{spec.label}</div>
-                {spec.description && <div className="mt-1 text-sm text-gray-400">{spec.description}</div>}
+                <div className="mb-1 text-3xl font-bold text-white md:text-4xl">{spec.value}</div>
+                <div className="text-sm font-semibold text-white/90">{spec.label}</div>
+                {spec.description && <div className="mt-1 text-xs text-white/70">{spec.description}</div>}
               </div>
             ))}
           </div>
@@ -405,11 +422,15 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
       {/* Industries Section */}
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+              {getLocalizedText(locale, 'Customers', 'গ্রাহকবৃন্দ')}
+            </div>
+            <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
               {getLocalizedText(locale, 'Industries We Serve', 'আমরা যে শিল্পে সেবা দিই')}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="mx-auto max-w-3xl text-base text-gray-600">
               {getLocalizedText(
                 locale,
                 'Trusted by businesses across various industries',
@@ -418,38 +439,39 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
             {industries.map((industry, index) => (
-              <Card key={index} className="group text-center transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                <CardContent className="p-6">
-                  <div className="mb-4 text-4xl transition-all duration-300 group-hover:scale-110">
-                    {industry.icon}
-                  </div>
-                  <div className="font-medium text-gray-900">{industry.name}</div>
-                </CardContent>
-              </Card>
+              <div
+                key={index}
+                className="group rounded-2xl border border-gray-200 bg-white p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-xl"
+              >
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-btcl-primaryLight/10 transition-all duration-300 group-hover:bg-btcl-primary/10 group-hover:scale-110">
+                  <FeatureIcon emoji={industry.icon} className="h-6 w-6 text-btcl-primary" />
+                </div>
+                <div className="text-sm font-semibold text-gray-900">{industry.name}</div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-700 py-20">
+      <section className="bg-gradient-to-r from-btcl-primary to-btcl-primaryDark py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <h2 className="mb-6 text-4xl font-bold md:text-5xl">
+            <h2 className="mb-3 text-3xl font-bold md:text-4xl">
               {locale === 'en' ? 'Ready to get started?' : 'শুরু করতে প্রস্তুত?'}
             </h2>
-            <p className="mb-10 text-xl text-blue-100">
+            <p className="mx-auto mb-8 max-w-3xl text-base text-white/90">
               {locale === 'en'
                 ? 'Choose your plan and start sending A2P SMS within minutes. No setup fees, no long-term contracts.'
                 : 'আপনার প্ল্যান নির্বাচন করুন এবং মিনিটের মধ্যে A2P SMS পাঠানো শুরু করুন। কোন সেটআপ ফি নেই, দীর্ঘমেয়াদী চুক্তি নেই।'}
             </p>
-            <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href={`/${locale}/pricing`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl bg-white px-8 py-4 text-lg font-semibold text-blue-600 shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
                 >
                   {locale === 'en' ? 'Purchase Package Today' : 'আজই প্যাকেজ কিনুন'}
                 </Button>
@@ -457,7 +479,7 @@ export default async function BulkSMSPage({ params }: BulkSMSPageProps) {
               <Link href={`/${locale}/contact`}>
                 <Button
                   size="lg"
-                  className="transform rounded-xl border-2 border-white bg-transparent px-8 py-4 text-lg font-semibold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-white/10"
+                  className="transform rounded-lg border-2 border-white/40 bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 hover:border-white hover:bg-white hover:text-btcl-primary"
                 >
                   {locale === 'en' ? 'Talk to Sales' : 'সেলসের সাথে কথা বলুন'}
                 </Button>

@@ -1,16 +1,14 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
+import {
+  FAQAccordion,
+  type FAQItem,
+} from '@/components/contact/FAQAccordion';
+import { ContactForm } from '@/components/forms/ContactForm';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/Card';
-import { ContactForm } from '@/components/forms/ContactForm';
 
 // Types
 interface Office {
@@ -31,24 +29,11 @@ interface SupportChannel {
   color: string;
 }
 
-interface FAQ {
-  question: string;
-  answer: string;
-}
-
 interface ContactPageProps {
   params: Promise<{
     locale: string;
   }>;
 }
-
-// Constants
-const SUPPORT_CHANNEL_COLORS = {
-  email: 'bg-blue-100 text-blue-600',
-  phone: 'bg-btcl-primaryLight/20 text-btcl-primary',
-  chat: 'bg-purple-100 text-purple-600',
-} as const;
-
 
 // Utility functions
 const getLocalizedText = (
@@ -147,65 +132,265 @@ const useContactData = (locale: string) => {
     },
   ];
 
-  const faqs: FAQ[] = [
+  const faqs: FAQItem[] = [
     {
       question: getLocalizedText(
         locale,
-        'How quickly can I get started?',
-        'আমি কত তাড়াতাড়ি শুরু করতে পারি?'
+        'What is Alaap Cloud?',
+        'আলাপ ক্লাউড কী?'
       ),
-      answer: getLocalizedText(
-        locale,
-        'You can start sending SMS immediately after account verification and package purchase. The entire process typically takes 1-2 business days.',
-        'অ্যাকাউন্ট যাচাইকরণ এবং প্যাকেজ ক্রয়ের পর আপনি অবিলম্বে এসএমএস পাঠানো শুরু করতে পারেন। সম্পূর্ণ প্রক্রিয়া সাধারণত ১-২ কার্যদিবস সময় নেয়।'
+      answer: (
+        <p>
+          {getLocalizedText(
+            locale,
+            "'Alaap Cloud' is an IP (Internet Protocol) telephony service of Bangladesh Telecommunications Company Limited (BTCL).",
+            "'আলাপ ক্লাউড' হলো বাংলাদেশ টেলিকমিউনিকেশনস কোম্পানি লিমিটেড (বিটিসিএল)-এর একটি আইপি (ইন্টারনেট প্রোটোকল) টেলিফোনি সেবা।"
+          )}
+        </p>
       ),
     },
     {
       question: getLocalizedText(
         locale,
-        'What payment methods do you accept?',
-        'আপনারা কী কী পেমেন্ট পদ্ধতি গ্রহণ করেন?'
+        'What are the Alaap Cloud services?',
+        'আলাপ ক্লাউডের সেবাসমূহ কী কী?'
       ),
-      answer: getLocalizedText(
-        locale,
-        'We accept all major payment methods including mobile banking (bKash, Nagad, Rocket), credit/debit cards, and bank transfers through SSL Commerz.',
-        'আমরা SSL Commerz এর মাধ্যমে মোবাইল ব্যাংকিং (বিকাশ, নগদ, রকেট), ক্রেডিট/ডেবিট কার্ড এবং ব্যাংক ট্রান্সফার সহ সকল প্রধান পেমেন্ট পদ্ধতি গ্রহণ করি।'
-      ),
-    },
-    {
-      question: getLocalizedText(
-        locale,
-        'Do you provide API documentation?',
-        'আপনারা কি API ডকুমেন্টেশন প্রদান করেন?'
-      ),
-      answer: getLocalizedText(
-        locale,
-        'Yes, we provide comprehensive API documentation with code examples in multiple programming languages, along with SDKs for easy integration.',
-        'হ্যাঁ, আমরা একাধিক প্রোগ্রামিং ভাষায় কোড উদাহরণ সহ ব্যাপক API ডকুমেন্টেশন প্রদান করি, সাথে সহজ ইন্টিগ্রেশনের জন্য SDK।'
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>Alaap Cloud IP PBX</li>
+          <li>Alaap Cloud Voice Broadcasting service</li>
+          <li>Alaap Cloud Contact Center</li>
+          <li>Bulk SMS (Only for BTRC registered sms aggregators)</li>
+        </ul>
       ),
     },
     {
       question: getLocalizedText(
         locale,
-        'What is your SMS delivery rate?',
-        'আপনাদের এসএমএস ডেলিভারি রেট কত?'
+        'What is Alaap Cloud IP PBX?',
+        'আলাপ ক্লাউড আইপি পিবিএক্স কী?'
       ),
-      answer: getLocalizedText(
-        locale,
-        'We maintain a 99.9% delivery rate with an average delivery time of less than 3 seconds for transactional messages and within 30 seconds for promotional messages.',
-        'আমরা ট্রান্জেকশনাল বার্তার জন্য ৩ সেকেন্ডের কম এবং প্রমোশনাল বার্তার জন্য ৩০ সেকেন্ডের মধ্যে গড় ডেলিভারি সময় সহ ৯৯.৯% ডেলিভারি রেট বজায় রাখি।'
+      answer: (
+        <p>
+          {getLocalizedText(
+            locale,
+            'Hosted at BTCL, Alaap Cloud IP PBX (Internet Protocol Private Branch Exchange) is a secure and reliable office phone system which can be used within a company or organization.',
+            'বিটিসিএল-এ হোস্টকৃত আলাপ ক্লাউড আইপি পিবিএক্স (ইন্টারনেট প্রোটোকল প্রাইভেট ব্রাঞ্চ এক্সচেঞ্জ) একটি নিরাপদ ও নির্ভরযোগ্য অফিস ফোন সিস্টেম, যা কোনো কোম্পানি বা প্রতিষ্ঠানের ভেতরে ব্যবহার করা যায়।'
+          )}
+        </p>
       ),
     },
     {
       question: getLocalizedText(
         locale,
-        'Can I get a custom sender ID?',
-        'আমি কি কাস্টম প্রেরক আইডি পেতে পারি?'
+        'How to subscribe for Alaap Cloud Services?',
+        'আলাপ ক্লাউড সেবার জন্য সাবস্ক্রিপশন কীভাবে করব?'
       ),
-      answer: getLocalizedText(
+      answer: (
+        <div className="space-y-4">
+          <p>To subscribe to Alaap Cloud services, there are three steps:</p>
+
+          <div>
+            <p className="font-semibold text-gray-900">a) Account Registration:</p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              <li>
+                Open the Webportal{' '}
+                <a
+                  href="https://services.btcliptelephony.gov.bd/en/register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+                >
+                  https://services.btcliptelephony.gov.bd/en/register
+                </a>
+                .
+              </li>
+              <li>Enter your company name, official email, and mobile number.</li>
+              <li>Verify your account using the Email OTP sent to your inbox.</li>
+              <li>Verify your account using the SMS OTP sent to your mobile.</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-900">b) Identity Verification:</p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              <li>
+                Submit your National Identity (NID) details e.g. NID front part
+                and NID back part of authorized officer of the organization
+                (pdf, jpg) for Bangladesh NID portal authentication.
+              </li>
+              <li>Verify your NID.</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-900">
+              c) Other Documents Submission:
+            </p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              <li>
+                Select Customer Type: Prepaid or Postpaid (Postpaid for only
+                Government/Semi-government/Autonomous Organization)
+              </li>
+              <li>Enter address, city, postal code and country.</li>
+              <li>
+                Enter trade license number and upload trade license of the
+                organization (pdf/jpg)
+              </li>
+              <li>
+                Enter TIN number and upload TIN certificate of the organization
+                (pdf/jpg)
+              </li>
+              <li>
+                Enter BIN number and upload BIN certificate of the organization
+                (pdf/jpg)
+              </li>
+              <li>Photo of the authorized officer of the organization (pdf/jpg)</li>
+              <li>
+                Enter last tax return date and upload last tax return document
+                (pdf/jpg)
+              </li>
+              <li>Check BTCL&apos;s terms and conditions</li>
+              <li>Enter complete registration.</li>
+            </ul>
+          </div>
+
+          <p>
+            You will get the username and password of the mentioned webportal
+            through email. Within 03 working days you will get approval for
+            purchasing services upon successful verification of your documents
+            mentioned above.
+          </p>
+          <p>
+            You are kindly requested to purchase Alaap Cloud IP PBX package when
+            you have IP-phones ready for installation as the package
+            subscription date will be the billing date. Alaap Cloud Voice
+            Broadcasting and Contact Center services can be readily operable
+            through a computer / laptop.
+          </p>
+        </div>
+      ),
+    },
+    {
+      question: getLocalizedText(
         locale,
-        'Yes, we provide custom sender ID services. You can use your company name or brand as the sender ID after verification process which typically takes 2-3 business days.',
-        'হ্যাঁ, আমরা কাস্টম প্রেরক আইডি সেবা প্রদান করি। যাচাইকরণ প্রক্রিয়ার পর আপনি আপনার কোম্পানির নাম বা ব্র্যান্ড প্রেরক আইডি হিসেবে ব্যবহার করতে পারেন যা সাধারণত ২-৩ কার্যদিবস সময় নেয়।'
+        'How to purchase Alaap Cloud service package?',
+        'আলাপ ক্লাউড সেবা প্যাকেজ কীভাবে কিনবো?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            Login to the webportal{' '}
+            <a
+              href="https://services.btcliptelephony.gov.bd/en/login"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              https://services.btcliptelephony.gov.bd/en/login
+            </a>
+          </li>
+          <li>Navigate to the Dashboard.</li>
+          <li>
+            Choose your desired product (Alaap Cloud IP PBX, Alaap Cloud Voice
+            Broadcast, or Alaap Cloud Contact Center).
+          </li>
+          <li>Select Buy Now.</li>
+          <li>Review the package details, features and monthly subscription fees.</li>
+          <li>
+            Buy now, checkout and pay online using SSLCommerz (bKash, Nagad,
+            Visa, or Mastercard).
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'How to activate Alaap Cloud service package?',
+        'আলাপ ক্লাউড সেবা প্যাকেজ কীভাবে সক্রিয় করব?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>Receive services webportal credentials via email.</li>
+          <li>
+            Configure your devices as per Standard Operation Manual (SOP) given
+            in the webportal.
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'How to get assistance from BTCL for configuration and system setup?',
+        'কনফিগারেশন এবং সিস্টেম সেটআপের জন্য বিটিসিএল থেকে কীভাবে সহায়তা পাব?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            Contact the nearest BTCL office.{' '}
+            <a
+              href="https://btcl.gov.bd/pages/static-pages/6922dd18933eb65569e137b9"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              https://btcl.gov.bd/pages/static-pages/6922dd18933eb65569e137b9
+            </a>
+          </li>
+          <li>
+            Email:{' '}
+            <a
+              href="mailto:alaapcloud@btcl.gov.bd"
+              className="text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              alaapcloud@btcl.gov.bd
+            </a>
+          </li>
+          <li>Hotline: 16402</li>
+          <li>
+            Telephone: +8809696996699, +880258311616, +880248313366,
+            +880258312233
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'What about free minutes in Alaap Cloud IP PBX?',
+        'আলাপ ক্লাউড আইপি পিবিএক্স-এ ফ্রি মিনিট সম্পর্কে কী?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            During the 1st subscription of a user, free minutes will be added to
+            the account.
+          </li>
+        </ul>
+      ),
+    },
+    {
+      question: getLocalizedText(
+        locale,
+        'What is the package migration policy?',
+        'প্যাকেজ মাইগ্রেশন নীতিমালা কী?'
+      ),
+      answer: (
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            Package migration policy is given in the following link:{' '}
+            <a
+              href="https://services.btcliptelephony.gov.bd/en/package-migration-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-btcl-primary underline hover:text-btcl-primaryDark"
+            >
+              https://services.btcliptelephony.gov.bd/en/package-migration-policy
+            </a>
+          </li>
+        </ul>
       ),
     },
   ];
@@ -236,7 +421,7 @@ export default async function ContactPage({ params }: ContactPageProps) {
 // Hero Section Component
 function HeroSection({ locale }: { locale: string }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-24">
+    <section className="relative overflow-hidden bg-gradient-to-br from-btcl-primary via-btcl-primary to-btcl-secondary py-16">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -left-10 top-10 h-40 w-40 animate-pulse rounded-full bg-white/5 blur-3xl" />
@@ -247,60 +432,22 @@ function HeroSection({ locale }: { locale: string }) {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center text-white">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 backdrop-blur-sm">
-            <span className="text-2xl">📞</span>
-            <span className="font-semibold">
-              {getLocalizedText(locale, '24/7 Support', '২৪/৭ সাপোর্ট')}
-            </span>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+            {getLocalizedText(locale, '24/7 Support', '২৪/৭ সাপোর্ট')}
           </div>
 
-          <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
-            <span className="block text-white">
-              {getLocalizedText(locale, 'Contact Us', 'যোগাযোগ করুন')}
-            </span>
+          <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
+            {getLocalizedText(locale, 'Contact Us', 'যোগাযোগ করুন')}
           </h1>
 
-          <p className="mx-auto max-w-4xl text-xl leading-relaxed text-white/90 md:text-2xl">
+          <p className="mx-auto mb-8 max-w-3xl text-xl text-white">
             {getLocalizedText(
               locale,
-              'Get in touch with our team for support, sales inquiries, or any questions about our SMS services.',
-              'সাপোর্ট, বিক্রয় অনুসন্ধান বা আমাদের এসএমএস সেবা সম্পর্কে যেকোনো প্রশ্নের জন্য আমাদের দলের সাথে যোগাযোগ করুন।'
+              'Get in touch with our team for support, sales inquiries, or any questions about our services.',
+              'সাপোর্ট, বিক্রয় অনুসন্ধান বা আমাদের সেবা সম্পর্কে যেকোনো প্রশ্নের জন্য আমাদের দলের সাথে যোগাযোগ করুন।'
             )}
           </p>
-
-          {/* Contact Stats */}
-          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-              <div className="text-3xl font-bold">24/7</div>
-              <div className="text-white/90">
-                {getLocalizedText(
-                  locale,
-                  'Support Available',
-                  'সাপোর্ট উপলব্ধ'
-                )}
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-              <div className="text-3xl font-bold">&lt;1hr</div>
-              <div className="text-white/90">
-                {getLocalizedText(
-                  locale,
-                  'Response Time',
-                  'প্রতিক্রিয়ার সময়'
-                )}
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-              <div className="text-3xl font-bold">98%</div>
-              <div className="text-white/90">
-                {getLocalizedText(
-                  locale,
-                  'Satisfaction Rate',
-                  'সন্তুষ্টির হার'
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -348,12 +495,12 @@ function SupportChannelsSection({
   return (
     <div>
       <div className="mb-8">
-        <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
-          <span className="h-2 w-2 rounded-full bg-blue-500" />
+        <div className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
           {getLocalizedText(locale, 'Support Channels', 'সাপোর্ট চ্যানেল')}
-        </span>
+        </div>
       </div>
-      <h2 className="mb-8 text-3xl font-bold text-gray-900">
+      <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
         {getLocalizedText(
           locale,
           'How to Reach Us',
@@ -371,42 +518,90 @@ function SupportChannelsSection({
 
 // Support Channel Card Component
 function SupportChannelCard({ channel }: { channel: SupportChannel }) {
-  return (
-    <Card className="group transition-all duration-300 hover:scale-105 hover:shadow-xl">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <div
-            className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl ${
-              SUPPORT_CHANNEL_COLORS[
-                channel.color as keyof typeof SUPPORT_CHANNEL_COLORS
-              ]
-            }`}
+  const renderIcon = () => {
+    const cls = 'h-7 w-7 text-btcl-primary';
+    switch (channel.color) {
+      case 'email':
+        return (
+          <svg
+            className={cls}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
           >
-            {channel.icon}
-          </div>
-          <div className="flex-1">
-            <h3 className="mb-2 text-xl font-bold text-gray-900">
-              {channel.title}
-            </h3>
-            <p className="mb-4 text-gray-600">{channel.description}</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-btcl-primary" />
-                <span className="font-medium text-btcl-primary">
-                  {channel.contact}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-btcl-primary" />
-                <span className="text-sm text-gray-500">
-                  {channel.response}
-                </span>
-              </div>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            />
+          </svg>
+        );
+      case 'phone':
+        return (
+          <svg
+            className={cls}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6a2 2 0 012-2h2.5a1 1 0 01.95.68l1.2 3.6a1 1 0 01-.27 1.05L8.6 10.9a12 12 0 005.5 5.5l1.57-1.78a1 1 0 011.05-.27l3.6 1.2a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.7 21 3 14.3 3 6V5z"
+            />
+          </svg>
+        );
+      case 'chat':
+        return (
+          <svg
+            className={cls}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 12a8 8 0 01-11.6 7.15L4 21l1.85-5.4A8 8 0 1121 12z"
+            />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-7">
+      <div className="flex items-start gap-4">
+        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
+          {renderIcon()}
+        </div>
+        <div className="flex-1">
+          <h3 className="mb-2 text-xl font-bold text-gray-900">
+            {channel.title}
+          </h3>
+          <p className="mb-4 text-sm leading-relaxed text-gray-600">
+            {channel.description}
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-btcl-primary" />
+              <span className="text-sm font-medium text-btcl-primary">
+                {channel.contact}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-btcl-primary" />
+              <span className="text-xs text-gray-500">{channel.response}</span>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -422,20 +617,20 @@ function OfficeLocationsFullSection({
     <section className="bg-gray-50 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
-          <div className="mb-8">
-            <span className="inline-flex items-center gap-2 rounded-full bg-purple-100 px-4 py-2 text-sm font-semibold text-purple-700">
-              <span className="h-2 w-2 rounded-full bg-purple-500" />
+          <div className="mb-4">
+            <div className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
               {getLocalizedText(locale, 'Office Locations', 'অফিসের অবস্থান')}
-            </span>
+            </div>
           </div>
-          <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
             {getLocalizedText(
               locale,
               'Visit Our Offices',
               'আমাদের অফিস ভিজিট করুন'
             )}
           </h2>
-          <p className="mx-auto max-w-2xl text-xl text-gray-600">
+          <p className="mx-auto max-w-3xl text-base text-gray-600">
             {getLocalizedText(
               locale,
               "Find us at our locations across Bangladesh. We're here to serve you better.",
@@ -458,95 +653,56 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
   const isPrimary = office.type === 'primary';
 
   return (
-    <Card
-      className={`group transition-all duration-300 hover:scale-105 hover:shadow-xl ${
+    <div
+      className={`group relative ${isPrimary ? '' : 'overflow-hidden'} rounded-2xl border bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary hover:shadow-2xl ${
         isPrimary
-          ? 'border-2 border-btcl-primary/20 bg-gradient-to-br from-btcl-primaryLight/10 to-white'
-          : ''
+          ? 'border-2 border-btcl-primary bg-gradient-to-br from-btcl-primaryLight/10 to-white'
+          : 'border-gray-200'
       }`}
     >
-      <CardContent className="p-6">
-        <div className="mb-4 flex items-start justify-between">
-          <h3 className="text-xl font-bold text-gray-900">{office.name}</h3>
-          {isPrimary && (
-            <span className="rounded-full bg-btcl-primary px-3 py-1 text-xs font-semibold text-white">
-              PRIMARY
-            </span>
-          )}
-        </div>
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 items-center justify-center">
-              <svg
-                className="h-5 w-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </div>
-            <span className="text-gray-700">{office.address}</span>
+      {!isPrimary && (
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-btcl-primary to-btcl-primaryLight opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      )}
+      <div className="mb-4 flex items-start justify-between">
+        <h3 className="text-xl font-bold text-gray-900">{office.name}</h3>
+        {isPrimary && (
+          <span className="rounded-full bg-btcl-primary px-3 py-1 text-xs font-semibold text-white">
+            PRIMARY
+          </span>
+        )}
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-start gap-3">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <svg
+              className="h-5 w-5 text-btcl-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
           </div>
-          {idx !== 0 && (
-            <div className="flex items-center gap-3">
-              <div className="flex h-6 w-6 items-center justify-center">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-              </div>
-              <span className="font-medium text-btcl-primary">
-                {office.phone}
-              </span>
-            </div>
-          )}
-          {idx !== 1 && (
-            <div className="flex items-center gap-3">
-              <div className="flex h-6 w-6 items-center justify-center">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <span className="font-medium text-btcl-primary">
-                {office.email}
-              </span>
-            </div>
-          )}
+          <span className="text-sm text-gray-700 leading-snug">
+            {office.address}
+          </span>
+        </div>
+        {idx !== 0 && (
           <div className="flex items-center gap-3">
             <div className="flex h-6 w-6 items-center justify-center">
               <svg
-                className="h-5 w-5 text-gray-400"
+                className="h-5 w-5 text-btcl-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -555,54 +711,92 @@ function OfficeCard({ office, idx }: { office: Office; idx: number }) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                 />
               </svg>
             </div>
-            <span className="text-gray-700">{office.hours}</span>
+            <span className="text-sm font-medium text-btcl-primary">
+              {office.phone}
+            </span>
           </div>
+        )}
+        {idx !== 1 && (
+          <div className="flex items-center gap-3">
+            <div className="flex h-6 w-6 items-center justify-center">
+              <svg
+                className="h-5 w-5 text-btcl-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-medium text-btcl-primary">
+              {office.email}
+            </span>
+          </div>
+        )}
+        <div className="flex items-center gap-3">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <svg
+              className="h-5 w-5 text-btcl-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <span className="text-sm text-gray-700">{office.hours}</span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 // FAQ Section Component
-function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
+function FAQSection({ faqs, locale }: { faqs: FAQItem[]; locale: string }) {
   return (
     <section className="bg-gray-50 py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="mb-20 text-center">
           <div className="mb-8">
-            <span className="inline-flex items-center gap-2 rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700">
-              <span className="h-2 w-2 rounded-full bg-yellow-500" />
+            <div className="inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
               {getLocalizedText(locale, 'Help Center', 'সাহায্য কেন্দ্র')}
-            </span>
+            </div>
           </div>
-          <h2 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">
+          <h2 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
             {getLocalizedText(
               locale,
               'Frequently Asked Questions',
               'প্রায়শই জিজ্ঞাসিত প্রশ্ন'
             )}
           </h2>
-          <p className="text-xl text-gray-600">
+          <p className="mx-auto max-w-3xl text-base text-gray-600">
             {getLocalizedText(
               locale,
-              'Quick answers to common questions',
-              'সাধারণ প্রশ্নের দ্রুত উত্তর'
+              'Click a question to see the answer.',
+              'উত্তর দেখতে একটি প্রশ্নে ক্লিক করুন।'
             )}
           </p>
         </div>
 
-        <div className="space-y-6">
-          {faqs.map((faq, index) => (
-            <FAQCard key={index} faq={faq} />
-          ))}
-        </div>
+        <FAQAccordion faqs={faqs} />
 
-        <div className="mt-12 text-center">
-          <p className="mb-6 text-lg text-gray-600">
+        <div className="mt-10 text-center">
+          <p className="mb-4 text-base text-gray-600">
             {getLocalizedText(
               locale,
               "Can't find what you're looking for?",
@@ -610,7 +804,7 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
             )}
           </p>
           <Link href="#contact-form">
-            <Button className="transform rounded-xl bg-gradient-to-r from-btcl-primary to-btcl-primary px-8 py-3 font-semibold transition-all duration-300 hover:scale-105">
+            <Button className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
               {getLocalizedText(
                 locale,
                 'Contact Support',
@@ -623,28 +817,3 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
     </section>
   );
 }
-
-// FAQ Card Component
-function FAQCard({ faq }: { faq: FAQ }) {
-  return (
-    <Card className="transition-all duration-300 hover:shadow-lg">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-start gap-4 text-xl">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-btcl-primary text-sm font-bold text-white">
-            Q
-          </div>
-          {faq.question}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-start gap-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-btcl-primaryLight/20 text-sm font-bold text-btcl-primaryDark">
-            A
-          </div>
-          <p className="text-gray-600">{faq.answer}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-

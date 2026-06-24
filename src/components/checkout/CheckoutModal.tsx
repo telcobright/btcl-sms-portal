@@ -18,6 +18,7 @@ import { Dialog } from '@headlessui/react';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { showApiError } from '@/lib/api-error';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
 
@@ -351,12 +352,14 @@ export default function CheckoutModal({
       return { success: true, data };
     } catch (error) {
       console.error('Voice Broadcast purchase failed:', error);
-      toast.error(
-        locale === 'en'
-          ? 'Voice Broadcast activation failed. Please contact support.'
-          : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
-        { id: 'vbs-purchase' }
-      );
+      toast.dismiss('vbs-purchase');
+      showApiError(error, {
+        id: 'vbs-purchase',
+        fallbackMessage:
+          locale === 'en'
+            ? 'Voice Broadcast activation failed. Please contact support.'
+            : 'ভয়েস ব্রডকাস্ট সক্রিয়করণ ব্যর্থ। অনুগ্রহ করে সাপোর্টে যোগাযোগ করুন।',
+      });
       return { success: false, error };
     }
   };
@@ -372,8 +375,8 @@ export default function CheckoutModal({
       console.log('Starting Hosted PBX package purchase...');
       toast.loading(
         locale === 'en'
-          ? 'Activating your Hosted PBX package...'
-          : 'আপনার হোস্টেড PBX প্যাকেজ সক্রিয় হচ্ছে...',
+          ? 'Activating your Alaap Cloud IP PBX package...'
+          : 'আপনার Alaap Cloud IP PBX প্যাকেজ সক্রিয় হচ্ছে...',
         { id: 'pbx-purchase' }
       );
 
@@ -422,7 +425,7 @@ export default function CheckoutModal({
       );
 
       if (!response.ok) {
-        throw new Error('Failed to purchase Hosted PBX package');
+        throw new Error('Failed to purchase Alaap Cloud IP PBX package');
       }
 
       const data = await response.json();
@@ -430,8 +433,8 @@ export default function CheckoutModal({
 
       toast.success(
         locale === 'en'
-          ? 'Hosted PBX package activated successfully!'
-          : 'হোস্টেড PBX প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
+          ? 'Alaap Cloud IP PBX package activated successfully!'
+          : 'Alaap Cloud IP PBX প্যাকেজ সফলভাবে সক্রিয় হয়েছে!',
         { id: 'pbx-purchase' }
       );
 
@@ -582,7 +585,7 @@ export default function CheckoutModal({
       const getProductDetails = () => {
         switch (serviceType) {
           case 'hosted-pbx':
-            return { name: `Hosted PBX - ${pkg.name}`, category: 'Hosted PBX' };
+            return { name: `Alaap Cloud IP PBX - ${pkg.name}`, category: 'Alaap Cloud IP PBX' };
           case 'voice-broadcast':
             return {
               name: `Voice Broadcast - ${pkg.name}`,
@@ -749,21 +752,22 @@ export default function CheckoutModal({
 
           onClose();
         } else {
-          toast.error(
-            response.message ||
-              (locale === 'en'
+          showApiError(response, {
+            fallbackMessage:
+              locale === 'en'
                 ? 'Purchase failed. Please try again.'
-                : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।')
-          );
+                : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।',
+          });
         }
       }
     } catch (error) {
       console.error('Purchase failed:', error);
-      toast.error(
-        locale === 'en'
-          ? 'Purchase failed. Please try again.'
-          : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।'
-      );
+      showApiError(error, {
+        fallbackMessage:
+          locale === 'en'
+            ? 'Purchase failed. Please try again.'
+            : 'ক্রয় ব্যর্থ। আবার চেষ্টা করুন।',
+      });
     } finally {
       setLoading(false);
     }

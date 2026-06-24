@@ -1,0 +1,55 @@
+import {
+  Phone, Target, Users, Mail, Mic, Clock, Globe, Search, Music, Printer,
+  BarChart3, ClipboardList, Calendar, Hash, RefreshCw, Lock, DollarSign,
+  Zap, Wrench, Plug, Megaphone, Bell, Cog, Briefcase, ShoppingCart, Heart,
+  GraduationCap, Home, Plane, FileText, TrendingUp, ShieldCheck, KeyRound,
+  Headphones, MessageSquare, Activity, Sparkles, type LucideIcon,
+} from 'lucide-react'
+
+const EMOJI_TO_ICON: Record<string, LucideIcon> = {
+  '📱': Phone,
+  '☎️': Phone,
+  '📞': Phone,
+  '🎯': Target,
+  '👥': Users,
+  '📧': Mail,
+  '🎙️': Mic,
+  '🎤': Mic,
+  '⏰': Clock,
+  '🌐': Globe,
+  '🔍': Search,
+  '🎵': Music,
+  '📠': Printer,
+  '📊': BarChart3,
+  '📋': ClipboardList,
+  '📅': Calendar,
+  '🔢': Hash,
+  '🔄': RefreshCw,
+  '🔐': KeyRound,
+  '🔒': ShieldCheck,
+  '💰': DollarSign,
+  '⚡': Zap,
+  '🔧': Wrench,
+  '🔌': Plug,
+  '📢': Megaphone,
+  '🔔': Bell,
+  '⚙️': Cog,
+  '💼': Briefcase,
+  '🛒': ShoppingCart,
+  '🏥': Heart,
+  '🎓': GraduationCap,
+  '🏡': Home,
+  '✈️': Plane,
+  '📝': FileText,
+  '📈': TrendingUp,
+  '🎧': Headphones,
+  '💬': MessageSquare,
+  '💡': Sparkles,
+  '👁️': Activity,
+  '🎫': FileText,
+}
+
+export function FeatureIcon({ emoji, className = 'h-6 w-6' }: { emoji: string; className?: string }) {
+  const Icon = EMOJI_TO_ICON[emoji] || Sparkles
+  return <Icon className={className} strokeWidth={1.8} />
+}

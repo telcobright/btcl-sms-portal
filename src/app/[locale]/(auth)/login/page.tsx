@@ -6,11 +6,11 @@ import { useRouter, useParams } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import Link from 'next/link'
 import { loginUser, setAuthToken } from '@/lib/api-client/auth'
 import { useAuth } from '@/lib/contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { showApiError } from '@/lib/api-error'
 
 const decodeToken = (token: string) => {
     try {
@@ -42,8 +42,8 @@ export default function LoginPage() {
         email: ""
     })
     const [isLoading, setIsLoading] = useState(false)
-    const [captchaA, setCaptchaA] = useState(() => Math.floor(Math.random() * 20) + 1)
-    const [captchaB, setCaptchaB] = useState(() => Math.floor(Math.random() * 20) + 1)
+    const [captchaA, setCaptchaA] = useState(0)
+    const [captchaB, setCaptchaB] = useState(0)
     const [captchaAnswer, setCaptchaAnswer] = useState('')
     const [captchaError, setCaptchaError] = useState('')
     const [captchaAttempts, setCaptchaAttempts] = useState(0)
@@ -57,6 +57,11 @@ export default function LoginPage() {
         setCaptchaAnswer('')
         setCaptchaError('')
     }
+
+    useEffect(() => {
+        generateCaptcha()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const startLockCountdown = (until: number) => {
         if (lockTimerRef.current) clearInterval(lockTimerRef.current)
@@ -217,58 +222,85 @@ export default function LoginPage() {
             const deactivated = error.response?.status === 403
             setIsDeactivated(deactivated)
             setLoginError(errorMessage)
-            if (!deactivated) toast.error(errorMessage)
+            if (!deactivated) {
+                showApiError(error, { fallbackMessage: 'Invalid email or password. Please try again.' })
+            }
         } finally {
             setIsLoading(false)
         }
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white">
             <Header />
-            <div className="py-20">
-                <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
-                    <Card>
-                        <CardHeader className="text-center">
-                            <CardTitle className="text-2xl font-bold">{t('auth.login.title')}</CardTitle>
-                            <CardDescription>Enter your credentials to access your account</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                {loginError && (
-                                    <div className={`flex items-start gap-3 rounded-xl p-4 border ${isDeactivated ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-200'}`}>
-                                        <span className="text-xl flex-shrink-0 leading-none mt-0.5">
-                                            {isDeactivated ? '🚫' : '⚠️'}
-                                        </span>
-                                        <div className="flex-1">
-                                            <p className={`font-bold text-sm ${isDeactivated ? 'text-orange-800' : 'text-red-800'}`}>
-                                                {isDeactivated ? 'Account Deactivated' : 'Login Failed'}
-                                            </p>
-                                            <p className={`text-sm mt-0.5 ${isDeactivated ? 'text-orange-700' : 'text-red-700'}`}>
-                                                {loginError}
-                                            </p>
-                                            {isDeactivated && (
-                                                <p className="text-sm mt-2 text-orange-800 font-medium">
-                                                    For support, call{' '}
-                                                    <a href="tel:+88028831115000" className="font-bold text-orange-900 hover:underline">
-                                                        +880-2-4831115000
-                                                    </a>
-                                                </p>
-                                            )}
-                                        </div>
+            <div className="relative py-12 sm:py-16">
+                {/* Decorative blobs - consistent with home hero */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-btcl-primaryLight/10 blur-3xl" />
+                    <div className="absolute -right-24 bottom-16 h-72 w-72 rounded-full bg-btcl-primary/5 blur-3xl" />
+                </div>
+
+                <div className="relative max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Section header */}
+                    <div className="mb-8 text-center">
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-btcl-primaryLight/20 px-4 py-1.5 text-sm font-semibold text-btcl-primaryDark">
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-btcl-primary" />
+                            Sign In
+                        </div>
+                        <h1 className="mb-2 text-3xl font-bold text-gray-900 md:text-4xl">
+                            {t('auth.login.title')}
+                        </h1>
+                        <p className="text-base text-gray-600">
+                            Enter your credentials to access your account
+                        </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-7">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {loginError && (
+                                <div className={`flex items-start gap-3 rounded-xl p-4 border ${isDeactivated ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
+                                    <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${isDeactivated ? 'bg-amber-100' : 'bg-red-100'}`}>
+                                        {isDeactivated ? (
+                                            <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="9" strokeLinecap="round" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.5 5.5l13 13" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                            </svg>
+                                        )}
                                     </div>
-                                )}
+                                    <div className="flex-1">
+                                        <p className={`font-bold text-sm ${isDeactivated ? 'text-amber-800' : 'text-red-800'}`}>
+                                            {isDeactivated ? 'Account Deactivated' : 'Login Failed'}
+                                        </p>
+                                        <p className={`text-sm leading-relaxed mt-0.5 ${isDeactivated ? 'text-amber-700' : 'text-red-700'}`}>
+                                            {loginError}
+                                        </p>
+                                        {isDeactivated && (
+                                            <p className="text-sm mt-2 text-amber-800 font-medium">
+                                                For support, call{' '}
+                                                <a href="tel:+88028831115000" className="font-bold text-amber-900 hover:underline">
+                                                    +880-2-4831115000
+                                                </a>
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
-                                <Input
-                                    label={t('auth.login.email')}
-                                    type="text"
-                                    value={formData.email}
-                                    onChange={(e) => handleInputChange('email', e.target.value)}
-                                    error={errors.email as string}
-                                    required
-                                    autoComplete="email"
-                                />
+                            <Input
+                                label={t('auth.login.email')}
+                                type="text"
+                                value={formData.email}
+                                onChange={(e) => handleInputChange('email', e.target.value)}
+                                error={errors.email as string}
+                                required
+                                autoComplete="email"
+                            />
 
+                            <div className="space-y-1.5">
                                 <Input
                                     label={t('auth.login.password')}
                                     type="password"
@@ -278,65 +310,75 @@ export default function LoginPage() {
                                     required
                                     autoComplete="current-password"
                                 />
-
-                                <div className="flex items-center justify-between text-sm">
-                                    <Link
-                                        href={`/${locale}/register`}
-                                        className="text-blue-600 hover:underline"
-                                    >
-                                        Don&apos;t have an account? Register here
-                                    </Link>
+                                <div className="flex justify-end">
                                     <Link
                                         href={`/${locale}/forgot-password`}
-                                        className="text-btcl-primary hover:underline"
+                                        className="text-sm font-medium text-btcl-primary hover:underline"
                                     >
                                         Forgot password?
                                     </Link>
                                 </div>
+                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Security Check</label>
-                                    {lockedUntil && Date.now() < lockedUntil ? (
-                                        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
-                                            <p className="text-red-600 text-sm font-semibold">Too many failed attempts</p>
-                                            <p className="text-red-800 text-sm mt-1">Please try again in <strong>{lockCountdown}</strong></p>
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-2">Security Check</label>
+                                {lockedUntil && Date.now() < lockedUntil ? (
+                                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+                                        <p className="text-red-700 text-sm font-semibold">Too many failed attempts</p>
+                                        <p className="text-red-700 text-sm mt-1">Please try again in <strong>{lockCountdown}</strong></p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center gap-3 p-3 bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 rounded-xl">
+                                            <span className="text-base font-semibold text-btcl-primaryDark whitespace-nowrap">
+                                                {captchaA} + {captchaB} = ?
+                                            </span>
+                                            <input
+                                                type="number"
+                                                value={captchaAnswer}
+                                                onChange={(e) => { setCaptchaAnswer(e.target.value); setCaptchaError(''); }}
+                                                className="w-24 text-center text-base font-semibold px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-btcl-primary focus:border-btcl-primary"
+                                                placeholder="Answer"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={generateCaptcha}
+                                                title="Refresh CAPTCHA"
+                                                className="flex h-9 w-9 items-center justify-center rounded-lg text-btcl-primary hover:bg-btcl-primaryLight/10 transition-colors"
+                                            >
+                                                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                            </button>
                                         </div>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                                                <span className="text-base font-semibold text-gray-800 whitespace-nowrap">
-                                                    {captchaA} + {captchaB} = ?
-                                                </span>
-                                                <input
-                                                    type="number"
-                                                    value={captchaAnswer}
-                                                    onChange={(e) => { setCaptchaAnswer(e.target.value); setCaptchaError(''); }}
-                                                    className="w-24 text-center text-base font-semibold px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="Answer"
-                                                    required
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={generateCaptcha}
-                                                    title="Refresh CAPTCHA"
-                                                    className="text-gray-500 hover:text-gray-700 text-lg p-1"
-                                                >
-                                                    ↻
-                                                </button>
-                                            </div>
-                                            {captchaError && (
-                                                <p className="text-red-600 text-xs font-medium mt-1.5">{captchaError}</p>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
+                                        {captchaError && (
+                                            <p className="text-red-700 text-xs font-medium mt-2">{captchaError}</p>
+                                        )}
+                                    </>
+                                )}
+                            </div>
 
-                                <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>
-                                    {t('auth.login.submit')}
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
+                            <Button
+                                type="submit"
+                                className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                loading={isLoading}
+                                disabled={isLoading}
+                            >
+                                {t('auth.login.submit')}
+                            </Button>
+                        </form>
+                    </div>
+
+                    <p className="mt-6 text-center text-sm text-gray-600">
+                        Don&apos;t have an account?{' '}
+                        <Link
+                            href={`/${locale}/register`}
+                            className="font-semibold text-btcl-primary hover:underline"
+                        >
+                            Register here
+                        </Link>
+                    </p>
                 </div>
             </div>
         </div>

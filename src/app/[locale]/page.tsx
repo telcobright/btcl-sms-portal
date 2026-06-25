@@ -324,7 +324,7 @@ function HeroSection({ locale, t }: { locale: string; t: any }) {
 
           {/* Description */}
           <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed text-white/80 md:text-xl lg:text-2xl">
-            Bangladesh's leading telecommunications provider delivering
+            BTCL delivering
             corporate-grade communication solutions
           </p>
 

@@ -93,7 +93,7 @@ export function Footer() {
           <div className="lg:col-span-4">
             <Link href={`/${locale}`} className="inline-block">
               <Image
-                src="/btcllogo.png"
+                src="/btcllogo2.png"
                 alt="BTCL Logo"
                 width={192}
                 height={192}
@@ -102,8 +102,8 @@ export function Footer() {
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-gray-600">
               {locale === 'en'
-                ? "Bangladesh's premier telecommunications service provider, delivering reliable connectivity and innovative digital solutions nationwide."
-                : 'বাংলাদেশের শীর্ষস্থানীয় টেলিযোগাযোগ সেবা প্রদানকারী প্রতিষ্ঠান, দেশব্যাপী নির্ভরযোগ্য সংযোগ ও উন্নত ডিজিটাল সমাধান প্রদান করছে।'}
+                ? "BTCL delivering reliable connectivity and innovative digital solutions nationwide."
+                : 'BTCL দেশব্যাপী নির্ভরযোগ্য সংযোগ ও উন্নত ডিজিটাল সমাধান প্রদান করছে।'}
             </p>
             <a
               href="https://btcl.gov.bd/"
@@ -130,7 +130,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href={`/${locale}/about`} className={linkBase}>
-                  {locale === 'en' ? 'About Us' : 'আমাদের সম্পর্কে'}
+                  {locale === 'en' ? 'About BTCL' : 'বিটিসিএল সম্পর্কে'}
                 </Link>
               </li>
               <li>

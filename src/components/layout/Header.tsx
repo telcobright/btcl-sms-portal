@@ -32,7 +32,6 @@ export function Header() {
 
   const navigation = [
     { name: t('navigation.home'), href: `/${locale}` },
-    { name: t('navigation.about'), href: `/${locale}/about` },
     { name: t('navigation.services'), href: `/${locale}/services` },
     { name: t('navigation.pricing'), href: `/${locale}/pricing` },
     { name: t('navigation.contact'), href: `/${locale}/contact` },
@@ -87,7 +86,9 @@ export function Header() {
 
             {/* Actions */}
             <div className="flex items-center space-x-4">
-              {/*<LanguageToggle />*/}
+              <div className="hidden md:block">
+                <LanguageToggle />
+              </div>
 
               {/* Desktop Auth Buttons */}
               <div className="hidden md:flex items-center space-x-4">
@@ -171,6 +172,7 @@ export function Header() {
                   ))}
                 </div>
                 <div className="border-t border-white/10 px-2 pt-4 pb-3 space-y-2">
+                  <LanguageToggle variant="mobile" />
                   {isAuthenticated ? (
                       <>
                         <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)}>

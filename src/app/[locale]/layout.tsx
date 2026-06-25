@@ -26,7 +26,7 @@ export default async function LocaleLayout({
       <head>
         <title>Alaap Cloud</title>
         <meta name="description" content="Alaap cloud based services" />
-        <link rel="icon" type="image/png" href="/btcllogo.png" />
+        <link rel="icon" type="image/png" href="/alaapLogoDark.png" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <AuthProvider>

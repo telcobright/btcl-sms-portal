@@ -11,7 +11,7 @@ import {
   sendEmailOtp,
   verifyEmailOtp,
 } from '@/lib/api-client/partner';
-import { extractNidData, NidOcrResult } from '@/lib/nid-ocr';
+import { extractNidDataSmart, NidOcrResult } from '@/lib/nid-ocr';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -667,7 +667,7 @@ export default function RegisterPage() {
     try {
       toast.loading('Extracting data from NID...', { id: 'ocr-loading' });
 
-      const result = await extractNidData(file, (progress) => {
+      const result = await extractNidDataSmart(file, (progress) => {
         setOcrProgress(progress);
       });
 

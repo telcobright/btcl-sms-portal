@@ -9,12 +9,67 @@ export interface NidOcrResult {
   success: boolean;
   data?: {
     name: string | null;
+    nameBn?: string | null;
     nidNumber: string | null;
     dateOfBirth: string | null;
     nidDigitType: '10' | '17' | null;
   };
   rawText?: string;
   error?: string;
+  /** Which engine produced the result: on-prem EasyOCR service or local Tesseract. */
+  source?: 'easyocr' | 'tesseract' | 'vision';
+}
+
+/**
+ * Smart NID extraction: try the server-side vision model first (robust to old/new
+ * cards, glare, rotation, Bangla, 13-digit old-card numbers), and transparently
+ * fall back to local Tesseract if the vision route is unavailable, not configured,
+ * errors, or returns nothing usable. Drop-in replacement for extractNidData.
+ */
+export async function extractNidDataSmart(
+  imageFile: File,
+  onProgress?: (progress: number) => void
+): Promise<NidOcrResult> {
+  // 1) Server-side vision model
+  try {
+    onProgress?.(10);
+    const form = new FormData();
+    form.append('file', imageFile);
+
+    const res = await fetch('/api/nid-ocr', { method: 'POST', body: form });
+    onProgress?.(70);
+
+    if (res.ok) {
+      const json = await res.json();
+      // A usable result has at least the NID number, or name + DOB to verify with.
+      const d = json?.data;
+      const usable = json?.success && d && (d.nidNumber || (d.name && d.dateOfBirth));
+      if (usable) {
+        onProgress?.(100);
+        return {
+          success: true,
+          source: json.source || 'easyocr',
+          data: {
+            name: d.name ?? null,
+            nameBn: d.nameBn ?? null,
+            nidNumber: d.nidNumber ?? null,
+            dateOfBirth: d.dateOfBirth ?? null,
+            nidDigitType: d.nidDigitType ?? null,
+          },
+        };
+      }
+      // success:false (not_configured / not_a_nid / low data) → fall through to Tesseract
+      console.log('[nid-ocr] vision unusable, falling back to Tesseract:', json?.reason || json?.error);
+    } else {
+      console.log('[nid-ocr] vision route HTTP', res.status, '→ falling back to Tesseract');
+    }
+  } catch (e) {
+    console.log('[nid-ocr] vision route threw → falling back to Tesseract:', e);
+  }
+
+  // 2) Local Tesseract fallback
+  const fallback = await extractNidData(imageFile, onProgress);
+  return { ...fallback, source: 'tesseract' };
 }
 
 /**

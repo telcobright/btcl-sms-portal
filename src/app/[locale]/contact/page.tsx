@@ -191,7 +191,7 @@ const useContactData = (locale: string) => {
       ),
       answer: getLocalizedText(
         locale,
-        'To subscribe to Alaap Cloud services, there are three steps:\n\na) Account Registration:\n• Open the Webportal https://services.btcliptelephony.gov.bd/en/register\n• Enter your company name, official email, and mobile number.\n• Verify your account using the Email OTP sent to your inbox.\n• Verify your account using the SMS OTP sent to your mobile.\n\nb) Identity Verification:\n• Submit your National Identity (NID) details e.g. NID front part and NID back part of authorized officer of the organization (pdf, jpg) for Bangladesh NID portal authentication.\n• Verify your NID.\n\nc) Other Documents Submission:\n• Select Customer Type: Prepaid or Postpaid (Postpaid for only Government/Semi-government/Autonomous Organization)\n• Enter address, city, postal code and country.\n• Enter trade license number and upload trade license of the organization (pdf/jpg)\n• Enter TIN number and upload TIN certificate of the organization (pdf/jpg)\n• Enter BIN number and upload BIN certificate of the organization (pdf/jpg)\n• Photo of the authorized officer of the organization (pdf/jpg)\n• Enter last tax return date and upload last tax return document (pdf/jpg)\n• Check BTCL\'s terms and conditions\n• Enter complete registration.\n\nYou will get the username and password of the mentioned webportal through email. Within 03 working days you will get approval for purchasing services upon successful verification of your documents mentioned above.\n\nYou are kindly requested to purchase Alaap Cloud IP PBX package when you have IP-phones ready for installation as the package subscription date will be the billing date. Alaap Cloud Voice Broadcasting and Contact Center services can be readily operable through a computer / laptop.',
+        "To subscribe to Alaap Cloud services, there are three steps:\n\na) Account Registration:\n• Open the Webportal https://services.btcliptelephony.gov.bd/en/register\n• Enter your company name, official email, and mobile number.\n• Verify your account using the Email OTP sent to your inbox.\n• Verify your account using the SMS OTP sent to your mobile.\n\nb) Identity Verification:\n• Submit your National Identity (NID) details e.g. NID front part and NID back part of authorized officer of the organization (pdf, jpg) for Bangladesh NID portal authentication.\n• Verify your NID.\n\nc) Other Documents Submission:\n• Select Customer Type: Prepaid or Postpaid (Postpaid for only Government/Semi-government/Autonomous Organization)\n• Enter address, city, postal code and country.\n• Enter trade license number and upload trade license of the organization (pdf/jpg)\n• Enter TIN number and upload TIN certificate of the organization (pdf/jpg)\n• Enter BIN number and upload BIN certificate of the organization (pdf/jpg)\n• Photo of the authorized officer of the organization (pdf/jpg)\n• Enter last tax return date and upload last tax return document (pdf/jpg)\n• Check BTCL's terms and conditions\n• Enter complete registration.\n\nYou will get the username and password of the mentioned webportal through email. Within 03 working days you will get approval for purchasing services upon successful verification of your documents mentioned above.\n\nYou are kindly requested to purchase Alaap Cloud IP PBX package when you have IP-phones ready for installation as the package subscription date will be the billing date. Alaap Cloud Voice Broadcasting and Contact Center services can be readily operable through a computer / laptop.",
         'আলাপ ক্লাউড সেবায় সাবস্ক্রাইব করতে তিনটি ধাপ রয়েছে:\n\nক) অ্যাকাউন্ট রেজিস্ট্রেশন:\n• ওয়েবপোর্টালটি খুলুন https://services.btcliptelephony.gov.bd/en/register\n• আপনার কোম্পানির নাম, অফিসিয়াল ইমেইল এবং মোবাইল নম্বর দিন।\n• ইনবক্সে পাঠানো Email OTP দিয়ে অ্যাকাউন্ট যাচাই করুন।\n• মোবাইলে পাঠানো SMS OTP দিয়ে অ্যাকাউন্ট যাচাই করুন।\n\nখ) পরিচয় যাচাই:\n• প্রতিষ্ঠানের অনুমোদিত কর্মকর্তার জাতীয় পরিচয়পত্রের (NID) সামনের ও পেছনের অংশ (pdf, jpg) জমা দিন বাংলাদেশ NID পোর্টালে যাচাইয়ের জন্য।\n• আপনার NID যাচাই করুন।\n\nগ) অন্যান্য ডকুমেন্ট জমাদান:\n• কাস্টমার টাইপ নির্বাচন করুন: Prepaid অথবা Postpaid (Postpaid শুধু সরকারি/আধা-সরকারি/স্বায়ত্তশাসিত প্রতিষ্ঠানের জন্য)\n• ঠিকানা, শহর, পোস্টাল কোড এবং দেশ লিখুন।\n• ট্রেড লাইসেন্স নম্বর দিন এবং প্রতিষ্ঠানের ট্রেড লাইসেন্স আপলোড করুন (pdf/jpg)\n• TIN নম্বর দিন এবং প্রতিষ্ঠানের TIN সার্টিফিকেট আপলোড করুন (pdf/jpg)\n• BIN নম্বর দিন এবং প্রতিষ্ঠানের BIN সার্টিফিকেট আপলোড করুন (pdf/jpg)\n• প্রতিষ্ঠানের অনুমোদিত কর্মকর্তার ছবি আপলোড করুন (pdf/jpg)\n• সর্বশেষ ট্যাক্স রিটার্ন তারিখ দিন এবং রিটার্ন ডকুমেন্ট আপলোড করুন (pdf/jpg)\n• বিটিসিএলের শর্তাবলী চেক করুন।\n• রেজিস্ট্রেশন সম্পন্ন করুন।\n\nউল্লিখিত ওয়েবপোর্টালের ইউজারনেম এবং পাসওয়ার্ড আপনি ইমেইলে পাবেন। উপরোক্ত ডকুমেন্ট সফলভাবে যাচাই হলে ০৩ কার্যদিবসের মধ্যে আপনি সেবা ক্রয়ের অনুমোদন পাবেন।\n\nযেহেতু প্যাকেজ সাবস্ক্রিপশনের তারিখটিই বিলিং তারিখ হিসেবে গণ্য হবে, তাই আপনার IP-ফোন ইনস্টলেশনের জন্য প্রস্তুত হলে আলাপ ক্লাউড IP PBX প্যাকেজ ক্রয়ের অনুরোধ করা হলো। আলাপ ক্লাউড ভয়েস ব্রডকাস্টিং ও কন্টাক্ট সেন্টার সেবা কম্পিউটার/ল্যাপটপের মাধ্যমে সরাসরি ব্যবহার করা যাবে।'
       ),
     },
@@ -397,18 +397,6 @@ const useContactData = (locale: string) => {
         locale,
         'We maintain a 99.9% delivery rate with an average delivery time of less than 3 seconds for transactional messages and within 30 seconds for promotional messages.',
         'আমরা ট্রান্জেকশনাল বার্তার জন্য ৩ সেকেন্ডের কম এবং প্রমোশনাল বার্তার জন্য ৩০ সেকেন্ডের মধ্যে গড় ডেলিভারি সময় সহ ৯৯.৯% ডেলিভারি রেট বজায় রাখি।'
-      ),
-    },
-    {
-      question: getLocalizedText(
-        locale,
-        'Can I get a custom sender ID?',
-        'আমি কি কাস্টম প্রেরক আইডি পেতে পারি?'
-      ),
-      answer: getLocalizedText(
-        locale,
-        'Yes, we provide custom sender ID services. You can use your company name or brand as the sender ID after verification process which typically takes 2-3 business days.',
-        'হ্যাঁ, আমরা কাস্টম প্রেরক আইডি সেবা প্রদান করি। যাচাইকরণ প্রক্রিয়ার পর আপনি আপনার কোম্পানির নাম বা ব্র্যান্ড প্রেরক আইডি হিসেবে ব্যবহার করতে পারেন যা সাধারণত ২-৩ কার্যদিবস সময় নেয়।'
       ),
     },
   ];
@@ -835,4 +823,3 @@ function FAQSection({ faqs, locale }: { faqs: FAQ[]; locale: string }) {
     </section>
   );
 }
-

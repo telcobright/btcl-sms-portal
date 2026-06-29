@@ -125,7 +125,7 @@ export function Header() {
                         </Button>
                       </Link>
                       <Link href={`/${locale}/register`}>
-                        <Button size="sm" className="bg-white text-btcl-primary hover:bg-btcl-primaryLight hover:text-white border border-white">
+                        <Button size="sm" className="bg-white text-btcl-primary border border-white hover:bg-btcl-primaryLight hover:text-white hover:border-btcl-primaryLight transition-colors">
                           {t('navigation.register')}
                         </Button>
                       </Link>
@@ -206,7 +206,7 @@ export function Header() {
                           </Button>
                         </Link>
                         <Link href={`/${locale}/register`} onClick={() => setMobileMenuOpen(false)}>
-                          <Button size="sm" className="w-full bg-white text-btcl-primary hover:bg-btcl-primaryLight hover:text-white border border-white">
+                          <Button size="sm" className="w-full bg-white text-btcl-primary border border-white hover:bg-btcl-primaryLight hover:text-white hover:border-btcl-primaryLight transition-colors">
                             {t('navigation.register')}
                           </Button>
                         </Link>

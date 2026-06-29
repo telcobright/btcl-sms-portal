@@ -37,4 +37,7 @@ deploy.tar.gz
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts.env.production
+next-env.d.ts
+
+# production env (contains secrets — uploaded by deploy.sh, never committed)
+.env.production

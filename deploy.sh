@@ -91,6 +91,10 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
     # Copy archive to container
     lxc file push /tmp/deploy.tar.gz Services/tmp/deploy.tar.gz
 
+    # Copy env file into the container too (the in-container cp below reads it from
+    # the container's /tmp, not the jump host's — without this push it silently no-ops)
+    [ -f /tmp/btcl.env ] && lxc file push /tmp/btcl.env Services/tmp/btcl.env
+
     # Execute deployment inside container
     lxc exec Services -- bash -c '
         set -e
@@ -146,7 +150,7 @@ sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
     '
 
     # Cleanup tmp on jump host
-    rm -f /tmp/deploy.tar.gz
+    rm -f /tmp/deploy.tar.gz /tmp/btcl.env
 
     echo "Deployment complete!"
 ENDSSH

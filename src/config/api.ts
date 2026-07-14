@@ -7,16 +7,16 @@
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
 // export const ROOT_URL = 'http://localhost:8001';
-export const ROOT_URL = 'https://services.btcliptelephony.gov.bd';
+export const ROOT_URL = 'https://alaapcloud.gov.bd';
 
 // VBS API Base URL (without port) - used for secondary partner creation
-export const VBS_BASE_URL = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST';
+export const VBS_BASE_URL = 'https://vbs.alaapcloud.gov.bd/FREESWITCHREST';
 
 // Hosted PBX specific base URL (with port 4000)
-export const PBX_BASE_URL = 'https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST';
+export const PBX_BASE_URL = 'https://vbs.alaapcloud.gov.bd:4000/FREESWITCHREST';
 
 // HCC API Base URL for partner creation
-export const HCC_BASE_URL = 'https://hcc.btcliptelephony.gov.bd/FREESWITCHREST';
+export const HCC_BASE_URL = 'https://cc.alaapcloud.gov.bd/FREESWITCHREST';
 
 // ============================================
 // Service Base URLs (derived from ROOT_URL)

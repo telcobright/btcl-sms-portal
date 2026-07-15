@@ -1,3 +1,5 @@
+import { pageMetadata } from '@/config/seo'
+import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
@@ -9,6 +11,11 @@ interface VoiceBroadcastPageProps {
   params: Promise<{
     locale: string
   }>
+}
+
+export async function generateMetadata({ params }: VoiceBroadcastPageProps): Promise<Metadata> {
+  const { locale } = await params
+  return pageMetadata(locale, '/services/voice-broadcast')
 }
 
 export default async function VoiceBroadcastPage({ params }: VoiceBroadcastPageProps) {

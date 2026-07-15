@@ -1,3 +1,5 @@
+import { pageMetadata } from '@/config/seo'
+import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
@@ -14,6 +16,11 @@ interface BulkSMSPageProps {
 
 const getLocalizedText = (locale: string, enText: string, bnText: string): string => {
   return locale === 'en' ? enText : bnText
+}
+
+export async function generateMetadata({ params }: BulkSMSPageProps): Promise<Metadata> {
+  const { locale } = await params
+  return pageMetadata(locale, '/services/bulk-sms')
 }
 
 export default async function BulkSMSPage({ params }: BulkSMSPageProps) {

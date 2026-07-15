@@ -1,3 +1,5 @@
+import { pageMetadata } from '@/config/seo'
+import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
@@ -9,6 +11,11 @@ interface HostedPBXPageProps {
   params: Promise<{
     locale: string
   }>
+}
+
+export async function generateMetadata({ params }: HostedPBXPageProps): Promise<Metadata> {
+  const { locale } = await params
+  return pageMetadata(locale, '/services/hosted-pbx')
 }
 
 export default async function HostedPBXPage({ params }: HostedPBXPageProps) {

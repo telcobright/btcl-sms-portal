@@ -1,3 +1,5 @@
+import { pageMetadata } from '@/config/seo';
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 
 import { Footer } from '@/components/layout/Footer';
@@ -297,6 +299,11 @@ const useAboutPageData = (locale: string) => {
 };
 
 // Main Component
+export async function generateMetadata({ params }: AboutPageProps): Promise<Metadata> {
+  const { locale } = await params;
+  return pageMetadata(locale, '/about');
+}
+
 export default async function AboutPage({ params }: AboutPageProps) {
   const { locale } = await params;
   const t = await getTranslations();

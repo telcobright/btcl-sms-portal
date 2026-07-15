@@ -1,6 +1,8 @@
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
+import { pageMetadata } from '@/config/seo';
+import type { Metadata } from 'next';
 import {
   Card,
   CardContent,
@@ -34,6 +36,11 @@ const getLocalizedText = (
 ): string => {
   return locale === 'en' ? enText : bnText;
 };
+
+export async function generateMetadata({ params }: ServicesPageProps): Promise<Metadata> {
+  const { locale } = await params;
+  return pageMetadata(locale, '/services');
+}
 
 export default async function ServicesPage({ params }: ServicesPageProps) {
   const { locale } = await params;

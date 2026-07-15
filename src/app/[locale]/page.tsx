@@ -2,6 +2,8 @@ import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
+import { pageMetadata } from '@/config/seo';
+import type { Metadata } from 'next';
 import {
   Card,
   CardContent,
@@ -59,6 +61,11 @@ const TESTIMONIALS = [
   { name: 'Bangladeshi Bank', industry: 'Banking', initial: 'B' },
   { name: 'City Hospital', industry: 'Healthcare', initial: 'C' },
 ] as const;
+
+export async function generateMetadata({ params }: HomePageProps): Promise<Metadata> {
+  const { locale } = await params;
+  return pageMetadata(locale, '');
+}
 
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;

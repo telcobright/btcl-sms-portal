@@ -1,52 +1,71 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import toast from 'react-hot-toast';
+import { API_BASE_URL, API_ENDPOINTS, ROOT_URL } from '@/config/api';
 import {
-  getPartnerById,
-  getUsersByPartner,
-  getPurchasesByPartner,
-  getDocumentsByPartner,
-  getServiceStatus,
-  getPartnerTypeLabel,
-  getCustomerPrePaidLabel,
-  updatePartner,
   createUser,
-  editUser,
-  deleteUser,
-  uploadPartnerDocument,
-  deletePartnerDocument,
+  CreateUserPayload,
   deactivatePartner,
-  reactivatePartner,
   deactivatePartnerService,
-  reactivatePartnerService,
+  deletePartnerDocument,
+  deleteUser,
+  editUser,
+  getCustomerPrePaidLabel,
+  getDocumentsByPartner,
+  getPartnerById,
+  getPartnerTypeLabel,
+  getPurchasesByPartner,
+  getServiceStatus,
+  getUsersByPartner,
   Partner,
+  PartnerDocument,
   PartnerUser,
   PurchaseHistory,
-  PartnerDocument,
+  reactivatePartner,
+  reactivatePartnerService,
   ServiceStatus,
-  CreateUserPayload,
+  updatePartner,
+  uploadPartnerDocument,
 } from '@/lib/api-client/admin';
-import { API_BASE_URL, API_ENDPOINTS, ROOT_URL } from '@/config/api';
 import { showApiError } from '@/lib/api-error';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
-type TabType = 'overview' | 'users' | 'purchases' | 'subscriptions' | 'documents';
+type TabType =
+  | 'overview'
+  | 'users'
+  | 'purchases'
+  | 'subscriptions'
+  | 'documents';
 
 /* ─── Spinner ─── */
 const Spinner = ({ className = 'w-4 h-4' }: { className?: string }) => (
   <svg className={`${className} animate-spin`} fill="none" viewBox="0 0 24 24">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    />
   </svg>
 );
 
 /* ─── Shared button styles ─── */
 const btn = {
-  primary: 'px-4 py-2 text-sm font-medium text-white bg-[#0D529E] hover:bg-[#1F3C71] rounded-md transition-colors disabled:opacity-50',
-  secondary: 'px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors',
-  outline: 'px-3 py-1.5 text-xs font-medium border rounded-md transition-colors disabled:opacity-50',
+  primary:
+    'px-4 py-2 text-sm font-medium text-white bg-[#0D529E] hover:bg-[#1F3C71] rounded-md transition-colors disabled:opacity-50',
+  secondary:
+    'px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors',
+  outline:
+    'px-3 py-1.5 text-xs font-medium border rounded-md transition-colors disabled:opacity-50',
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -73,40 +92,74 @@ export default function PartnerDetailsPage() {
   });
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
-  const [imageViewerData, setImageViewerData] = useState<{ url: string; name: string } | null>(null);
-  const [pdfViewerData, setPdfViewerData] = useState<{ url: string; name: string } | null>(null);
-  const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
-  const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(null);
+  const [imageViewerData, setImageViewerData] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
+  const [pdfViewerData, setPdfViewerData] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
+  const [docStatuses, setDocStatuses] = useState<
+    Record<string, { status: string; rejectionReason: string }>
+  >({});
+  const [updatingDocStatus, setUpdatingDocStatus] = useState<string | null>(
+    null
+  );
   const [deactivating, setDeactivating] = useState(false);
   const [confirmModal, setConfirmModal] = useState(false);
-  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
-  const [serviceResults, setServiceResults] = useState<{ service: string; success: boolean; error?: string }[]>([]);
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(
+    new Set()
+  );
+  const [serviceResults, setServiceResults] = useState<
+    { service: string; success: boolean; error?: string }[]
+  >([]);
   const [partnerExtra, setPartnerExtra] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const authToken = localStorage.getItem('authToken');
-      if (!authToken) { router.push(`/${locale}/login`); return; }
+      if (!authToken) {
+        router.push(`/${locale}/login`);
+        return;
+      }
 
-      const [partnerData, usersData, purchasesData, documentsData, serviceStatusData, docStatusesRes, partnerExtraRes] =
-        await Promise.all([
-          getPartnerById(partnerId, authToken),
-          getUsersByPartner(partnerId, authToken),
-          getPurchasesByPartner(partnerId, authToken),
-          getDocumentsByPartner(partnerId, authToken),
-          getServiceStatus(partnerId, authToken),
-          fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-            body: JSON.stringify({ id: partnerId }),
-          }).then((r) => r.json()).catch(() => ({})),
-          fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-            body: JSON.stringify({ id: partnerId }),
-          }).then((r) => r.ok ? r.json() : null).catch(() => null),
-        ]);
+      const [
+        partnerData,
+        usersData,
+        purchasesData,
+        documentsData,
+        serviceStatusData,
+        docStatusesRes,
+        partnerExtraRes,
+      ] = await Promise.all([
+        getPartnerById(partnerId, authToken),
+        getUsersByPartner(partnerId, authToken),
+        getPurchasesByPartner(partnerId, authToken),
+        getDocumentsByPartner(partnerId, authToken),
+        getServiceStatus(partnerId, authToken),
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ id: partnerId }),
+        })
+          .then((r) => r.json())
+          .catch(() => ({})),
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ id: partnerId }),
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null),
+      ]);
 
       setPartner(partnerData);
       setUsers(Array.isArray(usersData) ? usersData : []);
@@ -128,7 +181,9 @@ export default function PartnerDetailsPage() {
     }
   }, [partnerId, locale, router]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   /* ── Document helpers ── */
   const detectFileType = async (blob: Blob): Promise<string> => {
@@ -140,63 +195,124 @@ export default function PartnerDetailsPage() {
     return '.pdf';
   };
 
-  const isImageExt = (ext: string) => ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext.toLowerCase());
+  const isImageExt = (ext: string) =>
+    ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext.toLowerCase());
 
   const openBlob = async (blob: Blob, documentName: string) => {
     const mime = blob.type;
     let ext = '.pdf';
     let isImg = false;
-    if (mime?.startsWith('image/')) { isImg = true; ext = mime.includes('png') ? '.png' : '.jpg'; }
-    else if (mime?.includes('pdf')) { ext = '.pdf'; }
-    else { ext = await detectFileType(blob); isImg = isImageExt(ext); }
+    if (mime?.startsWith('image/')) {
+      isImg = true;
+      ext = mime.includes('png') ? '.png' : '.jpg';
+    } else if (mime?.includes('pdf')) {
+      ext = '.pdf';
+    } else {
+      ext = await detectFileType(blob);
+      isImg = isImageExt(ext);
+    }
 
     const name = documentName.replace(/\.[^/.]+$/, '') + ext;
-    const url = window.URL.createObjectURL(isImg ? blob : new Blob([blob], { type: 'application/pdf' }));
+    const url = window.URL.createObjectURL(
+      isImg ? blob : new Blob([blob], { type: 'application/pdf' })
+    );
 
     if (isImg) setImageViewerData({ url, name });
     else if (ext === '.pdf') setPdfViewerData({ url, name });
-    else { const a = document.createElement('a'); a.href = url; a.download = name; a.click(); window.URL.revokeObjectURL(url); }
+    else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
   };
 
   const fetchDoc = async (documentType: string) => {
     const authToken = localStorage.getItem('authToken');
-    const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerDocument}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-      body: JSON.stringify({ partnerId, documentType }),
-    });
+    const res = await fetch(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerDocument}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ partnerId, documentType }),
+      }
+    );
     if (!res.ok) throw new Error('Failed to load document');
     return res.blob();
   };
 
   const viewDocument = async (documentType: string, documentName: string) => {
-    try { setViewingDoc(documentType); await openBlob(await fetchDoc(documentType), documentName); }
-    catch (err) { showApiError(err, { fallbackMessage: 'Failed to load document' }); }
-    finally { setViewingDoc(null); }
+    try {
+      setViewingDoc(documentType);
+      await openBlob(await fetchDoc(documentType), documentName);
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to load document' });
+    } finally {
+      setViewingDoc(null);
+    }
   };
 
-  const downloadDocument = async (documentType: string, documentName: string) => {
+  const downloadDocument = async (
+    documentType: string,
+    documentName: string
+  ) => {
     try {
       setDownloadingDoc(documentType);
       const blob = await fetchDoc(documentType);
       const ext = await detectFileType(blob);
       const name = documentName.replace(/\.[^/.]+$/, '') + ext;
-      const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = name; a.click();
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
       window.URL.revokeObjectURL(a.href);
-    } catch (err) { showApiError(err, { fallbackMessage: 'Failed to download' }); }
-    finally { setDownloadingDoc(null); }
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to download' });
+    } finally {
+      setDownloadingDoc(null);
+    }
   };
 
   const SERVICE_LIST = [
-    { id: 'pbx', name: 'Alaap Cloud IP PBX', icon: '📞', color: 'blue', pending: false },
-    { id: 'hcc', name: 'Contact Center', icon: '👥', color: 'purple', pending: false },
-    { id: 'vbs', name: 'Voice Broadcast', icon: '📢', color: 'orange', pending: false },
-    { id: 'sms', name: 'Bulk SMS', icon: '💬', color: 'emerald', pending: false },
+    {
+      id: 'pbx',
+      name: 'Alaap Cloud IP PBX',
+      icon: '📞',
+      color: 'blue',
+      pending: false,
+    },
+    {
+      id: 'hcc',
+      name: 'Contact Center',
+      icon: '👥',
+      color: 'purple',
+      pending: false,
+    },
+    {
+      id: 'vbs',
+      name: 'Voice Broadcast',
+      icon: '📢',
+      color: 'orange',
+      pending: false,
+    },
+    {
+      id: 'sms',
+      name: 'Bulk SMS',
+      icon: '💬',
+      color: 'emerald',
+      pending: false,
+    },
   ];
 
   // Services the admin may toggle: must be purchased at least once AND have a backend endpoint.
   const purchasedServices = SERVICE_LIST.filter(
-    (s) => !s.pending && serviceStatus[s.id as keyof ServiceStatus]?.purchases?.length > 0
+    (s) =>
+      !s.pending &&
+      serviceStatus[s.id as keyof ServiceStatus]?.purchases?.length > 0
   );
 
   const handleToggleStatus = () => {
@@ -235,9 +351,13 @@ export default function PartnerDetailsPage() {
       if (selectedServices.size > 0) {
         // Selective mode: call ONLY the chosen service backends.
         // The partner's portal login (main record) is left untouched.
-        const action = isDeactivated ? reactivatePartnerService : deactivatePartnerService;
+        const action = isDeactivated
+          ? reactivatePartnerService
+          : deactivatePartnerService;
         const results = await Promise.all(
-          Array.from(selectedServices).map((svc) => action(partnerId, svc, authToken))
+          Array.from(selectedServices).map((svc) =>
+            action(partnerId, svc, authToken)
+          )
         );
         setServiceResults(results);
 
@@ -245,10 +365,14 @@ export default function PartnerDetailsPage() {
         const failures = results.filter((r) => !r.success);
 
         if (failures.length > 0) {
-          toast.error(`${failures.length} service(s) failed: ${failures.map((f) => f.service.toUpperCase()).join(', ')}`);
+          toast.error(
+            `${failures.length} service(s) failed: ${failures.map((f) => f.service.toUpperCase()).join(', ')}`
+          );
         }
         if (successes.length > 0) {
-          toast.success(`${isDeactivated ? 'Reactivated' : 'Deactivated'}: ${successes.map((s) => s.service.toUpperCase()).join(', ')}`);
+          toast.success(
+            `${isDeactivated ? 'Reactivated' : 'Deactivated'}: ${successes.map((s) => s.service.toUpperCase()).join(', ')}`
+          );
         }
 
         setTimeout(() => {
@@ -257,40 +381,80 @@ export default function PartnerDetailsPage() {
         }, 1500);
       } else {
         // No services selected: deactivate/reactivate the whole partner (portal login).
-        const mainAction = isDeactivated ? reactivatePartner : deactivatePartner;
+        const mainAction = isDeactivated
+          ? reactivatePartner
+          : deactivatePartner;
         await mainAction(partnerId, authToken);
-        toast.success(`Partner ${isDeactivated ? 'reactivated' : 'deactivated'} successfully`);
-        setPartner((p) => p ? {
-          ...p,
-          status: isDeactivated ? 'ACTIVE' : 'DEACTIVATED',
-          deactivatedAt: isDeactivated ? null : new Date().toISOString(),
-        } : p);
+        toast.success(
+          `Partner ${isDeactivated ? 'reactivated' : 'deactivated'} successfully`
+        );
+        setPartner((p) =>
+          p
+            ? {
+                ...p,
+                status: isDeactivated ? 'ACTIVE' : 'DEACTIVATED',
+                deactivatedAt: isDeactivated ? null : new Date().toISOString(),
+              }
+            : p
+        );
         setConfirmModal(false);
       }
     } catch (err) {
       console.error('Failed to toggle partner status:', err);
-      showApiError(err, { fallbackMessage: 'Action failed. Please try again.' });
+      showApiError(err, {
+        fallbackMessage: 'Action failed. Please try again.',
+      });
     } finally {
       setDeactivating(false);
     }
   };
 
-  const updateDocStatus = async (docType: string, status: string, rejectionReason: string) => {
+  const updateDocStatus = async (
+    docType: string,
+    status: string,
+    rejectionReason: string
+  ) => {
     try {
       setUpdatingDocStatus(docType);
       const authToken = localStorage.getItem('authToken');
-      const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.updateDocumentStatus}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-        body: JSON.stringify({ partnerId, documentType: docType, status, rejectionReason }),
-      });
-      if (res.ok) setDocStatuses((p) => ({ ...p, [docType]: { status, rejectionReason: status === 'APPROVED' ? '' : rejectionReason } }));
-    } catch { /* silent */ }
-    finally { setUpdatingDocStatus(null); }
+      const res = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.partner.updateDocumentStatus}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            partnerId,
+            documentType: docType,
+            status,
+            rejectionReason,
+          }),
+        }
+      );
+      if (res.ok)
+        setDocStatuses((p) => ({
+          ...p,
+          [docType]: {
+            status,
+            rejectionReason: status === 'APPROVED' ? '' : rejectionReason,
+          },
+        }));
+    } catch {
+      /* silent */
+    } finally {
+      setUpdatingDocStatus(null);
+    }
   };
 
   const availableDocumentsCount = documents.filter((d) => d.available).length;
-  const activeServicesCount = [serviceStatus.pbx.active, serviceStatus.hcc.active, serviceStatus.vbs.active, serviceStatus.sms.active].filter(Boolean).length;
+  const activeServicesCount = [
+    serviceStatus.pbx.active,
+    serviceStatus.hcc.active,
+    serviceStatus.vbs.active,
+    serviceStatus.sms.active,
+  ].filter(Boolean).length;
 
   const tabs: { id: TabType; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
@@ -300,26 +464,40 @@ export default function PartnerDetailsPage() {
     { id: 'documents', label: 'Documents', count: availableDocumentsCount },
   ];
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <Spinner className="w-8 h-8 text-[#0D529E]" />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner className="w-8 h-8 text-[#0D529E]" />
+      </div>
+    );
 
-  if (!partner) return (
-    <div className="text-center py-16">
-      <p className="text-gray-500">Partner not found.</p>
-      <Link href={`/${locale}/admin/partners`} className="text-[#0D529E] hover:underline text-sm mt-2 inline-block">Back to Partners</Link>
-    </div>
-  );
+  if (!partner)
+    return (
+      <div className="text-center py-16">
+        <p className="text-gray-500">Partner not found.</p>
+        <Link
+          href={`/${locale}/admin/partners`}
+          className="text-[#0D529E] hover:underline text-sm mt-2 inline-block"
+        >
+          Back to Partners
+        </Link>
+      </div>
+    );
 
   return (
     <div className="space-y-5">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-gray-400">
-        <Link href={`/${locale}/admin`} className="hover:text-[#0D529E]">Dashboard</Link>
+        <Link href={`/${locale}/admin`} className="hover:text-[#0D529E]">
+          Dashboard
+        </Link>
         <span>/</span>
-        <Link href={`/${locale}/admin/partners`} className="hover:text-[#0D529E]">Partners</Link>
+        <Link
+          href={`/${locale}/admin/partners`}
+          className="hover:text-[#0D529E]"
+        >
+          Partners
+        </Link>
         <span>/</span>
         <span className="text-gray-700 font-medium">{partner.partnerName}</span>
       </nav>
@@ -331,12 +509,22 @@ export default function PartnerDetailsPage() {
             {partner.partnerName?.charAt(0).toUpperCase() || '?'}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">{partner.partnerName}</h1>
+            <h1 className="text-xl font-bold text-white">
+              {partner.partnerName}
+            </h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-white/60">#{partner.idPartner}</span>
-              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getPartnerTypeLabel(partner.partnerType)}</span>
-              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">{getCustomerPrePaidLabel(partner.customerPrePaid)}</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${partner.status === 'DEACTIVATED' ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white'}`}>
+              <span className="text-xs text-white/60">
+                #{partner.idPartner}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">
+                {getPartnerTypeLabel(partner.partnerType)}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">
+                {getCustomerPrePaidLabel(partner.customerPrePaid)}
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${partner.status === 'DEACTIVATED' ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white'}`}
+              >
                 {partner.status === 'DEACTIVATED' ? 'Deactivated' : 'Active'}
               </span>
               {partner.status === 'DEACTIVATED' && partner.deactivatedAt && (
@@ -353,10 +541,30 @@ export default function PartnerDetailsPage() {
             disabled={deactivating}
             className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors disabled:opacity-50"
           >
-            {deactivating ? 'Processing...' : partner.status === 'DEACTIVATED' ? 'Reactivate' : 'Deactivate'}
+            {deactivating
+              ? 'Processing...'
+              : partner.status === 'DEACTIVATED'
+                ? 'Reactivate'
+                : 'Deactivate'}
           </button>
-          <button onClick={fetchData} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Refresh">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          <button
+            onClick={fetchData}
+            className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+            title="Refresh"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
           </button>
         </div>
       </div>
@@ -376,7 +584,9 @@ export default function PartnerDetailsPage() {
             >
               {tab.label}
               {tab.count !== undefined && (
-                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-gray-100 text-gray-500'}`}>
+                <span
+                  className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-gray-100 text-gray-500'}`}
+                >
                   {tab.count}
                 </span>
               )}
@@ -387,31 +597,94 @@ export default function PartnerDetailsPage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg border border-gray-200">
-        {activeTab === 'overview' && <OverviewTab partner={partner} onPartnerUpdate={(p) => setPartner(p)} isDeactivated={partner.status === 'DEACTIVATED'} partnerExtra={partnerExtra} users={users} />}
-        {activeTab === 'users' && <UsersTab users={users} partnerId={partnerId} onRefresh={fetchData} isDeactivated={partner.status === 'DEACTIVATED'} />}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            partner={partner}
+            onPartnerUpdate={(p) => setPartner(p)}
+            isDeactivated={partner.status === 'DEACTIVATED'}
+            partnerExtra={partnerExtra}
+            users={users}
+          />
+        )}
+        {activeTab === 'users' && (
+          <UsersTab
+            users={users}
+            partnerId={partnerId}
+            onRefresh={fetchData}
+            isDeactivated={partner.status === 'DEACTIVATED'}
+          />
+        )}
         {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
-        {activeTab === 'subscriptions' && <SubscriptionsTab subscriptions={subscriptions} serviceStatus={serviceStatus} partnerName={partner.partnerName || ''} />}
+        {activeTab === 'subscriptions' && (
+          <SubscriptionsTab
+            subscriptions={subscriptions}
+            serviceStatus={serviceStatus}
+            partnerName={partner.partnerName || ''}
+          />
+        )}
         {activeTab === 'documents' && (
-          <DocumentsTab documents={documents} viewDocument={viewDocument} downloadDocument={downloadDocument}
-            viewingDoc={viewingDoc} downloadingDoc={downloadingDoc} docStatuses={docStatuses}
-            onUpdateStatus={updateDocStatus} updatingDocStatus={updatingDocStatus}
-            partnerId={partnerId} onRefresh={fetchData}
-            partnerEmail={partner?.email || ''} partnerName={partner?.partnerName || ''} />
+          <DocumentsTab
+            documents={documents}
+            viewDocument={viewDocument}
+            downloadDocument={downloadDocument}
+            viewingDoc={viewingDoc}
+            downloadingDoc={downloadingDoc}
+            docStatuses={docStatuses}
+            onUpdateStatus={updateDocStatus}
+            updatingDocStatus={updatingDocStatus}
+            partnerId={partnerId}
+            onRefresh={fetchData}
+            partnerEmail={partner?.email || ''}
+            partnerName={partner?.partnerName || ''}
+          />
         )}
       </div>
 
       {/* Image Viewer Modal */}
       {imageViewerData && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => { window.URL.revokeObjectURL(imageViewerData.url); setImageViewerData(null); }}>
-          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            window.URL.revokeObjectURL(imageViewerData.url);
+            setImageViewerData(null);
+          }}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b">
-              <span className="text-sm font-medium text-gray-700">{imageViewerData.name}</span>
-              <button onClick={() => { window.URL.revokeObjectURL(imageViewerData.url); setImageViewerData(null); }} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <span className="text-sm font-medium text-gray-700">
+                {imageViewerData.name}
+              </span>
+              <button
+                onClick={() => {
+                  window.URL.revokeObjectURL(imageViewerData.url);
+                  setImageViewerData(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
             </div>
             <div className="p-4 overflow-auto max-h-[calc(90vh-60px)]">
-              <img src={imageViewerData.url} alt={imageViewerData.name} className="max-w-full h-auto mx-auto" />
+              <img
+                src={imageViewerData.url}
+                alt={imageViewerData.name}
+                className="max-w-full h-auto mx-auto"
+              />
             </div>
           </div>
         </div>
@@ -419,157 +692,249 @@ export default function PartnerDetailsPage() {
 
       {/* PDF Viewer Modal */}
       {pdfViewerData && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => { window.URL.revokeObjectURL(pdfViewerData.url); setPdfViewerData(null); }}>
-          <div className="relative w-full max-w-5xl h-[90vh] bg-white rounded-lg overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            window.URL.revokeObjectURL(pdfViewerData.url);
+            setPdfViewerData(null);
+          }}
+        >
+          <div
+            className="relative w-full max-w-5xl h-[90vh] bg-white rounded-lg overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-              <span className="text-sm font-medium text-gray-700">{pdfViewerData.name}</span>
+              <span className="text-sm font-medium text-gray-700">
+                {pdfViewerData.name}
+              </span>
               <div className="flex items-center gap-2">
-                <a href={pdfViewerData.url} download={pdfViewerData.name} className="text-xs text-[#0D529E] hover:underline">Download</a>
-                <button onClick={() => { window.URL.revokeObjectURL(pdfViewerData.url); setPdfViewerData(null); }} className="text-gray-400 hover:text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <a
+                  href={pdfViewerData.url}
+                  download={pdfViewerData.name}
+                  className="text-xs text-[#0D529E] hover:underline"
+                >
+                  Download
+                </a>
+                <button
+                  onClick={() => {
+                    window.URL.revokeObjectURL(pdfViewerData.url);
+                    setPdfViewerData(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
             <div className="flex-1 overflow-hidden">
-              <iframe src={pdfViewerData.url} title={pdfViewerData.name} className="w-full h-full border-0" />
+              <iframe
+                src={pdfViewerData.url}
+                title={pdfViewerData.name}
+                className="w-full h-full border-0"
+              />
             </div>
           </div>
         </div>
       )}
 
       {/* Deactivate / Reactivate Confirmation Modal with Service Selection */}
-      {confirmModal && partner && (() => {
-        const isDeactivated = partner.status === 'DEACTIVATED';
-        const allPurchasedSelected = purchasedServices.length > 0 && selectedServices.size === purchasedServices.length;
-        return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={() => !deactivating && setConfirmModal(false)}
-          >
+      {confirmModal &&
+        partner &&
+        (() => {
+          const isDeactivated = partner.status === 'DEACTIVATED';
+          const allPurchasedSelected =
+            purchasedServices.length > 0 &&
+            selectedServices.size === purchasedServices.length;
+          return (
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6"
-              onClick={(e) => e.stopPropagation()}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              onClick={() => !deactivating && setConfirmModal(false)}
             >
-              <div className="flex justify-center mb-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${isDeactivated ? 'bg-btcl-primaryLight/20' : 'bg-red-100'}`}>
-                  {isDeactivated ? '✅' : '⚠️'}
+              <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-center mb-4">
+                  <div
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${isDeactivated ? 'bg-btcl-primaryLight/20' : 'bg-red-100'}`}
+                  >
+                    {isDeactivated ? '✅' : '⚠️'}
+                  </div>
                 </div>
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
-                {isDeactivated ? 'Reactivate Partner' : 'Deactivate Partner'}
-              </h2>
-              <p className={`text-base font-semibold text-center mb-4 ${isDeactivated ? 'text-btcl-primary' : 'text-red-600'}`}>
-                {partner.partnerName}
-              </p>
+                <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
+                  {isDeactivated ? 'Reactivate Partner' : 'Deactivate Partner'}
+                </h2>
+                <p
+                  className={`text-base font-semibold text-center mb-4 ${isDeactivated ? 'text-btcl-primary' : 'text-red-600'}`}
+                >
+                  {partner.partnerName}
+                </p>
 
-              <div className={`rounded-xl p-4 mb-4 border text-sm text-gray-700 leading-relaxed ${isDeactivated ? 'bg-btcl-primaryLight/10 border-btcl-primaryLight/30' : 'bg-red-50 border-red-200'}`}>
-                {selectedServices.size > 0
-                  ? (isDeactivated
-                      ? 'Only the selected service(s) will be reactivated on their backends. The partner\'s portal login is not affected.'
-                      : 'Only the selected service(s) will be deactivated on their backends. The partner can still log in and use other services.')
-                  : (isDeactivated
-                      ? 'No service selected — the partner\'s portal login will be reactivated. Pick services above to reactivate them instead.'
-                      : 'No service selected — the partner will be blocked from logging in to the portal. Pick services above to deactivate only those instead.')}
-              </div>
-
-              {/* Service Selection */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-800">Select Services <span className="text-xs font-normal text-gray-400">(optional)</span></h3>
-                  {purchasedServices.length > 0 && (
-                    <button
-                      onClick={toggleSelectAll}
-                      disabled={deactivating}
-                      className="text-xs font-medium text-[#0D529E] hover:underline disabled:opacity-50"
-                    >
-                      {allPurchasedSelected ? 'Deselect All' : 'Select All'}
-                    </button>
-                  )}
+                <div
+                  className={`rounded-xl p-4 mb-4 border text-sm text-gray-700 leading-relaxed ${isDeactivated ? 'bg-btcl-primaryLight/10 border-btcl-primaryLight/30' : 'bg-red-50 border-red-200'}`}
+                >
+                  {selectedServices.size > 0
+                    ? isDeactivated
+                      ? "Only the selected service(s) will be reactivated on their backends. The partner's portal login is not affected."
+                      : 'Only the selected service(s) will be deactivated on their backends. The partner can still log in and use other services.'
+                    : isDeactivated
+                      ? "No service selected — the partner's portal login will be reactivated. Pick services above to reactivate them instead."
+                      : 'No service selected — the partner will be blocked from logging in to the portal. Pick services above to deactivate only those instead.'}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {SERVICE_LIST.map((svc) => {
-                    const hasPurchase = serviceStatus[svc.id as keyof ServiceStatus]?.purchases?.length > 0;
-                    const selectable = !svc.pending && hasPurchase;
-                    const isSelected = selectedServices.has(svc.id);
-                    const note = svc.pending ? 'API pending' : !hasPurchase ? 'No purchase' : null;
-                    return (
+
+                {/* Service Selection */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-800">
+                      Select Services{' '}
+                      <span className="text-xs font-normal text-gray-400">
+                        (optional)
+                      </span>
+                    </h3>
+                    {purchasedServices.length > 0 && (
                       <button
-                        key={svc.id}
-                        onClick={() => selectable && toggleServiceSelection(svc.id)}
-                        disabled={!selectable || deactivating}
-                        className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all ${
-                          !selectable
-                            ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                            : isSelected
-                              ? isDeactivated
-                                ? 'border-[#0D529E] bg-blue-50 shadow-sm'
-                                : 'border-red-400 bg-red-50 shadow-sm'
-                              : 'border-gray-200 bg-white hover:border-gray-300 cursor-pointer'
-                        }`}
+                        onClick={toggleSelectAll}
+                        disabled={deactivating}
+                        className="text-xs font-medium text-[#0D529E] hover:underline disabled:opacity-50"
                       >
-                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
-                          !selectable
-                            ? 'border-gray-200 bg-gray-100'
-                            : isSelected
-                              ? isDeactivated ? 'border-[#0D529E] bg-[#0D529E]' : 'border-red-500 bg-red-500'
-                              : 'border-gray-300'
-                        }`}>
-                          {isSelected && (
-                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <span className="text-lg mr-1">{svc.icon}</span>
-                          <span className={`text-sm font-medium ${!selectable ? 'text-gray-400' : 'text-gray-800'}`}>
-                            {svc.name}
-                          </span>
-                          {note && (
-                            <p className="text-[10px] text-gray-400 mt-0.5">{note}</p>
-                          )}
-                        </div>
+                        {allPurchasedSelected ? 'Deselect All' : 'Select All'}
                       </button>
-                    );
-                  })}
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SERVICE_LIST.map((svc) => {
+                      const hasPurchase =
+                        serviceStatus[svc.id as keyof ServiceStatus]?.purchases
+                          ?.length > 0;
+                      const selectable = !svc.pending && hasPurchase;
+                      const isSelected = selectedServices.has(svc.id);
+                      const note = svc.pending
+                        ? 'API pending'
+                        : !hasPurchase
+                          ? 'No purchase'
+                          : null;
+                      return (
+                        <button
+                          key={svc.id}
+                          onClick={() =>
+                            selectable && toggleServiceSelection(svc.id)
+                          }
+                          disabled={!selectable || deactivating}
+                          className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all ${
+                            !selectable
+                              ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                              : isSelected
+                                ? isDeactivated
+                                  ? 'border-[#0D529E] bg-blue-50 shadow-sm'
+                                  : 'border-red-400 bg-red-50 shadow-sm'
+                                : 'border-gray-200 bg-white hover:border-gray-300 cursor-pointer'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                              !selectable
+                                ? 'border-gray-200 bg-gray-100'
+                                : isSelected
+                                  ? isDeactivated
+                                    ? 'border-[#0D529E] bg-[#0D529E]'
+                                    : 'border-red-500 bg-red-500'
+                                  : 'border-gray-300'
+                            }`}
+                          >
+                            {isSelected && (
+                              <svg
+                                className="w-3 h-3 text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={3}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-lg mr-1">{svc.icon}</span>
+                            <span
+                              className={`text-sm font-medium ${!selectable ? 'text-gray-400' : 'text-gray-800'}`}
+                            >
+                              {svc.name}
+                            </span>
+                            {note && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                {note}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {/* Results */}
-              {serviceResults.length > 0 && (
-                <div className="mb-4 space-y-1.5">
-                  {serviceResults.map((r) => (
-                    <div key={r.service} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${r.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                      {r.success ? '✓' : '✗'} {r.service.toUpperCase()}: {r.success ? (isDeactivated ? 'Reactivated' : 'Deactivated') : r.error}
-                    </div>
-                  ))}
+                {/* Results */}
+                {serviceResults.length > 0 && (
+                  <div className="mb-4 space-y-1.5">
+                    {serviceResults.map((r) => (
+                      <div
+                        key={r.service}
+                        className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${r.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
+                      >
+                        {r.success ? '✓' : '✗'} {r.service.toUpperCase()}:{' '}
+                        {r.success
+                          ? isDeactivated
+                            ? 'Reactivated'
+                            : 'Deactivated'
+                          : r.error}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmModal(false)}
+                    disabled={deactivating}
+                    className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmToggle}
+                    disabled={deactivating}
+                    className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors disabled:opacity-50 ${isDeactivated ? 'bg-btcl-primary hover:bg-btcl-primaryDark' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    {deactivating ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Spinner className="w-4 h-4" /> Processing...
+                      </span>
+                    ) : selectedServices.size > 0 ? (
+                      `${isDeactivated ? 'Reactivate' : 'Deactivate'} ${selectedServices.size} Service${selectedServices.size > 1 ? 's' : ''}`
+                    ) : (
+                      `${isDeactivated ? 'Reactivate' : 'Deactivate'} Partner Login`
+                    )}
+                  </button>
                 </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmModal(false)}
-                  disabled={deactivating}
-                  className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmToggle}
-                  disabled={deactivating}
-                  className={`flex-1 py-2.5 rounded-lg font-semibold text-sm text-white transition-colors disabled:opacity-50 ${isDeactivated ? 'bg-btcl-primary hover:bg-btcl-primaryDark' : 'bg-red-600 hover:bg-red-700'}`}
-                >
-                  {deactivating ? (
-                    <span className="flex items-center justify-center gap-2"><Spinner className="w-4 h-4" /> Processing...</span>
-                  ) : selectedServices.size > 0
-                      ? `${isDeactivated ? 'Reactivate' : 'Deactivate'} ${selectedServices.size} Service${selectedServices.size > 1 ? 's' : ''}`
-                      : `${isDeactivated ? 'Reactivate' : 'Deactivate'} Partner Login`}
-                </button>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
@@ -577,7 +942,19 @@ export default function PartnerDetailsPage() {
 /* ═══════════════════════════════════════════════════════════════════
    Overview Tab
    ═══════════════════════════════════════════════════════════════════ */
-function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, users }: { partner: Partner; onPartnerUpdate: (p: Partner) => void; isDeactivated?: boolean; partnerExtra?: any; users?: PartnerUser[] }) {
+function OverviewTab({
+  partner,
+  onPartnerUpdate,
+  isDeactivated,
+  partnerExtra,
+  users,
+}: {
+  partner: Partner;
+  onPartnerUpdate: (p: Partner) => void;
+  isDeactivated?: boolean;
+  partnerExtra?: any;
+  users?: PartnerUser[];
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partner>({ ...partner });
@@ -591,15 +968,26 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       onPartnerUpdate(formData);
       setIsEditing(false);
       toast.success('Partner updated');
-    } catch (err) { showApiError(err, { fallbackMessage: 'Failed to update partner' }); }
-    finally { setSaving(false); }
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to update partner' });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleChange = (field: keyof Partner, value: string | number | null) => {
+  const handleChange = (
+    field: keyof Partner,
+    value: string | number | null
+  ) => {
     setFormData((p) => ({ ...p, [field]: value }));
   };
 
-  const fields: { label: string; field: keyof Partner; type?: 'select'; options?: { value: number; label: string }[] }[] = [
+  const fields: {
+    label: string;
+    field: keyof Partner;
+    type?: 'select';
+    options?: { value: number; label: string }[];
+  }[] = [
     { label: 'Partner Name', field: 'partnerName' },
     { label: 'Alternate Name (Invoice)', field: 'alternateNameInvoice' },
     { label: 'Email', field: 'email' },
@@ -610,7 +998,15 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
     { label: 'State', field: 'state' },
     { label: 'Postal Code', field: 'postalCode' },
     { label: 'Country', field: 'country' },
-    { label: 'Payment Type', field: 'customerPrePaid', type: 'select', options: [{ value: 1, label: 'Prepaid' }, { value: 2, label: 'Postpaid' }] },
+    {
+      label: 'Payment Type',
+      field: 'customerPrePaid',
+      type: 'select',
+      options: [
+        { value: 1, label: 'Prepaid' },
+        { value: 2, label: 'Postpaid' },
+      ],
+    },
     { label: 'VAT Registration No', field: 'vatRegistrationNo' },
     { label: 'Invoice Address', field: 'invoiceAddress' },
   ];
@@ -618,13 +1014,36 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-base font-semibold text-gray-900">Partner Information</h2>
+        <h2 className="text-base font-semibold text-gray-900">
+          Partner Information
+        </h2>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before editing' : undefined} className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#0D529E] border-[#0D529E] hover:bg-btcl-primaryLight/10'}`}>Edit</button>
+          <button
+            onClick={() => setIsEditing(true)}
+            disabled={isDeactivated}
+            title={
+              isDeactivated ? 'Reactivate partner before editing' : undefined
+            }
+            className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#0D529E] border-[#0D529E] hover:bg-btcl-primaryLight/10'}`}
+          >
+            Edit
+          </button>
         ) : (
           <div className="flex gap-2">
-            <button onClick={() => { setFormData({ ...partner }); setIsEditing(false); }} className={btn.secondary}>Cancel</button>
-            <button onClick={handleSave} disabled={saving} className={btn.primary}>
+            <button
+              onClick={() => {
+                setFormData({ ...partner });
+                setIsEditing(false);
+              }}
+              className={btn.secondary}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={btn.primary}
+            >
               {saving ? <Spinner /> : 'Save'}
             </button>
           </div>
@@ -635,11 +1054,21 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-1 mb-4 pb-4 border-b border-gray-100">
         {[
           { label: 'Partner ID', value: partner.idPartner },
-          { label: 'Partner Type', value: getPartnerTypeLabel(partner.partnerType) },
-          { label: 'Registration Date', value: partner.date1 ? new Date(partner.date1).toLocaleDateString() : 'N/A' },
+          {
+            label: 'Partner Type',
+            value: getPartnerTypeLabel(partner.partnerType),
+          },
+          {
+            label: 'Registration Date',
+            value: partner.date1
+              ? new Date(partner.date1).toLocaleDateString()
+              : 'N/A',
+          },
         ].map((item) => (
           <div key={item.label} className="py-2">
-            <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">
+              {item.label}
+            </p>
             <p className="text-sm text-gray-900 mt-0.5">{item.value}</p>
           </div>
         ))}
@@ -649,20 +1078,41 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
         {fields.map((f) => (
           <div key={f.field} className="py-2">
-            <p className="text-xs text-gray-400 uppercase tracking-wide">{f.label}</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">
+              {f.label}
+            </p>
             {isEditing ? (
               f.type === 'select' ? (
-                <select value={(formData[f.field] as number) ?? ''} onChange={(e) => handleChange(f.field, Number(e.target.value))}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none">
-                  {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <select
+                  value={(formData[f.field] as number) ?? ''}
+                  onChange={(e) =>
+                    handleChange(f.field, Number(e.target.value))
+                  }
+                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none"
+                >
+                  {f.options?.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
                 </select>
               ) : (
-                <input type="text" value={(formData[f.field] as string) ?? ''} onChange={(e) => handleChange(f.field, e.target.value || null)}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none" />
+                <input
+                  type="text"
+                  value={(formData[f.field] as string) ?? ''}
+                  onChange={(e) =>
+                    handleChange(f.field, e.target.value || null)
+                  }
+                  className="mt-1 w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none"
+                />
               )
             ) : (
               <p className="text-sm text-gray-900 mt-0.5">
-                {f.type === 'select' ? getCustomerPrePaidLabel(partner[f.field] as number) : (partner[f.field] as string) || <span className="text-gray-300">--</span>}
+                {f.type === 'select'
+                  ? getCustomerPrePaidLabel(partner[f.field] as number)
+                  : (partner[f.field] as string) || (
+                      <span className="text-gray-300">--</span>
+                    )}
               </p>
             )}
           </div>
@@ -672,21 +1122,43 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       {/* ── Personal Information ── */}
       <div className="mt-8 pt-6 border-t border-gray-200">
         <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-[#0D529E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          <svg
+            className="w-5 h-5 text-[#0D529E]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
           </svg>
           Personal Information
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
           {[
-            { label: 'Full Name', value: users?.[0] ? `${users[0].firstName || ''} ${users[0].lastName || ''}`.trim() : partner.partnerName },
+            {
+              label: 'Full Name',
+              value: users?.[0]
+                ? `${users[0].firstName || ''} ${users[0].lastName || ''}`.trim()
+                : partner.partnerName,
+            },
             { label: 'Email', value: users?.[0]?.email || partner.email },
-            { label: 'Mobile Number', value: users?.[0]?.phoneNo || partner.telephone },
+            {
+              label: 'Mobile Number',
+              value: users?.[0]?.phoneNo || partner.telephone,
+            },
             { label: 'NID Number', value: partnerExtra?.nid },
           ].map((item) => (
             <div key={item.label} className="py-2">
-              <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
-              <p className="text-sm text-gray-900 mt-0.5">{item.value || <span className="text-gray-300">--</span>}</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wide">
+                {item.label}
+              </p>
+              <p className="text-sm text-gray-900 mt-0.5">
+                {item.value || <span className="text-gray-300">--</span>}
+              </p>
             </div>
           ))}
         </div>
@@ -696,9 +1168,24 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       {partnerExtra && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-[#0D529E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg
+              className="w-5 h-5 text-[#0D529E]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
             Address Information
           </h2>
@@ -707,11 +1194,21 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
               { label: 'Address', value: partnerExtra.address1 },
               { label: 'City', value: partnerExtra.city },
               { label: 'Postal Code', value: partnerExtra.postalCode },
-              { label: 'Country', value: partnerExtra.countryCode === 'BD' ? 'Bangladesh' : partnerExtra.countryCode },
+              {
+                label: 'Country',
+                value:
+                  partnerExtra.countryCode === 'BD'
+                    ? 'Bangladesh'
+                    : partnerExtra.countryCode,
+              },
             ].map((item) => (
               <div key={item.label} className="py-2">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
-                <p className="text-sm text-gray-900 mt-0.5">{item.value || <span className="text-gray-300">--</span>}</p>
+                <p className="text-xs text-gray-400 uppercase tracking-wide">
+                  {item.label}
+                </p>
+                <p className="text-sm text-gray-900 mt-0.5">
+                  {item.value || <span className="text-gray-300">--</span>}
+                </p>
               </div>
             ))}
           </div>
@@ -722,21 +1219,46 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
       {partnerExtra && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-[#0D529E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <svg
+              className="w-5 h-5 text-[#0D529E]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
             </svg>
             Business Information
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
             {[
-              { label: 'Trade License Number', value: partnerExtra.tradeLicenseNumber },
+              {
+                label: 'Trade License Number',
+                value: partnerExtra.tradeLicenseNumber,
+              },
               { label: 'TIN Number', value: partnerExtra.tin },
-              { label: 'Tax Return Date', value: partnerExtra.taxReturnDate ? new Date(partnerExtra.taxReturnDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null },
+              {
+                label: 'Tax Return Date',
+                value: partnerExtra.taxReturnDate
+                  ? new Date(partnerExtra.taxReturnDate).toLocaleDateString(
+                      'en-US',
+                      { year: 'numeric', month: 'long', day: 'numeric' }
+                    )
+                  : null,
+              },
               { label: 'Uploaded By', value: partnerExtra.uploadedBy },
             ].map((item) => (
               <div key={item.label} className="py-2">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
-                <p className="text-sm text-gray-900 mt-0.5">{item.value || <span className="text-gray-300">--</span>}</p>
+                <p className="text-xs text-gray-400 uppercase tracking-wide">
+                  {item.label}
+                </p>
+                <p className="text-sm text-gray-900 mt-0.5">
+                  {item.value || <span className="text-gray-300">--</span>}
+                </p>
               </div>
             ))}
           </div>
@@ -749,92 +1271,251 @@ function OverviewTab({ partner, onPartnerUpdate, isDeactivated, partnerExtra, us
 /* ═══════════════════════════════════════════════════════════════════
    Users Tab
    ═══════════════════════════════════════════════════════════════════ */
-interface UserFormData { firstName: string; lastName: string; email: string; password: string; phoneNo: string; userStatus: string; }
-const EMPTY_USER: UserFormData = { firstName: '', lastName: '', email: '', password: '', phoneNo: '', userStatus: 'ACTIVE' };
+interface UserFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phoneNo: string;
+  userStatus: string;
+}
+const EMPTY_USER: UserFormData = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  phoneNo: '',
+  userStatus: 'ACTIVE',
+};
 
-function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: PartnerUser[]; partnerId: number; onRefresh: () => void; isDeactivated?: boolean }) {
+function UsersTab({
+  users,
+  partnerId,
+  onRefresh,
+  isDeactivated,
+}: {
+  users: PartnerUser[];
+  partnerId: number;
+  onRefresh: () => void;
+  isDeactivated?: boolean;
+}) {
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<PartnerUser | null>(null);
   const [form, setForm] = useState<UserFormData>(EMPTY_USER);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const openAdd = () => { setEditingUser(null); setForm(EMPTY_USER); setShowForm(true); };
-  const openEdit = (u: PartnerUser) => { setEditingUser(u); setForm({ firstName: u.firstName || '', lastName: u.lastName || '', email: u.email || '', password: '', phoneNo: u.phoneNo || '', userStatus: u.userStatus || 'ACTIVE' }); setShowForm(true); };
-  const close = () => { setShowForm(false); setEditingUser(null); };
+  const openAdd = () => {
+    setEditingUser(null);
+    setForm(EMPTY_USER);
+    setShowForm(true);
+  };
+  const openEdit = (u: PartnerUser) => {
+    setEditingUser(u);
+    setForm({
+      firstName: u.firstName || '',
+      lastName: u.lastName || '',
+      email: u.email || '',
+      password: '',
+      phoneNo: u.phoneNo || '',
+      userStatus: u.userStatus || 'ACTIVE',
+    });
+    setShowForm(true);
+  };
+  const close = () => {
+    setShowForm(false);
+    setEditingUser(null);
+  };
 
   const handleSave = async () => {
-    if (!form.firstName || !form.email) { toast.error('First name and email are required'); return; }
-    if (!editingUser && !form.password) { toast.error('Password is required'); return; }
+    if (!form.firstName || !form.email) {
+      toast.error('First name and email are required');
+      return;
+    }
+    if (!editingUser && !form.password) {
+      toast.error('Password is required');
+      return;
+    }
     try {
       setSaving(true);
       const authToken = localStorage.getItem('authToken');
       if (!authToken) return;
       if (editingUser) {
-        const payload: any = { id: editingUser.id, firstName: form.firstName, lastName: form.lastName, email: form.email, phoneNo: form.phoneNo, userStatus: form.userStatus, idPartner: partnerId };
+        const payload: any = {
+          id: editingUser.id,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phoneNo: form.phoneNo,
+          userStatus: form.userStatus,
+          idPartner: partnerId,
+        };
         if (form.password) payload.password = form.password;
         await editUser(payload, authToken);
         toast.success('User updated');
       } else {
-        await createUser({ ...form, partnerId } as CreateUserPayload, authToken);
+        await createUser(
+          { ...form, partnerId } as CreateUserPayload,
+          authToken
+        );
         toast.success('User created');
       }
-      close(); onRefresh();
-    } catch (err) { showApiError(err, { fallbackMessage: 'Operation failed' }); }
-    finally { setSaving(false); }
+      close();
+      onRefresh();
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Operation failed' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (u: PartnerUser) => {
     if (!confirm(`Delete ${u.firstName} ${u.lastName}?`)) return;
-    try { setDeletingId(u.id); const t = localStorage.getItem('authToken'); if (t) { await deleteUser(u.id, t); toast.success('Deleted'); onRefresh(); } }
-    catch (err) { showApiError(err, { fallbackMessage: 'Delete failed' }); }
-    finally { setDeletingId(null); }
+    try {
+      setDeletingId(u.id);
+      const t = localStorage.getItem('authToken');
+      if (t) {
+        await deleteUser(u.id, t);
+        toast.success('Deleted');
+        onRefresh();
+      }
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Delete failed' });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
-  const inputCls = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none';
+  const inputCls =
+    'w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-[#0D529E] focus:border-[#0D529E] outline-none';
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900">Users</h2>
-        {!showForm && <button onClick={openAdd} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner before adding users' : undefined} className={`${btn.primary} ${isDeactivated ? 'opacity-40 cursor-not-allowed' : ''}`}>+ Add User</button>}
+        {!showForm && (
+          <button
+            onClick={openAdd}
+            disabled={isDeactivated}
+            title={
+              isDeactivated
+                ? 'Reactivate partner before adding users'
+                : undefined
+            }
+            className={`${btn.primary} ${isDeactivated ? 'opacity-40 cursor-not-allowed' : ''}`}
+          >
+            + Add User
+          </button>
+        )}
       </div>
 
       {showForm && (
         <div className="mb-6 p-5 border border-gray-200 rounded-lg bg-gray-50/50">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">{editingUser ? 'Edit User' : 'New User'}</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">
+            {editingUser ? 'Edit User' : 'New User'}
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label className="text-xs text-gray-500">First Name *</label><input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Last Name</label><input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Email *</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Password {editingUser ? '(optional)' : '*'}</label><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Phone</label><input value={form.phoneNo} onChange={(e) => setForm({ ...form, phoneNo: e.target.value })} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Status</label><select value={form.userStatus} onChange={(e) => setForm({ ...form, userStatus: e.target.value })} className={inputCls}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></div>
+            <div>
+              <label className="text-xs text-gray-500">First Name *</label>
+              <input
+                value={form.firstName}
+                onChange={(e) =>
+                  setForm({ ...form, firstName: e.target.value })
+                }
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Last Name</label>
+              <input
+                value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Email *</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">
+                Password {editingUser ? '(optional)' : '*'}
+              </label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Phone</label>
+              <input
+                value={form.phoneNo}
+                onChange={(e) => setForm({ ...form, phoneNo: e.target.value })}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Status</label>
+              <select
+                value={form.userStatus}
+                onChange={(e) =>
+                  setForm({ ...form, userStatus: e.target.value })
+                }
+                className={inputCls}
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={handleSave} disabled={saving} className={btn.primary}>{saving ? <Spinner /> : editingUser ? 'Save' : 'Create'}</button>
-            <button onClick={close} className={btn.secondary}>Cancel</button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={btn.primary}
+            >
+              {saving ? <Spinner /> : editingUser ? 'Save' : 'Create'}
+            </button>
+            <button onClick={close} className={btn.secondary}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       {users.length === 0 ? (
-        <p className="text-center text-gray-400 py-12 text-sm">No users found</p>
+        <p className="text-center text-gray-400 py-12 text-sm">
+          No users found
+        </p>
       ) : (
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
-              <th className="text-left px-6 py-2 font-medium">User</th>
-              <th className="text-left px-6 py-2 font-medium">Contact</th>
-              <th className="text-left px-6 py-2 font-medium">Status</th>
-              <th className="text-left px-6 py-2 font-medium">Roles</th>
-              <th className="text-right px-6 py-2 font-medium">Actions</th>
-            </tr></thead>
+            <thead>
+              <tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
+                <th className="text-left px-6 py-2 font-medium">User</th>
+                <th className="text-left px-6 py-2 font-medium">Contact</th>
+                <th className="text-left px-6 py-2 font-medium">Status</th>
+                <th className="text-left px-6 py-2 font-medium">Roles</th>
+                <th className="text-right px-6 py-2 font-medium">Actions</th>
+              </tr>
+            </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                <tr
+                  key={u.id}
+                  className="border-b border-gray-50 hover:bg-gray-50/50"
+                >
                   <td className="px-6 py-3">
-                    <p className="font-medium text-gray-900">{u.firstName} {u.lastName}</p>
+                    <p className="font-medium text-gray-900">
+                      {u.firstName} {u.lastName}
+                    </p>
                     <p className="text-xs text-gray-400">#{u.id}</p>
                   </td>
                   <td className="px-6 py-3">
@@ -842,14 +1523,43 @@ function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: Partn
                     <p className="text-xs text-gray-400">{u.phoneNo}</p>
                   </td>
                   <td className="px-6 py-3">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${u.userStatus === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-red-50 text-red-600'}`}>{u.userStatus}</span>
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded ${u.userStatus === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-red-50 text-red-600'}`}
+                    >
+                      {u.userStatus}
+                    </span>
                   </td>
                   <td className="px-6 py-3">
-                    <div className="flex flex-wrap gap-1">{u.authRoles?.map((r) => <span key={r.id} className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{r.name.replace('ROLE_', '')}</span>)}</div>
+                    <div className="flex flex-wrap gap-1">
+                      {u.authRoles?.map((r) => (
+                        <span
+                          key={r.id}
+                          className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded"
+                        >
+                          {r.name.replace('ROLE_', '')}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(u)} disabled={isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#0D529E]/10 text-[#0D529E] hover:bg-[#0D529E] hover:text-white'}`}>Edit</button>
-                    <button onClick={() => handleDelete(u)} disabled={deletingId === u.id || isDeactivated} title={isDeactivated ? 'Reactivate partner first' : undefined} className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors disabled:opacity-50 ${isDeactivated ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'}`}>
+                    <button
+                      onClick={() => openEdit(u)}
+                      disabled={isDeactivated}
+                      title={
+                        isDeactivated ? 'Reactivate partner first' : undefined
+                      }
+                      className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#0D529E]/10 text-[#0D529E] hover:bg-[#0D529E] hover:text-white'}`}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u)}
+                      disabled={deletingId === u.id || isDeactivated}
+                      title={
+                        isDeactivated ? 'Reactivate partner first' : undefined
+                      }
+                      className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors disabled:opacity-50 ${isDeactivated ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'}`}
+                    >
                       {deletingId === u.id ? '...' : 'Delete'}
                     </button>
                   </td>
@@ -867,28 +1577,56 @@ function UsersTab({ users, partnerId, onRefresh, isDeactivated }: { users: Partn
    Purchases Tab
    ═══════════════════════════════════════════════════════════════════ */
 function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
-  if (purchases.length === 0) return <p className="text-center text-gray-400 py-12 text-sm">No purchase history</p>;
+  if (purchases.length === 0)
+    return (
+      <p className="text-center text-gray-400 py-12 text-sm">
+        No purchase history
+      </p>
+    );
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
-          <th className="text-left px-6 py-2 font-medium">Package</th>
-          <th className="text-left px-6 py-2 font-medium">Purchased</th>
-          <th className="text-left px-6 py-2 font-medium">Expires</th>
-          <th className="text-right px-6 py-2 font-medium">Price</th>
-          <th className="text-right px-6 py-2 font-medium">Total</th>
-          <th className="text-left px-6 py-2 font-medium">Status</th>
-        </tr></thead>
+        <thead>
+          <tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
+            <th className="text-left px-6 py-2 font-medium">Package</th>
+            <th className="text-left px-6 py-2 font-medium">Purchased</th>
+            <th className="text-left px-6 py-2 font-medium">Expires</th>
+            <th className="text-right px-6 py-2 font-medium">Price</th>
+            <th className="text-right px-6 py-2 font-medium">Total</th>
+            <th className="text-left px-6 py-2 font-medium">Status</th>
+          </tr>
+        </thead>
         <tbody>
           {purchases.map((p) => (
-            <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-              <td className="px-6 py-3 font-medium text-gray-900">{p.packageName || p.packageAccounts?.[0]?.name || 'N/A'}</td>
-              <td className="px-6 py-3 text-gray-500">{p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString() : '--'}</td>
-              <td className="px-6 py-3 text-gray-500">{p.expireDate ? new Date(p.expireDate).toLocaleDateString() : '--'}</td>
-              <td className="px-6 py-3 text-right text-gray-700">৳{p.price?.toLocaleString() || 0}</td>
-              <td className="px-6 py-3 text-right font-medium text-gray-900">৳{p.total?.toLocaleString() || 0}</td>
+            <tr
+              key={p.id}
+              className="border-b border-gray-50 hover:bg-gray-50/50"
+            >
+              <td className="px-6 py-3 font-medium text-gray-900">
+                {p.packageName || p.packageAccounts?.[0]?.name || 'N/A'}
+              </td>
+              <td className="px-6 py-3 text-gray-500">
+                {p.purchaseDate
+                  ? new Date(p.purchaseDate).toLocaleDateString()
+                  : '--'}
+              </td>
+              <td className="px-6 py-3 text-gray-500">
+                {p.expireDate
+                  ? new Date(p.expireDate).toLocaleDateString()
+                  : '--'}
+              </td>
+              <td className="px-6 py-3 text-right text-gray-700">
+                ৳{p.price?.toLocaleString() || 0}
+              </td>
+              <td className="px-6 py-3 text-right font-medium text-gray-900">
+                ৳{p.total?.toLocaleString() || 0}
+              </td>
               <td className="px-6 py-3">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded ${p.status === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : p.status === 'EXPIRED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'}`}>{p.status}</span>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded ${p.status === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : p.status === 'EXPIRED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'}`}
+                >
+                  {p.status}
+                </span>
               </td>
             </tr>
           ))}
@@ -901,12 +1639,52 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
 /* ═══════════════════════════════════════════════════════════════════
    Services / Subscriptions Tab
    ═══════════════════════════════════════════════════════════════════ */
-function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subscriptions: PurchaseHistory[]; serviceStatus: ServiceStatus; partnerName: string }) {
+function SubscriptionsTab({
+  subscriptions,
+  serviceStatus,
+  partnerName,
+}: {
+  subscriptions: PurchaseHistory[];
+  serviceStatus: ServiceStatus;
+  partnerName: string;
+}) {
   const services = [
-    { id: 'pbx' as const, name: 'Alaap Cloud IP PBX', icon: '📞', url: 'https://hippbx.btcliptelephony.gov.bd:5174/', gradient: 'from-blue-500 to-blue-600', lightBg: 'bg-blue-50 border-blue-200', lightText: 'text-blue-700' },
-    { id: 'hcc' as const, name: 'Contact Center', icon: '👥', url: `https://hcc.btcliptelephony.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`, gradient: 'from-purple-500 to-purple-600', lightBg: 'bg-purple-50 border-purple-200', lightText: 'text-purple-700' },
-    { id: 'vbs' as const, name: 'Voice Broadcast', icon: '📢', url: 'https://vbs.btcliptelephony.gov.bd/', gradient: 'from-orange-500 to-orange-600', lightBg: 'bg-orange-50 border-orange-200', lightText: 'text-orange-700' },
-    { id: 'sms' as const, name: 'Bulk SMS', icon: '💬', url: 'https://a2psms.btcliptelephony.gov.bd/', gradient: 'from-emerald-500 to-emerald-600', lightBg: 'bg-emerald-50 border-emerald-200', lightText: 'text-emerald-700' },
+    {
+      id: 'pbx' as const,
+      name: 'Alaap Cloud IP PBX',
+      icon: '📞',
+      url: 'https://ippbx.alaapcloud.gov.bd:5174/',
+      gradient: 'from-blue-500 to-blue-600',
+      lightBg: 'bg-blue-50 border-blue-200',
+      lightText: 'text-blue-700',
+    },
+    {
+      id: 'hcc' as const,
+      name: 'Contact Center',
+      icon: '👥',
+      url: `https://cc.alaapcloud.gov.bd/${partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`,
+      gradient: 'from-purple-500 to-purple-600',
+      lightBg: 'bg-purple-50 border-purple-200',
+      lightText: 'text-purple-700',
+    },
+    {
+      id: 'vbs' as const,
+      name: 'Voice Broadcast',
+      icon: '📢',
+      url: 'https://vbs.alaapcloud.gov.bd/',
+      gradient: 'from-orange-500 to-orange-600',
+      lightBg: 'bg-orange-50 border-orange-200',
+      lightText: 'text-orange-700',
+    },
+    {
+      id: 'sms' as const,
+      name: 'Bulk SMS',
+      icon: '💬',
+      url: 'https://a2psms.btcliptelephony.gov.bd/',
+      gradient: 'from-emerald-500 to-emerald-600',
+      lightBg: 'bg-emerald-50 border-emerald-200',
+      lightText: 'text-emerald-700',
+    },
   ];
 
   return (
@@ -915,20 +1693,36 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
         {services.map((s) => {
           const active = serviceStatus[s.id]?.active;
           return (
-            <div key={s.id} className={`rounded-xl border overflow-hidden ${active ? s.lightBg : 'border-gray-200 bg-gray-50'}`}>
-              <div className={`px-4 py-3 ${active ? `bg-gradient-to-r ${s.gradient}` : 'bg-gray-100'}`}>
+            <div
+              key={s.id}
+              className={`rounded-xl border overflow-hidden ${active ? s.lightBg : 'border-gray-200 bg-gray-50'}`}
+            >
+              <div
+                className={`px-4 py-3 ${active ? `bg-gradient-to-r ${s.gradient}` : 'bg-gray-100'}`}
+              >
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{s.icon}</span>
-                  <p className={`text-sm font-bold ${active ? 'text-white' : 'text-gray-400'}`}>{s.name}</p>
+                  <p
+                    className={`text-sm font-bold ${active ? 'text-white' : 'text-gray-400'}`}
+                  >
+                    {s.name}
+                  </p>
                 </div>
               </div>
               <div className="px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${active ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark' : 'bg-gray-200 text-gray-500'}`}>
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${active ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark' : 'bg-gray-200 text-gray-500'}`}
+                  >
                     {active ? 'Active' : 'Inactive'}
                   </span>
                   {active && (
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" className={`text-xs font-medium ${s.lightText} hover:underline`}>
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`text-xs font-medium ${s.lightText} hover:underline`}
+                    >
                       Open Portal →
                     </a>
                   )}
@@ -936,7 +1730,12 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
                 {active && serviceStatus[s.id].purchases.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {serviceStatus[s.id].purchases.slice(0, 3).map((p, i) => (
-                      <span key={i} className="text-xs px-2 py-0.5 bg-white rounded-full text-gray-600 border border-gray-100">{p.packageName || 'Package'}</span>
+                      <span
+                        key={i}
+                        className="text-xs px-2 py-0.5 bg-white rounded-full text-gray-600 border border-gray-100"
+                      >
+                        {p.packageName || 'Package'}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -949,22 +1748,46 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
       {subscriptions.filter((s) => s.idPackage !== 9999).length > 0 && (
         <div className="overflow-x-auto border border-gray-100 rounded-lg">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
-              <th className="text-left px-4 py-2 font-medium">Package</th>
-              <th className="text-left px-4 py-2 font-medium">Start</th>
-              <th className="text-left px-4 py-2 font-medium">Expires</th>
-              <th className="text-right px-4 py-2 font-medium">Price</th>
-              <th className="text-center px-4 py-2 font-medium">Status</th>
-            </tr></thead>
-            <tbody>{subscriptions.filter((s) => s.idPackage !== 9999).map((s) => (
-              <tr key={s.id} className="border-b border-gray-50">
-                <td className="px-4 py-2 font-medium text-gray-900">{s.packageName || s.packageAccounts?.[0]?.name || 'N/A'}</td>
-                <td className="px-4 py-2 text-gray-500">{s.purchaseDate ? new Date(s.purchaseDate).toLocaleDateString() : '--'}</td>
-                <td className="px-4 py-2 text-gray-500">{s.expireDate ? new Date(s.expireDate).toLocaleDateString() : '--'}</td>
-                <td className="px-4 py-2 text-right text-gray-700">৳{s.price?.toLocaleString() || 0}</td>
-                <td className="px-4 py-2 text-center"><span className={`text-xs px-2 py-0.5 rounded ${s.status === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-red-50 text-red-600'}`}>{s.status}</span></td>
+            <thead>
+              <tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
+                <th className="text-left px-4 py-2 font-medium">Package</th>
+                <th className="text-left px-4 py-2 font-medium">Start</th>
+                <th className="text-left px-4 py-2 font-medium">Expires</th>
+                <th className="text-right px-4 py-2 font-medium">Price</th>
+                <th className="text-center px-4 py-2 font-medium">Status</th>
               </tr>
-            ))}</tbody>
+            </thead>
+            <tbody>
+              {subscriptions
+                .filter((s) => s.idPackage !== 9999)
+                .map((s) => (
+                  <tr key={s.id} className="border-b border-gray-50">
+                    <td className="px-4 py-2 font-medium text-gray-900">
+                      {s.packageName || s.packageAccounts?.[0]?.name || 'N/A'}
+                    </td>
+                    <td className="px-4 py-2 text-gray-500">
+                      {s.purchaseDate
+                        ? new Date(s.purchaseDate).toLocaleDateString()
+                        : '--'}
+                    </td>
+                    <td className="px-4 py-2 text-gray-500">
+                      {s.expireDate
+                        ? new Date(s.expireDate).toLocaleDateString()
+                        : '--'}
+                    </td>
+                    <td className="px-4 py-2 text-right text-gray-700">
+                      ৳{s.price?.toLocaleString() || 0}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${s.status === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : 'bg-red-50 text-red-600'}`}
+                      >
+                        {s.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
           </table>
         </div>
       )}
@@ -978,19 +1801,36 @@ function SubscriptionsTab({ subscriptions, serviceStatus, partnerName }: { subsc
 const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
 
 function DocumentsTab({
-  documents, viewDocument, downloadDocument, viewingDoc, downloadingDoc,
-  docStatuses, onUpdateStatus, updatingDocStatus, partnerId, onRefresh,
-  partnerEmail, partnerName,
+  documents,
+  viewDocument,
+  downloadDocument,
+  viewingDoc,
+  downloadingDoc,
+  docStatuses,
+  onUpdateStatus,
+  updatingDocStatus,
+  partnerId,
+  onRefresh,
+  partnerEmail,
+  partnerName,
 }: {
-  documents: PartnerDocument[]; viewDocument: (t: string, n: string) => Promise<void>;
-  downloadDocument: (t: string, n: string) => Promise<void>; viewingDoc: string | null;
-  downloadingDoc: string | null; docStatuses: Record<string, { status: string; rejectionReason: string }>;
-  onUpdateStatus: (t: string, s: string, r: string) => Promise<void>; updatingDocStatus: string | null;
-  partnerId: number; onRefresh: () => void;
-  partnerEmail: string; partnerName: string;
+  documents: PartnerDocument[];
+  viewDocument: (t: string, n: string) => Promise<void>;
+  downloadDocument: (t: string, n: string) => Promise<void>;
+  viewingDoc: string | null;
+  downloadingDoc: string | null;
+  docStatuses: Record<string, { status: string; rejectionReason: string }>;
+  onUpdateStatus: (t: string, s: string, r: string) => Promise<void>;
+  updatingDocStatus: string | null;
+  partnerId: number;
+  onRefresh: () => void;
+  partnerEmail: string;
+  partnerName: string;
 }) {
   const [rejectingDoc, setRejectingDoc] = useState<string | null>(null);
-  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
+  const [rejectionReasons, setRejectionReasons] = useState<
+    Record<string, string>
+  >({});
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
   const [sendingRejectionEmail, setSendingRejectionEmail] = useState(false);
@@ -999,24 +1839,43 @@ function DocumentsTab({
   const missing = documents.filter((d) => !d.available);
 
   const DOC_NAMES: Record<string, string> = {
-    nidfront: 'NID Front', nidback: 'NID Back', tradelicense: 'Trade License',
-    tin: 'TIN Certificate', taxreturn: 'Tax Return', bin: 'BIN Certificate',
-    vat: 'VAT Document', btrc: 'BTRC Registration', photo: 'Photo', sla: 'SLA Document',
+    nidfront: 'NID Front',
+    nidback: 'NID Back',
+    tradelicense: 'Trade License',
+    tin: 'TIN Certificate',
+    taxreturn: 'Tax Return',
+    bin: 'BIN Certificate',
+    vat: 'VAT Document',
+    btrc: 'BTRC Registration',
+    photo: 'Photo',
+    sla: 'SLA Document',
   };
 
   const rejectedDocs = Object.entries(docStatuses)
     .filter(([, info]) => info.status === 'REJECTED')
-    .map(([type, info]) => ({ type, name: DOC_NAMES[type] || type, reason: info.rejectionReason }));
+    .map(([type, info]) => ({
+      type,
+      name: DOC_NAMES[type] || type,
+      reason: info.rejectionReason,
+    }));
 
-  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const esc = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
 
   const sendRejectionEmail = async () => {
     if (!partnerEmail || rejectedDocs.length === 0) return;
     setSendingRejectionEmail(true);
     try {
-      const docRows = rejectedDocs.map((d) =>
-        `<tr><td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;font-weight:600;color:#dc2626">${esc(d.name)}</td><td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;color:#374151">${esc(d.reason || 'No reason provided')}</td></tr>`
-      ).join('');
+      const docRows = rejectedDocs
+        .map(
+          (d) =>
+            `<tr><td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;font-weight:600;color:#dc2626">${esc(d.name)}</td><td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;color:#374151">${esc(d.reason || 'No reason provided')}</td></tr>`
+        )
+        .join('');
 
       const html = `
 <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;background:#ffffff">
@@ -1072,7 +1931,10 @@ function DocumentsTab({
         toast.success('Rejection email sent to ' + partnerEmail);
       } else {
         const body = await res.json().catch(() => ({}));
-        showApiError({ ...body, status: res.status }, { fallbackMessage: 'Failed to send rejection email' });
+        showApiError(
+          { ...body, status: res.status },
+          { fallbackMessage: 'Failed to send rejection email' }
+        );
       }
     } catch (err) {
       showApiError(err, { fallbackMessage: 'Failed to send rejection email' });
@@ -1082,25 +1944,52 @@ function DocumentsTab({
   };
 
   const handleUpload = async (docType: string, file: File) => {
-    try { setUploadingDoc(docType); const t = localStorage.getItem('authToken'); if (t) { await uploadPartnerDocument(partnerId, docType, file, t); toast.success('Uploaded'); onRefresh(); } }
-    catch (err) { showApiError(err, { fallbackMessage: 'Upload failed' }); }
-    finally { setUploadingDoc(null); }
+    try {
+      setUploadingDoc(docType);
+      const t = localStorage.getItem('authToken');
+      if (t) {
+        await uploadPartnerDocument(partnerId, docType, file, t);
+        toast.success('Uploaded');
+        onRefresh();
+      }
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Upload failed' });
+    } finally {
+      setUploadingDoc(null);
+    }
   };
 
   const handleDeleteDoc = async (docType: string, docName: string) => {
     if (!confirm(`Delete "${docName}"?`)) return;
-    try { setDeletingDoc(docType); const t = localStorage.getItem('authToken'); if (t) { await deletePartnerDocument(partnerId, docType, t); toast.success('Deleted'); onRefresh(); } }
-    catch (err) { showApiError(err, { fallbackMessage: 'Delete failed' }); }
-    finally { setDeletingDoc(null); }
+    try {
+      setDeletingDoc(docType);
+      const t = localStorage.getItem('authToken');
+      if (t) {
+        await deletePartnerDocument(partnerId, docType, t);
+        toast.success('Deleted');
+        onRefresh();
+      }
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Delete failed' });
+    } finally {
+      setDeletingDoc(null);
+    }
   };
 
-  const statusColor = (s: string) => s === 'APPROVED' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : s === 'REJECTED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700';
+  const statusColor = (s: string) =>
+    s === 'APPROVED'
+      ? 'bg-btcl-primaryLight/10 text-[#0D529E]'
+      : s === 'REJECTED'
+        ? 'bg-red-50 text-red-600'
+        : 'bg-yellow-50 text-yellow-700';
 
   return (
     <div className="p-6 space-y-6">
       {/* Uploaded Documents */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Uploaded ({available.length})</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          Uploaded ({available.length})
+        </h3>
         {available.length === 0 ? (
           <p className="text-sm text-gray-400">No documents uploaded</p>
         ) : (
@@ -1112,54 +2001,129 @@ function DocumentsTab({
               const isRejecting = rejectingDoc === doc.type;
 
               return (
-                <div key={doc.type} className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg hover:border-gray-200 transition-colors">
+                <div
+                  key={doc.type}
+                  className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg hover:border-gray-200 transition-colors"
+                >
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                      {MAJOR_DOCS.has(doc.type) && <span className="text-[10px] font-bold uppercase tracking-wide text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">Required</span>}
-                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${statusColor(status)}`}>{status}</span>
+                      <p className="text-sm font-medium text-gray-900">
+                        {doc.name}
+                      </p>
+                      {MAJOR_DOCS.has(doc.type) && (
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                          Required
+                        </span>
+                      )}
+                      <span
+                        className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${statusColor(status)}`}
+                      >
+                        {status}
+                      </span>
                     </div>
                     {status === 'REJECTED' && reason && !isRejecting && (
-                      <p className="text-xs text-red-500 mt-1">Rejected: {reason}</p>
+                      <p className="text-xs text-red-500 mt-1">
+                        Rejected: {reason}
+                      </p>
                     )}
 
                     {/* Reject form */}
                     {isRejecting && (
                       <div className="mt-2 flex gap-2 items-start">
-                        <input type="text" placeholder="Rejection reason..." value={rejectionReasons[doc.type] || ''} onChange={(e) => setRejectionReasons((p) => ({ ...p, [doc.type]: e.target.value }))}
-                          className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-md outline-none focus:border-red-300" />
-                        <button onClick={async () => { await onUpdateStatus(doc.type, 'REJECTED', rejectionReasons[doc.type] || ''); setRejectingDoc(null); }} disabled={isUpdating}
-                          className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50">Confirm</button>
-                        <button onClick={() => setRejectingDoc(null)} className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700">Cancel</button>
+                        <input
+                          type="text"
+                          placeholder="Rejection reason..."
+                          value={rejectionReasons[doc.type] || ''}
+                          onChange={(e) =>
+                            setRejectionReasons((p) => ({
+                              ...p,
+                              [doc.type]: e.target.value,
+                            }))
+                          }
+                          className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-md outline-none focus:border-red-300"
+                        />
+                        <button
+                          onClick={async () => {
+                            await onUpdateStatus(
+                              doc.type,
+                              'REJECTED',
+                              rejectionReasons[doc.type] || ''
+                            );
+                            setRejectingDoc(null);
+                          }}
+                          disabled={isUpdating}
+                          className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setRejectingDoc(null)}
+                          className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                    <button onClick={() => viewDocument(doc.type, doc.name)} disabled={viewingDoc === doc.type}
-                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] disabled:opacity-50 transition-colors">
+                    <button
+                      onClick={() => viewDocument(doc.type, doc.name)}
+                      disabled={viewingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] disabled:opacity-50 transition-colors"
+                    >
                       {viewingDoc === doc.type ? '...' : 'View'}
                     </button>
-                    <button onClick={() => downloadDocument(doc.type, doc.name)} disabled={downloadingDoc === doc.type}
-                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-colors">
+                    <button
+                      onClick={() => downloadDocument(doc.type, doc.name)}
+                      disabled={downloadingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                    >
                       {downloadingDoc === doc.type ? '...' : 'Download'}
                     </button>
-                    <label className={`px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
-                      <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(doc.type, f); e.target.value = ''; }} />
+                    <label
+                      className={`px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleUpload(doc.type, f);
+                          e.target.value = '';
+                        }}
+                      />
                       {uploadingDoc === doc.type ? '...' : 'Replace'}
                     </label>
-                    <button onClick={() => handleDeleteDoc(doc.type, doc.name)} disabled={deletingDoc === doc.type}
-                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors">
+                    <button
+                      onClick={() => handleDeleteDoc(doc.type, doc.name)}
+                      disabled={deletingDoc === doc.type}
+                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                    >
                       {deletingDoc === doc.type ? '...' : 'Delete'}
                     </button>
                     {!isRejecting && (
                       <>
-                        <button onClick={async () => { setRejectingDoc(null); await onUpdateStatus(doc.type, 'APPROVED', ''); }} disabled={isUpdating || status === 'APPROVED'}
-                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-30 transition-colors">Approve</button>
-                        <button onClick={() => setRejectingDoc(doc.type)} disabled={isUpdating || status === 'REJECTED'}
-                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-30 transition-colors">Reject</button>
+                        <button
+                          onClick={async () => {
+                            setRejectingDoc(null);
+                            await onUpdateStatus(doc.type, 'APPROVED', '');
+                          }}
+                          disabled={isUpdating || status === 'APPROVED'}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-30 transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => setRejectingDoc(doc.type)}
+                          disabled={isUpdating || status === 'REJECTED'}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-30 transition-colors"
+                        >
+                          Reject
+                        </button>
                       </>
                     )}
                   </div>
@@ -1175,13 +2139,28 @@ function DocumentsTab({
         <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <svg
+                className="w-5 h-5 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-red-800">{rejectedDocs.length} document{rejectedDocs.length > 1 ? 's' : ''} rejected</p>
-              <p className="text-xs text-red-600">Send rejection details to {partnerEmail}</p>
+              <p className="text-sm font-semibold text-red-800">
+                {rejectedDocs.length} document
+                {rejectedDocs.length > 1 ? 's' : ''} rejected
+              </p>
+              <p className="text-xs text-red-600">
+                Send rejection details to {partnerEmail}
+              </p>
             </div>
           </div>
           <button
@@ -1190,9 +2169,45 @@ function DocumentsTab({
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
           >
             {sendingRejectionEmail ? (
-              <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg> Sending...</>
+              <>
+                <svg
+                  className="w-4 h-4 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>{' '}
+                Sending...
+              </>
             ) : (
-              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Send Rejection Email</>
+              <>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>{' '}
+                Send Rejection Email
+              </>
             )}
           </button>
         </div>
@@ -1201,13 +2216,29 @@ function DocumentsTab({
       {/* Missing Documents */}
       {missing.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Missing ({missing.length})</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            Missing ({missing.length})
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {missing.map((doc) => (
-              <div key={doc.type} className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+              <div
+                key={doc.type}
+                className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors"
+              >
                 <span className="text-sm text-gray-500">{doc.name}</span>
-                <label className={`px-3 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(doc.type, f); e.target.value = ''; }} />
+                <label
+                  className={`px-3 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleUpload(doc.type, f);
+                      e.target.value = '';
+                    }}
+                  />
                   {uploadingDoc === doc.type ? 'Uploading...' : 'Upload'}
                 </label>
               </div>

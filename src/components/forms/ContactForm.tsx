@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
   Card,
@@ -10,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/Card';
 import { ROOT_URL } from '@/config/api';
+import { FormEvent, useState } from 'react';
 
 const FORM_SUBJECTS = [
   { key: 'sales', icon: '💼' },
@@ -28,10 +28,21 @@ const SUBJECT_TEXT: Record<string, { en: string; bn: string }> = {
 };
 
 function esc(s: string) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function buildEmailHtml(name: string, company: string, email: string, phone: string, subject: string, message: string) {
+function buildEmailHtml(
+  name: string,
+  company: string,
+  email: string,
+  phone: string,
+  subject: string,
+  message: string
+) {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f4f5f7;font-family:Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;padding:40px 0;">
@@ -40,7 +51,7 @@ function buildEmailHtml(name: string, company: string, email: string, phone: str
 
 <!-- Header -->
 <tr><td style="background:linear-gradient(135deg,#0D529E,#1F3C71);padding:32px 40px;text-align:center;">
-  <img src="https://services.btcliptelephony.gov.bd/btcllogo.png" alt="BTCL" width="80" style="margin-bottom:12px;border-radius:8px;" />
+  <img src="https://www.alaapcloud.gov.bd/btcllogo.png" alt="BTCL" width="80" style="margin-bottom:12px;border-radius:8px;" />
   <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">New Contact Message</h1>
   <p style="color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:14px;">Alaap Cloud — BTCL Bulk SMS Service</p>
 </td></tr>
@@ -61,10 +72,14 @@ function buildEmailHtml(name: string, company: string, email: string, phone: str
       <td style="padding:12px 16px;font-size:13px;color:#6c757d;font-weight:600;width:120px;border-bottom:1px solid #e9ecef;">Name</td>
       <td style="padding:12px 16px;font-size:14px;color:#212529;border-bottom:1px solid #e9ecef;">${esc(name)}</td>
     </tr>
-    ${company ? `<tr>
+    ${
+      company
+        ? `<tr>
       <td style="padding:12px 16px;font-size:13px;color:#6c757d;font-weight:600;border-bottom:1px solid #e9ecef;">Company</td>
       <td style="padding:12px 16px;font-size:14px;color:#212529;border-bottom:1px solid #e9ecef;">${esc(company)}</td>
-    </tr>` : ''}
+    </tr>`
+        : ''
+    }
     <tr${company ? '' : ' style="background:#f8f9fa;"'}>
       <td style="padding:12px 16px;font-size:13px;color:#6c757d;font-weight:600;border-bottom:1px solid #e9ecef;">Email</td>
       <td style="padding:12px 16px;font-size:14px;border-bottom:1px solid #e9ecef;"><a href="mailto:${esc(email)}" style="color:#0D529E;text-decoration:none;">${esc(email)}</a></td>
@@ -93,7 +108,7 @@ function buildEmailHtml(name: string, company: string, email: string, phone: str
 
 <!-- Footer -->
 <tr><td style="background:#1F3C71;padding:20px 40px;text-align:center;">
-  <p style="color:rgba(255,255,255,0.6);margin:0;font-size:12px;">This message was sent from the contact form at <a href="https://services.btcliptelephony.gov.bd" style="color:rgba(255,255,255,0.8);text-decoration:none;">alaapcloud.btcl.gov.bd</a></p>
+  <p style="color:rgba(255,255,255,0.6);margin:0;font-size:12px;">This message was sent from the contact form at <a href="https://www.alaapcloud.gov.bd" style="color:rgba(255,255,255,0.8);text-decoration:none;">alaapcloud.btcl.gov.bd</a></p>
   <p style="color:rgba(255,255,255,0.4);margin:8px 0 0;font-size:11px;">Bangladesh Telecommunications Company Limited</p>
 </td></tr>
 
@@ -125,9 +140,20 @@ export function ContactForm({ locale }: ContactFormProps) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.email || !formData.phone || !formData.subject || !formData.message) {
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.subject ||
+      !formData.message
+    ) {
       setStatus('error');
-      setErrorMsg(t('Please fill in all required fields.', 'অনুগ্রহ করে সকল প্রয়োজনীয় ক্ষেত্র পূরণ করুন।'));
+      setErrorMsg(
+        t(
+          'Please fill in all required fields.',
+          'অনুগ্রহ করে সকল প্রয়োজনীয় ক্ষেত্র পূরণ করুন।'
+        )
+      );
       return;
     }
 
@@ -136,7 +162,8 @@ export function ContactForm({ locale }: ContactFormProps) {
     setErrorMsg('');
 
     try {
-      const subjectLabel = SUBJECT_TEXT[formData.subject]?.en || formData.subject;
+      const subjectLabel =
+        SUBJECT_TEXT[formData.subject]?.en || formData.subject;
 
       const res = await fetch(`${ROOT_URL}/FREESWITCHREST/api/v1/email/send`, {
         method: 'POST',
@@ -146,7 +173,14 @@ export function ContactForm({ locale }: ContactFormProps) {
         body: JSON.stringify({
           to: 'alaapcloud@btcl.gov.bd',
           subject: `[Alaap Cloud Contact] ${subjectLabel} - ${formData.name}`,
-          body: buildEmailHtml(formData.name, formData.company, formData.email, formData.phone, subjectLabel, formData.message),
+          body: buildEmailHtml(
+            formData.name,
+            formData.company,
+            formData.email,
+            formData.phone,
+            subjectLabel,
+            formData.message
+          ),
           isHtml: true,
         }),
       });
@@ -155,14 +189,31 @@ export function ContactForm({ locale }: ContactFormProps) {
 
       if (res.ok && data.success) {
         setStatus('success');
-        setFormData({ name: '', company: '', email: '', phone: '', subject: '', message: '' });
+        setFormData({
+          name: '',
+          company: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: '',
+        });
       } else {
         setStatus('error');
-        setErrorMsg(t('Failed to send message. Please try again later.', 'বার্তা পাঠাতে ব্যর্থ। পরে আবার চেষ্টা করুন।'));
+        setErrorMsg(
+          t(
+            'Failed to send message. Please try again later.',
+            'বার্তা পাঠাতে ব্যর্থ। পরে আবার চেষ্টা করুন।'
+          )
+        );
       }
     } catch {
       setStatus('error');
-      setErrorMsg(t('Network error. Please try again.', 'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
+      setErrorMsg(
+        t(
+          'Network error. Please try again.',
+          'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -191,15 +242,31 @@ export function ContactForm({ locale }: ContactFormProps) {
         {status === 'success' && (
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 text-green-800">
             <div className="flex items-center gap-2">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <span className="font-semibold">
-                {t('Message sent successfully!', 'বার্তা সফলভাবে পাঠানো হয়েছে!')}
+                {t(
+                  'Message sent successfully!',
+                  'বার্তা সফলভাবে পাঠানো হয়েছে!'
+                )}
               </span>
             </div>
             <p className="mt-1 text-sm">
-              {t("We'll get back to you at your email address shortly.", 'আমরা শীঘ্রই আপনার ইমেইলে যোগাযোগ করব।')}
+              {t(
+                "We'll get back to you at your email address shortly.",
+                'আমরা শীঘ্রই আপনার ইমেইলে যোগাযোগ করব।'
+              )}
             </p>
           </div>
         )}
@@ -207,8 +274,18 @@ export function ContactForm({ locale }: ContactFormProps) {
         {status === 'error' && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
             <div className="flex items-center gap-2">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
               <span className="font-semibold">{errorMsg}</span>
             </div>
@@ -225,7 +302,9 @@ export function ContactForm({ locale }: ContactFormProps) {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
                 placeholder={t('Enter your full name', 'আপনার পূর্ণ নাম লিখুন')}
               />
@@ -237,9 +316,14 @@ export function ContactForm({ locale }: ContactFormProps) {
               <input
                 type="text"
                 value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, company: e.target.value })
+                }
                 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-                placeholder={t('Company name (optional)', 'কোম্পানির নাম (ঐচ্ছিক)')}
+                placeholder={t(
+                  'Company name (optional)',
+                  'কোম্পানির নাম (ঐচ্ছিক)'
+                )}
               />
             </div>
           </div>
@@ -253,7 +337,9 @@ export function ContactForm({ locale }: ContactFormProps) {
                 type="email"
                 required
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
                 placeholder="your@email.com"
               />
@@ -266,7 +352,9 @@ export function ContactForm({ locale }: ContactFormProps) {
                 type="tel"
                 required
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
                 placeholder="+880-1XXXXXXXXX"
               />
@@ -280,7 +368,9 @@ export function ContactForm({ locale }: ContactFormProps) {
             <select
               required
               value={formData.subject}
-              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, subject: e.target.value })
+              }
               className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
             >
               <option value="">
@@ -288,7 +378,8 @@ export function ContactForm({ locale }: ContactFormProps) {
               </option>
               {FORM_SUBJECTS.map((subject) => (
                 <option key={subject.key} value={subject.key}>
-                  {subject.icon} {SUBJECT_TEXT[subject.key]?.[locale as 'en' | 'bn'] ?? ''}
+                  {subject.icon}{' '}
+                  {SUBJECT_TEXT[subject.key]?.[locale as 'en' | 'bn'] ?? ''}
                 </option>
               ))}
             </select>
@@ -302,9 +393,14 @@ export function ContactForm({ locale }: ContactFormProps) {
               required
               rows={6}
               value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, message: e.target.value })
+              }
               className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-btcl-primary focus:outline-none focus:ring-2 focus:ring-btcl-primary/20"
-              placeholder={t('Tell us how we can help you...', 'আমরা আপনাকে কীভাবে সাহায্য করতে পারি তা বলুন...')}
+              placeholder={t(
+                'Tell us how we can help you...',
+                'আমরা আপনাকে কীভাবে সাহায্য করতে পারি তা বলুন...'
+              )}
             />
           </div>
 
@@ -315,9 +411,24 @@ export function ContactForm({ locale }: ContactFormProps) {
           >
             {sending ? (
               <span className="flex items-center justify-center gap-2">
-                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg
+                  className="h-5 w-5 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
                 {t('Sending...', 'পাঠানো হচ্ছে...')}
               </span>

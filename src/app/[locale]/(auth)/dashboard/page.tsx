@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { useLocale } from 'next-intl';
 import { Header } from '@/components/layout/Header';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import {
@@ -11,6 +9,8 @@ import {
   PBX_BASE_URL,
   VBS_BASE_URL,
 } from '@/config/api';
+import { uploadPartnerDocument } from '@/lib/api-client/admin';
+import { showApiError } from '@/lib/api-error';
 import { jwtDecode } from 'jwt-decode';
 import {
   CheckCircle,
@@ -28,10 +28,10 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { uploadPartnerDocument } from '@/lib/api-client/admin';
-import toast from 'react-hot-toast';
-import { showApiError } from '@/lib/api-error';
+import { useLocale } from 'next-intl';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 // Map idPackage to human-readable names (backend returns packageName=null)
 const PACKAGE_NAMES: Record<number, string> = {
@@ -194,7 +194,6 @@ interface PurchaseHistory {
   status: string;
 }
 
-
 // Image Viewer Modal Component
 const ImageViewerModal = ({
   imageUrl,
@@ -318,10 +317,27 @@ export default function Dashboard() {
   const [currentPackage, setCurrentPackage] = useState(packages[1]);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
-  const [serviceData, setServiceData] = useState<Record<'pbx' | 'hcc' | 'vbs', ServiceEntry>>({
-    pbx: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
-    hcc: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
-    vbs: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+  const [serviceData, setServiceData] = useState<
+    Record<'pbx' | 'hcc' | 'vbs', ServiceEntry>
+  >({
+    pbx: {
+      valid: false,
+      packageName: null,
+      purchaseDate: null,
+      expireDate: null,
+    },
+    hcc: {
+      valid: false,
+      packageName: null,
+      purchaseDate: null,
+      expireDate: null,
+    },
+    vbs: {
+      valid: false,
+      packageName: null,
+      purchaseDate: null,
+      expireDate: null,
+    },
   });
   const [imageViewerData, setImageViewerData] = useState<{
     url: string;
@@ -336,15 +352,24 @@ export default function Dashboard() {
     hcc: boolean;
     vbs: boolean;
   }>({ pbx: false, hcc: false, vbs: false });
-  const [docStatuses, setDocStatuses] = useState<Record<string, { status: string; rejectionReason: string }>>({});
+  const [docStatuses, setDocStatuses] = useState<
+    Record<string, { status: string; rejectionReason: string }>
+  >({});
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [invoicePage, setInvoicePage] = useState(1);
   const INVOICES_PER_PAGE = 10;
 
   // Mandatory documents — users cannot upload/replace these (admin only)
-  const MANDATORY_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
+  const MANDATORY_DOCS = new Set([
+    'nidfront',
+    'nidback',
+    'tradelicense',
+    'tin',
+  ]);
   const [purchaseBlocked, setPurchaseBlocked] = useState(false);
-  const [docBlockReason, setDocBlockReason] = useState<'pending' | 'rejected' | null>(null);
+  const [docBlockReason, setDocBlockReason] = useState<
+    'pending' | 'rejected' | null
+  >(null);
 
   // Check if customer is prepaid (1 = prepaid, 2 = postpaid)
   const isPrepaid = partnerData?.customerPrePaid === 1;
@@ -457,17 +482,25 @@ export default function Dashboard() {
   const fetchDocStatuses = async (partnerId: number) => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.partner.getDocumentStatuses), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-        body: JSON.stringify({ id: partnerId }),
-      });
+      const res = await fetch(
+        buildApiUrl(API_ENDPOINTS.partner.getDocumentStatuses),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ id: partnerId }),
+        }
+      );
       if (!res.ok) return;
-      const data: Record<string, { status: string; rejectionReason: string }> = await res.json();
+      const data: Record<string, { status: string; rejectionReason: string }> =
+        await res.json();
       setDocStatuses(data);
       // Check if any major doc is not APPROVED (REJECTED or PENDING)
       const hasRejected = Object.entries(data).some(
-        ([docType, info]) => MAJOR_DOCS.has(docType) && info.status === 'REJECTED'
+        ([docType, info]) =>
+          MAJOR_DOCS.has(docType) && info.status === 'REJECTED'
       );
       const hasPendingOrMissing = [...MAJOR_DOCS].some((docType) => {
         const info = data[docType];
@@ -548,9 +581,24 @@ export default function Dashboard() {
       const results = await Promise.allSettled(fetchPromises);
 
       const updated: Record<'pbx' | 'hcc' | 'vbs', ServiceEntry> = {
-        pbx: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
-        hcc: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
-        vbs: { valid: false, packageName: null, purchaseDate: null, expireDate: null },
+        pbx: {
+          valid: false,
+          packageName: null,
+          purchaseDate: null,
+          expireDate: null,
+        },
+        hcc: {
+          valid: false,
+          packageName: null,
+          purchaseDate: null,
+          expireDate: null,
+        },
+        vbs: {
+          valid: false,
+          packageName: null,
+          purchaseDate: null,
+          expireDate: null,
+        },
       };
 
       results.forEach((result) => {
@@ -560,15 +608,16 @@ export default function Dashboard() {
 
         // Find first active non-sentinel purchase
         const activeItem = data.find(
-          (item: any) => item.idPackage !== 9999 && item.status?.toUpperCase() === 'ACTIVE'
+          (item: any) =>
+            item.idPackage !== 9999 && item.status?.toUpperCase() === 'ACTIVE'
         );
         if (!activeItem) return;
 
         // Get package name from first non-sentinel account
         const packageName =
-          activeItem.packageAccounts
-            ?.filter((a: any) => a.packageId !== 9999)
-            ?.[0]?.name ?? null;
+          activeItem.packageAccounts?.filter(
+            (a: any) => a.packageId !== 9999
+          )?.[0]?.name ?? null;
 
         updated[service] = {
           valid: true,
@@ -692,9 +741,10 @@ export default function Dashboard() {
     const vat = purchase.vat || 0;
     const ait = purchase.ait || 0;
     const total = amount + vat + ait;
-    const status = purchase.expireDate && new Date(purchase.expireDate) < new Date()
-      ? 'EXPIRED'
-      : 'ACTIVE';
+    const status =
+      purchase.expireDate && new Date(purchase.expireDate) < new Date()
+        ? 'EXPIRED'
+        : 'ACTIVE';
     const invoiceDueDate = getInvoiceDueDate(purchaseDate);
 
     const formatDate = (dateStr: string | null) => {
@@ -872,8 +922,6 @@ export default function Dashboard() {
       }, 500);
     }
   };
-
-
 
   const detectFileType = async (blob: Blob): Promise<string> => {
     const buffer = await blob.slice(0, 12).arrayBuffer();
@@ -1216,25 +1264,48 @@ export default function Dashboard() {
             Your Dashboard
           </div>
           <h2 className="mb-2 text-3xl font-bold text-gray-900 md:text-4xl">
-            Welcome back, {displayUserData.firstName} {displayUserData.lastName}!
+            Welcome back, {displayUserData.firstName} {displayUserData.lastName}
+            !
           </h2>
-          <p className="text-base text-gray-600">Here's an overview of your account</p>
+          <p className="text-base text-gray-600">
+            Here's an overview of your account
+          </p>
         </div>
 
         {/* Document Approval Disclaimer Banner */}
         {purchaseBlocked && (
-          <div className={`mb-8 rounded-2xl border-2 p-6 ${docBlockReason === 'rejected' ? 'bg-red-50 border-red-300' : 'bg-btcl-primaryLight/5 border-btcl-primaryLight/30'}`}>
+          <div
+            className={`mb-8 rounded-2xl border-2 p-6 ${docBlockReason === 'rejected' ? 'bg-red-50 border-red-300' : 'bg-btcl-primaryLight/5 border-btcl-primaryLight/30'}`}
+          >
             <div className="flex items-start gap-4">
-              <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${docBlockReason === 'rejected' ? 'bg-red-100' : 'bg-btcl-primaryLight/10'}`}>
-                <svg className={`w-6 h-6 ${docBlockReason === 'rejected' ? 'text-red-600' : 'text-btcl-primary'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div
+                className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${docBlockReason === 'rejected' ? 'bg-red-100' : 'bg-btcl-primaryLight/10'}`}
+              >
+                <svg
+                  className={`w-6 h-6 ${docBlockReason === 'rejected' ? 'text-red-600' : 'text-btcl-primary'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className={`text-xl font-bold ${docBlockReason === 'rejected' ? 'text-red-800' : 'text-btcl-primaryDark'}`}>
-                  {docBlockReason === 'rejected' ? 'Document(s) Rejected — Action Required' : 'Document Verification In Progress'}
+                <h3
+                  className={`text-xl font-bold ${docBlockReason === 'rejected' ? 'text-red-800' : 'text-btcl-primaryDark'}`}
+                >
+                  {docBlockReason === 'rejected'
+                    ? 'Document(s) Rejected — Action Required'
+                    : 'Document Verification In Progress'}
                 </h3>
-                <p className={`text-sm leading-relaxed mt-1 ${docBlockReason === 'rejected' ? 'text-red-700' : 'text-gray-600'}`}>
+                <p
+                  className={`text-sm leading-relaxed mt-1 ${docBlockReason === 'rejected' ? 'text-red-700' : 'text-gray-600'}`}
+                >
                   {docBlockReason === 'rejected'
                     ? 'One or more of your required documents have been rejected. Please re-upload the corrected documents from the Documents section below. Once re-uploaded, BTCL will review them within 3 working days.'
                     : 'BTCL will review and approve your submitted documents within 3 working days. Document approval for all required documents (NID Front, NID Back, Trade License, TIN) is mandatory to make any purchase.'}
@@ -1254,8 +1325,8 @@ export default function Dashboard() {
                           status === 'APPROVED'
                             ? 'bg-btcl-primaryLight/20 text-btcl-primaryDark border-btcl-primaryLight/30'
                             : status === 'REJECTED'
-                            ? 'bg-red-100 text-red-700 border-red-200'
-                            : 'bg-amber-100 text-amber-700 border-amber-200'
+                              ? 'bg-red-100 text-red-700 border-red-200'
+                              : 'bg-amber-100 text-amber-700 border-amber-200'
                         }`}
                       >
                         {status === 'APPROVED' ? (
@@ -1265,7 +1336,12 @@ export default function Dashboard() {
                         ) : (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         )}
-                        {doc.label}: {status === 'APPROVED' ? 'Approved' : status === 'REJECTED' ? 'Rejected' : 'Pending'}
+                        {doc.label}:{' '}
+                        {status === 'APPROVED'
+                          ? 'Approved'
+                          : status === 'REJECTED'
+                            ? 'Rejected'
+                            : 'Pending'}
                       </span>
                     );
                   })}
@@ -1282,7 +1358,9 @@ export default function Dashboard() {
               <h3 className="text-xl font-bold text-gray-900">
                 Account Status
               </h3>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${accountStatus === 'active' ? 'bg-btcl-primaryLight/10' : 'bg-red-100'}`}>
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-xl ${accountStatus === 'active' ? 'bg-btcl-primaryLight/10' : 'bg-red-100'}`}
+              >
                 {accountStatus === 'active' ? (
                   <CheckCircle className="w-5 h-5 text-btcl-primary" />
                 ) : (
@@ -1328,7 +1406,9 @@ export default function Dashboard() {
                 <Package className="w-5 h-5 text-btcl-primary" />
               </div>
             </div>
-            {(Object.entries(serviceData) as [string, ServiceEntry][]).some(([, s]) => s.valid) ? (
+            {(Object.entries(serviceData) as [string, ServiceEntry][]).some(
+              ([, s]) => s.valid
+            ) ? (
               <div className="space-y-2">
                 {(Object.entries(serviceData) as [string, ServiceEntry][])
                   .filter(([, s]) => s.valid)
@@ -1337,7 +1417,9 @@ export default function Dashboard() {
                       key={service}
                       className="flex justify-between items-center px-4 py-3 rounded-lg bg-btcl-primaryLight/10 border border-btcl-primaryLight/30"
                     >
-                      <span className="text-sm font-semibold text-btcl-primaryDark">Package:</span>
+                      <span className="text-sm font-semibold text-btcl-primaryDark">
+                        Package:
+                      </span>
                       <span className="text-base font-bold text-btcl-primaryDark">
                         {s.packageName ?? service.toUpperCase()}
                       </span>
@@ -1360,26 +1442,53 @@ export default function Dashboard() {
           </div>
           {purchaseBlocked && docBlockReason === 'rejected' && (
             <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
-              <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              <svg
+                className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
               <div>
-                <p className="text-sm font-semibold text-red-700">Package purchase is currently restricted</p>
+                <p className="text-sm font-semibold text-red-700">
+                  Package purchase is currently restricted
+                </p>
                 <p className="text-xs leading-relaxed text-red-600 mt-1">
-                  One or more of your required documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please re-upload the rejected documents from the Documents section below and wait for admin approval.
+                  One or more of your required documents (NID Front, NID Back,
+                  Trade License, or TIN) have been rejected. Please re-upload
+                  the rejected documents from the Documents section below and
+                  wait for admin approval.
                 </p>
               </div>
             </div>
           )}
           {purchaseBlocked && docBlockReason === 'pending' && (
             <div className="mb-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              <svg
+                className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                  clipRule="evenodd"
+                />
               </svg>
               <div>
-                <p className="text-sm font-semibold text-amber-700">Documents under review — Purchase disabled</p>
+                <p className="text-sm font-semibold text-amber-700">
+                  Documents under review — Purchase disabled
+                </p>
                 <p className="text-xs leading-relaxed text-amber-600 mt-1">
-                  BTCL will review and approve your required documents (NID Front, NID Back, Trade License, TIN) within 3 working days. Document approval is mandatory before making any purchase. You will be able to purchase packages once all required documents are approved.
+                  BTCL will review and approve your required documents (NID
+                  Front, NID Back, Trade License, TIN) within 3 working days.
+                  Document approval is mandatory before making any purchase. You
+                  will be able to purchase packages once all required documents
+                  are approved.
                 </p>
               </div>
             </div>
@@ -1388,21 +1497,33 @@ export default function Dashboard() {
             {/* PBX Portal */}
             {serviceData.pbx.valid ? (
               <a
-                href="https://hippbx.btcliptelephony.gov.bd:5174/"
+                href="https://ippbx.alaapcloud.gov.bd:5174/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
                     Alaap Cloud IP PBX
                   </h4>
-                  <p className="text-sm text-gray-600">Access your PBX dashboard</p>
+                  <p className="text-sm text-gray-600">
+                    Access your PBX dashboard
+                  </p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
               </a>
@@ -1413,12 +1534,24 @@ export default function Dashboard() {
                 className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-amber-800">Alaap Cloud IP PBX</h4>
+                  <h4 className="font-bold text-amber-800">
+                    Alaap Cloud IP PBX
+                  </h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
@@ -1432,8 +1565,18 @@ export default function Dashboard() {
                 className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1451,21 +1594,33 @@ export default function Dashboard() {
             {/* HCC Portal */}
             {serviceData.hcc.valid ? (
               <a
-                href={`https://hcc.btcliptelephony.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
+                href={`https://cc.alaapcloud.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
                     Alaap Cloud Contact Center
                   </h4>
-                  <p className="text-sm text-gray-600">Access your HCC dashboard</p>
+                  <p className="text-sm text-gray-600">
+                    Access your HCC dashboard
+                  </p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
               </a>
@@ -1476,12 +1631,24 @@ export default function Dashboard() {
                 className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-amber-800">Alaap Cloud Contact Center</h4>
+                  <h4 className="font-bold text-amber-800">
+                    Alaap Cloud Contact Center
+                  </h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
@@ -1495,8 +1662,18 @@ export default function Dashboard() {
                 className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1514,21 +1691,33 @@ export default function Dashboard() {
             {/* VBS Portal */}
             {serviceData.vbs.valid ? (
               <a
-                href="https://vbs.btcliptelephony.gov.bd/"
+                href="https://vbs.alaapcloud.gov.bd/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
                     Alaap Cloud Voice Broadcasting Service
                   </h4>
-                  <p className="text-sm text-gray-600">Access your VBS dashboard</p>
+                  <p className="text-sm text-gray-600">
+                    Access your VBS dashboard
+                  </p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
               </a>
@@ -1539,12 +1728,24 @@ export default function Dashboard() {
                 className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-amber-800">Alaap Cloud Voice Broadcasting Service</h4>
+                  <h4 className="font-bold text-amber-800">
+                    Alaap Cloud Voice Broadcasting Service
+                  </h4>
                   <p className="text-sm text-amber-600">Package expired</p>
                 </div>
                 <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
@@ -1558,8 +1759,18 @@ export default function Dashboard() {
                 className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
               >
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1581,8 +1792,18 @@ export default function Dashboard() {
               className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
             >
               <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
@@ -1636,13 +1857,17 @@ export default function Dashboard() {
               <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                 Mobile Number
               </label>
-              <p className="text-sm font-medium text-gray-900">{displayUserData.phone}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {displayUserData.phone}
+              </p>
             </div>
             <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
               <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                 Email Address
               </label>
-              <p className="text-sm font-medium text-gray-900">{displayUserData.email}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {displayUserData.email}
+              </p>
             </div>
             <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
               <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
@@ -1698,7 +1923,9 @@ export default function Dashboard() {
                 <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   City
                 </label>
-                <p className="text-sm font-medium text-gray-900">{partnerExtra.city}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {partnerExtra.city}
+                </p>
               </div>
               <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
                 <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
@@ -1758,7 +1985,9 @@ export default function Dashboard() {
                 <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
                   TIN Number
                 </label>
-                <p className="text-sm font-medium text-gray-900">{partnerExtra.tin}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {partnerExtra.tin}
+                </p>
               </div>
               <div className="rounded-xl bg-btcl-primaryLight/5 border border-btcl-primaryLight/20 p-4">
                 <label className="block text-xs uppercase tracking-wider font-semibold text-btcl-primary mb-1">
@@ -2000,36 +2229,53 @@ export default function Dashboard() {
                                 <XCircle className="w-3.5 h-3.5" />
                                 Not Uploaded
                               </span>
-                            ) : (() => {
-                              const st = docStatuses[doc.type]?.status || 'PENDING';
-                              if (st === 'APPROVED') return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-btcl-primaryLight/20 text-btcl-primaryDark border border-btcl-primaryLight/30">
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                  Approved
-                                </span>
-                              );
-                              if (st === 'REJECTED') return (
-                                <div>
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
-                                    <XCircle className="w-3.5 h-3.5" />
-                                    Rejected
+                            ) : (
+                              (() => {
+                                const st =
+                                  docStatuses[doc.type]?.status || 'PENDING';
+                                if (st === 'APPROVED')
+                                  return (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-btcl-primaryLight/20 text-btcl-primaryDark border border-btcl-primaryLight/30">
+                                      <CheckCircle className="w-3.5 h-3.5" />
+                                      Approved
+                                    </span>
+                                  );
+                                if (st === 'REJECTED')
+                                  return (
+                                    <div>
+                                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                                        <XCircle className="w-3.5 h-3.5" />
+                                        Rejected
+                                      </span>
+                                      {docStatuses[doc.type]
+                                        ?.rejectionReason && (
+                                        <p className="text-[10px] text-red-500 mt-1 max-w-[160px] mx-auto">
+                                          {
+                                            docStatuses[doc.type]
+                                              .rejectionReason
+                                          }
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                return (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                                    <svg
+                                      className="w-3.5 h-3.5"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                    Pending Review
                                   </span>
-                                  {docStatuses[doc.type]?.rejectionReason && (
-                                    <p className="text-[10px] text-red-500 mt-1 max-w-[160px] mx-auto">
-                                      {docStatuses[doc.type].rejectionReason}
-                                    </p>
-                                  )}
-                                </div>
-                              );
-                              return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                                  </svg>
-                                  Pending Review
-                                </span>
-                              );
-                            })()}
+                                );
+                              })()
+                            )}
                           </td>
 
                           {/* Actions */}
@@ -2038,37 +2284,57 @@ export default function Dashboard() {
                               {doc.available ? (
                                 <>
                                   <button
-                                    onClick={() => viewDocument(doc.type, `${doc.name}`)}
+                                    onClick={() =>
+                                      viewDocument(doc.type, `${doc.name}`)
+                                    }
                                     disabled={viewingDoc === doc.type}
                                     className="transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-btcl-primary px-4 py-2 text-xs font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-btcl-primaryDark disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                     title="View Document"
                                   >
                                     {viewingDoc === doc.type ? (
-                                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading</>
+                                      <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />{' '}
+                                        Loading
+                                      </>
                                     ) : (
-                                      <><Eye className="w-3.5 h-3.5" /> View</>
+                                      <>
+                                        <Eye className="w-3.5 h-3.5" /> View
+                                      </>
                                     )}
                                   </button>
                                   <button
-                                    onClick={() => downloadDocument(doc.type, `${doc.name}`)}
+                                    onClick={() =>
+                                      downloadDocument(doc.type, `${doc.name}`)
+                                    }
                                     disabled={downloadingDoc === doc.type}
                                     className="transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-white px-4 py-2 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:border-gray-400 disabled:text-gray-400"
                                     title="Download Document"
                                   >
                                     {downloadingDoc === doc.type ? (
-                                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Downloading</>
+                                      <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />{' '}
+                                        Downloading
+                                      </>
                                     ) : (
-                                      <><Download className="w-3.5 h-3.5" /> Download</>
+                                      <>
+                                        <Download className="w-3.5 h-3.5" />{' '}
+                                        Download
+                                      </>
                                     )}
                                   </button>
                                 </>
                               ) : MANDATORY_DOCS.has(doc.type) ? (
-                                <Link href={`/${locale}/contact`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-btcl-primaryLight/10 hover:text-btcl-primary hover:border-btcl-primaryLight/30 transition-colors cursor-pointer">
+                                <Link
+                                  href={`/${locale}/contact`}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-btcl-primaryLight/10 hover:text-btcl-primary hover:border-btcl-primaryLight/30 transition-colors cursor-pointer"
+                                >
                                   <Lock className="w-3.5 h-3.5" />
                                   Contact Admin
                                 </Link>
                               ) : (
-                                <label className={`transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-white px-4 py-2 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}>
+                                <label
+                                  className={`transform inline-flex items-center gap-1.5 rounded-lg border-2 border-btcl-primary bg-white px-4 py-2 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white cursor-pointer ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}
+                                >
                                   <input
                                     type="file"
                                     className="hidden"
@@ -2080,9 +2346,14 @@ export default function Dashboard() {
                                     }}
                                   />
                                   {uploadingDoc === doc.type ? (
-                                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading</>
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />{' '}
+                                      Uploading
+                                    </>
                                   ) : (
-                                    <><Upload className="w-3.5 h-3.5" /> Upload</>
+                                    <>
+                                      <Upload className="w-3.5 h-3.5" /> Upload
+                                    </>
                                   )}
                                 </label>
                               )}
@@ -2125,50 +2396,55 @@ export default function Dashboard() {
             </div>
           ) : purchaseHistory && purchaseHistory.length > 0 ? (
             <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-btcl-primaryLight/10">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Invoice ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Package
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Customer Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Purchase Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Package Expire Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Invoice Due Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {(() => {
-                    const filtered = purchaseHistory.filter(
-                      (purchase) => isPrepaid || purchase.packageName !== 'TopUp'
-                    );
-                    const totalPages = Math.ceil(filtered.length / INVOICES_PER_PAGE);
-                    const start = (invoicePage - 1) * INVOICES_PER_PAGE;
-                    const paginated = filtered.slice(start, start + INVOICES_PER_PAGE);
-                    return paginated;
-                  })()
-                    .map((purchase, index) => {
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-btcl-primaryLight/10">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Invoice ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Package
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Customer Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Purchase Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Package Expire Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Invoice Due Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-bold text-btcl-primaryDark uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {(() => {
+                      const filtered = purchaseHistory.filter(
+                        (purchase) =>
+                          isPrepaid || purchase.packageName !== 'TopUp'
+                      );
+                      const totalPages = Math.ceil(
+                        filtered.length / INVOICES_PER_PAGE
+                      );
+                      const start = (invoicePage - 1) * INVOICES_PER_PAGE;
+                      const paginated = filtered.slice(
+                        start,
+                        start + INVOICES_PER_PAGE
+                      );
+                      return paginated;
+                    })().map((purchase, index) => {
                       const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
                       const pkgName = purchase.packageName || 'Package';
                       const purchaseDate = purchase.purchaseDate;
@@ -2177,9 +2453,11 @@ export default function Dashboard() {
                       const vat = purchase.vat || 0;
                       const total = amount + vat;
                       const rawStatus = purchase.status || 'ACTIVE';
-                      const status = purchase.expireDate && new Date(purchase.expireDate) < new Date()
-      ? 'EXPIRED'
-      : rawStatus;
+                      const status =
+                        purchase.expireDate &&
+                        new Date(purchase.expireDate) < new Date()
+                          ? 'EXPIRED'
+                          : rawStatus;
                       const invoiceDueDate = getInvoiceDueDate(purchaseDate);
 
                       return (
@@ -2294,53 +2572,66 @@ export default function Dashboard() {
                         </tr>
                       );
                     })}
-                </tbody>
-              </table>
-            </div>
-            {/* Pagination */}
-            {(() => {
-              const filtered = purchaseHistory.filter(
-                (p) => isPrepaid || p.packageName !== 'TopUp'
-              );
-              const totalPages = Math.ceil(filtered.length / INVOICES_PER_PAGE);
-              if (totalPages <= 1) return null;
-              return (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 mt-2">
-                  <p className="text-sm text-gray-600">
-                    Showing {((invoicePage - 1) * INVOICES_PER_PAGE) + 1}–{Math.min(invoicePage * INVOICES_PER_PAGE, filtered.length)} of {filtered.length}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
-                      disabled={invoicePage === 1}
-                      className="transform rounded-lg border-2 border-btcl-primary bg-white px-3 py-1.5 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    >
-                      Previous
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  </tbody>
+                </table>
+              </div>
+              {/* Pagination */}
+              {(() => {
+                const filtered = purchaseHistory.filter(
+                  (p) => isPrepaid || p.packageName !== 'TopUp'
+                );
+                const totalPages = Math.ceil(
+                  filtered.length / INVOICES_PER_PAGE
+                );
+                if (totalPages <= 1) return null;
+                return (
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 mt-2">
+                    <p className="text-sm text-gray-600">
+                      Showing {(invoicePage - 1) * INVOICES_PER_PAGE + 1}–
+                      {Math.min(
+                        invoicePage * INVOICES_PER_PAGE,
+                        filtered.length
+                      )}{' '}
+                      of {filtered.length}
+                    </p>
+                    <div className="flex items-center gap-2">
                       <button
-                        key={page}
-                        onClick={() => setInvoicePage(page)}
-                        className={`transform rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${
-                          page === invoicePage
-                            ? 'border-btcl-primary bg-btcl-primary text-white'
-                            : 'border-btcl-primary bg-white text-btcl-primary hover:scale-105 hover:bg-btcl-primary hover:text-white'
-                        }`}
+                        onClick={() =>
+                          setInvoicePage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={invoicePage === 1}
+                        className="transform rounded-lg border-2 border-btcl-primary bg-white px-3 py-1.5 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
-                        {page}
+                        Previous
                       </button>
-                    ))}
-                    <button
-                      onClick={() => setInvoicePage((p) => Math.min(totalPages, p + 1))}
-                      disabled={invoicePage === totalPages}
-                      className="transform rounded-lg border-2 border-btcl-primary bg-white px-3 py-1.5 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    >
-                      Next
-                    </button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (page) => (
+                          <button
+                            key={page}
+                            onClick={() => setInvoicePage(page)}
+                            className={`transform rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${
+                              page === invoicePage
+                                ? 'border-btcl-primary bg-btcl-primary text-white'
+                                : 'border-btcl-primary bg-white text-btcl-primary hover:scale-105 hover:bg-btcl-primary hover:text-white'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      )}
+                      <button
+                        onClick={() =>
+                          setInvoicePage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={invoicePage === totalPages}
+                        className="transform rounded-lg border-2 border-btcl-primary bg-white px-3 py-1.5 text-xs font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
             </>
           ) : (
             <div className="text-center py-12 text-gray-500">

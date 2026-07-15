@@ -20,7 +20,7 @@ A modern, responsive web portal for Bangladesh Telecommunications Company Limite
 - **Authentication**: JWT-based, custom login/register
 - **Payment**: SSL Commerz (unified purchase API)
 - **OCR**: Tesseract.js for NID card scanning
-- **Backend**: External REST APIs (`services.btcliptelephony.gov.bd`)
+- **Backend**: External REST APIs (`www.alaapcloud.gov.bd`)
 
 ## Key Features
 
@@ -77,10 +77,10 @@ FEATURE_FLAGS = {
 All API base URLs are centralised in `src/config/api.ts`:
 
 ```ts
-ROOT_URL        = 'https://services.btcliptelephony.gov.bd'
-PBX_BASE_URL    = 'https://vbs.btcliptelephony.gov.bd:4000/FREESWITCHREST'  // Hosted PBX
-VBS_BASE_URL    = 'https://vbs.btcliptelephony.gov.bd/FREESWITCHREST'       // Voice Broadcast
-HCC_BASE_URL    = 'https://hcc.btcliptelephony.gov.bd/FREESWITCHREST'       // Contact Center
+ROOT_URL        = 'https://www.alaapcloud.gov.bd'
+PBX_BASE_URL    = 'https://vbs.alaapcloud.gov.bd:4000/FREESWITCHREST'  // Hosted PBX
+VBS_BASE_URL    = 'https://vbs.alaapcloud.gov.bd/FREESWITCHREST'       // Voice Broadcast
+HCC_BASE_URL    = 'https://cc.alaapcloud.gov.bd/FREESWITCHREST'       // Contact Center
 ```
 
 To switch to local development, comment out the production `ROOT_URL` and uncomment `http://localhost:8001`.

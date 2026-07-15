@@ -7,7 +7,7 @@
 // COMMON ROOT URL - Change this single value to switch environments
 // ============================================
 // export const ROOT_URL = 'http://localhost:8001';
-export const ROOT_URL = 'https://alaapcloud.gov.bd';
+export const ROOT_URL = 'https://www.alaapcloud.gov.bd';
 
 // VBS API Base URL (without port) - used for secondary partner creation
 export const VBS_BASE_URL = 'https://vbs.alaapcloud.gov.bd/FREESWITCHREST';

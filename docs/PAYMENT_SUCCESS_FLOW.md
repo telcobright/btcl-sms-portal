@@ -38,7 +38,7 @@ Displays Hosted PBX Success Page with:
   - Congratulations message
   - User email
   - Default password: 11111111
-  - Link to PBX Portal: https://hippbx.btcliptelephony.gov.bd:5174/
+  - Link to PBX Portal: https://ippbx.alaapcloud.gov.bd:5174/
   - Dashboard button
         ↓
 sessionStorage is cleared
@@ -61,10 +61,10 @@ sessionStorage is cleared
 ### Package IDs
 
 | Package | Package ID |
-|---------|-----------|
-| Bronze  | 9132      |
-| Silver  | 9133      |
-| Gold    | 9134      |
+| ------- | ---------- |
+| Bronze  | 9132       |
+| Silver  | 9133       |
+| Gold    | 9134       |
 
 ### Success Page Display
 
@@ -73,7 +73,7 @@ sessionStorage is cleared
 - **Credentials**:
   - Email: User's registered email
   - Password: `11111111`
-- **Portal Link**: https://hippbx.btcliptelephony.gov.bd:5174/
+- **Portal Link**: https://ippbx.alaapcloud.gov.bd:5174/
 - **Note**: "Please change your password after first login."
 
 ---
@@ -110,7 +110,7 @@ Displays Voice Broadcast Success Page with:
   - Congratulations message
   - User email
   - Default password: 11111111
-  - Link to VBS Portal: https://vbs.btcliptelephony.gov.bd/
+  - Link to VBS Portal: https://vbs.alaapcloud.gov.bd/
   - Dashboard button
         ↓
 sessionStorage is cleared
@@ -133,10 +133,10 @@ sessionStorage is cleared
 ### Package IDs
 
 | Package    | Package ID |
-|------------|-----------|
-| Basic      | 9135      |
-| Standard   | 9136      |
-| Enterprise | 9137      |
+| ---------- | ---------- |
+| Basic      | 9135       |
+| Standard   | 9136       |
+| Enterprise | 9137       |
 
 ### Success Page Display
 
@@ -145,7 +145,7 @@ sessionStorage is cleared
 - **Credentials**:
   - Email: User's registered email
   - Password: `11111111`
-- **Portal Link**: https://vbs.btcliptelephony.gov.bd/
+- **Portal Link**: https://vbs.alaapcloud.gov.bd/
 - **Note**: "Please change your password after first login."
 
 ---
@@ -154,11 +154,11 @@ sessionStorage is cleared
 
 ### Files Involved
 
-| File | Purpose |
-|------|---------|
+| File                                        | Purpose                                                |
+| ------------------------------------------- | ------------------------------------------------------ |
 | `src/components/checkout/CheckoutModal.tsx` | Stores provision data in sessionStorage before payment |
-| `src/middleware.ts` | Intercepts POST from payment gateway, redirects to GET |
-| `src/app/pg/success/page.tsx` | Displays success page based on serviceType |
+| `src/middleware.ts`                         | Intercepts POST from payment gateway, redirects to GET |
+| `src/app/pg/success/page.tsx`               | Displays success page based on serviceType             |
 
 ### sessionStorage Key
 
@@ -172,10 +172,10 @@ The middleware in `src/middleware.ts` intercepts POST requests to `/pg/success` 
 
 ```typescript
 if (pathname === '/pg/success' && request.method === 'POST') {
-    const formData = await request.formData();
-    const params = new URLSearchParams();
-    // Extract tran_id, amount, status
-    return NextResponse.redirect(`/pg/success?${params}`, { status: 303 });
+  const formData = await request.formData();
+  const params = new URLSearchParams();
+  // Extract tran_id, amount, status
+  return NextResponse.redirect(`/pg/success?${params}`, { status: 303 });
 }
 ```
 
@@ -183,13 +183,13 @@ if (pathname === '/pg/success' && request.method === 'POST') {
 
 ```typescript
 useEffect(() => {
-    const pendingData = sessionStorage.getItem('pendingServiceProvision');
-    if (pendingData) {
-        const provision = JSON.parse(pendingData);
-        setServiceType(provision.serviceType);
-        setUserEmail(provision.email);
-        sessionStorage.removeItem('pendingServiceProvision');
-    }
+  const pendingData = sessionStorage.getItem('pendingServiceProvision');
+  if (pendingData) {
+    const provision = JSON.parse(pendingData);
+    setServiceType(provision.serviceType);
+    setUserEmail(provision.email);
+    sessionStorage.removeItem('pendingServiceProvision');
+  }
 }, []);
 
 // Render based on serviceType:
@@ -238,25 +238,25 @@ These APIs are NOT called from the frontend success page. They should be called 
 
 1. **Purchase Package**
    - Endpoint: `POST /FREESWITCHREST/api/v1/partner-packages/purchase-package`
-   - Base URL: `https://vbs.btcliptelephony.gov.bd/FREESWITCHREST`
+   - Base URL: `https://vbs.alaapcloud.gov.bd/FREESWITCHREST`
    - Payload: Package purchase details with VAT calculation
 
 ---
 
 ## Portal URLs
 
-| Service | Portal URL |
-|---------|-----------|
-| Hosted PBX | https://hippbx.btcliptelephony.gov.bd:5174/ |
-| Voice Broadcast | https://vbs.btcliptelephony.gov.bd/ |
+| Service         | Portal URL                            |
+| --------------- | ------------------------------------- |
+| Hosted PBX      | https://ippbx.alaapcloud.gov.bd:5174/ |
+| Voice Broadcast | https://vbs.alaapcloud.gov.bd/        |
 
 ---
 
 ## Default Credentials
 
-| Field | Value |
-|-------|-------|
-| Email | User's registered email |
-| Password | `11111111` |
+| Field    | Value                   |
+| -------- | ----------------------- |
+| Email    | User's registered email |
+| Password | `11111111`              |
 
 **Important**: Users should change their password after first login for security.

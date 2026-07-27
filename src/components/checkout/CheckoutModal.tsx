@@ -461,12 +461,12 @@ export default function CheckoutModal({
       'contact-center': {
         basic: 9140,
       },
-      // Bulk SMS — slab pricing (same model as VBS). Placeholder id 9138 for
-      // all slabs until per-slab SMS package ids are provisioned in the DB.
+      // Bulk SMS — fixed tiers (same model as VBS): each slab maps to its own
+      // btcl_sms package (Basic 20k / Standard 50k / Corporate 100k SMS).
       'bulk-sms': {
         basic: 9138,
-        standard: 9138,
-        enterprise: 9138,
+        standard: 9139,
+        enterprise: 9140,
       },
     };
     return packageIdMap[service]?.[packageId] || 9132;

@@ -692,6 +692,69 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     setIsCheckoutOpen(true);
   };
 
+  // Bulk SMS buy — mirrors handleVbsBuyNow (slab pricing, 5-yr validity, gateway).
+  const handleSmsBuyNow = () => {
+    if (!isLoggedIn()) {
+      toast.error(
+        locale === 'en'
+          ? 'Please login to purchase'
+          : 'ক্রয় করতে অনুগ্রহ করে লগইন করুন'
+      );
+      router.push(`/${locale}/login`);
+      return;
+    }
+    if (purchaseBlocked) {
+      if (docBlockReason === 'rejected') {
+        toast.error(
+          locale === 'en'
+            ? 'Purchase restricted: Documents rejected.'
+            : 'ক্রয় সীমাবদ্ধ: নথি প্রত্যাখ্যাত।'
+        );
+      } else {
+        toast.error(
+          locale === 'en'
+            ? 'Purchase restricted: Documents under review.'
+            : 'ক্রয় সীমাবদ্ধ: নথি পর্যালোচনাধীন।'
+        );
+      }
+      return;
+    }
+    if (!smsCurrentSlab || typeof smsQuantity !== 'number' || smsQuantity < 1) {
+      toast.error(
+        locale === 'en'
+          ? 'Please enter a valid quantity (minimum 1)'
+          : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)'
+      );
+      return;
+    }
+    if (smsUnderMin) {
+      toast.error(
+        locale === 'en'
+          ? 'Minimum purchase amount is ৳10'
+          : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০'
+      );
+      return;
+    }
+    if (smsExceedsMax) {
+      toast.error(
+        locale === 'en'
+          ? 'Total amount cannot exceed ৳5,00,000 per purchase'
+          : 'প্রতি ক্রয়ে মোট পরিমাণ ৳৫,০০,০০০ এর বেশি হতে পারবে না'
+      );
+      return;
+    }
+    setSelectedService('bulk-sms');
+    setSelectedPackage({
+      id: smsCurrentSlab.packageId,
+      name: smsCurrentSlab.name,
+      price: smsBasePrice,
+      rate: smsCurrentSlab.rate,
+      smsQuantity: smsQuantity,
+      features: [],
+    });
+    setIsCheckoutOpen(true);
+  };
+
   // Kept for compatibility with renderSection/getCurrentPackages
   const voiceBroadcastPackages: any[] = [];
 
@@ -1535,11 +1598,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                               : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৳৫,০০,০০০)'}
                           </button>
                         ) : (
-                          <Link href={`/${locale}/contact`} className="block">
-                            <button className="w-full mt-4 transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
-                              {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
-                            </button>
-                          </Link>
+                          <button
+                            onClick={handleSmsBuyNow}
+                            className="w-full mt-4 transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
+                          >
+                            {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
+                          </button>
                         )}
                       </>
                     ) : (

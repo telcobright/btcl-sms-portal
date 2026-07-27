@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, AUTH_BASE_URL, PBX_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { API_BASE_URL, VBS_BASE_URL, HCC_BASE_URL, AUTH_BASE_URL, PBX_BASE_URL, BULK_SMS_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // ---------------------- OTP FUNCTIONS (NO TOKEN REQUIRED) ----------------------
 
@@ -485,6 +485,7 @@ export const SERVICE_BASE_URLS: Record<string, string> = {
   'hosted-pbx': PBX_BASE_URL,
   'contact-center': HCC_BASE_URL,
   'voice-broadcast': VBS_BASE_URL,
+  'bulk-sms': BULK_SMS_BASE_URL,
 };
 
 /**

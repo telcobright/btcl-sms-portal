@@ -461,6 +461,13 @@ export default function CheckoutModal({
       'contact-center': {
         basic: 9140,
       },
+      // Bulk SMS — slab pricing (same model as VBS). Placeholder id 9138 for
+      // all slabs until per-slab SMS package ids are provisioned in the DB.
+      'bulk-sms': {
+        basic: 9138,
+        standard: 9138,
+        enterprise: 9138,
+      },
     };
     return packageIdMap[service]?.[packageId] || 9132;
   };
@@ -546,7 +553,7 @@ export default function CheckoutModal({
 
       // Step 2: Ensure partner exists in target service
       if (
-        ['hosted-pbx', 'contact-center', 'voice-broadcast'].includes(
+        ['hosted-pbx', 'contact-center', 'voice-broadcast', 'bulk-sms'].includes(
           serviceType
         )
       ) {
@@ -599,6 +606,11 @@ export default function CheckoutModal({
               name: `Contact Center - ${pkg.name}`,
               category: 'Contact Center',
             };
+          case 'bulk-sms':
+            return {
+              name: `Bulk SMS - ${pkg.name}`,
+              category: 'Bulk SMS',
+            };
           default:
             return { name: pkg.name, category: 'SMS' };
         }
@@ -620,15 +632,17 @@ export default function CheckoutModal({
           ? effectiveAgentCount
           : serviceType === 'voice-broadcast' && pkg.vbsQuantity
             ? pkg.vbsQuantity
-            : 1;
+            : serviceType === 'bulk-sms' && pkg.smsQuantity
+              ? pkg.smsQuantity
+              : 1;
 
-      // Calculate VAT (15% of price) and total — use ceil for VBS slab pricing
+      // Calculate VAT (15% of price) and total — use ceil for VBS/SMS slab pricing
       const vatAmount = Math.ceil(basePrice * 0.15);
       const totalAmount = basePrice + vatAmount;
 
-      // VBS validity = 5 years (157680000 seconds), others = 30 days
+      // VBS & SMS validity = 5 years (157680000 seconds), others = 30 days
       const validitySeconds =
-        serviceType === 'voice-broadcast'
+        ['voice-broadcast', 'bulk-sms'].includes(serviceType)
           ? 157680000 // 5 years
           : ['hosted-pbx', 'contact-center'].includes(serviceType)
             ? 2592000
@@ -668,15 +682,19 @@ export default function CheckoutModal({
         ...(serviceType === 'contact-center' && { quantity: quantity }),
         ...(serviceType === 'voice-broadcast' &&
           pkg.vbsQuantity && { quantity: pkg.vbsQuantity }),
+        ...(serviceType === 'bulk-sms' &&
+          pkg.smsQuantity && { quantity: pkg.smsQuantity }),
       };
 
       console.log('Unified Purchase payload:', payload);
       console.log('Service type:', serviceType);
       console.log('Customer PrePaid:', customerPrePaid);
 
-      // For VBS service, always use payment gateway (even if customerPrePaid = 2)
+      // For VBS and SMS, always use payment gateway (even if customerPrePaid = 2)
       const effectivePrePaid =
-        serviceType === 'voice-broadcast' ? 1 : customerPrePaid;
+        ['voice-broadcast', 'bulk-sms'].includes(serviceType)
+          ? 1
+          : customerPrePaid;
 
       // Call unified purchase API
       const response = await unifiedPurchase(

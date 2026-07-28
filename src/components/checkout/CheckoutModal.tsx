@@ -461,12 +461,13 @@ export default function CheckoutModal({
       'contact-center': {
         basic: 9140,
       },
-      // Bulk SMS — fixed tiers (same model as VBS): each slab maps to its own
-      // btcl_sms package (Basic 20k / Standard 50k / Corporate 100k SMS).
+      // Bulk SMS slabs → btcl_sms packages (dynamic qty credited):
+      // Basic ≤20k / Standard ≤50k / Corporate ≤100k / Premium ≤500k.
       'bulk-sms': {
         basic: 9138,
         standard: 9139,
         enterprise: 9140,
+        premium: 9141,
       },
     };
     return packageIdMap[service]?.[packageId] || 9132;

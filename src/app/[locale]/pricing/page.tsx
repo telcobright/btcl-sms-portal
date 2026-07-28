@@ -441,17 +441,27 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     },
     {
       min: 50001,
-      max: Infinity,
+      max: 100000,
       rate: 0.28,
       packageId: 'enterprise',
       name: locale === 'en' ? 'Corporate' : 'কর্পোরেট',
+    },
+    {
+      min: 100001,
+      max: 500000,
+      rate: 0.14,
+      packageId: 'premium',
+      name: locale === 'en' ? 'Premium' : 'প্রিমিয়াম',
     },
   ];
 
   const [smsQuantity, setSmsQuantity] = useState<number | ''>('');
 
   const getSmsSlab = (qty: number) =>
-    smsSlabs.find((s) => qty >= s.min && qty <= s.max) || smsSlabs[0];
+    smsSlabs.find((s) => qty >= s.min && qty <= s.max) ||
+    (qty > smsSlabs[smsSlabs.length - 1].max
+      ? smsSlabs[smsSlabs.length - 1]
+      : smsSlabs[0]);
 
   const smsCurrentSlab =
     typeof smsQuantity === 'number' && smsQuantity >= 1
@@ -463,9 +473,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       : 0;
   const smsVat = Math.ceil(smsBasePrice * 0.15);
   const smsTotal = smsBasePrice + smsVat;
-  const SMS_MAX_TOTAL = 500000;
+  const SMS_MAX_QTY = 500000; // Premium tier cap: 500,000 messages
   const SMS_MIN_TOTAL = 10;
-  const smsExceedsMax = smsTotal > SMS_MAX_TOTAL;
+  const smsExceedsMax =
+    typeof smsQuantity === 'number' && smsQuantity > SMS_MAX_QTY;
   const smsUnderMin =
     typeof smsQuantity === 'number' &&
     smsQuantity >= 1 &&
@@ -738,8 +749,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     if (smsExceedsMax) {
       toast.error(
         locale === 'en'
-          ? 'Total amount cannot exceed ৳5,00,000 per purchase'
-          : 'প্রতি ক্রয়ে মোট পরিমাণ ৳৫,০০,০০০ এর বেশি হতে পারবে না'
+          ? 'Maximum 500,000 messages per purchase'
+          : 'প্রতি ক্রয়ে সর্বোচ্চ ৫,০০,০০০ মেসেজ'
       );
       return;
     }
@@ -1528,8 +1539,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                     {smsExceedsMax && (
                       <p className="mt-1 text-sm text-red-600 font-medium">
                         {locale === 'en'
-                          ? 'Maximum purchase limit is ৳5,00,000 (incl. VAT)'
-                          : 'সর্বোচ্চ ক্রয় সীমা ৳৫,০০,০০০ (ভ্যাটসহ)'}
+                          ? 'Maximum purchase limit is 500,000 messages'
+                          : 'সর্বোচ্চ ক্রয় সীমা ৫,০০,০০০ মেসেজ'}
                       </p>
                     )}
                   </div>
@@ -1594,8 +1605,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                             className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed"
                           >
                             {locale === 'en'
-                              ? 'Limit Exceeded (max ৳5,00,000)'
-                              : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৳৫,০০,০০০)'}
+                              ? 'Limit Exceeded (max 500,000 SMS)'
+                              : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৫,০০,০০০ SMS)'}
                           </button>
                         ) : (
                           <button

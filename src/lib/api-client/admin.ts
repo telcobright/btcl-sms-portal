@@ -327,35 +327,62 @@ export const getPurchasesByPartner = async (
   idPartner: number,
   authToken: string
 ): Promise<PurchaseHistory[]> => {
-  try {
-    const response = await axios.post(
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${authToken}`,
+  };
+
+  // Main aggregate covers PBX/HCC/VBS purchases.
+  const mainReq = axios
+    .post(
       `${API_BASE_URL}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`,
       { idPartner },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
+      { headers }
+    )
+    .then((response) => {
+      const data = response.data;
+      if (Array.isArray(data)) return data as PurchaseHistory[];
+      if (data && typeof data === 'object' && 'content' in data) {
+        return (data.content || []) as PurchaseHistory[];
       }
-    );
-    const data = response.data;
-    // Handle both array and paginated response
-    if (Array.isArray(data)) {
-      return data;
-    }
-    if (data && typeof data === 'object' && 'content' in data) {
-      return data.content || [];
-    }
-    return [];
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('❌ Get Purchases by Partner error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-    }
-    return [];
+      return [] as PurchaseHistory[];
+    })
+    .catch((error) => {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Get Purchases by Partner error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+      }
+      return [] as PurchaseHistory[];
+    });
+
+  // Bulk SMS purchases live on the a2psms backend and are NOT part of the main
+  // aggregate, so fetch them separately and merge (mirrors getServiceStatus).
+  const smsReq = axios
+    .post(
+      `${BULK_SMS_BASE_URL}${API_ENDPOINTS.package.getPurchaseForPartner}`,
+      { idPartner },
+      { headers }
+    )
+    .then((response) =>
+      Array.isArray(response.data)
+        ? (response.data as PurchaseHistory[]).filter(
+            (p) => p.idPackage !== 9999
+          )
+        : []
+    )
+    .catch(() => [] as PurchaseHistory[]);
+
+  const [mainPurchases, smsPurchases] = await Promise.all([mainReq, smsReq]);
+
+  // Merge, de-duplicating by id so a re-run can't double-list a purchase.
+  const merged = [...mainPurchases];
+  const seen = new Set(mainPurchases.map((p) => p.id));
+  for (const p of smsPurchases) {
+    if (!seen.has(p.id)) merged.push(p);
   }
+  return merged;
 };
 
 /**
@@ -622,10 +649,10 @@ export const getServiceStatus = async (
     { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },
     { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },
     { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },
-    // SMS purchases are recorded on the main backend (CheckoutModal posts SMS to
-    // API_BASE_URL), so the "purchased once" gate reads from there. Deactivation,
-    // however, targets a2psms (see SERVICE_BASE_URLS) where SMS sending lives.
-    { url: `${API_BASE_URL}${endpoint}`, service: 'sms' as const },
+    // SMS purchases are recorded on the a2psms backend (btcl_sms packages live
+    // there, and that's where the purchase is created), so both the "purchased
+    // once" gate and deactivation read/target it (see SERVICE_BASE_URLS).
+    { url: `${BULK_SMS_BASE_URL}${endpoint}`, service: 'sms' as const },
   ];
 
   const result: ServiceStatus = {

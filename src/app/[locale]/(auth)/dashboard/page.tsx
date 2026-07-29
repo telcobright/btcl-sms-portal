@@ -5,6 +5,8 @@ import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import {
   API_ENDPOINTS,
   buildApiUrl,
+  BULK_SMS_BASE_URL,
+  BULK_SMS_PORTAL_URL,
   HCC_BASE_URL,
   PBX_BASE_URL,
   VBS_BASE_URL,
@@ -42,6 +44,9 @@ const PACKAGE_NAMES: Record<number, string> = {
   9136: 'VBS Standard',
   9137: 'VBS Corporate',
   9140: 'Contact Center Basic',
+  9138: 'Bulk SMS Basic',
+  9139: 'Bulk SMS Standard',
+  9141: 'Bulk SMS Premium',
 };
 
 // Mock packages data
@@ -318,7 +323,7 @@ export default function Dashboard() {
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [serviceData, setServiceData] = useState<
-    Record<'pbx' | 'hcc' | 'vbs', ServiceEntry>
+    Record<'pbx' | 'hcc' | 'vbs' | 'sms', ServiceEntry>
   >({
     pbx: {
       valid: false,
@@ -338,6 +343,12 @@ export default function Dashboard() {
       purchaseDate: null,
       expireDate: null,
     },
+    sms: {
+      valid: false,
+      packageName: null,
+      purchaseDate: null,
+      expireDate: null,
+    },
   });
   const [imageViewerData, setImageViewerData] = useState<{
     url: string;
@@ -351,7 +362,8 @@ export default function Dashboard() {
     pbx: boolean;
     hcc: boolean;
     vbs: boolean;
-  }>({ pbx: false, hcc: false, vbs: false });
+    sms: boolean;
+  }>({ pbx: false, hcc: false, vbs: false, sms: false });
   const [docStatuses, setDocStatuses] = useState<
     Record<string, { status: string; rejectionReason: string }>
   >({});
@@ -561,6 +573,7 @@ export default function Dashboard() {
         { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },
         { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },
         { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },
+        { url: `${BULK_SMS_BASE_URL}${endpoint}`, service: 'sms' as const },
       ];
 
       const fetchPromises = apiConfigs.map(({ url, service }) =>
@@ -580,7 +593,7 @@ export default function Dashboard() {
 
       const results = await Promise.allSettled(fetchPromises);
 
-      const updated: Record<'pbx' | 'hcc' | 'vbs', ServiceEntry> = {
+      const updated: Record<'pbx' | 'hcc' | 'vbs' | 'sms', ServiceEntry> = {
         pbx: {
           valid: false,
           packageName: null,
@@ -594,6 +607,12 @@ export default function Dashboard() {
           expireDate: null,
         },
         vbs: {
+          valid: false,
+          packageName: null,
+          purchaseDate: null,
+          expireDate: null,
+        },
+        sms: {
           valid: false,
           packageName: null,
           purchaseDate: null,
@@ -639,14 +658,15 @@ export default function Dashboard() {
       const authToken = localStorage.getItem('authToken');
       const endpoint = API_ENDPOINTS.package.getPurchaseForPartner;
 
-      // Define all three API endpoints to fetch from with service identifiers
+      // Define all API endpoints to fetch from with service identifiers
       const apiConfigs = [
         { url: `${PBX_BASE_URL}${endpoint}`, service: 'pbx' as const },
         { url: `${HCC_BASE_URL}${endpoint}`, service: 'hcc' as const },
         { url: `${VBS_BASE_URL}${endpoint}`, service: 'vbs' as const },
+        { url: `${BULK_SMS_BASE_URL}${endpoint}`, service: 'sms' as const },
       ];
 
-      // Fetch from all three APIs in parallel
+      // Fetch from all APIs in parallel
       const fetchPromises = apiConfigs.map(({ url, service }) =>
         fetch(url, {
           method: 'POST',
@@ -668,7 +688,7 @@ export default function Dashboard() {
       const results = await Promise.allSettled(fetchPromises);
 
       // Track which services have purchase history
-      const historyByService = { pbx: false, hcc: false, vbs: false };
+      const historyByService = { pbx: false, hcc: false, vbs: false, sms: false };
 
       // Combine all successful results
       const allPurchases: PurchaseHistory[] = [];
@@ -1786,39 +1806,108 @@ export default function Dashboard() {
             )}
 
             {/* Bulk SMS Portal */}
-            <a
-              href="/en/pricing#bulk-sms"
-              onClick={handleBuyNow}
-              className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
-            >
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-gray-700 group-hover:text-btcl-primary transition-colors">
-                  Bulk SMS
-                </h4>
-                <p className="text-sm text-gray-500">No active package</p>
-                <div className="mt-1.5">
-                  <AggregatorTag />
+            {serviceData.sms.valid ? (
+              <a
+                href={BULK_SMS_PORTAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
+              >
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
                 </div>
-              </div>
-              <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
-                Buy Now
-              </span>
-            </a>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
+                    Bulk SMS
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Access your Bulk SMS portal
+                  </p>
+                  <div className="mt-1.5">
+                    <AggregatorTag />
+                  </div>
+                </div>
+                <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
+              </a>
+            ) : serviceHistory.sms ? (
+              <a
+                href="/en/pricing#bulk-sms"
+                onClick={handleBuyNow}
+                className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
+              >
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-amber-800">Bulk SMS</h4>
+                  <p className="text-sm text-amber-600">Package expired</p>
+                  <div className="mt-1.5">
+                    <AggregatorTag />
+                  </div>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
+                  Renew Now
+                </span>
+              </a>
+            ) : (
+              <a
+                href="/en/pricing#bulk-sms"
+                onClick={handleBuyNow}
+                className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
+              >
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-700 group-hover:text-btcl-primary transition-colors">
+                    Bulk SMS
+                  </h4>
+                  <p className="text-sm text-gray-500">No active package</p>
+                  <div className="mt-1.5">
+                    <AggregatorTag />
+                  </div>
+                </div>
+                <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
+                  Buy Now
+                </span>
+              </a>
+            )}
           </div>
         </div>
 

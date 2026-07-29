@@ -1487,7 +1487,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                             ? `${slab.min.toLocaleString()}+`
                             : `${slab.min.toLocaleString()} – ${slab.max.toLocaleString()}`}
                         </td>
-                        <td className="px-6 py-3 text-gray-600">{slab.name}</td>
+                        <td className="px-6 py-3 text-gray-600">
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            {slab.name}
+                            {slab.packageId === 'premium' && (
+                              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                {locale === 'en'
+                                  ? 'Conditions applicable'
+                                  : 'শর্ত প্রযোজ্য'}
+                              </span>
+                            )}
+                          </span>
+                        </td>
                         <td className="px-6 py-3 text-right text-gray-800">
                           ৳{slab.rate.toFixed(2)}
                         </td>

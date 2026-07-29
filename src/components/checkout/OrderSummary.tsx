@@ -51,8 +51,10 @@ export default function OrderSummary({
         return pkg.vbsQuantity
           ? `${pkg.vbsQuantity.toLocaleString()} ${locale === 'en' ? 'Messages' : 'মেসেজ'}`
           : `${pkg.minutes?.toLocaleString()} ${locale === 'en' ? 'Minutes' : 'মিনিট'}`;
-      default:
-        return `${pkg.sms?.toLocaleString()} SMS`;
+      default: {
+        const smsCount = pkg.smsQuantity ?? pkg.sms;
+        return `${smsCount?.toLocaleString() ?? 0} SMS`;
+      }
     }
   };
 

@@ -406,18 +406,18 @@ export default function AdminDashboard() {
         ].map((s) => (
           <div
             key={s.label}
-            className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 shrink-0"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow px-5 py-3 flex items-center gap-3.5 shrink-0"
           >
             <div
-              className={`w-9 h-9 ${s.bg} rounded-lg flex items-center justify-center text-base`}
+              className={`w-11 h-11 ${s.bg} rounded-xl flex items-center justify-center text-xl`}
             >
               {s.icon}
             </div>
             <div>
-              <p className={`text-xl font-bold ${s.color} leading-tight`}>
+              <p className={`text-2xl font-extrabold ${s.color} leading-none`}>
                 {s.value}
               </p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mt-1">
                 {s.label}
               </p>
             </div>
@@ -430,64 +430,66 @@ export default function AdminDashboard() {
         {services.map((sv) => (
           <div
             key={sv.k}
-            className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+            className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col"
           >
             <div
-              className={`bg-gradient-to-r ${sv.grad} px-4 py-2.5 flex items-center justify-between`}
+              className={`bg-gradient-to-br ${sv.grad} px-4 py-3 flex items-center justify-between`}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{sv.icon}</span>
-                <span className="text-sm font-bold text-white">{sv.name}</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="grid place-items-center w-9 h-9 rounded-xl bg-white/20 text-lg shrink-0">
+                  {sv.icon}
+                </span>
+                <span className="text-sm font-bold text-white tracking-tight truncate">
+                  {sv.name}
+                </span>
               </div>
               <a
                 href={sv.portal}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-white/80 hover:text-white"
+                className="shrink-0 text-[10px] font-medium text-white/90 bg-white/15 hover:bg-white/30 rounded-full px-2.5 py-1 transition"
               >
-                Portal →
+                Portal ↗
               </a>
             </div>
-            <div className="p-4">
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div
-                  className={`${sv.bg} ${sv.border} border rounded-lg px-2 py-2 text-center`}
-                >
-                  <p className={`text-lg font-bold ${sv.text} leading-tight`}>
+            <div className="p-4 flex flex-col flex-1">
+              <div className="grid grid-cols-3 divide-x divide-gray-100 mb-3">
+                <div className="text-center px-1">
+                  <p className={`text-xl font-extrabold ${sv.text} leading-none`}>
                     {sv.s.subscribers}
                   </p>
-                  <p className="text-[9px] text-gray-500 uppercase">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider mt-1.5">
                     Subscribers
                   </p>
                 </div>
-                <div
-                  className={`${sv.bg} ${sv.border} border rounded-lg px-2 py-2 text-center`}
-                >
-                  <p className={`text-lg font-bold ${sv.text} leading-tight`}>
+                <div className="text-center px-1">
+                  <p className="text-xl font-extrabold text-gray-800 leading-none">
                     {sv.s.active}
                   </p>
-                  <p className="text-[9px] text-gray-500 uppercase">Active</p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider mt-1.5">
+                    Active
+                  </p>
                 </div>
-                <div
-                  className={`${sv.bg} ${sv.border} border rounded-lg px-2 py-2 text-center`}
-                >
-                  <p className={`text-lg font-bold ${sv.text} leading-tight`}>
+                <div className="text-center px-1">
+                  <p className="text-xl font-extrabold text-gray-800 leading-none">
                     ৳{sv.s.revenue.toLocaleString()}
                   </p>
-                  <p className="text-[9px] text-gray-500 uppercase">Revenue</p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider mt-1.5">
+                    Revenue
+                  </p>
                 </div>
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-[11px] text-gray-400 mb-3">
                 Plans:{' '}
                 <span className="text-gray-600 font-medium">{sv.plans}</span>
               </p>
               <button
                 onClick={() => setOpenSvc(sv)}
                 disabled={!sv.s.subscribers}
-                className={`mt-3 w-full text-xs font-medium rounded-lg py-2 border transition ${
+                className={`mt-auto w-full text-xs font-semibold rounded-xl py-2.5 transition ring-1 ring-inset ${
                   sv.s.subscribers
-                    ? `${sv.bg} ${sv.border} ${sv.text} hover:brightness-95`
-                    : 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed'
+                    ? `${sv.bg} ${sv.text} ${sv.border} hover:brightness-[0.97]`
+                    : 'bg-gray-50 text-gray-400 ring-gray-200 cursor-not-allowed'
                 }`}
               >
                 👥 View {sv.s.subscribers} subscriber
@@ -674,77 +676,74 @@ export default function AdminDashboard() {
       {/* One-click: who uses this service */}
       {openSvc && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={() => setOpenSvc(null)}
         >
           <div
-            className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[82vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className={`bg-gradient-to-r ${openSvc.grad} px-4 py-3 flex items-center justify-between`}
+              className={`bg-gradient-to-br ${openSvc.grad} px-5 py-4 flex items-center justify-between`}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{openSvc.icon}</span>
-                <span className="text-sm font-bold text-white">
-                  {openSvc.name} — {openSvc.s.partners.length} subscriber
-                  {openSvc.s.partners.length === 1 ? '' : 's'}
+              <div className="flex items-center gap-3">
+                <span className="grid place-items-center w-10 h-10 rounded-xl bg-white/20 text-xl">
+                  {openSvc.icon}
                 </span>
+                <div>
+                  <p className="text-sm font-bold text-white tracking-tight">
+                    {openSvc.name}
+                  </p>
+                  <p className="text-[11px] text-white/75">
+                    {openSvc.s.partners.length} subscriber
+                    {openSvc.s.partners.length === 1 ? '' : 's'}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setOpenSvc(null)}
-                className="text-white/90 hover:text-white text-xl leading-none"
+                className="grid place-items-center w-8 h-8 rounded-full text-white/90 hover:bg-white/20 transition text-xl leading-none"
               >
                 ×
               </button>
             </div>
-            <div className="overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-500 text-[11px] uppercase sticky top-0">
-                  <tr>
-                    <th className="text-left px-4 py-2 font-medium">Partner</th>
-                    <th className="text-left px-4 py-2 font-medium">Plan</th>
-                    <th className="text-left px-4 py-2 font-medium">Status</th>
-                    <th className="text-right px-4 py-2 font-medium">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {openSvc.s.partners.map((pt: ServicePartner) => (
-                    <tr
-                      key={pt.id}
-                      className="border-t border-gray-100 hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-2">
-                        <Link
-                          href={`/${locale}/admin/partners/${pt.id}`}
-                          className="text-blue-600 hover:underline font-medium"
-                        >
-                          {pt.name}
-                        </Link>
-                        <span className="text-gray-400 text-[11px]">
-                          {' '}
-                          #{pt.id}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-gray-600">{pt.plan}</td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full ${
-                            pt.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}
-                        >
-                          {pt.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-right text-gray-700 font-medium">
-                        {pt.balance}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="overflow-y-auto divide-y divide-gray-50">
+              {openSvc.s.partners.map((pt: ServicePartner) => (
+                <Link
+                  key={pt.id}
+                  href={`/${locale}/admin/partners/${pt.id}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                >
+                  <span
+                    className={`grid place-items-center w-9 h-9 rounded-full text-xs font-bold ${openSvc.bg} ${openSvc.text} shrink-0`}
+                  >
+                    {pt.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {pt.name}{' '}
+                      <span className="text-gray-400 text-[11px] font-normal">
+                        #{pt.id}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-gray-400 truncate">
+                      {pt.plan}
+                    </p>
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${
+                      pt.status === 'ACTIVE'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {pt.status}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-700 tabular-nums w-24 text-right shrink-0">
+                    {pt.balance}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         </div>

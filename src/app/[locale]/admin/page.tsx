@@ -18,12 +18,25 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+interface ServicePartner {
+  id: number;
+  name: string;
+  status: string;
+  plan: string;
+  balance: string;
+}
 interface ServiceStats {
   subscribers: number;
   active: number;
   revenue: number;
+  partners: ServicePartner[];
 }
-const EMPTY: ServiceStats = { subscribers: 0, active: 0, revenue: 0 };
+const EMPTY: ServiceStats = {
+  subscribers: 0,
+  active: 0,
+  revenue: 0,
+  partners: [],
+};
 
 interface DocReviewItem {
   id: number;
@@ -42,6 +55,7 @@ export default function AdminDashboard() {
   const [customers, setCustomers] = useState(0);
   const [recent, setRecent] = useState<Partner[]>([]);
   const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY, sms: EMPTY });
+  const [openSvc, setOpenSvc] = useState<any>(null); // service card whose partner list is shown
   const [docReviews, setDocReviews] = useState<DocReviewItem[]>([]);
   const [reviewLoading, setReviewLoading] = useState(true);
 
@@ -91,6 +105,7 @@ export default function AdminDashboard() {
         await Promise.allSettled(
           urls.map(async ({ k, u }) => {
             const subs = new Set<number>();
+            const parts: ServicePartner[] = [];
             let act = 0,
               rev = 0;
             await Promise.allSettled(
@@ -118,12 +133,42 @@ export default function AdminDashboard() {
                         if (x.status === 'ACTIVE') act++;
                         rev += x.total || x.price || 0;
                       });
+                      // Build a one-line summary for this partner in this service.
+                      const activeP = v.filter(
+                        (x: any) => x.status === 'ACTIVE'
+                      );
+                      const rows = activeP.length ? activeP : v;
+                      let balSum = 0;
+                      let uom = '';
+                      rows.forEach((x: any) =>
+                        (x.packageAccounts || []).forEach((a: any) => {
+                          balSum += a.balanceAfter || 0;
+                          if (a.uom) uom = a.uom;
+                        })
+                      );
+                      parts.push({
+                        id: p.idPartner,
+                        name: p.partnerName || `#${p.idPartner}`,
+                        status: activeP.length
+                          ? 'ACTIVE'
+                          : v[0]?.status || '—',
+                        plan: (activeP[0] || v[0])?.packageName || '—',
+                        balance: balSum
+                          ? `${balSum.toLocaleString()} ${uom}`.trim()
+                          : '—',
+                      });
                     }
                   }
                 } catch {}
               })
             );
-            stats[k] = { subscribers: subs.size, active: act, revenue: rev };
+            parts.sort((a, b) => a.name.localeCompare(b.name));
+            stats[k] = {
+              subscribers: subs.size,
+              active: act,
+              revenue: rev,
+              partners: parts,
+            };
           })
         );
         if (cancelled) return;
@@ -436,6 +481,18 @@ export default function AdminDashboard() {
                 Plans:{' '}
                 <span className="text-gray-600 font-medium">{sv.plans}</span>
               </p>
+              <button
+                onClick={() => setOpenSvc(sv)}
+                disabled={!sv.s.subscribers}
+                className={`mt-3 w-full text-xs font-medium rounded-lg py-2 border transition ${
+                  sv.s.subscribers
+                    ? `${sv.bg} ${sv.border} ${sv.text} hover:brightness-95`
+                    : 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                👥 View {sv.s.subscribers} subscriber
+                {sv.s.subscribers === 1 ? '' : 's'} →
+              </button>
             </div>
           </div>
         ))}
@@ -613,6 +670,85 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* One-click: who uses this service */}
+      {openSvc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setOpenSvc(null)}
+        >
+          <div
+            className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`bg-gradient-to-r ${openSvc.grad} px-4 py-3 flex items-center justify-between`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{openSvc.icon}</span>
+                <span className="text-sm font-bold text-white">
+                  {openSvc.name} — {openSvc.s.partners.length} subscriber
+                  {openSvc.s.partners.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <button
+                onClick={() => setOpenSvc(null)}
+                className="text-white/90 hover:text-white text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 text-[11px] uppercase sticky top-0">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-medium">Partner</th>
+                    <th className="text-left px-4 py-2 font-medium">Plan</th>
+                    <th className="text-left px-4 py-2 font-medium">Status</th>
+                    <th className="text-right px-4 py-2 font-medium">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {openSvc.s.partners.map((pt: ServicePartner) => (
+                    <tr
+                      key={pt.id}
+                      className="border-t border-gray-100 hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-2">
+                        <Link
+                          href={`/${locale}/admin/partners/${pt.id}`}
+                          className="text-blue-600 hover:underline font-medium"
+                        >
+                          {pt.name}
+                        </Link>
+                        <span className="text-gray-400 text-[11px]">
+                          {' '}
+                          #{pt.id}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-gray-600">{pt.plan}</td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full ${
+                            pt.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {pt.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-right text-gray-700 font-medium">
+                        {pt.balance}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

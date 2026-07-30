@@ -3,6 +3,7 @@
 import {
   API_BASE_URL,
   API_ENDPOINTS,
+  BULK_SMS_BASE_URL,
   BULK_SMS_PORTAL_URL,
   HCC_BASE_URL,
   PBX_BASE_URL,
@@ -40,7 +41,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState(0);
   const [recent, setRecent] = useState<Partner[]>([]);
-  const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY });
+  const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY, sms: EMPTY });
   const [docReviews, setDocReviews] = useState<DocReviewItem[]>([]);
   const [reviewLoading, setReviewLoading] = useState(true);
 
@@ -77,13 +78,16 @@ export default function AdminDashboard() {
           pbx: { ...EMPTY },
           hcc: { ...EMPTY },
           vbs: { ...EMPTY },
+          sms: { ...EMPTY },
         };
         const urls = [
           { k: 'pbx', u: PBX_BASE_URL },
           { k: 'hcc', u: HCC_BASE_URL },
           { k: 'vbs', u: VBS_BASE_URL },
+          { k: 'sms', u: BULK_SMS_BASE_URL },
         ];
-        const sample = list.slice(0, 30);
+        // All customers (not a 30-partner sample) so per-service counts are accurate.
+        const sample = list;
         await Promise.allSettled(
           urls.map(async ({ k, u }) => {
             const subs = new Set<number>();
@@ -262,8 +266,8 @@ export default function AdminDashboard() {
       </div>
     );
 
-  const totalActive = svc.pbx.active + svc.hcc.active + svc.vbs.active;
-  const totalRev = svc.pbx.revenue + svc.hcc.revenue + svc.vbs.revenue;
+  const totalActive = svc.pbx.active + svc.hcc.active + svc.vbs.active + svc.sms.active;
+  const totalRev = svc.pbx.revenue + svc.hcc.revenue + svc.vbs.revenue + svc.sms.revenue;
 
   const services = [
     {
@@ -310,7 +314,7 @@ export default function AdminDashboard() {
       bg: 'bg-emerald-50',
       border: 'border-emerald-200',
       text: 'text-emerald-700',
-      s: EMPTY,
+      s: svc.sms,
       portal: BULK_SMS_PORTAL_URL,
       plans: 'Slab-based pricing',
     },

@@ -13,6 +13,8 @@ import {
 } from '@/config/api';
 import { uploadPartnerDocument } from '@/lib/api-client/admin';
 import { showApiError } from '@/lib/api-error';
+import DocumentViewer from '@/components/ui/DocumentViewer';
+import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import { jwtDecode } from 'jwt-decode';
 import {
   CheckCircle,
@@ -21,14 +23,9 @@ import {
   Eye,
   Loader2,
   Lock,
-  Maximize2,
   Package,
-  RotateCw,
   Upload,
-  X,
   XCircle,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react';
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
@@ -199,118 +196,6 @@ interface PurchaseHistory {
   status: string;
 }
 
-// Image Viewer Modal Component
-const ImageViewerModal = ({
-  imageUrl,
-  imageName,
-  onClose,
-}: {
-  imageUrl: string;
-  imageName: string;
-  onClose: () => void;
-}) => {
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-
-  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 3));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.5));
-  const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
-  const handleReset = () => {
-    setZoom(1);
-    setRotation(0);
-  };
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent p-6 z-10">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h3 className="text-white text-lg font-semibold">{imageName}</h3>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 z-10">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-4">
-          <button
-            onClick={handleZoomOut}
-            className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all backdrop-blur-sm"
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-5 h-5" />
-          </button>
-
-          <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-white font-medium">
-            {Math.round(zoom * 100)}%
-          </div>
-
-          <button
-            onClick={handleZoomIn}
-            className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all backdrop-blur-sm"
-            title="Zoom In"
-          >
-            <ZoomIn className="w-5 h-5" />
-          </button>
-
-          <div className="w-px h-8 bg-white/30 mx-2" />
-
-          <button
-            onClick={handleRotate}
-            className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all backdrop-blur-sm"
-            title="Rotate"
-          >
-            <RotateCw className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={handleReset}
-            className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all backdrop-blur-sm"
-            title="Reset"
-          >
-            <Maximize2 className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Image Container */}
-      <div
-        className="flex items-center justify-center w-full h-full p-20 cursor-move"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
-      >
-        <img
-          src={imageUrl}
-          alt={imageName}
-          className="max-w-full max-h-full object-contain transition-transform duration-300 ease-out"
-          style={{
-            transform: `scale(${zoom}) rotate(${rotation}deg)`,
-          }}
-          draggable={false}
-        />
-      </div>
-    </div>
-  );
-};
 
 export default function Dashboard() {
   const locale = useLocale();
@@ -350,8 +235,8 @@ export default function Dashboard() {
       expireDate: null,
     },
   });
-  const [imageViewerData, setImageViewerData] = useState<{
-    url: string;
+  const [viewerDoc, setViewerDoc] = useState<{
+    blob: Blob;
     name: string;
   } | null>(null);
   const [partnerID, setPartnerID] = useState<string | null>(null);
@@ -943,58 +828,6 @@ export default function Dashboard() {
     }
   };
 
-  const detectFileType = async (blob: Blob): Promise<string> => {
-    const buffer = await blob.slice(0, 12).arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-
-    if (
-      bytes[0] === 0x25 &&
-      bytes[1] === 0x50 &&
-      bytes[2] === 0x44 &&
-      bytes[3] === 0x46
-    ) {
-      return '.pdf';
-    }
-
-    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-      return '.jpg';
-    }
-
-    if (
-      bytes[0] === 0x89 &&
-      bytes[1] === 0x50 &&
-      bytes[2] === 0x4e &&
-      bytes[3] === 0x47
-    ) {
-      return '.png';
-    }
-
-    if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
-      return '.gif';
-    }
-
-    if (
-      bytes[0] === 0x52 &&
-      bytes[1] === 0x49 &&
-      bytes[2] === 0x46 &&
-      bytes[3] === 0x46 &&
-      bytes[8] === 0x57 &&
-      bytes[9] === 0x45 &&
-      bytes[10] === 0x42 &&
-      bytes[11] === 0x50
-    ) {
-      return '.webp';
-    }
-
-    return '.bin';
-  };
-
-  const isImageFile = (extension: string): boolean => {
-    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].includes(
-      extension.toLowerCase()
-    );
-  };
-
   const viewDocument = async (documentType: string, documentName: string) => {
     if (!partnerID) return;
 
@@ -1022,75 +855,9 @@ export default function Dashboard() {
       }
 
       const blob = await response.blob();
-      const mimeType = blob.type;
-
-      let extension = '.pdf';
-      let isImage = false;
-
-      // Check if it's an image based on mime type
-      if (mimeType && mimeType.startsWith('image/')) {
-        isImage = true;
-        if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
-          extension = '.jpg';
-        } else if (mimeType.includes('png')) {
-          extension = '.png';
-        } else if (mimeType.includes('gif')) {
-          extension = '.gif';
-        } else if (mimeType.includes('webp')) {
-          extension = '.webp';
-        } else if (mimeType.includes('bmp')) {
-          extension = '.bmp';
-        } else if (mimeType.includes('svg')) {
-          extension = '.svg';
-        }
-      } else if (mimeType && mimeType.includes('application/pdf')) {
-        extension = '.pdf';
-      } else if (!mimeType || mimeType === 'application/octet-stream') {
-        // Fallback to file type detection
-        extension = await detectFileType(blob);
-        isImage = isImageFile(extension);
-      }
-
-      const baseFileName = documentName.replace(/\.[^/.]+$/, '');
-      const finalFileName = `${baseFileName}${extension}`;
-
-      if (isImage || isImageFile(extension)) {
-        // For all image types, show in the modal viewer
-        const url = window.URL.createObjectURL(blob);
-        setImageViewerData({ url, name: finalFileName });
-      } else if (extension === '.pdf') {
-        // For PDFs, create a proper blob with PDF mime type and open in new tab
-        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(pdfBlob);
-        const newWindow = window.open(url, '_blank');
-
-        // Clean up the URL after the new window loads or after a delay
-        if (newWindow) {
-          newWindow.onload = () => {
-            setTimeout(() => {
-              window.URL.revokeObjectURL(url);
-            }, 1000);
-          };
-        } else {
-          // Fallback if popup is blocked
-          setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-          }, 5000);
-        }
-      } else {
-        // For other file types, trigger download
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = finalFileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
+      setViewerDoc({ blob, name: documentName });
     } catch (err) {
-      console.error('Error viewing document:', err);
-      alert('Failed to load document. Please try again.');
+      showApiError(err, { fallbackMessage: 'Failed to load document' });
     } finally {
       setViewingDoc(null);
     }
@@ -1126,28 +893,8 @@ export default function Dashboard() {
       }
 
       const blob = await response.blob();
-      const mimeType = blob.type;
-
-      let extension = '.pdf';
-
-      if (mimeType && mimeType !== 'application/octet-stream') {
-        if (mimeType.includes('image/jpeg') || mimeType.includes('image/jpg')) {
-          extension = '.jpg';
-        } else if (mimeType.includes('image/png')) {
-          extension = '.png';
-        } else if (mimeType.includes('image/gif')) {
-          extension = '.gif';
-        } else if (mimeType.includes('image/webp')) {
-          extension = '.webp';
-        } else if (mimeType.includes('application/pdf')) {
-          extension = '.pdf';
-        }
-      } else {
-        extension = await detectFileType(blob);
-      }
-
-      const baseFileName = documentName.replace(/\.[^/.]+$/, '');
-      const finalFileName = `${baseFileName}${extension}`;
+      const { ext } = await detectFileKind(blob);
+      const finalFileName = withDetectedExt(documentName, ext);
 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1158,8 +905,7 @@ export default function Dashboard() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      console.error('Error downloading document:', err);
-      alert('Failed to download document. Please try again.');
+      showApiError(err, { fallbackMessage: 'Failed to download document' });
     } finally {
       setDownloadingDoc(null);
     }
@@ -1262,19 +1008,12 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-b from-white via-btcl-primaryLight/5 to-white">
       <Header />
 
-      {/* Image Viewer Modal */}
-      {imageViewerData && (
-        <ImageViewerModal
-          imageUrl={imageViewerData.url}
-          imageName={imageViewerData.name}
-          onClose={() => {
-            if (imageViewerData.url) {
-              window.URL.revokeObjectURL(imageViewerData.url);
-            }
-            setImageViewerData(null);
-          }}
-        />
-      )}
+      {/* Unified document viewer (images / HEIC / PDF) */}
+      <DocumentViewer
+        blob={viewerDoc?.blob ?? null}
+        name={viewerDoc?.name}
+        onClose={() => setViewerDoc(null)}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}

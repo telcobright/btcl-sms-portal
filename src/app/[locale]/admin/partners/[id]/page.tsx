@@ -27,6 +27,8 @@ import {
   uploadPartnerDocument,
 } from '@/lib/api-client/admin';
 import { showApiError } from '@/lib/api-error';
+import DocumentViewer from '@/components/ui/DocumentViewer';
+import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -92,12 +94,8 @@ export default function PartnerDetailsPage() {
   });
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
-  const [imageViewerData, setImageViewerData] = useState<{
-    url: string;
-    name: string;
-  } | null>(null);
-  const [pdfViewerData, setPdfViewerData] = useState<{
-    url: string;
+  const [viewerDoc, setViewerDoc] = useState<{
+    blob: Blob;
     name: string;
   } | null>(null);
   const [docStatuses, setDocStatuses] = useState<
@@ -186,48 +184,6 @@ export default function PartnerDetailsPage() {
   }, [fetchData]);
 
   /* ── Document helpers ── */
-  const detectFileType = async (blob: Blob): Promise<string> => {
-    const arr = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
-    const h = arr.reduce((a, b) => a + b.toString(16).padStart(2, '0'), '');
-    if (h.startsWith('89504e47')) return '.png';
-    if (h.startsWith('ffd8ff')) return '.jpg';
-    if (h.startsWith('25504446')) return '.pdf';
-    return '.pdf';
-  };
-
-  const isImageExt = (ext: string) =>
-    ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext.toLowerCase());
-
-  const openBlob = async (blob: Blob, documentName: string) => {
-    const mime = blob.type;
-    let ext = '.pdf';
-    let isImg = false;
-    if (mime?.startsWith('image/')) {
-      isImg = true;
-      ext = mime.includes('png') ? '.png' : '.jpg';
-    } else if (mime?.includes('pdf')) {
-      ext = '.pdf';
-    } else {
-      ext = await detectFileType(blob);
-      isImg = isImageExt(ext);
-    }
-
-    const name = documentName.replace(/\.[^/.]+$/, '') + ext;
-    const url = window.URL.createObjectURL(
-      isImg ? blob : new Blob([blob], { type: 'application/pdf' })
-    );
-
-    if (isImg) setImageViewerData({ url, name });
-    else if (ext === '.pdf') setPdfViewerData({ url, name });
-    else {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    }
-  };
-
   const fetchDoc = async (documentType: string) => {
     const authToken = localStorage.getItem('authToken');
     const res = await fetch(
@@ -248,7 +204,8 @@ export default function PartnerDetailsPage() {
   const viewDocument = async (documentType: string, documentName: string) => {
     try {
       setViewingDoc(documentType);
-      await openBlob(await fetchDoc(documentType), documentName);
+      const blob = await fetchDoc(documentType);
+      setViewerDoc({ blob, name: documentName });
     } catch (err) {
       showApiError(err, { fallbackMessage: 'Failed to load document' });
     } finally {
@@ -263,8 +220,8 @@ export default function PartnerDetailsPage() {
     try {
       setDownloadingDoc(documentType);
       const blob = await fetchDoc(documentType);
-      const ext = await detectFileType(blob);
-      const name = documentName.replace(/\.[^/.]+$/, '') + ext;
+      const { ext } = await detectFileKind(blob);
+      const name = withDetectedExt(documentName, ext);
       const a = document.createElement('a');
       a.href = window.URL.createObjectURL(blob);
       a.download = name;
@@ -640,114 +597,12 @@ export default function PartnerDetailsPage() {
         )}
       </div>
 
-      {/* Image Viewer Modal */}
-      {imageViewerData && (
-        <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            window.URL.revokeObjectURL(imageViewerData.url);
-            setImageViewerData(null);
-          }}
-        >
-          <div
-            className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-              <span className="text-sm font-medium text-gray-700">
-                {imageViewerData.name}
-              </span>
-              <button
-                onClick={() => {
-                  window.URL.revokeObjectURL(imageViewerData.url);
-                  setImageViewerData(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4 overflow-auto max-h-[calc(90vh-60px)]">
-              <img
-                src={imageViewerData.url}
-                alt={imageViewerData.name}
-                className="max-w-full h-auto mx-auto"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PDF Viewer Modal */}
-      {pdfViewerData && (
-        <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            window.URL.revokeObjectURL(pdfViewerData.url);
-            setPdfViewerData(null);
-          }}
-        >
-          <div
-            className="relative w-full max-w-5xl h-[90vh] bg-white rounded-lg overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-              <span className="text-sm font-medium text-gray-700">
-                {pdfViewerData.name}
-              </span>
-              <div className="flex items-center gap-2">
-                <a
-                  href={pdfViewerData.url}
-                  download={pdfViewerData.name}
-                  className="text-xs text-[#0D529E] hover:underline"
-                >
-                  Download
-                </a>
-                <button
-                  onClick={() => {
-                    window.URL.revokeObjectURL(pdfViewerData.url);
-                    setPdfViewerData(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <iframe
-                src={pdfViewerData.url}
-                title={pdfViewerData.name}
-                className="w-full h-full border-0"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Unified document viewer (images / HEIC / PDF) */}
+      <DocumentViewer
+        blob={viewerDoc?.blob ?? null}
+        name={viewerDoc?.name}
+        onClose={() => setViewerDoc(null)}
+      />
 
       {/* Deactivate / Reactivate Confirmation Modal with Service Selection */}
       {confirmModal &&

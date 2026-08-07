@@ -1444,6 +1444,7 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
         <thead>
           <tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
             <th className="text-left px-6 py-2 font-medium">Package</th>
+            <th className="text-left px-6 py-2 font-medium">Service</th>
             <th className="text-left px-6 py-2 font-medium">Purchased</th>
             <th className="text-left px-6 py-2 font-medium">Expires</th>
             <th className="text-right px-6 py-2 font-medium">Price</th>
@@ -1454,11 +1455,14 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
         <tbody>
           {purchases.map((p) => (
             <tr
-              key={p.id}
+              key={`${p.service ?? 'main'}:${p.id}`}
               className="border-b border-gray-50 hover:bg-gray-50/50"
             >
               <td className="px-6 py-3 font-medium text-gray-900">
                 {p.packageName || p.packageAccounts?.[0]?.name || 'N/A'}
+              </td>
+              <td className="px-6 py-3 text-gray-500 uppercase text-xs">
+                {p.service && p.service !== 'main' ? p.service : '--'}
               </td>
               <td className="px-6 py-3 text-gray-500">
                 {p.purchaseDate

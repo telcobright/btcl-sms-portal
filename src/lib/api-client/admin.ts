@@ -73,6 +73,12 @@ export interface PurchaseHistory {
   priority: number;
   discount: number;
   packageAccounts: PackageAccount[] | null;
+  /**
+   * Which service backend this purchase came from (pbx | hcc | vbs | sms).
+   * Set client-side by getPurchasesByPartner — each service has its own DB, so
+   * `id` alone is not unique across services.
+   */
+  service?: string;
 }
 
 export interface PartnerDocument {
@@ -332,56 +338,68 @@ export const getPurchasesByPartner = async (
     Authorization: `Bearer ${authToken}`,
   };
 
-  // Main aggregate covers PBX/HCC/VBS purchases.
-  const mainReq = axios
-    .post(
-      `${API_BASE_URL}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`,
-      { idPartner },
-      { headers }
-    )
-    .then((response) => {
-      const data = response.data;
-      if (Array.isArray(data)) return data as PurchaseHistory[];
-      if (data && typeof data === 'object' && 'content' in data) {
-        return (data.content || []) as PurchaseHistory[];
-      }
-      return [] as PurchaseHistory[];
-    })
-    .catch((error) => {
-      if (axios.isAxiosError(error)) {
-        console.error('❌ Get Purchases by Partner error:', {
-          status: error.response?.status,
-          data: error.response?.data,
-        });
-      }
-      return [] as PurchaseHistory[];
-    });
+  // There is NO central purchase aggregate: every service runs its own
+  // FreeSwitchREST + DB, and a purchase only exists in the DB of the service it
+  // was bought on. Querying API_BASE_URL alone returns an empty page for any
+  // partner whose packages live on PBX/HCC/VBS/SMS, so fan out to all of them
+  // and merge (same host list as getServiceStatus, plus the main portal).
+  const sources: { url: string; service: string }[] = [
+    { url: API_BASE_URL, service: 'main' },
+    { url: PBX_BASE_URL, service: 'pbx' },
+    { url: HCC_BASE_URL, service: 'hcc' },
+    { url: VBS_BASE_URL, service: 'vbs' },
+    { url: BULK_SMS_BASE_URL, service: 'sms' },
+  ];
 
-  // Bulk SMS purchases live on the a2psms backend and are NOT part of the main
-  // aggregate, so fetch them separately and merge (mirrors getServiceStatus).
-  const smsReq = axios
-    .post(
-      `${BULK_SMS_BASE_URL}${API_ENDPOINTS.package.getPurchaseForPartner}`,
-      { idPartner },
-      { headers }
-    )
-    .then((response) =>
-      Array.isArray(response.data)
-        ? (response.data as PurchaseHistory[]).filter(
-            (p) => p.idPackage !== 9999
-          )
-        : []
-    )
-    .catch(() => [] as PurchaseHistory[]);
+  const requests = sources.map(({ url, service }) =>
+    axios
+      .post(
+        `${url}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`,
+        { page: 0, size: 200, idPartner, packageName: null, status: null },
+        { headers }
+      )
+      .then((response) => {
+        const data = response.data;
+        const rows: PurchaseHistory[] = Array.isArray(data)
+          ? data
+          : data && typeof data === 'object' && 'content' in data
+            ? data.content || []
+            : [];
+        // 9999 = Postpaid_Credit, an internal ledger row, not a real purchase.
+        return rows
+          .filter((p) => p.idPackage !== 9999)
+          .map((p) => ({ ...p, service }));
+      })
+      .catch((error) => {
+        if (axios.isAxiosError(error)) {
+          console.error(`❌ Get Purchases by Partner error (${service}):`, {
+            status: error.response?.status,
+            data: error.response?.data,
+          });
+        }
+        return [] as PurchaseHistory[];
+      })
+  );
 
-  const [mainPurchases, smsPurchases] = await Promise.all([mainReq, smsReq]);
+  const results = await Promise.all(requests);
 
-  // Merge, de-duplicating by id so a re-run can't double-list a purchase.
-  const merged = [...mainPurchases];
-  const seen = new Set(mainPurchases.map((p) => p.id));
-  for (const p of smsPurchases) {
-    if (!seen.has(p.id)) merged.push(p);
+  // De-duplicate on service+id: each service DB has its own id sequence, so the
+  // same numeric id can legitimately appear on two different backends.
+  const seen = new Set<string>();
+  const merged: PurchaseHistory[] = [];
+  for (const p of results.flat()) {
+    const key = `${p.service}:${p.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(p);
   }
+
+  // Newest purchase first.
+  merged.sort(
+    (a, b) =>
+      new Date(b.purchaseDate || 0).getTime() -
+      new Date(a.purchaseDate || 0).getTime()
+  );
   return merged;
 };
 

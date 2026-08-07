@@ -237,6 +237,13 @@ export const createPartner = async (payload: {
         throw new Error(`Bad Request: ${JSON.stringify(error.response.data) || 'Invalid partner data'}`);
       } else if (error.response?.status === 401) {
         throw new Error('Authentication failed. Token may be expired.');
+      } else if (error.response?.status === 409) {
+        // Duplicate partnerName / idPartner. Surface the server's reason — this used to
+        // arrive as a 500 and got reported as "Server error", which sent people looking
+        // for an outage instead of just picking another name.
+        throw new Error(
+          (error.response.data as any)?.message || 'That partner name or ID is already taken.'
+        );
       } else if (error.response?.status === 500) {
         throw new Error('Server error. Please try again later.');
       }

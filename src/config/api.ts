@@ -85,6 +85,11 @@ export const API_ENDPOINTS = {
   partner: {
     validate: '/admin/DashBoard/partner/validate',
     createPartner: '/partner/create-partner',
+    // Atomic registration: partner + auth user + details + documents in one request.
+    // Either all of it is created or none of it is — there is no window where a
+    // partner exists without its documents. Use this for signup, never
+    // createPartner + partnerDocuments as separate calls.
+    register: '/partner/register',
     rollbackRegistration: '/partner/rollback-registration',
     partnerDocuments: '/partner/partner-documents',
     getPartner: '/partner/get-partner',

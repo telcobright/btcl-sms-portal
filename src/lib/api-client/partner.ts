@@ -245,8 +245,119 @@ export const createPartner = async (payload: {
   }
 };
 
+// ---------------------- ATOMIC REGISTRATION ----------------------
+
+export interface RegisterPartnerPayload {
+  // partner
+  partnerName: string;
+  alternateNameInvoice?: string | null;
+  alternateNameOther?: string | null;
+  telephone: string;
+  email: string;
+  userPassword: string;
+  address1: string;
+  address2?: string | null;
+  city: string;
+  state?: string | null;
+  postalCode: string;
+  country: string;
+  vatRegistrationNo?: string | null;
+  invoiceAddress?: string | null;
+  customerPrePaid: number;
+  partnerType: number;
+  defaultCurrency: number;
+  callSrcId: number;
+  // partner_extra
+  address3?: string | null;
+  address4?: string | null;
+  nid?: string | null;
+  tradeLicenseNumber?: string | null;
+  tin?: string | null;
+  taxReturnDate?: string | null;
+  countryCode?: string | null;
+  // documents
+  tinCertificate?: File | null;
+  nidFront?: File | null;
+  nidBack?: File | null;
+  vatDoc?: File | null;
+  tradeLicense?: File | null;
+  photo?: File | null;
+  binCertificate?: File | null;
+  sla?: File | null;
+  btrcRegistration?: File | null;
+  lastTaxReturn?: File | null;
+}
+
+const DOCUMENT_FIELDS: (keyof RegisterPartnerPayload)[] = [
+  'tinCertificate', 'nidFront', 'nidBack', 'vatDoc', 'tradeLicense',
+  'photo', 'binCertificate', 'sla', 'btrcRegistration', 'lastTaxReturn',
+];
+
+/**
+ * Register a partner in ONE request.
+ *
+ * The backend creates the partner, its auth user, its details and its documents as a
+ * single unit of work and rolls the whole thing back server-side if any part fails.
+ * That removes the window the old three-call flow had (create-partner → login →
+ * partner-documents), where the partner was already committed while the documents
+ * were still in the browser — an interrupted session left a partner with no documents.
+ *
+ * No auth token: registration happens before the account exists.
+ */
+export const registerPartner = async (
+  payload: RegisterPartnerPayload
+): Promise<CreatePartnerResponse> => {
+  const formData = new FormData();
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    if (DOCUMENT_FIELDS.includes(key as keyof RegisterPartnerPayload)) {
+      const file = value as File;
+      formData.append(key, file, file.name);
+    } else {
+      formData.append(key, String(value));
+    }
+  });
+
+  try {
+    const response = await axios.post<CreatePartnerResponse>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.register}`,
+      formData,
+      { timeout: 120000 } // documents can be several MB on a slow connection
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data as any;
+      // Spring's ResponseStatusException puts the reason in `message`; the
+      // validation errors are a single semicolon-joined string.
+      const serverMessage =
+        (typeof data === 'string' ? data : data?.message || data?.error) ?? null;
+      console.error('❌ Registration failed:', { status, data });
+      throw new Error(
+        serverMessage ||
+          (status === 409
+            ? 'That company name or email is already registered.'
+            : 'Registration failed. No account was created — please try again.')
+      );
+    }
+    throw error;
+  }
+};
+
 // ---------------------- ROLLBACK REGISTRATION ----------------------
 
+/**
+ * Compensating delete for a partially-created registration.
+ *
+ * Only needed by the legacy multi-call flow — `registerPartner` compensates
+ * server-side. Kept for the beacon-on-unload safety net.
+ *
+ * Throws on failure: the previous version swallowed every error, so a rollback that
+ * never happened was indistinguishable from one that did, and the caller would clear
+ * its partner id and lose the only handle on the orphan.
+ */
 export const rollbackRegistration = async (idPartner: number, email: string): Promise<void> => {
   try {
     await axios.post(
@@ -256,7 +367,8 @@ export const rollbackRegistration = async (idPartner: number, email: string): Pr
     );
     console.log('✅ Registration rolled back for partner:', idPartner);
   } catch (error) {
-    console.error('❌ Rollback failed:', error);
+    console.error('❌ Rollback failed for partner:', idPartner, error);
+    throw error;
   }
 };
 

@@ -2,10 +2,7 @@
 import { Header } from '@/components/layout/Header';
 import { loginUser, setAuthToken } from '@/lib/api-client/auth';
 import {
-  addPartnerDetails,
-  createPartner,
-  loginPartner,
-  rollbackRegistration,
+  registerPartner,
   sendOtp,
   verifyOtp,
   sendEmailOtp,
@@ -96,9 +93,6 @@ export default function RegisterPage() {
   const [isVerifyingNid, setIsVerifyingNid] = useState(false);
   const [nidVerificationData, setNidVerificationData] = useState<any>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  // Track sub-steps in final registration to allow retry on partial failure
-  const [createdPartnerId, setCreatedPartnerId] = useState<number | null>(null);
-  const [partnerJwtToken, setPartnerJwtToken] = useState<string | null>(null);
   // OCR states
   const [isExtractingOcr, setIsExtractingOcr] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
@@ -178,48 +172,15 @@ export default function RegisterPage() {
   const watchedCustomerType = useWatch({ control: otherInfoForm.control, name: 'customerType' });
   const isNidFrontUploaded = !!watchedNidFrontSide;
 
-  // Rollback on page close/refresh and warn user if partner was partially created
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (createdPartnerId && !showSuccessPopup) {
-        // Fire rollback via beacon API (works even when page is closing)
-        const payload = JSON.stringify({ idPartner: createdPartnerId, email: verifiedEmail });
-        navigator.sendBeacon(
-          `${API_BASE_URL}${API_ENDPOINTS.partner.rollbackRegistration}`,
-          new Blob([payload], { type: 'application/json' })
-        );
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [createdPartnerId, verifiedEmail, showSuccessPopup]);
+  // NOTE: there is deliberately no beforeunload/unmount rollback here any more.
+  // Registration goes through the atomic /partner/register endpoint, so closing the
+  // tab mid-flow cannot leave a half-created partner — nothing is written until the
+  // whole request succeeds. The old sendBeacon handlers existed to clean up after the
+  // multi-call flow and were unreliable exactly when they were needed most (a dropped
+  // beacon left the orphan forever, with no way to detect it).
 
-  // Rollback on component unmount (client-side navigation away)
-  useEffect(() => {
-    return () => {
-      if (createdPartnerId && verifiedEmail && !showSuccessPopup) {
-        const payload = JSON.stringify({ idPartner: createdPartnerId, email: verifiedEmail });
-        navigator.sendBeacon(
-          `${API_BASE_URL}${API_ENDPOINTS.partner.rollbackRegistration}`,
-          new Blob([payload], { type: 'application/json' })
-        );
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createdPartnerId, verifiedEmail, showSuccessPopup]);
-
-  // Rollback partially created partner and reset state
+  // Reset the form so the user can start over. Nothing to roll back server-side.
   const handleRollbackAndReset = async () => {
-    if (createdPartnerId && verifiedEmail) {
-      toast.loading('Rolling back registration...', { id: 'rollback' });
-      await rollbackRegistration(createdPartnerId, verifiedEmail);
-      toast.dismiss('rollback');
-      toast.success('Registration cancelled. You can start over.');
-    }
-    // Reset all state
-    setCreatedPartnerId(null);
-    setPartnerJwtToken(null);
     setStep(1);
     setEmailOtpSent(false);
     setEmailOtpVerified(false);
@@ -738,87 +699,47 @@ export default function RegisterPage() {
 
       const fullName = personalInfoData.fullName;
 
-      // 2. First call: create partner (skip if already created on a previous attempt)
-      let idPartner = createdPartnerId;
-      if (!idPartner) {
-        console.log('\n🔵 STEP 2: Creating partner account...');
-        const customerPrePaidValue = otherInfoData.customerType === 'prepaid' ? 1 : 2;
+      // 2. Single atomic call: partner + auth user + details + documents.
+      //
+      // This deliberately replaces the old create-partner → login → partner-documents
+      // sequence. That sequence committed the partner on the first call while the
+      // documents were still sitting in the browser, so anything that interrupted the
+      // run (network drop, closed tab, crash) left a partner with no documents behind
+      // and relied on the browser to call rollback — which it often never got to do.
+      // The server now creates everything or nothing; there is no partial state to
+      // clean up from here.
+      console.log('\n🔵 STEP 2: Registering partner (atomic)...');
+      const customerPrePaidValue = otherInfoData.customerType === 'prepaid' ? 1 : 2;
 
-        const partnerPayload = {
-            partnerName: companyName,
-            alternateNameOther: personalInfoData.alternateNameOther || fullName,
-            alternateNameInvoice: fullName,
-            telephone: verifiedPhone,
-            email: verifiedEmail,
-            userPassword: '11111111',
-            address1: otherInfoData.address1,
-            address2: otherInfoData.address2 || '',
-            city: otherInfoData.city,
-            state: otherInfoData.state,
-            postalCode: otherInfoData.postalCode,
-            country: otherInfoData.country,
-            vatRegistrationNo: otherInfoData.tinNumber || 'N/A',
-            invoiceAddress: otherInfoData.address1,
-            customerPrePaid: customerPrePaidValue,
-            partnerType: 3,
-            defaultCurrency: 1,
-            callSrcId: 2,
-        };
-
-        const partnerResponse = await createPartner(partnerPayload);
-
-        idPartner = partnerResponse?.idPartner || partnerResponse?.id || null;
-        if (!idPartner) {
-          console.error('❌ Partner response:', partnerResponse);
-          throw new Error('Partner ID missing in createPartner response');
-        }
-        setCreatedPartnerId(idPartner);
-        console.log('✅ Partner created with ID:', idPartner);
-      } else {
-        console.log('⏩ Skipping partner creation (already created with ID:', idPartner, ')');
-      }
-
-      // 3. Second call: login to get JWT token (skip if already obtained)
-      let jwtToken = partnerJwtToken;
-      if (!jwtToken) {
-        console.log('\n🔵 STEP 3: Logging in to get JWT token...');
-
-        const loginResponse = await loginPartner(
-          verifiedEmail,
-          '11111111'
-        );
-
-        jwtToken = loginResponse.token;
-        if (!jwtToken) {
-          console.error('❌ Login response:', loginResponse);
-          throw new Error('JWT token missing in login response');
-        }
-        setPartnerJwtToken(jwtToken);
-        console.log('✅ JWT token received:', jwtToken.substring(0, 50) + '...');
-
-        // Small delay to ensure token is propagated
-        console.log('⏳ Waiting 2 seconds for token to be active...');
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      } else {
-        console.log('⏩ Skipping login (JWT token already obtained)');
-      }
-
-      // 4. Third call: add partner details (WITH TOKEN)
-      console.log('\n🔵 STEP 4: Adding partner documents with JWT token...');
-      const detailsPayload = {
-        partnerId: idPartner,
-        address1: otherInfoData.address1 ?? null,
-        address2: otherInfoData.address2 ?? null,
+      const registrationPayload = {
+        // partner
+        partnerName: companyName ?? '',
+        alternateNameOther: personalInfoData.alternateNameOther || fullName,
+        alternateNameInvoice: fullName,
+        telephone: verifiedPhone,
+        email: verifiedEmail,
+        userPassword: '11111111',
+        address1: otherInfoData.address1,
+        address2: otherInfoData.address2 || '',
+        city: otherInfoData.city,
+        state: otherInfoData.state,
+        postalCode: otherInfoData.postalCode,
+        country: otherInfoData.country,
+        vatRegistrationNo: otherInfoData.tinNumber || 'N/A',
+        invoiceAddress: otherInfoData.address1,
+        customerPrePaid: customerPrePaidValue,
+        partnerType: 3,
+        defaultCurrency: 1,
+        callSrcId: 2,
+        // partner_extra
         address3: otherInfoData.address3 ?? null,
         address4: otherInfoData.address4 ?? null,
-        city: otherInfoData.city ?? null,
-        state: otherInfoData.state ?? null,
-        postalCode: otherInfoData.postalCode ?? null,
         nid: personalInfoData.nidNumber ?? null,
         tradeLicenseNumber: otherInfoData.tradeLicenseNumber ?? null,
         tin: otherInfoData.tinNumber ?? null,
         taxReturnDate: otherInfoData.taxReturnDate ?? null,
         countryCode: otherInfoData.country ?? null,
+        // documents
         tinCertificate: otherInfoData.tinFile ?? null,
         nidFront: personalInfoData.identityCardFrontSide ?? null,
         nidBack: personalInfoData.identityCardBackSide ?? null,
@@ -831,12 +752,16 @@ export default function RegisterPage() {
         lastTaxReturn: otherInfoData.taxReturnFile ?? null,
       };
 
-      console.log('Calling addPartnerDetails with token...');
-      const detailsResponse = await addPartnerDetails(detailsPayload, jwtToken);
-      console.log('✅ Partner details added successfully:', detailsResponse);
+      const partnerResponse = await registerPartner(registrationPayload);
+      const idPartner = partnerResponse?.idPartner || partnerResponse?.id || null;
+      if (!idPartner) {
+        console.error('❌ Partner response:', partnerResponse);
+        throw new Error('Partner ID missing in registration response');
+      }
+      console.log('✅ Partner registered with ID:', idPartner);
 
-      // 5. Auto-login for the main app (if different from partner login)
-      console.log('\n🔵 STEP 5: Auto-login to main app...');
+      // 3. Auto-login for the main app
+      console.log('\n🔵 STEP 3: Auto-login to main app...');
       try {
         const appLoginResponse = await loginUser({
           email: verifiedEmail,
@@ -877,13 +802,10 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('❌ Registration failed:', error);
-      // Rollback the partially created partner so the user can retry from scratch
-      if (createdPartnerId && verifiedEmail) {
-        console.log('🔄 Rolling back partially created partner...');
-        await rollbackRegistration(createdPartnerId, verifiedEmail);
-        setCreatedPartnerId(null);
-        setPartnerJwtToken(null);
-      }
+      // No client-side rollback: /partner/register is atomic, so a failure here means
+      // the server already undid everything (or never created anything). Attempting a
+      // rollback from the browser is what used to be unreliable — it depended on state
+      // the failing request had not committed yet.
       showApiError(error, { fallbackMessage: 'Registration failed. Please try again.' });
     } finally {
       setIsSubmitting(false);

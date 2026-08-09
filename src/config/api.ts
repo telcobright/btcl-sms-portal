@@ -111,6 +111,16 @@ export const API_ENDPOINTS = {
     checkNid: '/partner/check-nid',
   },
 
+  // Admin management of the EC NID API credentials.
+  // These live on TelcoREST (behind gateway auth), not on the NID service itself —
+  // nginx proxies the whole /NID/ prefix with no authentication, so a write endpoint
+  // over there would be publicly reachable.
+  nidCredential: {
+    get: '/admin/nid-credential/get',
+    update: '/admin/nid-credential/update',
+    test: '/admin/nid-credential/test',
+  },
+
   // Package endpoints
   package: {
     getPurchaseForPartner: '/package/getPurchaseForPartner',

@@ -55,6 +55,9 @@ export default function AdminReportsPage() {
   const [toDate, setToDate] = useState('');
   const [serviceFilter, setServiceFilter] = useState('all');
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   const load = useCallback(async () => {
     const authToken = localStorage.getItem('authToken');
     if (!authToken) return;
@@ -106,6 +109,20 @@ export default function AdminReportsPage() {
     [filtered, period]
   );
   const serviceGroups = useMemo(() => groupSalesByService(filtered), [filtered]);
+
+  // Any change to the filters can shrink the result set, so go back to page 1 rather
+  // than stranding the admin on a page that no longer exists.
+  useEffect(() => {
+    setPage(1);
+  }, [fromDate, toDate, serviceFilter, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const paged = useMemo(
+    () => filtered.slice(pageStart, pageStart + pageSize),
+    [filtered, pageStart, pageSize]
+  );
 
   const totals = useMemo(
     () => ({
@@ -392,7 +409,7 @@ export default function AdminReportsPage() {
             <span className="font-normal text-gray-500 text-sm">({filtered.length})</span>
           </h2>
           <span className="text-xs text-gray-500">
-            Grouped under {PERIODS.find((p) => p.value === period)?.label.toLowerCase()} periods
+            Download CSV exports all {filtered.length} matching rows, not just this page
           </span>
         </div>
         {!filtered.length ? (
@@ -415,9 +432,10 @@ export default function AdminReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filtered.map((sale, index) => (
+                {paged.map((sale, index) => (
                   <tr key={sale.uid} className="hover:bg-gray-50">
-                    <Td className="text-gray-400">{index + 1}</Td>
+                    {/* SL runs across the whole filtered set, not per page. */}
+                    <Td className="text-gray-400">{pageStart + index + 1}</Td>
                     <Td className="whitespace-nowrap">
                       {new Date(sale.purchaseDate).toLocaleString('en-GB', {
                         day: '2-digit',
@@ -458,8 +476,89 @@ export default function AdminReportsPage() {
             </table>
           </div>
         )}
+
+        {filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>
+                Showing <strong>{pageStart + 1}</strong>–
+                <strong>{Math.min(pageStart + pageSize, filtered.length)}</strong> of{' '}
+                <strong>{filtered.length}</strong>
+              </span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="ml-2 px-2 py-1 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30"
+              >
+                {[25, 50, 100, 200].map((size) => (
+                  <option key={size} value={size}>
+                    {size} / page
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <PageButton
+                onClick={() => setPage(1)}
+                disabled={currentPage === 1}
+                label="First page"
+              >
+                «
+              </PageButton>
+              <PageButton
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                label="Previous page"
+              >
+                ‹
+              </PageButton>
+              <span className="px-3 text-sm text-gray-600">
+                Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+              </span>
+              <PageButton
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                label="Next page"
+              >
+                ›
+              </PageButton>
+              <PageButton
+                onClick={() => setPage(totalPages)}
+                disabled={currentPage === totalPages}
+                label="Last page"
+              >
+                »
+              </PageButton>
+            </div>
+          </div>
+        )}
       </section>
     </div>
+  );
+}
+
+function PageButton({
+  onClick,
+  disabled,
+  label,
+  children,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-[#0D529E] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+    >
+      {children}
+    </button>
   );
 }
 

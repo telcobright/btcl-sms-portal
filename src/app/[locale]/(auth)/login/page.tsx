@@ -11,6 +11,11 @@ import { loginUser, setAuthToken } from '@/lib/api-client/auth'
 import { useAuth } from '@/lib/contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { showApiError } from '@/lib/api-error'
+import { getAdminUserMenuPermissions } from '@/lib/api-client/permissions'
+import {
+    setAdminMenuPermissions,
+    clearAdminMenuPermissions,
+} from '@/lib/adminMenuPermissions'
 
 const decodeToken = (token: string) => {
     try {
@@ -207,9 +212,37 @@ export default function LoginPage() {
             )
 
             if (isAdmin) {
+                // Pull this admin's own menu permissions before entering /admin,
+                // so the sidebar and the route guard have them on first render.
+                // The id comes from the JWT `userId` claim — the login response
+                // itself carries no id.
+                const adminUserId =
+                    (decodedToken as { userId?: number; id?: number }).userId ??
+                    (decodedToken as { userId?: number; id?: number }).id ??
+                    null
+                if (adminUserId) {
+                    try {
+                        const rows = await getAdminUserMenuPermissions(
+                            adminUserId,
+                            response.token
+                        )
+                        setAdminMenuPermissions(rows)
+                    } catch {
+                        // Endpoints not deployed on this tenant yet, or the call
+                        // failed. Leave the account unrestricted rather than
+                        // locking an admin out of their own dashboard.
+                        clearAdminMenuPermissions()
+                    }
+                } else {
+                    clearAdminMenuPermissions()
+                }
+
                 router.push(`/${locale}/admin`)
                 return
             }
+
+            // Not an admin — make sure no stale rows govern this session.
+            clearAdminMenuPermissions()
 
             const customerPrePaid = decodedToken.customerPrePaid
             if (customerPrePaid === 2) {

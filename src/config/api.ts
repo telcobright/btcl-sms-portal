@@ -150,6 +150,15 @@ export const API_ENDPOINTS = {
     unifiedPurchase: '/api/payment/unified/purchase', // Unified purchase (handles both payment gateway & direct purchase)
   },
 
+  // Per-user menu permissions for the /admin area (uses AUTH_BASE_URL).
+  // Namespaced under admin-user/ so it never collides with the PBX portal's
+  // permissions/save + permissions/get-user-permissions, which store a
+  // different catalog's keys.
+  permissions: {
+    getAdminUserMenus: '/permissions/admin-user/get',
+    saveAdminUserMenus: '/permissions/admin-user/save',
+  },
+
   // Admin endpoints
   admin: {
     getPartners: '/partner/get-partners', // Get all partners with pagination

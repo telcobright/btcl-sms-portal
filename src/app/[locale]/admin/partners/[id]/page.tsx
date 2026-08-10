@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import UserMenuPermissionsModal from '../../components/UserMenuPermissionsModal';
 
 type TabType =
   | 'overview'
@@ -1158,6 +1159,8 @@ function UsersTab({
   const [editingUser, setEditingUser] = useState<PartnerUser | null>(null);
   const [form, setForm] = useState<UserFormData>(EMPTY_USER);
   const [saving, setSaving] = useState(false);
+  // Which admin account's menu permissions are being edited, if any.
+  const [permissionsFor, setPermissionsFor] = useState<{ id: number; name: string } | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const openAdd = () => {
@@ -1397,6 +1400,20 @@ function UsersTab({
                     </div>
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">
+                    {u.authRoles?.some((r) => r.name === 'ROLE_ADMIN') && (
+                      <button
+                        onClick={() =>
+                          setPermissionsFor({
+                            id: u.id,
+                            name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+                          })
+                        }
+                        title="Choose which admin menus this account can access"
+                        className="px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white"
+                      >
+                        Menus
+                      </button>
+                    )}
                     <button
                       onClick={() => openEdit(u)}
                       disabled={isDeactivated}
@@ -1423,6 +1440,14 @@ function UsersTab({
             </tbody>
           </table>
         </div>
+      )}
+
+      {permissionsFor && (
+        <UserMenuPermissionsModal
+          userId={permissionsFor.id}
+          userName={permissionsFor.name}
+          onClose={() => setPermissionsFor(null)}
+        />
       )}
     </div>
   );

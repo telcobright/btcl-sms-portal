@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useParams } from 'next/navigation';
+import { hasAdminMenuAccess, hrefToMenuKey } from '@/lib/adminMenuPermissions';
 
 interface NavItem {
   name: string;
@@ -109,6 +110,18 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
     },
   ];
 
+  // Drop menus this admin has not been granted, and any section left empty.
+  // A no-op for accounts with no saved rows, so the sidebar is unchanged until
+  // someone is actually restricted. Keys are derived from the href rather than
+  // read from the catalog, so a menu added here but missing from the catalog
+  // stays visible instead of silently vanishing.
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => hasAdminMenuAccess(hrefToMenuKey(item.href))),
+    }))
+    .filter((section) => section.items.length > 0);
+
   const isActive = (href: string) => {
     if (href === `/${locale}/admin`) {
       return pathname === href;
@@ -140,7 +153,7 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
 
       {/* Navigation */}
       <nav className="flex-1 px-2 overflow-y-auto">
-        {navSections.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.title} className="mb-4">
             {!collapsed && (
               <p className="px-3 mb-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">

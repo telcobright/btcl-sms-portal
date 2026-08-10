@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
+import { canAccessAdminPath } from '@/lib/adminMenuPermissions';
 import AdminSidebar from './components/AdminSidebar';
 import AdminNotifications from './components/AdminNotifications';
 import PasswordExpiryBanner from '../../../components/PasswordExpiryBanner';
@@ -22,6 +23,7 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const locale = params.locale || 'en';
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +65,15 @@ export default function AdminLayout({
           setUserName(String(decoded.sub));
         }
 
+        // Menu-level guard. The admin check above is binary — it lets any admin
+        // reach every admin page — so without this, hiding a sidebar entry would
+        // leave the page one typed URL away. A no-op for admins with no saved
+        // rows, and /admin itself is never blocked since it is the fallback.
+        if (!canAccessAdminPath(pathname)) {
+          router.push(`/${locale}/admin`);
+          return;
+        }
+
         setIsAuthorized(true);
       } catch (error) {
         console.error('Auth check error:', error);
@@ -73,7 +84,9 @@ export default function AdminLayout({
     };
 
     checkAdminRole();
-  }, [router, locale]);
+    // pathname included so the menu guard re-runs on client-side navigation —
+    // without it, only a full page load would be checked.
+  }, [router, locale, pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');

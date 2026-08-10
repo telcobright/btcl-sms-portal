@@ -126,6 +126,8 @@ export const API_ENDPOINTS = {
     getPurchaseForPartner: '/package/getPurchaseForPartner',
     purchasePackage: '/package/purchase-package',
     getAllPurchasePartnerWise: '/package/get-all-purchase-partner-wise',
+    // Every purchase on a backend, used by the admin sales report.
+    getAllPurchase: '/package/get-all-purchase',
   },
 
   // User/Dashboard endpoints

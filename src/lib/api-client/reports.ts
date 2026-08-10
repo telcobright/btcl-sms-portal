@@ -1,53 +1,30 @@
 import axios from 'axios';
-import {
-  API_BASE_URL,
-  API_ENDPOINTS,
-  BULK_SMS_BASE_URL,
-  HCC_BASE_URL,
-  PBX_BASE_URL,
-  VBS_BASE_URL,
-} from '@/config/api';
+import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 /**
- * Sales reporting across every BTCL service backend.
+ * Sales reporting across every BTCL service.
  *
- * Each service (main, Hosted PBX, Call Center, Voice Broadcast, Bulk SMS) is a separate
- * deployment with its own database and its own `packagepurchase` table — there is no single
- * place to query. So, exactly as the partner Purchases tab does, this fans out to all of them
- * and merges the results client-side.
+ * This originally fanned out from the browser to all five service gateways. That could never
+ * work: each service is a separate deployment with its own AUTHENTICATION service and JWT
+ * signing key, so an admin's token is only valid on the tenant that issued it. The other four
+ * answered HTTP 500 and the report showed roughly a quarter of actual revenue.
  *
- * That is viable because the volumes are small (tens of rows per service, not millions). If
- * sales ever grow into the tens of thousands, this should move to a server-side aggregate with
- * real date filtering — `/package/get-all-purchase` applies its filters *after* pagination, so
- * it cannot do the job today.
+ * It now calls a single endpoint on the main backend, which reads each service's database
+ * directly. That removes the cross-tenant token problem and moves date filtering and the
+ * partner/package joins into SQL.
  *
- * A partial failure is reported rather than hidden. A sales figure that silently omits a
- * service because its backend was down would be worse than no figure at all.
+ * Per-source status is still surfaced: if one service's database cannot be read, the UI has to
+ * say so. A revenue total that silently omits a service is worse than an error, because
+ * somebody will reconcile against it.
  */
 
-/** One service backend to collect sales from. */
-interface SalesSource {
-  url: string;
-  /** Stable key used in CSV output and grouping. */
-  key: string;
-  /** What an admin calls this service. */
-  label: string;
-}
-
-const SALES_SOURCES: SalesSource[] = [
-  { url: API_BASE_URL, key: 'main', label: 'Main Services' },
-  { url: PBX_BASE_URL, key: 'pbx', label: 'Hosted PBX' },
-  { url: HCC_BASE_URL, key: 'hcc', label: 'Call Center' },
-  { url: VBS_BASE_URL, key: 'vbs', label: 'Voice Broadcast' },
-  { url: BULK_SMS_BASE_URL, key: 'sms', label: 'Bulk SMS' },
-];
-
 export interface SaleRecord {
-  /** Unique across services — service ids collide because each has its own sequence. */
+  /** Unique across services — per-database ids collide. */
   uid: string;
   service: string;
   serviceLabel: string;
   purchaseDate: string;
+  idPartner?: number;
   partnerName: string;
   packageName: string;
   price: number;
@@ -65,16 +42,23 @@ export interface SalesFetchResult {
   failed: { label: string; reason: string }[];
 }
 
-interface RawPurchase {
-  id?: number;
-  purchaseDate?: string;
-  partnerName?: string | null;
-  packageName?: string | null;
-  price?: number | null;
-  vat?: number | null;
-  ait?: number | null;
-  total?: number | null;
-  status?: string | null;
+interface SalesReportApiResponse {
+  sales?: {
+    uid?: string;
+    service?: string;
+    serviceLabel?: string;
+    idPartner?: number;
+    partnerName?: string | null;
+    packageName?: string | null;
+    purchaseDate?: string;
+    price?: number | string | null;
+    vat?: number | string | null;
+    ait?: number | string | null;
+    total?: number | string | null;
+    status?: string | null;
+  }[];
+  sources?: { key?: string; label?: string; ok?: boolean; count?: number; error?: string }[];
+  complete?: boolean;
 }
 
 const toNumber = (value: unknown): number => {
@@ -82,90 +66,57 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-/**
- * Pull every purchase from one backend.
- *
- * A large page size is requested deliberately: `/package/get-all-purchase` filters after
- * paginating, so asking for everything and filtering here is the only way to get a correct
- * result set out of it.
- */
-const fetchFromSource = async (
-  source: SalesSource,
-  authToken: string
-): Promise<SaleRecord[]> => {
-  const response = await axios.post(
-    `${source.url}${API_ENDPOINTS.package.getAllPurchase}`,
-    { page: 0, size: 100000 },
+export interface SalesQuery {
+  fromDate?: string;
+  toDate?: string;
+  idPartner?: number;
+}
+
+/** Fetch merged sales from every service database. */
+export const getAllSales = async (
+  authToken: string,
+  query: SalesQuery = {}
+): Promise<SalesFetchResult> => {
+  const response = await axios.post<SalesReportApiResponse>(
+    `${API_BASE_URL}${API_ENDPOINTS.reports.sales}`,
+    query,
     {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-      timeout: 30000,
+      timeout: 60000,
     }
   );
 
-  const body = response.data;
-  const rows: RawPurchase[] = Array.isArray(body)
-    ? body
-    : Array.isArray(body?.content)
-      ? body.content
-      : [];
+  const body = response.data ?? {};
 
-  return rows
+  const sales: SaleRecord[] = (body.sales ?? [])
     .filter((row) => row && row.purchaseDate)
     .map((row) => {
       const price = toNumber(row.price);
       const vat = toNumber(row.vat);
       const ait = toNumber(row.ait);
       return {
-        uid: `${source.key}:${row.id ?? Math.random().toString(36).slice(2)}`,
-        service: source.key,
-        serviceLabel: source.label,
+        uid: row.uid || `${row.service}:${row.purchaseDate}`,
+        service: row.service || 'unknown',
+        serviceLabel: row.serviceLabel || 'Unknown service',
         purchaseDate: row.purchaseDate as string,
+        idPartner: row.idPartner,
         partnerName: row.partnerName || 'Unknown',
         packageName: row.packageName || '—',
         price,
         vat,
         ait,
-        // Prefer the stored total; fall back to the components rather than inventing
-        // discount arithmetic that finance might not agree with.
         total: row.total != null ? toNumber(row.total) : price + vat + ait,
         status: row.status || '—',
       };
     });
-};
 
-/** Collect sales from every backend concurrently, keeping partial results usable. */
-export const getAllSales = async (authToken: string): Promise<SalesFetchResult> => {
-  const settled = await Promise.allSettled(
-    SALES_SOURCES.map((source) => fetchFromSource(source, authToken))
-  );
-
-  const sales: SaleRecord[] = [];
-  const succeeded: string[] = [];
-  const failed: { label: string; reason: string }[] = [];
-
-  settled.forEach((result, index) => {
-    const source = SALES_SOURCES[index];
-    if (result.status === 'fulfilled') {
-      succeeded.push(source.label);
-      sales.push(...result.value);
-    } else {
-      const error = result.reason;
-      const reason = axios.isAxiosError(error)
-        ? error.response
-          ? `HTTP ${error.response.status}`
-          : error.code === 'ECONNABORTED'
-            ? 'timed out'
-            : 'unreachable'
-        : 'failed';
-      failed.push({ label: source.label, reason });
-      console.error(`❌ Sales fetch failed for ${source.label}:`, error);
-    }
-  });
-
-  // Newest first, which is what an admin opening a report expects to see.
-  sales.sort(
-    (a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime()
-  );
+  const succeeded = (body.sources ?? []).filter((s) => s.ok).map((s) => s.label || s.key || '');
+  const failed = (body.sources ?? [])
+    .filter((s) => !s.ok)
+    .map((s) => ({
+      label: s.label || s.key || 'Unknown service',
+      reason: s.error || 'unreadable',
+    }));
 
   return { sales, succeeded, failed };
 };

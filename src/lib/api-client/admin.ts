@@ -333,74 +333,54 @@ export const getPurchasesByPartner = async (
   idPartner: number,
   authToken: string
 ): Promise<PurchaseHistory[]> => {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${authToken}`,
-  };
+  // There is NO central purchase table: every service runs its own FreeSwitchREST and
+  // its own DB, and a purchase only exists in the DB of the service it was bought on.
+  //
+  // This used to fan out from the browser to all five service gateways, which could
+  // never work — each service has its own AUTHENTICATION service and JWT signing key,
+  // so an admin token is only valid on the tenant that issued it. The other four
+  // answered HTTP 500 and the errors were swallowed per-source, so this quietly
+  // returned main-tenant purchases only.
+  //
+  // The main backend now reads every service database directly and does the merge.
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.reports.sales}`,
+      { idPartner },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        timeout: 60000,
+      }
+    );
 
-  // There is NO central purchase aggregate: every service runs its own
-  // FreeSwitchREST + DB, and a purchase only exists in the DB of the service it
-  // was bought on. Querying API_BASE_URL alone returns an empty page for any
-  // partner whose packages live on PBX/HCC/VBS/SMS, so fan out to all of them
-  // and merge (same host list as getServiceStatus, plus the main portal).
-  const sources: { url: string; service: string }[] = [
-    { url: API_BASE_URL, service: 'main' },
-    { url: PBX_BASE_URL, service: 'pbx' },
-    { url: HCC_BASE_URL, service: 'hcc' },
-    { url: VBS_BASE_URL, service: 'vbs' },
-    { url: BULK_SMS_BASE_URL, service: 'sms' },
-  ];
+    const rows = Array.isArray(response.data?.sales) ? response.data.sales : [];
 
-  const requests = sources.map(({ url, service }) =>
-    axios
-      .post(
-        `${url}${API_ENDPOINTS.package.getAllPurchasePartnerWise}`,
-        { page: 0, size: 200, idPartner, packageName: null, status: null },
-        { headers }
-      )
-      .then((response) => {
-        const data = response.data;
-        const rows: PurchaseHistory[] = Array.isArray(data)
-          ? data
-          : data && typeof data === 'object' && 'content' in data
-            ? data.content || []
-            : [];
-        // 9999 = Postpaid_Credit, an internal ledger row, not a real purchase.
-        return rows
-          .filter((p) => p.idPackage !== 9999)
-          .map((p) => ({ ...p, service }));
-      })
-      .catch((error) => {
-        if (axios.isAxiosError(error)) {
-          console.error(`❌ Get Purchases by Partner error (${service}):`, {
-            status: error.response?.status,
-            data: error.response?.data,
-          });
-        }
-        return [] as PurchaseHistory[];
-      })
-  );
-
-  const results = await Promise.all(requests);
-
-  // De-duplicate on service+id: each service DB has its own id sequence, so the
-  // same numeric id can legitimately appear on two different backends.
-  const seen = new Set<string>();
-  const merged: PurchaseHistory[] = [];
-  for (const p of results.flat()) {
-    const key = `${p.service}:${p.id}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    merged.push(p);
+    // Internal ledger rows (Postpaid_Credit) are already excluded server-side.
+    return rows.map(
+      (row: Record<string, unknown>): PurchaseHistory =>
+        ({
+          ...row,
+          id: Number(row.id ?? 0),
+          idPackage: Number(row.idPackage ?? 0),
+          idPartner: Number(row.idPartner ?? idPartner),
+          price: Number(row.price ?? 0),
+          vat: Number(row.vat ?? 0),
+          ait: Number(row.ait ?? 0),
+          total: Number(row.total ?? 0),
+        }) as PurchaseHistory
+    );
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Get Purchases by Partner error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+    return [];
   }
-
-  // Newest purchase first.
-  merged.sort(
-    (a, b) =>
-      new Date(b.purchaseDate || 0).getTime() -
-      new Date(a.purchaseDate || 0).getTime()
-  );
-  return merged;
 };
 
 /**

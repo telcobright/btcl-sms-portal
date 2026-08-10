@@ -65,7 +65,7 @@ export default function AdminReportsPage() {
       setFailed(result.failed);
       setError(
         result.succeeded.length === 0
-          ? 'No service backend could be reached, so no sales could be loaded.'
+          ? 'No service database could be read, so no sales could be loaded.'
           : null
       );
     } catch {
@@ -189,7 +189,7 @@ export default function AdminReportsPage() {
           <div>
             <p className="font-semibold">These figures are incomplete.</p>
             <p className="mt-0.5">
-              Could not reach{' '}
+              Could not read{' '}
               {failed.map((f, i) => (
                 <span key={f.label}>
                   {i > 0 && ', '}

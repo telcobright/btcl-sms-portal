@@ -126,8 +126,14 @@ export const API_ENDPOINTS = {
     getPurchaseForPartner: '/package/getPurchaseForPartner',
     purchasePackage: '/package/purchase-package',
     getAllPurchasePartnerWise: '/package/get-all-purchase-partner-wise',
-    // Every purchase on a backend, used by the admin sales report.
     getAllPurchase: '/package/get-all-purchase',
+  },
+
+  // Cross-service admin reporting. Served by the main backend, which reads each
+  // service's database directly — an admin token is only valid on the tenant that
+  // issued it, so the browser cannot gather this from the other gateways itself.
+  reports: {
+    sales: '/admin/reports/sales',
   },
 
   // User/Dashboard endpoints

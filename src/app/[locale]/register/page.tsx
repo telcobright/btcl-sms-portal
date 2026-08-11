@@ -92,6 +92,15 @@ export default function RegisterPage() {
   const [nidVerificationFailed, setNidVerificationFailed] = useState(false);
   const [isVerifyingNid, setIsVerifyingNid] = useState(false);
   const [nidVerificationData, setNidVerificationData] = useState<any>(null);
+  // Why verification failed. The service used to return only "NID Not Verified", so this
+  // dialog always said "Voter data mismatch" — even when the NID simply was not in the
+  // Election Commission records, or the EC API was down and nothing was wrong with the
+  // applicant's data at all.
+  const [nidFailure, setNidFailure] = useState<{
+    reason?: string;
+    detail?: string;
+    requestId?: string;
+  } | null>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   // OCR states
   const [isExtractingOcr, setIsExtractingOcr] = useState(false);
@@ -591,6 +600,7 @@ export default function RegisterPage() {
         // NID verified successfully
         setNidVerified(true);
         setNidVerificationFailed(false);
+        setNidFailure(null);
         setNidVerificationData(data);
         // Move to next step after showing success
         setTimeout(() => {
@@ -601,12 +611,22 @@ export default function RegisterPage() {
         setNidVerified(false);
         setNidVerificationFailed(true);
         setNidVerificationData(null);
+        setNidFailure({
+          reason: data.reason,
+          detail: data.detail,
+          requestId: data.requestId,
+        });
       }
     } catch (error) {
       console.error('NID verification error:', error);
       setNidVerified(false);
       setNidVerificationFailed(true);
       setNidVerificationData(null);
+      setNidFailure({
+        reason: 'SERVICE_UNAVAILABLE',
+        detail:
+          'We could not reach the verification service. Please check your connection and try again.',
+      });
     } finally {
       setIsVerifyingNid(false);
     }
@@ -1293,10 +1313,26 @@ export default function RegisterPage() {
                           />
                         </svg>
                       </div>
-                      <h3 className="text-3xl font-bold text-red-600 mb-2">NID Verification Failed</h3>
-                      <p className="text-gray-600 text-center mb-6">
-                        Voter data mismatch. Please provide correct data.
+                      <h3 className="text-3xl font-bold text-red-600 mb-2">
+                        {nidFailure?.reason === 'SERVICE_UNAVAILABLE'
+                          ? 'Verification Unavailable'
+                          : 'NID Verification Failed'}
+                      </h3>
+                      <p className="text-gray-600 text-center mb-2">
+                        {nidFailure?.detail ||
+                          'Voter data mismatch. Please provide correct data.'}
                       </p>
+                      {nidFailure?.reason === 'SERVICE_UNAVAILABLE' && (
+                        <p className="text-gray-500 text-center text-sm mb-2">
+                          This is a problem on our side, not with your information.
+                        </p>
+                      )}
+                      {nidFailure?.requestId && (
+                        <p className="text-gray-400 text-center text-xs mb-2 break-all">
+                          Reference: {nidFailure.requestId}
+                        </p>
+                      )}
+                      <div className="mb-6" />
                       <button
                         onClick={() => setNidVerificationFailed(false)}
                         className="transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"

@@ -95,6 +95,8 @@ export const API_ENDPOINTS = {
     getPartner: '/partner/get-partner',
     // Document status + customer category for the partners on screen, batched.
     listSummary: '/partner/list-summary',
+    // Customer-category totals for the admin dashboard.
+    categoryCounts: '/partner/category-counts',
     getPartnerExtra: '/partner/get-partner-extra',
     getPartnerDocument: '/partner/get-partner-document',
     getDocumentStatuses: '/partner/get-document-statuses',

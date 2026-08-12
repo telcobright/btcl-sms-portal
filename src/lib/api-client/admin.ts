@@ -158,6 +158,44 @@ export const getPartnerListSummary = async (
   }
 };
 
+export interface PartnerCategoryCounts {
+  INDIVIDUAL: number;
+  CORPORATE: number;
+  GOVERNMENT: number;
+  /** Registered before the category existed, or written while the old build was live. */
+  UNKNOWN: number;
+  TOTAL: number;
+}
+
+/** Customer-category totals. Returns zeroes on failure so the dashboard still renders. */
+export const getPartnerCategoryCounts = async (
+  authToken: string
+): Promise<PartnerCategoryCounts> => {
+  const empty: PartnerCategoryCounts = {
+    INDIVIDUAL: 0,
+    CORPORATE: 0,
+    GOVERNMENT: 0,
+    UNKNOWN: 0,
+    TOTAL: 0,
+  };
+  try {
+    const response = await axios.post<PartnerCategoryCounts>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.categoryCounts}`,
+      {},
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return { ...empty, ...(response.data || {}) };
+  } catch (error) {
+    console.error('\u274c Get partner category counts error:', error);
+    return empty;
+  }
+};
+
 // ---------------------- ADMIN API FUNCTIONS ----------------------
 
 /**

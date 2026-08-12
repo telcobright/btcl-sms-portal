@@ -11,6 +11,7 @@ import {
 } from '@/config/api';
 import {
   getAllPartners,
+  getPartnerCategoryCounts,
   getPartnerTypeLabel,
   Partner,
 } from '@/lib/api-client/admin';
@@ -53,6 +54,13 @@ export default function AdminDashboard() {
   const locale = params.locale || 'en';
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState(0);
+  const [categoryCounts, setCategoryCounts] = useState({
+    INDIVIDUAL: 0,
+    CORPORATE: 0,
+    GOVERNMENT: 0,
+    UNKNOWN: 0,
+    TOTAL: 0,
+  });
   const [recent, setRecent] = useState<Partner[]>([]);
   const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY, sms: EMPTY });
   const [openSvc, setOpenSvc] = useState<any>(null); // service card whose partner list is shown
@@ -78,6 +86,12 @@ export default function AdminDashboard() {
           [3, 4, 5, 6].includes(p.partnerType)
         );
         setCustomers(list.length);
+
+        // Category lives on partner_extra, not on the Partner entity, so it needs its own
+        // (single, aggregate) query rather than being derived from the list above.
+        getPartnerCategoryCounts(t).then((counts) => {
+          if (!cancelled) setCategoryCounts(counts);
+        });
         setRecent(
           [...list]
             .filter((p) => p.date1)
@@ -388,6 +402,27 @@ export default function AdminDashboard() {
             icon: '👤',
             color: 'text-[#0D529E]',
             bg: 'bg-btcl-primaryLight/10',
+          },
+          {
+            label: 'Individual',
+            value: categoryCounts.INDIVIDUAL,
+            icon: '🧍',
+            color: 'text-teal-600',
+            bg: 'bg-teal-50',
+          },
+          {
+            label: 'Corporate',
+            value: categoryCounts.CORPORATE,
+            icon: '🏢',
+            color: 'text-indigo-600',
+            bg: 'bg-indigo-50',
+          },
+          {
+            label: 'Government',
+            value: categoryCounts.GOVERNMENT,
+            icon: '🏛️',
+            color: 'text-emerald-700',
+            bg: 'bg-emerald-50',
           },
           {
             label: 'Active Plans',

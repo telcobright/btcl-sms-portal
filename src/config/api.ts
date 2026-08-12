@@ -47,14 +47,17 @@ export const FEATURE_FLAGS = {
   PAYMENT_ENABLED: true,
 
   /**
-   * Enable/Disable Postpaid option (registration form + pricing page).
-   * When false:
-   *   - Postpaid radio in registration form is disabled (shows "Coming soon")
-   *   - Postpaid plan buttons on pricing page show "Coming Soon" instead of "Apply"
-   *   - "Coming Soon" badge appears next to the postpaid plan heading
-   * When true: Postpaid is fully enabled.
+   * Master switch for postpaid (registration form + pricing page).
+   *
+   * When false, postpaid is hidden from everyone: the registration radio is disabled and
+   * pricing shows "Coming Soon" instead of "Apply".
+   *
+   * When true, postpaid pricing is public — anyone can see the plans and their rates — but
+   * only Government customers can actually select it at registration. That gating lives in
+   * the register page and is not controlled by this flag, so turning postpaid on does not
+   * open it to private customers.
    */
-  POSTPAID_ENABLED: false,
+  POSTPAID_ENABLED: true,
 } as const;
 
 // API Endpoints

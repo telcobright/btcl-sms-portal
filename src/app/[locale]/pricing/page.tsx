@@ -906,16 +906,44 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             <p className="text-gray-600 text-lg">
               {locale === 'en' ? subtitleEn : subtitleBn}
             </p>
+            {/* Postpaid rates are public, but eligibility is not. Anyone can read the
+                plans; only a Government customer can select postpaid at registration.
+                Spelling out the conditions here means a private applicant learns that
+                before filling in a form they cannot complete. */}
             {isPostpaid && (
-              <div className="mt-4 max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800">
-                  <strong>
-                    {locale === 'en' ? 'Eligibility: ' : 'যোগ্যতা: '}
-                  </strong>
+              <div className="mt-4 max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                <p className="text-sm font-semibold text-red-900">
                   {locale === 'en'
-                    ? 'Only applicable for Government / Semi-Government / Autonomous Organisations.'
-                    : 'শুধুমাত্র সরকারি / আধা-সরকারি / স্বায়ত্তশাসিত প্রতিষ্ঠানের জন্য।'}
+                    ? 'Eligibility & Terms — Government organisations only'
+                    : 'যোগ্যতা ও শর্তাবলি — শুধুমাত্র সরকারি প্রতিষ্ঠানের জন্য'}
                 </p>
+                <ul className="mt-2 space-y-1.5 text-sm text-red-800 list-disc pl-5">
+                  <li>
+                    {locale === 'en'
+                      ? 'Postpaid billing is available only to Government, Semi-Government and Autonomous organisations.'
+                      : 'পোস্টপেইড বিলিং শুধুমাত্র সরকারি, আধা-সরকারি ও স্বায়ত্তশাসিত প্রতিষ্ঠানের জন্য প্রযোজ্য।'}
+                  </li>
+                  <li>
+                    {locale === 'en'
+                      ? 'You must register as a Government customer and upload a valid office order or authorisation letter.'
+                      : 'আপনাকে সরকারি গ্রাহক হিসেবে নিবন্ধন করতে হবে এবং বৈধ অফিস আদেশ বা অনুমোদনপত্র আপলোড করতে হবে।'}
+                  </li>
+                  <li>
+                    {locale === 'en'
+                      ? 'Applications from private individuals or private companies will not be accepted.'
+                      : 'ব্যক্তিগত বা বেসরকারি প্রতিষ্ঠানের আবেদন গ্রহণ করা হবে না।'}
+                  </li>
+                  <li>
+                    {locale === 'en'
+                      ? 'Postpaid billing applies to Alaap Cloud IP PBX purchases only; all other services remain prepaid.'
+                      : 'পোস্টপেইড বিলিং শুধুমাত্র আলাপ ক্লাউড আইপি পিবিএক্স ক্রয়ের ক্ষেত্রে প্রযোজ্য; অন্যান্য সকল সেবা প্রিপেইড থাকবে।'}
+                  </li>
+                  <li>
+                    {locale === 'en'
+                      ? 'Accounts are activated after BTCL verifies the submitted documents.'
+                      : 'জমা দেওয়া কাগজপত্র বিটিসিএল যাচাই করার পর অ্যাকাউন্ট সক্রিয় করা হয়।'}
+                  </li>
+                </ul>
               </div>
             )}
           </div>

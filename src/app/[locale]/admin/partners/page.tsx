@@ -64,6 +64,8 @@ export default function PartnersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [partnerTypeFilter, setPartnerTypeFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [docStatusFilter, setDocStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(0);
   // Keyed by idPartner so a row can look its own summary up without scanning.
   const [summaries, setSummaries] = useState<Record<number, PartnerListSummary>>({});
@@ -84,6 +86,20 @@ export default function PartnersPage() {
       );
       setPartners(partnersArray);
       setFilteredPartners(partnersArray);
+
+      // Summaries for every partner, not just the visible page: Customer Type and Doc
+      // Status are filterable, and filtering on data fetched a page at a time would only
+      // ever match the rows already on screen.
+      const rows = await getPartnerListSummary(
+        partnersArray.map((partner) => partner.idPartner),
+        authToken
+      );
+      setSummaries(
+        rows.reduce<Record<number, PartnerListSummary>>((acc, row) => {
+          acc[row.idPartner] = row;
+          return acc;
+        }, {})
+      );
     } catch (error) {
       console.error('Failed to fetch partners:', error);
     } finally {
@@ -119,9 +135,45 @@ export default function PartnersPage() {
       result = result.filter((p) => p.status === 'DEACTIVATED');
     }
 
+    if (categoryFilter) {
+      result = result.filter((p) => {
+        const category = summaries[p.idPartner]?.customerCategory;
+        if (categoryFilter === 'GOVERNMENT_ANY') {
+          // Either government form — the common "show me all government customers" case.
+          return (
+            category === 'GOVERNMENT_INDIVIDUAL' ||
+            category === 'GOVERNMENT_CORPORATE' ||
+            category === 'GOVERNMENT'
+          );
+        }
+        if (categoryFilter === 'UNCLASSIFIED') {
+          return !category;
+        }
+        // A pre-split GOVERNMENT means what GOVERNMENT_CORPORATE means now.
+        if (categoryFilter === 'GOVERNMENT_CORPORATE') {
+          return category === 'GOVERNMENT_CORPORATE' || category === 'GOVERNMENT';
+        }
+        return category === categoryFilter;
+      });
+    }
+
+    if (docStatusFilter) {
+      result = result.filter(
+        (p) => (summaries[p.idPartner]?.documentStatus ?? 'NO_DOCUMENTS') === docStatusFilter
+      );
+    }
+
     setFilteredPartners(result);
     setCurrentPage(0); // Reset to first page when filters change
-  }, [searchTerm, partnerTypeFilter, statusFilter, partners]);
+  }, [
+    searchTerm,
+    partnerTypeFilter,
+    statusFilter,
+    categoryFilter,
+    docStatusFilter,
+    partners,
+    summaries,
+  ]);
 
   // Pagination
   const totalPages = Math.ceil(filteredPartners.length / PAGE_SIZE);
@@ -129,33 +181,6 @@ export default function PartnersPage() {
     currentPage * PAGE_SIZE,
     (currentPage + 1) * PAGE_SIZE
   );
-
-  // Fetch summaries only for the rows actually on screen. Fetching for all 1000 partners
-  // would be a large query for data the admin cannot see.
-  useEffect(() => {
-    const ids = paginatedPartners.map((partner) => partner.idPartner);
-    const missing = ids.filter((id) => summaries[id] === undefined);
-    if (!missing.length) return;
-
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) return;
-
-    let cancelled = false;
-    getPartnerListSummary(missing, authToken).then((rows) => {
-      if (cancelled || !rows.length) return;
-      setSummaries((previous) => {
-        const next = { ...previous };
-        rows.forEach((row) => {
-          next[row.idPartner] = row;
-        });
-        return next;
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, filteredPartners]);
 
   const getPartnerTypeBadgeColor = (type: number) => {
     switch (type) {
@@ -194,9 +219,9 @@ export default function PartnersPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-3">
           {/* Search */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-[220px]">
             <div className="relative">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -221,16 +246,51 @@ export default function PartnersPage() {
             </div>
           </div>
 
-          {/* Partner Type Filter */}
-          <div className="w-full md:w-48">
+          {/* Customer Type — the category, not the platform role */}
+          <div className="w-full lg:w-52">
             <select
+              aria-label="Filter by customer type"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
+            >
+              <option value="">All Customer Types</option>
+              <option value="INDIVIDUAL">Private · Individual</option>
+              <option value="CORPORATE">Private · Corporate</option>
+              <option value="GOVERNMENT_INDIVIDUAL">Government · Individual</option>
+              <option value="GOVERNMENT_CORPORATE">Government · Corporate</option>
+              <option value="GOVERNMENT_ANY">Government (both)</option>
+              <option value="UNCLASSIFIED">Unclassified</option>
+            </select>
+          </div>
+
+          {/* Doc Status */}
+          <div className="w-full lg:w-44">
+            <select
+              aria-label="Filter by document status"
+              value={docStatusFilter}
+              onChange={(e) => setDocStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
+            >
+              <option value="">All Doc Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="APPROVED">Approved</option>
+              <option value="NO_DOCUMENTS">No documents</option>
+            </select>
+          </div>
+
+          {/* Partner role — kept so carriers and resellers stay findable */}
+          <div className="w-full lg:w-40">
+            <select
+              aria-label="Filter by partner role"
               value={partnerTypeFilter ?? ''}
               onChange={(e) =>
                 setPartnerTypeFilter(e.target.value ? Number(e.target.value) : null)
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
             >
-              <option value="">All Types</option>
+              <option value="">All Roles</option>
               <option value="3">Customer</option>
               <option value="4">Reseller</option>
               <option value="5">Hosted PBX</option>
@@ -239,8 +299,9 @@ export default function PartnersPage() {
           </div>
 
           {/* Status Filter */}
-          <div className="w-full md:w-40">
+          <div className="w-full lg:w-36">
             <select
+              aria-label="Filter by account status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D529E] focus:border-transparent"
@@ -250,6 +311,30 @@ export default function PartnersPage() {
               <option value="DEACTIVATED">Deactivated</option>
             </select>
           </div>
+        </div>
+
+        {/* What the filters currently match, and a way out of them. Without this it is
+            easy to stare at an empty table and not realise a filter is still applied. */}
+        <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-gray-100">
+          <p className="text-sm text-gray-500">
+            Showing <strong className="text-gray-900">{filteredPartners.length}</strong> of{' '}
+            <strong className="text-gray-900">{partners.length}</strong> partners
+          </p>
+          {(searchTerm || categoryFilter || docStatusFilter || statusFilter ||
+            partnerTypeFilter !== null) && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setCategoryFilter('');
+                setDocStatusFilter('');
+                setStatusFilter('');
+                setPartnerTypeFilter(null);
+              }}
+              className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
 
           {/* Refresh Button */}
           <button

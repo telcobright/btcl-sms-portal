@@ -57,7 +57,8 @@ export default function AdminDashboard() {
   const [categoryCounts, setCategoryCounts] = useState({
     INDIVIDUAL: 0,
     CORPORATE: 0,
-    GOVERNMENT: 0,
+    GOVERNMENT_INDIVIDUAL: 0,
+    GOVERNMENT_CORPORATE: 0,
     UNKNOWN: 0,
     TOTAL: 0,
   });
@@ -418,8 +419,11 @@ export default function AdminDashboard() {
             bg: 'bg-indigo-50',
           },
           {
+            // Both government forms in one card: the dashboard strip is a summary, and the
+            // split is available on the partners list where it can be filtered.
             label: 'Government',
-            value: categoryCounts.GOVERNMENT,
+            value:
+              categoryCounts.GOVERNMENT_INDIVIDUAL + categoryCounts.GOVERNMENT_CORPORATE,
             icon: '🏛️',
             color: 'text-emerald-700',
             bg: 'bg-emerald-50',

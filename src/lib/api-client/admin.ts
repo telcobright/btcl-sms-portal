@@ -161,7 +161,8 @@ export const getPartnerListSummary = async (
 export interface PartnerCategoryCounts {
   INDIVIDUAL: number;
   CORPORATE: number;
-  GOVERNMENT: number;
+  GOVERNMENT_INDIVIDUAL: number;
+  GOVERNMENT_CORPORATE: number;
   /** Registered before the category existed, or written while the old build was live. */
   UNKNOWN: number;
   TOTAL: number;
@@ -174,7 +175,8 @@ export const getPartnerCategoryCounts = async (
   const empty: PartnerCategoryCounts = {
     INDIVIDUAL: 0,
     CORPORATE: 0,
-    GOVERNMENT: 0,
+    GOVERNMENT_INDIVIDUAL: 0,
+    GOVERNMENT_CORPORATE: 0,
     UNKNOWN: 0,
     TOTAL: 0,
   };

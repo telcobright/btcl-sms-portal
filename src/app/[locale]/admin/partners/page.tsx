@@ -23,6 +23,10 @@ const customerTypeLabel = (
       return { main: 'Private', sub: 'Individual' };
     case 'CORPORATE':
       return { main: 'Private', sub: 'Corporate' };
+    case 'GOVERNMENT_INDIVIDUAL':
+      return { main: 'Government', sub: 'Individual' };
+    case 'GOVERNMENT_CORPORATE':
+    // Pre-split value: government customers were assumed to always be organisations.
     case 'GOVERNMENT':
       return { main: 'Government', sub: 'Corporate' };
     default:

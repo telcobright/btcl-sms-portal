@@ -26,7 +26,11 @@ const countries = [
 ];
 
 /** What kind of customer is registering. Decides which documents are mandatory. */
-type CustomerCategory = 'INDIVIDUAL' | 'CORPORATE' | 'GOVERNMENT';
+type CustomerCategory =
+  | 'INDIVIDUAL'
+  | 'CORPORATE'
+  | 'GOVERNMENT_INDIVIDUAL'
+  | 'GOVERNMENT_CORPORATE';
 
 type VerificationInfo = {
   customerCategory: CustomerCategory;
@@ -134,7 +138,9 @@ export default function RegisterPage() {
   const selectedCategory: CustomerCategory =
     verificationForm.watch('customerCategory') || 'CORPORATE';
   const isCorporate = selectedCategory === 'CORPORATE';
-  const isGovernment = selectedCategory === 'GOVERNMENT';
+  const isGovernment =
+    selectedCategory === 'GOVERNMENT_INDIVIDUAL' ||
+    selectedCategory === 'GOVERNMENT_CORPORATE';
 
   /**
    * Postpaid is restricted to government bodies — the eligibility note on this form has
@@ -1005,11 +1011,12 @@ export default function RegisterPage() {
                   control={verificationForm.control}
                   rules={{ required: 'Please choose a customer type' }}
                   render={({ field }) => (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {([
-                        { value: 'INDIVIDUAL', label: 'Individual', hint: 'Personal account' },
-                        { value: 'CORPORATE', label: 'Corporate', hint: 'Registered business' },
-                        { value: 'GOVERNMENT', label: 'Government', hint: 'Government office' },
+                        { value: 'INDIVIDUAL', label: 'Individual', hint: 'Private · personal account' },
+                        { value: 'CORPORATE', label: 'Corporate', hint: 'Private · registered business' },
+                        { value: 'GOVERNMENT_INDIVIDUAL', label: 'Government Individual', hint: 'Government · personal account' },
+                        { value: 'GOVERNMENT_CORPORATE', label: 'Government Corporate', hint: 'Government · office or department' },
                       ] as const).map((option) => (
                         <button
                           type="button"
@@ -1031,17 +1038,20 @@ export default function RegisterPage() {
                 <p className="mt-2 text-xs text-gray-500">
                   {selectedCategory === 'INDIVIDUAL'
                     ? 'You will be asked for your NID, TIN certificate and a photograph.'
-                    : selectedCategory === 'GOVERNMENT'
-                      ? 'You will be asked for your NID and an office order / authorisation letter.'
-                      : 'You will be asked for your trade licence, TIN and BIN certificate.'}
+                    : selectedCategory === 'GOVERNMENT_INDIVIDUAL'
+                      ? 'You will be asked for your NID, a photograph and an office order / authorisation letter.'
+                      : selectedCategory === 'GOVERNMENT_CORPORATE'
+                        ? 'You will be asked for your NID and an office order / authorisation letter.'
+                        : 'You will be asked for your trade licence, TIN and BIN certificate.'}
                 </p>
               </div>
 
               <div>
                 <label className="block text-black font-medium mb-1">
-                  {selectedCategory === 'INDIVIDUAL'
+                  {selectedCategory === 'INDIVIDUAL' ||
+                  selectedCategory === 'GOVERNMENT_INDIVIDUAL'
                     ? 'Full Name'
-                    : selectedCategory === 'GOVERNMENT'
+                    : selectedCategory === 'GOVERNMENT_CORPORATE'
                       ? 'Office / Department Name'
                       : 'Company Name'}
                 </label>
@@ -1050,9 +1060,10 @@ export default function RegisterPage() {
                   control={verificationForm.control}
                   rules={{
                     required:
-                      selectedCategory === 'INDIVIDUAL'
+                      selectedCategory === 'INDIVIDUAL' ||
+                      selectedCategory === 'GOVERNMENT_INDIVIDUAL'
                         ? 'Your name is required'
-                        : selectedCategory === 'GOVERNMENT'
+                        : selectedCategory === 'GOVERNMENT_CORPORATE'
                           ? 'Office name is required'
                           : 'Company name is required',
                   }}
@@ -2210,7 +2221,8 @@ export default function RegisterPage() {
 
                 <div className="mt-4">
                   <label className="block text-black font-medium mb-1">
-                    {selectedCategory === 'INDIVIDUAL'
+                    {selectedCategory === 'INDIVIDUAL' ||
+                    selectedCategory === 'GOVERNMENT_INDIVIDUAL'
                       ? 'Upload Photo'
                       : 'Upload Photo (Optional)'}
                   </label>
@@ -2219,7 +2231,10 @@ export default function RegisterPage() {
                     control={otherInfoForm.control}
                     rules={{
                       required:
-                        selectedCategory === 'INDIVIDUAL' ? 'Photograph is required' : false,
+                        selectedCategory === 'INDIVIDUAL' ||
+                        selectedCategory === 'GOVERNMENT_INDIVIDUAL'
+                          ? 'Photograph is required'
+                          : false,
                     }}
                     render={({ field: { onChange } }) => (
                       <input

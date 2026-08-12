@@ -1007,6 +1007,15 @@ function OverviewTab({
               value: users?.[0]?.phoneNo || partner.telephone,
             },
             { label: 'NID Number', value: partnerExtra?.nid },
+            {
+              // Decides which documents were required at registration, so a verifier
+              // needs it to know whether a missing trade licence is a problem or expected.
+              label: 'Customer Type',
+              value: partnerExtra?.customerCategory
+                ? partnerExtra.customerCategory.charAt(0) +
+                  partnerExtra.customerCategory.slice(1).toLowerCase()
+                : null,
+            },
           ].map((item) => (
             <div key={item.label} className="py-2">
               <p className="text-xs text-gray-400 uppercase tracking-wide">

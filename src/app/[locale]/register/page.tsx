@@ -25,7 +25,11 @@ const countries = [
   // Add more countries as needed
 ];
 
+/** What kind of customer is registering. Decides which documents are mandatory. */
+type CustomerCategory = 'INDIVIDUAL' | 'CORPORATE' | 'GOVERNMENT';
+
 type VerificationInfo = {
+  customerCategory: CustomerCategory;
   companyName: string;
   email: string;
   phone: string;
@@ -67,6 +71,7 @@ type OtherInfo = {
   photoFile?: File | null;
   slaFile?: File | null;
   bincertificate?: File;
+  govtAuthorizationFile?: File | null;
 };
 
 export default function RegisterPage() {
@@ -115,6 +120,7 @@ export default function RegisterPage() {
   const verificationForm = useForm<VerificationInfo>({
     mode: 'onChange',
     defaultValues: {
+      customerCategory: 'CORPORATE',
       companyName: '',
       email: '',
       phone: '',
@@ -122,6 +128,13 @@ export default function RegisterPage() {
       phoneOtp: '',
     },
   });
+
+  // Watched rather than read once: the labels and the required documents downstream all
+  // change with it, so the form has to re-render when the applicant switches type.
+  const selectedCategory: CustomerCategory =
+    verificationForm.watch('customerCategory') || 'CORPORATE';
+  const isCorporate = selectedCategory === 'CORPORATE';
+  const isGovernment = selectedCategory === 'GOVERNMENT';
 
   const personalInfoForm = useForm<PersonalInfo>({
     mode: 'onChange',
@@ -717,6 +730,12 @@ export default function RegisterPage() {
       // Get company name from localStorage
       const companyName = localStorage.getItem('companyName');
 
+      // Category drives which documents the server requires, so it must travel with the
+      // registration. Falls back to CORPORATE, which is what every registration was before
+      // the individual/government split existed.
+      const customerCategory =
+        verificationForm.getValues('customerCategory') || 'CORPORATE';
+
       const fullName = personalInfoData.fullName;
 
       // 2. Single atomic call: partner + auth user + details + documents.
@@ -752,6 +771,7 @@ export default function RegisterPage() {
         defaultCurrency: 1,
         callSrcId: 2,
         // partner_extra
+        customerCategory,
         address3: otherInfoData.address3 ?? null,
         address4: otherInfoData.address4 ?? null,
         nid: personalInfoData.nidNumber ?? null,
@@ -770,6 +790,7 @@ export default function RegisterPage() {
         sla: otherInfoData.slaFile ?? null,
         btrcRegistration: otherInfoData.btrcFile ?? null,
         lastTaxReturn: otherInfoData.taxReturnFile ?? null,
+        govtAuthorization: otherInfoData.govtAuthorizationFile ?? null,
       };
 
       const partnerResponse = await registerPartner(registrationPayload);
@@ -956,14 +977,68 @@ export default function RegisterPage() {
           {/* STEP 1 - Verification */}
           {step === 1 && (
             <div className="space-y-6">
+              {/* Category first: it decides which documents are required later, and an
+                  individual has no trade licence or BIN to give. */}
+              <div>
+                <label className="block text-black font-medium mb-2">
+                  Customer Type
+                </label>
+                <Controller
+                  name="customerCategory"
+                  control={verificationForm.control}
+                  rules={{ required: 'Please choose a customer type' }}
+                  render={({ field }) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {([
+                        { value: 'INDIVIDUAL', label: 'Individual', hint: 'Personal account' },
+                        { value: 'CORPORATE', label: 'Corporate', hint: 'Registered business' },
+                        { value: 'GOVERNMENT', label: 'Government', hint: 'Government office' },
+                      ] as const).map((option) => (
+                        <button
+                          type="button"
+                          key={option.value}
+                          onClick={() => field.onChange(option.value)}
+                          className={`rounded-lg border-2 px-4 py-3 text-left transition-all ${
+                            field.value === option.value
+                              ? 'border-btcl-primary bg-btcl-primary/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <span className="block font-semibold text-black">{option.label}</span>
+                          <span className="block text-xs text-gray-500">{option.hint}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  {selectedCategory === 'INDIVIDUAL'
+                    ? 'You will be asked for your NID, TIN certificate and a photograph.'
+                    : selectedCategory === 'GOVERNMENT'
+                      ? 'You will be asked for your NID and an office order / authorisation letter.'
+                      : 'You will be asked for your trade licence, TIN and BIN certificate.'}
+                </p>
+              </div>
+
               <div>
                 <label className="block text-black font-medium mb-1">
-                  Company Name
+                  {selectedCategory === 'INDIVIDUAL'
+                    ? 'Full Name'
+                    : selectedCategory === 'GOVERNMENT'
+                      ? 'Office / Department Name'
+                      : 'Company Name'}
                 </label>
                 <Controller
                   name="companyName"
                   control={verificationForm.control}
-                  rules={{ required: 'Company name is required' }}
+                  rules={{
+                    required:
+                      selectedCategory === 'INDIVIDUAL'
+                        ? 'Your name is required'
+                        : selectedCategory === 'GOVERNMENT'
+                          ? 'Office name is required'
+                          : 'Company name is required',
+                  }}
                   render={({ field, fieldState }) => (
                     <>
                       <input
@@ -1849,12 +1924,14 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Trade License Number
+                    Trade License Number{!isCorporate && ' (Optional)'}
                   </label>
                   <Controller
                     name="tradeLicenseNumber"
                     control={otherInfoForm.control}
-                    rules={{ required: 'Trade license number is required' }}
+                    rules={{
+                      required: isCorporate ? 'Trade license number is required' : false,
+                    }}
                     render={({ field, fieldState }) => (
                       <>
                         <input
@@ -1878,12 +1955,12 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Upload Trade License
+                    Upload Trade License{!isCorporate && ' (Optional)'}
                   </label>
                   <Controller
                     name="tradeLicenseFile"
                     control={otherInfoForm.control}
-                    rules={{ required: 'Trade license file is required' }}
+                    rules={{ required: isCorporate ? 'Trade license file is required' : false }}
                     render={({ field: { onChange }, fieldState }) => (
                       <>
                         <input
@@ -1969,12 +2046,12 @@ export default function RegisterPage() {
 
                 <div className="mt-4">
                   <label className="block text-black font-medium mb-1">
-                    Upload BIN Certificate
+                    Upload BIN Certificate{!isCorporate && ' (Optional)'}
                   </label>
                   <Controller
                     name="bincertificate"
                     control={otherInfoForm.control}
-                    rules={{ required: 'BIN Certificate is required' }}
+                    rules={{ required: isCorporate ? 'BIN Certificate is required' : false }}
                     render={({ field: { onChange }, fieldState }) => (
                       <>
                         <input
@@ -2074,13 +2151,55 @@ export default function RegisterPage() {
                   />
                 </div>
 
+                {isGovernment && (
+                  <div className="mt-4">
+                    <label className="block text-black font-medium mb-1">
+                      Upload Office Order / Authorisation Letter
+                    </label>
+                    <Controller
+                      name="govtAuthorizationFile"
+                      control={otherInfoForm.control}
+                      rules={{
+                        required: isGovernment
+                          ? 'Office order / authorisation letter is required'
+                          : false,
+                      }}
+                      render={({ field: { onChange }, fieldState }) => (
+                        <>
+                          <input
+                            type="file"
+                            onChange={(e) => onChange(e.target.files?.[0] || null)}
+                            className={`w-full px-3 py-2 border ${
+                              fieldState.error ? 'border-red-500' : 'border-gray-300'
+                            } rounded-md text-black`}
+                          />
+                          {fieldState.error && (
+                            <p className="mt-1 text-sm text-red-500">
+                              {fieldState.error.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Issued by your department, authorising this service request.
+                    </p>
+                  </div>
+                )}
+
                 <div className="mt-4">
                   <label className="block text-black font-medium mb-1">
-                    Upload Photo (Optional)
+                    {selectedCategory === 'INDIVIDUAL'
+                      ? 'Upload Photo'
+                      : 'Upload Photo (Optional)'}
                   </label>
                   <Controller
                     name="photoFile"
                     control={otherInfoForm.control}
+                    rules={{
+                      required:
+                        selectedCategory === 'INDIVIDUAL' ? 'Photograph is required' : false,
+                    }}
                     render={({ field: { onChange } }) => (
                       <input
                         type="file"

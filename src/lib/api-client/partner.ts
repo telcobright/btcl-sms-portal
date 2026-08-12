@@ -167,6 +167,8 @@ export interface PartnerDetailsPayload {
   sla?: File | null;
   btrcRegistration?: File | null;
   lastTaxReturn?: File | null;
+  /** Office order / authorisation letter, for GOVERNMENT customers. */
+  govtAuthorization?: File | null;
 }
 
 interface AddPartnerDetailsResponse {
@@ -275,6 +277,8 @@ export interface RegisterPartnerPayload {
   defaultCurrency: number;
   callSrcId: number;
   // partner_extra
+  /** INDIVIDUAL | CORPORATE | GOVERNMENT — decides which documents the server demands. */
+  customerCategory?: string | null;
   address3?: string | null;
   address4?: string | null;
   nid?: string | null;
@@ -293,11 +297,14 @@ export interface RegisterPartnerPayload {
   sla?: File | null;
   btrcRegistration?: File | null;
   lastTaxReturn?: File | null;
+  /** Office order / authorisation letter, for GOVERNMENT customers. */
+  govtAuthorization?: File | null;
 }
 
 const DOCUMENT_FIELDS: (keyof RegisterPartnerPayload)[] = [
   'tinCertificate', 'nidFront', 'nidBack', 'vatDoc', 'tradeLicense',
   'photo', 'binCertificate', 'sla', 'btrcRegistration', 'lastTaxReturn',
+  'govtAuthorization',
 ];
 
 /**

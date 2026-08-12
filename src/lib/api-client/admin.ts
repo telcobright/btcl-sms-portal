@@ -168,10 +168,16 @@ export interface PartnerCategoryCounts {
   TOTAL: number;
 }
 
-/** Customer-category totals. Returns zeroes on failure so the dashboard still renders. */
+/**
+ * Customer-category totals, or null when they could not be read.
+ *
+ * Null rather than zeroes on failure, deliberately: a zero is a real answer, and showing
+ * one for an unreachable endpoint made the dashboard claim there were no corporate
+ * customers when there were 41. The caller renders a dash instead.
+ */
 export const getPartnerCategoryCounts = async (
   authToken: string
-): Promise<PartnerCategoryCounts> => {
+): Promise<PartnerCategoryCounts | null> => {
   const empty: PartnerCategoryCounts = {
     INDIVIDUAL: 0,
     CORPORATE: 0,
@@ -194,7 +200,7 @@ export const getPartnerCategoryCounts = async (
     return { ...empty, ...(response.data || {}) };
   } catch (error) {
     console.error('\u274c Get partner category counts error:', error);
-    return empty;
+    return null;
   }
 };
 

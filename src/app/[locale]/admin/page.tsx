@@ -54,14 +54,10 @@ export default function AdminDashboard() {
   const locale = params.locale || 'en';
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState(0);
-  const [categoryCounts, setCategoryCounts] = useState({
-    INDIVIDUAL: 0,
-    CORPORATE: 0,
-    GOVERNMENT_INDIVIDUAL: 0,
-    GOVERNMENT_CORPORATE: 0,
-    UNKNOWN: 0,
-    TOTAL: 0,
-  });
+  // Null until loaded, and stays null if the call fails, so the cards can show a dash
+  // rather than a zero that reads as a real count.
+  const [categoryCounts, setCategoryCounts] =
+    useState<Awaited<ReturnType<typeof getPartnerCategoryCounts>>>(null);
   const [recent, setRecent] = useState<Partner[]>([]);
   const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY, sms: EMPTY });
   const [openSvc, setOpenSvc] = useState<any>(null); // service card whose partner list is shown
@@ -406,14 +402,14 @@ export default function AdminDashboard() {
           },
           {
             label: 'Individual',
-            value: categoryCounts.INDIVIDUAL,
+            value: categoryCounts ? categoryCounts.INDIVIDUAL : '—',
             icon: '🧍',
             color: 'text-teal-600',
             bg: 'bg-teal-50',
           },
           {
             label: 'Corporate',
-            value: categoryCounts.CORPORATE,
+            value: categoryCounts ? categoryCounts.CORPORATE : '—',
             icon: '🏢',
             color: 'text-indigo-600',
             bg: 'bg-indigo-50',
@@ -422,8 +418,9 @@ export default function AdminDashboard() {
             // Both government forms in one card: the dashboard strip is a summary, and the
             // split is available on the partners list where it can be filtered.
             label: 'Government',
-            value:
-              categoryCounts.GOVERNMENT_INDIVIDUAL + categoryCounts.GOVERNMENT_CORPORATE,
+            value: categoryCounts
+              ? categoryCounts.GOVERNMENT_INDIVIDUAL + categoryCounts.GOVERNMENT_CORPORATE
+              : '—',
             icon: '🏛️',
             color: 'text-emerald-700',
             bg: 'bg-emerald-50',

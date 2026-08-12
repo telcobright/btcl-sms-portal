@@ -26,6 +26,8 @@ export interface SaleRecord {
   purchaseDate: string;
   idPartner?: number;
   partnerName: string;
+  /** INDIVIDUAL | CORPORATE | GOVERNMENT_INDIVIDUAL | GOVERNMENT_CORPORATE, or null. */
+  customerCategory: string | null;
   packageName: string;
   price: number;
   vat: number;
@@ -49,6 +51,7 @@ interface SalesReportApiResponse {
     serviceLabel?: string;
     idPartner?: number;
     partnerName?: string | null;
+    customerCategory?: string | null;
     packageName?: string | null;
     purchaseDate?: string;
     price?: number | string | null;
@@ -101,6 +104,7 @@ export const getAllSales = async (
         purchaseDate: row.purchaseDate as string,
         idPartner: row.idPartner,
         partnerName: row.partnerName || 'Unknown',
+        customerCategory: row.customerCategory ?? null,
         packageName: row.packageName || '—',
         price,
         vat,
@@ -122,6 +126,24 @@ export const getAllSales = async (
 };
 
 // ---------------------------------------------------------------- grouping
+
+/** How a customer category reads in the report and its CSV. */
+export const customerTypeLabel = (category: string | null | undefined): string => {
+  switch (category) {
+    case 'INDIVIDUAL':
+      return 'Private - Individual';
+    case 'CORPORATE':
+      return 'Private - Corporate';
+    case 'GOVERNMENT_INDIVIDUAL':
+      return 'Government - Individual';
+    // Pre-split value: government customers were assumed to be organisations.
+    case 'GOVERNMENT_CORPORATE':
+    case 'GOVERNMENT':
+      return 'Government - Corporate';
+    default:
+      return 'Unclassified';
+  }
+};
 
 export type ReportPeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -246,6 +268,7 @@ export const buildSalesCsv = (sales: SaleRecord[]): string => {
     'SL',
     'Date',
     'Client Name',
+    'Customer Type',
     'Service Name',
     'Package',
     'Price (BDT)',
@@ -271,6 +294,7 @@ export const buildSalesCsv = (sales: SaleRecord[]): string => {
       index + 1,
       printedDate,
       sale.partnerName,
+      customerTypeLabel(sale.customerCategory),
       sale.serviceLabel,
       sale.packageName,
       sale.price.toFixed(2),

@@ -18,6 +18,7 @@ import {
   getAllSales,
   groupSalesByPeriod,
   groupSalesByService,
+  customerTypeLabel,
   periodKeyFor,
   type ReportPeriod,
   type SaleRecord,
@@ -54,6 +55,7 @@ export default function AdminReportsPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [serviceFilter, setServiceFilter] = useState('all');
+  const [customerTypeFilter, setCustomerTypeFilter] = useState('all');
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -96,13 +98,32 @@ export default function AdminReportsPage() {
 
     return sales.filter((sale) => {
       if (serviceFilter !== 'all' && sale.service !== serviceFilter) return false;
+      if (customerTypeFilter !== 'all') {
+        const category = sale.customerCategory;
+        if (customerTypeFilter === 'GOVERNMENT_ANY') {
+          if (
+            category !== 'GOVERNMENT_INDIVIDUAL' &&
+            category !== 'GOVERNMENT_CORPORATE' &&
+            category !== 'GOVERNMENT'
+          ) {
+            return false;
+          }
+        } else if (customerTypeFilter === 'UNCLASSIFIED') {
+          if (category) return false;
+        } else if (customerTypeFilter === 'GOVERNMENT_CORPORATE') {
+          // A pre-split GOVERNMENT meant an organisation.
+          if (category !== 'GOVERNMENT_CORPORATE' && category !== 'GOVERNMENT') return false;
+        } else if (category !== customerTypeFilter) {
+          return false;
+        }
+      }
       const when = new Date(sale.purchaseDate);
       if (Number.isNaN(when.getTime())) return false;
       if (from && when < from) return false;
       if (to && when > to) return false;
       return true;
     });
-  }, [sales, fromDate, toDate, serviceFilter]);
+  }, [sales, fromDate, toDate, serviceFilter, customerTypeFilter]);
 
   const periodGroups = useMemo(
     () => groupSalesByPeriod(filtered, period),
@@ -114,7 +135,7 @@ export default function AdminReportsPage() {
   // than stranding the admin on a page that no longer exists.
   useEffect(() => {
     setPage(1);
-  }, [fromDate, toDate, serviceFilter, pageSize]);
+  }, [fromDate, toDate, serviceFilter, customerTypeFilter, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -137,7 +158,12 @@ export default function AdminReportsPage() {
   const handleDownload = () => {
     const stamp = new Date().toLocaleDateString('en-CA');
     const scope = serviceFilter === 'all' ? 'all-services' : serviceFilter;
-    downloadCsv(buildSalesCsv(filtered), `btcl-sales-${period}-${scope}-${stamp}.csv`);
+    const audience =
+      customerTypeFilter === 'all' ? '' : `-${customerTypeFilter.toLowerCase()}`;
+    downloadCsv(
+      buildSalesCsv(filtered),
+      `btcl-sales-${period}-${scope}${audience}-${stamp}.csv`
+    );
   };
 
   const applyQuickRange = (days: number) => {
@@ -305,6 +331,23 @@ export default function AdminReportsPage() {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Customer type</label>
+            <select
+              value={customerTypeFilter}
+              onChange={(e) => setCustomerTypeFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E]"
+            >
+              <option value="all">All customer types</option>
+              <option value="INDIVIDUAL">Private · Individual</option>
+              <option value="CORPORATE">Private · Corporate</option>
+              <option value="GOVERNMENT_INDIVIDUAL">Government · Individual</option>
+              <option value="GOVERNMENT_CORPORATE">Government · Corporate</option>
+              <option value="GOVERNMENT_ANY">Government (both)</option>
+              <option value="UNCLASSIFIED">Unclassified</option>
+            </select>
+          </div>
+
           <div className="flex items-center gap-2 ml-auto">
             <QuickRange onClick={() => applyQuickRange(7)}>7 days</QuickRange>
             <QuickRange onClick={() => applyQuickRange(30)}>30 days</QuickRange>
@@ -424,6 +467,7 @@ export default function AdminReportsPage() {
                   <Th>SL</Th>
                   <Th>Date</Th>
                   <Th>Client name</Th>
+                  <Th>Customer type</Th>
                   <Th>Service name</Th>
                   <Th>Package</Th>
                   <Th align="right">Price</Th>
@@ -449,6 +493,9 @@ export default function AdminReportsPage() {
                       </span>
                     </Td>
                     <Td className="font-medium text-gray-900">{sale.partnerName}</Td>
+                    <Td className="text-gray-600 whitespace-nowrap">
+                      {customerTypeLabel(sale.customerCategory)}
+                    </Td>
                     <Td>
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-[#0D529E] whitespace-nowrap">
                         {sale.serviceLabel}

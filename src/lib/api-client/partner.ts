@@ -116,6 +116,12 @@ export const verifyEmailOtp = async (email: string, otp: string): Promise<EmailO
 // ---------------------- INTERFACES ----------------------
 
 export interface CreatePartnerPayload {
+  /**
+   * INDIVIDUAL | CORPORATE | GOVERNMENT. Carried so a partner replicated into a service
+   * database at purchase time keeps its customer type — the category lives on partner_extra,
+   * which is not otherwise copied across.
+   */
+  customerCategory?: string | null;
   partnerName: string;
   telephone: string;
   email: string;
@@ -700,6 +706,34 @@ export const createPartnerInService = async (
 };
 
 /**
+ * The customer's category as recorded on the primary service.
+ *
+ * Returns null rather than throwing: a replicated partner missing its category is a
+ * reporting gap, and refusing the purchase over one would be far worse.
+ */
+const getPrimaryCustomerCategory = async (
+  idPartner: number,
+  authToken: string
+): Promise<string | null> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`,
+      { idPartner },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data?.customerCategory ?? null;
+  } catch (error) {
+    console.warn('Could not read customer category from the primary service:', error);
+    return null;
+  }
+};
+
+/**
  * Ensure partner exists in target service before purchase
  * If partner doesn't exist, create it first
  * @param idPartner - Partner ID
@@ -760,6 +794,7 @@ export const ensurePartnerInService = async (
       partnerType: primaryPartnerData.partnerType || 2,
       defaultCurrency: primaryPartnerData.defaultCurrency || 4,
       callSrcId: primaryPartnerData.callSrcId || 0,
+      customerCategory: await getPrimaryCustomerCategory(idPartner, authToken),
     };
 
     const createdPartner = await createPartnerInService(createPayload, serviceBaseUrl);

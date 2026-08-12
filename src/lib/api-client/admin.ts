@@ -595,20 +595,32 @@ export const getSubscriptionsByPartner = async (
 /**
  * Get partner type label
  */
+/**
+ * What a partnerType value means.
+ *
+ * These are platform roles, and 5 and 6 are provisioning triggers rather than labels:
+ * creating a partner with type 5 builds a FusionPBX domain, and type 6 does that plus a
+ * SuiteCRM tenant database (see PartnerService.createPartnerCore).
+ *
+ * The names here previously said 5 = "SMS Customer" and 6 = "Corporate", neither of which
+ * matched what the backend does with them. "Corporate" was the worse of the two, because it
+ * reads as the customer_category value of the same name — a different field entirely, and the
+ * one that actually distinguishes individual from corporate from government customers.
+ */
 export const getPartnerTypeLabel = (partnerType: number): string => {
   switch (partnerType) {
     case 1:
       return 'Carrier';
     case 2:
-      return 'Reseller';
+      return 'Reseller (legacy)';
     case 3:
       return 'Customer';
     case 4:
       return 'Reseller';
     case 5:
-      return 'SMS Customer';
+      return 'Hosted PBX';
     case 6:
-      return 'Corporate';
+      return 'Call Center';
     default:
       return 'Unknown';
   }

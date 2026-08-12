@@ -3,7 +3,50 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getAllPartners, Partner, getPartnerTypeLabel } from '@/lib/api-client/admin';
+import {
+  getAllPartners,
+  getPartnerListSummary,
+  Partner,
+  PartnerListSummary,
+  getPartnerTypeLabel,
+} from '@/lib/api-client/admin';
+
+/**
+ * How BTCL describes a customer: private bodies split into individual and corporate,
+ * government bodies are always corporate.
+ */
+const customerTypeLabel = (
+  category: string | null | undefined
+): { main: string; sub: string | null } => {
+  switch (category) {
+    case 'INDIVIDUAL':
+      return { main: 'Private', sub: 'Individual' };
+    case 'CORPORATE':
+      return { main: 'Private', sub: 'Corporate' };
+    case 'GOVERNMENT':
+      return { main: 'Government', sub: 'Corporate' };
+    default:
+      // Predates the category column, or the summary call failed.
+      return { main: '—', sub: null };
+  }
+};
+
+const docStatusBadge = (
+  status: string | undefined
+): { label: string; className: string } => {
+  switch (status) {
+    case 'APPROVED':
+      return { label: 'Approved', className: 'bg-green-100 text-green-700' };
+    case 'PENDING':
+      return { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' };
+    case 'REJECTED':
+      return { label: 'Rejected', className: 'bg-red-100 text-red-700' };
+    case 'NO_DOCUMENTS':
+      return { label: 'No documents', className: 'bg-gray-100 text-gray-600' };
+    default:
+      return { label: '—', className: 'bg-gray-100 text-gray-500' };
+  }
+};
 
 const PAGE_SIZE = 10;
 
@@ -18,6 +61,8 @@ export default function PartnersPage() {
   const [partnerTypeFilter, setPartnerTypeFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(0);
+  // Keyed by idPartner so a row can look its own summary up without scanning.
+  const [summaries, setSummaries] = useState<Record<number, PartnerListSummary>>({});
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -80,6 +125,33 @@ export default function PartnersPage() {
     currentPage * PAGE_SIZE,
     (currentPage + 1) * PAGE_SIZE
   );
+
+  // Fetch summaries only for the rows actually on screen. Fetching for all 1000 partners
+  // would be a large query for data the admin cannot see.
+  useEffect(() => {
+    const ids = paginatedPartners.map((partner) => partner.idPartner);
+    const missing = ids.filter((id) => summaries[id] === undefined);
+    if (!missing.length) return;
+
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+
+    let cancelled = false;
+    getPartnerListSummary(missing, authToken).then((rows) => {
+      if (cancelled || !rows.length) return;
+      setSummaries((previous) => {
+        const next = { ...previous };
+        rows.forEach((row) => {
+          next[row.idPartner] = row;
+        });
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, filteredPartners]);
 
   const getPartnerTypeBadgeColor = (type: number) => {
     switch (type) {
@@ -212,6 +284,12 @@ export default function PartnersPage() {
                   Type
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Doc Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -225,7 +303,7 @@ export default function PartnersPage() {
             <tbody className="divide-y divide-gray-200">
               {paginatedPartners.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     No partners found
                   </td>
                 </tr>
@@ -266,6 +344,47 @@ export default function PartnersPage() {
                       >
                         {getPartnerTypeLabel(partner.partnerType)}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {(() => {
+                        const category = summaries[partner.idPartner]?.customerCategory;
+                        const label = customerTypeLabel(category);
+                        return (
+                          <>
+                            <p className="text-sm text-gray-900">{label.main}</p>
+                            {label.sub && (
+                              <p className="text-xs text-gray-500">{label.sub}</p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {(() => {
+                        const summary = summaries[partner.idPartner];
+                        const badge = docStatusBadge(summary?.documentStatus);
+                        return (
+                          <>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${badge.className}`}
+                            >
+                              {badge.label}
+                            </span>
+                            {summary && summary.rejectedCount > 0 && (
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {summary.rejectedCount} rejected
+                              </p>
+                            )}
+                            {summary &&
+                              summary.rejectedCount === 0 &&
+                              summary.pendingCount > 0 && (
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  {summary.pendingCount} pending
+                                </p>
+                              )}
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {partner.date1

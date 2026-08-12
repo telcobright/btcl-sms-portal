@@ -93,6 +93,8 @@ export const API_ENDPOINTS = {
     rollbackRegistration: '/partner/rollback-registration',
     partnerDocuments: '/partner/partner-documents',
     getPartner: '/partner/get-partner',
+    // Document status + customer category for the partners on screen, batched.
+    listSummary: '/partner/list-summary',
     getPartnerExtra: '/partner/get-partner-extra',
     getPartnerDocument: '/partner/get-partner-document',
     getDocumentStatuses: '/partner/get-document-statuses',

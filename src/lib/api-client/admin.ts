@@ -117,6 +117,47 @@ export interface GetPartnersPayload {
   partnerType?: number | null;
 }
 
+export interface PartnerListSummary {
+  idPartner: number;
+  /** APPROVED | PENDING | REJECTED | NO_DOCUMENTS — rejected outranks pending. */
+  documentStatus: string;
+  approvedCount: number;
+  pendingCount: number;
+  rejectedCount: number;
+  /** INDIVIDUAL | CORPORATE | GOVERNMENT. Null for rows predating the column. */
+  customerCategory: string | null;
+}
+
+/**
+ * Document status and customer category for a page of partners.
+ *
+ * Batched on purpose: the list would otherwise need two extra calls per row. Returns an
+ * empty list on failure so the table still renders — these are supplementary columns, not
+ * a reason to fail the whole page.
+ */
+export const getPartnerListSummary = async (
+  idPartners: number[],
+  authToken: string
+): Promise<PartnerListSummary[]> => {
+  if (!idPartners.length) return [];
+  try {
+    const response = await axios.post<PartnerListSummary[]>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.listSummary}`,
+      { idPartners },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error('\u274c Get partner list summary error:', error);
+    return [];
+  }
+};
+
 // ---------------------- ADMIN API FUNCTIONS ----------------------
 
 /**

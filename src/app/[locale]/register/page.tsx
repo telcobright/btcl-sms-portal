@@ -136,6 +136,13 @@ export default function RegisterPage() {
   const isCorporate = selectedCategory === 'CORPORATE';
   const isGovernment = selectedCategory === 'GOVERNMENT';
 
+  /**
+   * Postpaid is restricted to government bodies — the eligibility note on this form has
+   * always said so, but nothing enforced it. FEATURE_FLAGS.POSTPAID_ENABLED stays the
+   * master switch so postpaid can still be turned off for everyone at once.
+   */
+  const postpaidAllowed = FEATURE_FLAGS.POSTPAID_ENABLED && isGovernment;
+
   const personalInfoForm = useForm<PersonalInfo>({
     mode: 'onChange',
     defaultValues: {
@@ -177,6 +184,16 @@ export default function RegisterPage() {
       bincertificate: undefined,
     },
   });
+
+  // Someone can pick Government, choose postpaid, then go back and switch to Individual.
+  // Without this they would submit a postpaid registration they are not eligible for.
+  useEffect(() => {
+    if (!postpaidAllowed && otherInfoForm.getValues('customerType') === 'postpaid') {
+      otherInfoForm.setValue('customerType', 'prepaid', { shouldValidate: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postpaidAllowed]);
+
 
   const {
     formState: { isValid: isVerificationValid },
@@ -1761,19 +1778,23 @@ export default function RegisterPage() {
                         />
                         <span className="text-black">Prepaid</span>
                       </label>
-                      <label className={`flex items-center ${FEATURE_FLAGS.POSTPAID_ENABLED ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+                      <label className={`flex items-center ${postpaidAllowed ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
                         <input
                           type="radio"
                           {...field}
                           value="postpaid"
                           checked={field.value === 'postpaid'}
                           onChange={() => field.onChange('postpaid')}
-                          disabled={!FEATURE_FLAGS.POSTPAID_ENABLED}
+                          disabled={!postpaidAllowed}
                           className="mr-2"
                         />
-                        <span className={FEATURE_FLAGS.POSTPAID_ENABLED ? 'text-black' : 'text-gray-500'}>Postpaid</span>
-                        {!FEATURE_FLAGS.POSTPAID_ENABLED && (
-                          <span className="ml-2 text-xs text-gray-400 italic">(Coming soon)</span>
+                        <span className={postpaidAllowed ? 'text-black' : 'text-gray-500'}>Postpaid</span>
+                        {!postpaidAllowed && (
+                          <span className="ml-2 text-xs text-gray-400 italic">
+                            {FEATURE_FLAGS.POSTPAID_ENABLED
+                              ? '(Government customers only)'
+                              : '(Coming soon)'}
+                          </span>
                         )}
                       </label>
                     </div>

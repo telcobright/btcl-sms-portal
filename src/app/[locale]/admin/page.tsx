@@ -597,7 +597,8 @@ export default function AdminDashboard() {
           <h2 className="text-sm font-bold text-gray-900 mb-3 shrink-0">
             Quick Links
           </h2>
-          <div className="flex-1 overflow-hidden space-y-1">
+          {/* Scrolls: the full portal list is longer than the panel. */}
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1">
             {[
               {
                 label: 'Manage Partners',
@@ -606,31 +607,68 @@ export default function AdminDashboard() {
                 color: 'bg-btcl-primaryLight/10 text-[#0D529E]',
               },
               {
-                label: 'PBX Portal',
-                href: 'https://ippbx.alaapcloud.gov.bd:5174/',
+                label: 'Sales Reports',
+                href: `/${locale}/admin/reports`,
+                icon: '📊',
+                color: 'bg-btcl-primaryLight/10 text-[#0D529E]',
+              },
+              // Every BTCL portal, so an admin does not have to remember which host and
+              // port each one lives on. PBX has three separate entry points — admin, user
+              // and the legacy portal — which are easy to confuse from the URL alone.
+              {
+                label: 'Service Portal',
+                href: 'https://www.alaapcloud.gov.bd',
+                icon: '🌐',
+                color: 'bg-btcl-primaryLight/10 text-[#0D529E]',
+                ext: true,
+              },
+              {
+                label: 'Alaap PBX Admin',
+                href: 'https://ippbx.alaapcloud.gov.bd:3001',
                 icon: '📞',
                 color: 'bg-blue-50 text-blue-600',
                 ext: true,
               },
               {
-                label: 'Contact Center',
-                href: 'https://cc.alaapcloud.gov.bd/',
+                label: 'Alaap PBX User',
+                href: 'https://ippbx.alaapcloud.gov.bd:5174/login',
+                icon: '📞',
+                color: 'bg-blue-50 text-blue-600',
+                ext: true,
+              },
+              {
+                label: 'Alaap PBX Legacy Portal',
+                href: 'https://ippbx.alaapcloud.gov.bd',
+                icon: '🗄️',
+                color: 'bg-slate-100 text-slate-600',
+                ext: true,
+              },
+              {
+                label: 'Contact Center Admin',
+                href: 'https://cc.alaapcloud.gov.bd:4001/',
                 icon: '👥',
                 color: 'bg-purple-50 text-purple-600',
                 ext: true,
               },
               {
-                label: 'Voice Broadcast',
+                label: 'VBS Admin / User',
                 href: 'https://vbs.alaapcloud.gov.bd/',
                 icon: '📢',
                 color: 'bg-orange-50 text-orange-600',
                 ext: true,
               },
               {
-                label: 'Bulk SMS',
+                label: 'BTCL SMS Portal',
                 href: BULK_SMS_PORTAL_URL,
                 icon: '💬',
                 color: 'bg-emerald-50 text-emerald-600',
+                ext: true,
+              },
+              {
+                label: 'Cateleya CMS',
+                href: 'https://114.130.145.75:6443/a/login',
+                icon: '🛠️',
+                color: 'bg-rose-50 text-rose-600',
                 ext: true,
               },
               {

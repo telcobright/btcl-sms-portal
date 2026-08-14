@@ -1143,6 +1143,8 @@ interface UserFormData {
   password: string;
   phoneNo: string;
   userStatus: string;
+  /** ROLE_USER or ROLE_ADMIN. */
+  role: string;
 }
 const EMPTY_USER: UserFormData = {
   firstName: '',
@@ -1151,6 +1153,7 @@ const EMPTY_USER: UserFormData = {
   password: '',
   phoneNo: '',
   userStatus: 'ACTIVE',
+  role: 'ROLE_USER',
 };
 
 function UsersTab({
@@ -1186,6 +1189,11 @@ function UsersTab({
       password: '',
       phoneNo: u.phoneNo || '',
       userStatus: u.userStatus || 'ACTIVE',
+      // Reflect what the account actually holds, so opening Edit does not silently
+      // propose demoting an administrator to an ordinary user.
+      role: u.authRoles?.some((r) => r.name === 'ROLE_ADMIN')
+        ? 'ROLE_ADMIN'
+        : 'ROLE_USER',
     });
     setShowForm(true);
   };
@@ -1218,11 +1226,16 @@ function UsersTab({
           idPartner: partnerId,
         };
         if (form.password) payload.password = form.password;
+        payload.authRoles = [{ name: form.role }];
         await editUser(payload, authToken);
         toast.success('User updated');
       } else {
         await createUser(
-          { ...form, partnerId } as CreateUserPayload,
+          {
+            ...form,
+            partnerId,
+            authRoles: [{ name: form.role }],
+          } as CreateUserPayload,
           authToken
         );
         toast.success('User created');
@@ -1340,6 +1353,22 @@ function UsersTab({
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
               </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Role</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className={inputCls}
+              >
+                <option value="ROLE_USER">User</option>
+                <option value="ROLE_ADMIN">Admin</option>
+              </select>
+              <p className="mt-1 text-[11px] text-gray-400">
+                {form.role === 'ROLE_ADMIN'
+                  ? 'Full access to the admin dashboard for this partner.'
+                  : 'Ordinary account with no admin dashboard access.'}
+              </p>
             </div>
           </div>
           <div className="flex gap-2 mt-4">

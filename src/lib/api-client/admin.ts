@@ -287,6 +287,14 @@ export interface CreateUserPayload {
   phoneNo: string;
   userStatus: string;
   partnerId: number;
+  /**
+   * Roles for the new account. Omit and the server assigns its default (ROLE_USER),
+   * which is why every user created before this was an ordinary user.
+   *
+   * Granting an admin role is authorised server-side: only a caller who is already an
+   * administrator may hand one out.
+   */
+  authRoles?: { name: string }[];
 }
 
 export const createUser = async (

@@ -49,15 +49,16 @@ export const FEATURE_FLAGS = {
   /**
    * Master switch for postpaid (registration form + pricing page).
    *
-   * When false, postpaid is hidden from everyone: the registration radio is disabled and
-   * pricing shows "Coming Soon" instead of "Apply".
+   * Currently false: government customers register as prepaid, and postpaid reads
+   * "Coming soon" on both the registration form and the pricing page. The postpaid plans,
+   * their rates and the eligibility terms stay visible either way — only the ability to
+   * choose postpaid is withheld.
    *
-   * When true, postpaid pricing is public — anyone can see the plans and their rates — but
-   * only Government customers can actually select it at registration. That gating lives in
-   * the register page and is not controlled by this flag, so turning postpaid on does not
-   * open it to private customers.
+   * When true, postpaid becomes selectable, but only for Government customers. That
+   * restriction lives in the register page and is not controlled by this flag, so turning
+   * postpaid on never opens it to private customers.
    */
-  POSTPAID_ENABLED: true,
+  POSTPAID_ENABLED: false,
 
   /**
    * Whether an individual (a person rather than an organisation) may register.

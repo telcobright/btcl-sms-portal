@@ -58,6 +58,18 @@ export const FEATURE_FLAGS = {
    * open it to private customers.
    */
   POSTPAID_ENABLED: true,
+
+  /**
+   * Whether an individual (a person rather than an organisation) may register.
+   *
+   * When false, Individual and Government Individual appear on the registration form as
+   * "Coming soon" and cannot be chosen — only the two corporate types are selectable.
+   * The categories, their document rules and every admin view already support
+   * individuals; this only controls whether the public form offers them yet.
+   *
+   * Set to true to open individual registration. Nothing else needs to change.
+   */
+  INDIVIDUAL_REGISTRATION_ENABLED: false,
 } as const;
 
 // API Endpoints

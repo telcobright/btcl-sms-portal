@@ -149,6 +149,21 @@ export default function RegisterPage() {
    */
   const postpaidAllowed = FEATURE_FLAGS.POSTPAID_ENABLED && isGovernment;
 
+  // Belt and braces: the individual options are disabled in the form, but a value could
+  // still survive in state from a cached session or a devtools edit. Fall back to the
+  // corporate equivalent rather than submitting a category registration is not open for.
+  useEffect(() => {
+    if (FEATURE_FLAGS.INDIVIDUAL_REGISTRATION_ENABLED) return;
+    if (selectedCategory === 'INDIVIDUAL') {
+      verificationForm.setValue('customerCategory', 'CORPORATE', { shouldValidate: true });
+    } else if (selectedCategory === 'GOVERNMENT_INDIVIDUAL') {
+      verificationForm.setValue('customerCategory', 'GOVERNMENT_CORPORATE', {
+        shouldValidate: true,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
+
   const personalInfoForm = useForm<PersonalInfo>({
     mode: 'onChange',
     defaultValues: {
@@ -1013,25 +1028,45 @@ export default function RegisterPage() {
                   render={({ field }) => (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {([
-                        { value: 'INDIVIDUAL', label: 'Individual', hint: 'Private · personal account' },
-                        { value: 'CORPORATE', label: 'Corporate', hint: 'Private · registered business' },
-                        { value: 'GOVERNMENT_INDIVIDUAL', label: 'Government Individual', hint: 'Government · personal account' },
-                        { value: 'GOVERNMENT_CORPORATE', label: 'Government Corporate', hint: 'Government · office or department' },
-                      ] as const).map((option) => (
+                        { value: 'INDIVIDUAL', label: 'Individual', hint: 'Private · personal account', individual: true },
+                        { value: 'CORPORATE', label: 'Corporate', hint: 'Private · registered business', individual: false },
+                        { value: 'GOVERNMENT_INDIVIDUAL', label: 'Government Individual', hint: 'Government · personal account', individual: true },
+                        { value: 'GOVERNMENT_CORPORATE', label: 'Government Corporate', hint: 'Government · office or department', individual: false },
+                      ] as const).map((option) => {
+                        // Individual registration is not open yet. The categories and their
+                        // document rules exist and work; only the public form withholds them.
+                        const comingSoon =
+                          option.individual && !FEATURE_FLAGS.INDIVIDUAL_REGISTRATION_ENABLED;
+                        return (
                         <button
                           type="button"
                           key={option.value}
-                          onClick={() => field.onChange(option.value)}
+                          onClick={() => !comingSoon && field.onChange(option.value)}
+                          disabled={comingSoon}
+                          aria-disabled={comingSoon}
+                          title={comingSoon ? 'Individual registration is not open yet' : undefined}
                           className={`rounded-lg border-2 px-4 py-3 text-left transition-all ${
-                            field.value === option.value
-                              ? 'border-btcl-primary bg-btcl-primary/5'
-                              : 'border-gray-200 hover:border-gray-300'
+                            comingSoon
+                              ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                              : field.value === option.value
+                                ? 'border-btcl-primary bg-btcl-primary/5'
+                                : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <span className="block font-semibold text-black">{option.label}</span>
+                          <span className="flex items-center gap-2">
+                            <span className={`block font-semibold ${comingSoon ? 'text-gray-500' : 'text-black'}`}>
+                              {option.label}
+                            </span>
+                            {comingSoon && (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                                Coming soon
+                              </span>
+                            )}
+                          </span>
                           <span className="block text-xs text-gray-500">{option.hint}</span>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 />

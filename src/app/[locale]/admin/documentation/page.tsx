@@ -155,23 +155,25 @@ export default function AdminDocumentationPage() {
                 <tr>
                   <td className="px-4 py-3 font-medium whitespace-nowrap">Read only</td>
                   <td className="px-4 py-3">
-                    The menu is visible. <strong>On this portal it does not yet hide anything on the
-                    page</strong> — see the note below.
+                    The menu is visible and everything on it can be viewed, searched, exported and
+                    printed, but every control that changes something is removed — no create, edit,
+                    delete, upload, approve, reject or send.
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <Note tone="warn" title="Read only does not restrict pages on this portal yet">
+          <Note tone="info" title="What Read only covers">
             <p>
-              Marking a menu Read only currently records your intent but changes nothing on the page —
-              the buttons remain. If you need a real restriction today, leave the menu unticked so it
-              is hidden entirely.
+              Partners (including each partner&rsquo;s Users and Documents), Settings and Sent Emails
+              all honour it. Reports and Service Details have nothing to restrict — they only ever
+              display and export.
             </p>
             <p>
-              More broadly, these permissions are an operational boundary rather than a security
-              control: they work by hiding things in the browser, and the server will still accept a
-              write that is crafted directly.
+              These permissions are an operational boundary rather than a security control: they work
+              by removing controls in the browser, and the server will still accept a write that is
+              crafted directly. Use them to keep people out of each other&rsquo;s work, not to contain
+              someone you actively distrust.
             </p>
           </Note>
         </Section>
@@ -180,6 +182,10 @@ export default function AdminDocumentationPage() {
           <ol className="list-decimal pl-5 space-y-2 marker:text-gray-400 marker:font-medium">
             <li>Have the person sign out and sign back in.</li>
             <li>Confirm the sidebar shows only the menus you granted.</li>
+            <li>
+              On any menu you set to Read only, confirm an amber &ldquo;Read only&rdquo; bar appears at
+              the top of the page and the action buttons are gone.
+            </li>
             <li>
               Type the address of a menu you did not grant — they should be returned to{' '}
               <Code>/admin</Code> instead of seeing the page.
@@ -231,6 +237,16 @@ export default function AdminDocumentationPage() {
                     Open the Network tab while they sign in and find{' '}
                     <Code>permissions/admin-user/get</Code>. A 404 means this server does not have the
                     permissions service yet; a 403 means the account was refused.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3">
+                    Set to Read only, but the buttons are still there
+                  </td>
+                  <td className="px-4 py-3">
+                    They have not signed in again. Failing that, check{' '}
+                    <Code>adminMenuPermissions</Code> in Local Storage — the row for that menu should
+                    read <Code>readonly</Code>. An empty list means nothing is being enforced at all.
                   </td>
                 </tr>
                 <tr>

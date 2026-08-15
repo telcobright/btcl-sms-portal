@@ -23,6 +23,8 @@ import {
   updateNidCredential,
   type NidCredentialStatus,
 } from '@/lib/api-client/nidCredential';
+import { useCanEdit } from '@/hooks/useCanEdit';
+import ReadOnlyNotice from '../components/ReadOnlyNotice';
 
 /**
  * ROLE_ADMIN-only settings for the EC NID verification integration.
@@ -38,6 +40,9 @@ import {
  * NID service after a real authentication attempt, not by this page.
  */
 export default function AdminSettingsPage() {
+  // Read only here means the credentials can be inspected and tested but not
+  // rotated — Test only exercises what is already saved, so it stays available.
+  const canEdit = useCanEdit();
   const [status, setStatus] = useState<NidCredentialStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +112,7 @@ export default function AdminSettingsPage() {
   };
 
   const handleSave = async () => {
+    if (!canEdit) return;
     const authToken = localStorage.getItem('authToken');
     if (!authToken) return;
     if (!username.trim()) {
@@ -179,6 +185,8 @@ export default function AdminSettingsPage() {
           Refresh
         </button>
       </div>
+
+      <ReadOnlyNotice className="mb-5" />
 
       {error && (
         <div className="mb-5 flex items-start gap-2 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
@@ -281,8 +289,9 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                disabled={!canEdit}
                 autoComplete="off"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E] disabled:bg-gray-50 disabled:text-gray-500"
               />
             </Field>
 
@@ -295,9 +304,10 @@ export default function AdminSettingsPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={!canEdit}
                   placeholder={status?.passwordMasked ?? '••••••••••'}
                   autoComplete="new-password"
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E]"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E] disabled:bg-gray-50 disabled:text-gray-500"
                 />
                 <button
                   type="button"
@@ -315,7 +325,8 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E]"
+                disabled={!canEdit}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E] disabled:bg-gray-50 disabled:text-gray-500"
               />
             </Field>
 
@@ -324,6 +335,7 @@ export default function AdminSettingsPage() {
                 type="checkbox"
                 checked={verifyBeforeSave}
                 onChange={(e) => setVerifyBeforeSave(e.target.checked)}
+                disabled={!canEdit}
                 className="mt-0.5 w-4 h-4 accent-[#0D529E]"
               />
               <span>
@@ -337,14 +349,16 @@ export default function AdminSettingsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 mt-6 pt-5 border-t border-gray-100">
-            <button
-              onClick={handleSave}
-              disabled={saving || testing}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0D529E] text-white text-sm font-medium rounded-lg hover:bg-[#1F3C71] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {saving ? 'Saving…' : 'Save credentials'}
-            </button>
+            {canEdit && (
+              <button
+                onClick={handleSave}
+                disabled={saving || testing}
+                className="flex items-center gap-2 px-4 py-2 bg-[#0D529E] text-white text-sm font-medium rounded-lg hover:bg-[#1F3C71] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {saving ? 'Saving…' : 'Save credentials'}
+              </button>
+            )}
             <button
               onClick={handleTest}
               disabled={saving || testing}

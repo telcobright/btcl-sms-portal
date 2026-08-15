@@ -34,6 +34,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import UserMenuPermissionsModal from '../../components/UserMenuPermissionsModal';
+import ReadOnlyNotice from '../../components/ReadOnlyNotice';
+import { useCanEdit } from '@/hooks/useCanEdit';
 
 type TabType =
   | 'overview'
@@ -79,6 +81,9 @@ export default function PartnerDetailsPage() {
   const router = useRouter();
   const locale = params.locale || 'en';
   const partnerId = Number(params.id);
+  // 'readonly' on the Partners menu covers this page too — pathToMenuKey resolves
+  // /admin/partners/1 to /admin/partners.
+  const canEdit = useCanEdit();
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [loading, setLoading] = useState(true);
@@ -460,6 +465,8 @@ export default function PartnerDetailsPage() {
         <span className="text-gray-700 font-medium">{partner.partnerName}</span>
       </nav>
 
+      <ReadOnlyNotice />
+
       {/* Header */}
       <div className="bg-gradient-to-r from-[#0D529E] to-[#1F3C71] rounded-xl p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -494,17 +501,19 @@ export default function PartnerDetailsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleToggleStatus}
-            disabled={deactivating}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors disabled:opacity-50"
-          >
-            {deactivating
-              ? 'Processing...'
-              : partner.status === 'DEACTIVATED'
-                ? 'Reactivate'
-                : 'Deactivate'}
-          </button>
+          {canEdit && (
+            <button
+              onClick={handleToggleStatus}
+              disabled={deactivating}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors disabled:opacity-50"
+            >
+              {deactivating
+                ? 'Processing...'
+                : partner.status === 'DEACTIVATED'
+                  ? 'Reactivate'
+                  : 'Deactivate'}
+            </button>
+          )}
           <button
             onClick={fetchData}
             className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
@@ -811,11 +820,13 @@ function OverviewTab({
   partnerExtra?: any;
   users?: PartnerUser[];
 }) {
+  const canEdit = useCanEdit();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partner>({ ...partner });
 
   const handleSave = async () => {
+    if (!canEdit) return;
     try {
       setSaving(true);
       const authToken = localStorage.getItem('authToken');
@@ -873,7 +884,7 @@ function OverviewTab({
         <h2 className="text-base font-semibold text-gray-900">
           Partner Information
         </h2>
-        {!isEditing ? (
+        {!canEdit ? null : !isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
             disabled={isDeactivated}
@@ -1167,6 +1178,7 @@ function UsersTab({
   onRefresh: () => void;
   isDeactivated?: boolean;
 }) {
+  const canEdit = useCanEdit();
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<PartnerUser | null>(null);
   const [form, setForm] = useState<UserFormData>(EMPTY_USER);
@@ -1203,6 +1215,7 @@ function UsersTab({
   };
 
   const handleSave = async () => {
+    if (!canEdit) return;
     if (!form.firstName || !form.email) {
       toast.error('First name and email are required');
       return;
@@ -1250,6 +1263,7 @@ function UsersTab({
   };
 
   const handleDelete = async (u: PartnerUser) => {
+    if (!canEdit) return;
     if (!confirm(`Delete ${u.firstName} ${u.lastName}?`)) return;
     try {
       setDeletingId(u.id);
@@ -1273,7 +1287,7 @@ function UsersTab({
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900">Users</h2>
-        {!showForm && (
+        {canEdit && !showForm && (
           <button
             onClick={openAdd}
             disabled={isDeactivated}
@@ -1289,7 +1303,7 @@ function UsersTab({
         )}
       </div>
 
-      {showForm && (
+      {canEdit && showForm && (
         <div className="mb-6 p-5 border border-gray-200 rounded-lg bg-gray-50/50">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">
             {editingUser ? 'Edit User' : 'New User'}
@@ -1438,7 +1452,10 @@ function UsersTab({
                     </div>
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">
-                    {u.authRoles?.some((r) => r.name === 'ROLE_ADMIN') && (
+                    {!canEdit && (
+                      <span className="text-xs text-gray-400">View only</span>
+                    )}
+                    {canEdit && u.authRoles?.some((r) => r.name === 'ROLE_ADMIN') && (
                       <button
                         onClick={() =>
                           setPermissionsFor({
@@ -1452,26 +1469,34 @@ function UsersTab({
                         Menus
                       </button>
                     )}
-                    <button
-                      onClick={() => openEdit(u)}
-                      disabled={isDeactivated}
-                      title={
-                        isDeactivated ? 'Reactivate partner first' : undefined
-                      }
-                      className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#0D529E]/10 text-[#0D529E] hover:bg-[#0D529E] hover:text-white'}`}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(u)}
-                      disabled={deletingId === u.id || isDeactivated}
-                      title={
-                        isDeactivated ? 'Reactivate partner first' : undefined
-                      }
-                      className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors disabled:opacity-50 ${isDeactivated ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'}`}
-                    >
-                      {deletingId === u.id ? '...' : 'Delete'}
-                    </button>
+                    {canEdit && (
+                      <>
+                        <button
+                          onClick={() => openEdit(u)}
+                          disabled={isDeactivated}
+                          title={
+                            isDeactivated
+                              ? 'Reactivate partner first'
+                              : undefined
+                          }
+                          className={`px-2.5 py-1 text-xs font-medium rounded-full mr-1.5 transition-colors ${isDeactivated ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-[#0D529E]/10 text-[#0D529E] hover:bg-[#0D529E] hover:text-white'}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(u)}
+                          disabled={deletingId === u.id || isDeactivated}
+                          title={
+                            isDeactivated
+                              ? 'Reactivate partner first'
+                              : undefined
+                          }
+                          className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors disabled:opacity-50 ${isDeactivated ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'}`}
+                        >
+                          {deletingId === u.id ? '...' : 'Delete'}
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -1749,6 +1774,7 @@ function DocumentsTab({
   partnerEmail: string;
   partnerName: string;
 }) {
+  const canEdit = useCanEdit();
   const [rejectingDoc, setRejectingDoc] = useState<string | null>(null);
   const [rejectionReasons, setRejectionReasons] = useState<
     Record<string, string>
@@ -1789,6 +1815,7 @@ function DocumentsTab({
       .replace(/"/g, '&quot;');
 
   const sendRejectionEmail = async () => {
+    if (!canEdit) return;
     if (!partnerEmail || rejectedDocs.length === 0) return;
     setSendingRejectionEmail(true);
     try {
@@ -1866,6 +1893,7 @@ function DocumentsTab({
   };
 
   const handleUpload = async (docType: string, file: File) => {
+    if (!canEdit) return;
     try {
       setUploadingDoc(docType);
       const t = localStorage.getItem('authToken');
@@ -1882,6 +1910,7 @@ function DocumentsTab({
   };
 
   const handleDeleteDoc = async (docType: string, docName: string) => {
+    if (!canEdit) return;
     if (!confirm(`Delete "${docName}"?`)) return;
     try {
       setDeletingDoc(docType);
@@ -1951,7 +1980,7 @@ function DocumentsTab({
                     )}
 
                     {/* Reject form */}
-                    {isRejecting && (
+                    {canEdit && isRejecting && (
                       <div className="mt-2 flex gap-2 items-start">
                         <input
                           type="text"
@@ -2005,29 +2034,33 @@ function DocumentsTab({
                     >
                       {downloadingDoc === doc.type ? '...' : 'Download'}
                     </button>
-                    <label
-                      className={`px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}
-                    >
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleUpload(doc.type, f);
-                          e.target.value = '';
-                        }}
-                      />
-                      {uploadingDoc === doc.type ? '...' : 'Replace'}
-                    </label>
-                    <button
-                      onClick={() => handleDeleteDoc(doc.type, doc.name)}
-                      disabled={deletingDoc === doc.type}
-                      className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
-                    >
-                      {deletingDoc === doc.type ? '...' : 'Delete'}
-                    </button>
-                    {!isRejecting && (
+                    {canEdit && (
+                      <label
+                        className={`px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}
+                      >
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleUpload(doc.type, f);
+                            e.target.value = '';
+                          }}
+                        />
+                        {uploadingDoc === doc.type ? '...' : 'Replace'}
+                      </label>
+                    )}
+                    {canEdit && (
+                      <button
+                        onClick={() => handleDeleteDoc(doc.type, doc.name)}
+                        disabled={deletingDoc === doc.type}
+                        className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                      >
+                        {deletingDoc === doc.type ? '...' : 'Delete'}
+                      </button>
+                    )}
+                    {canEdit && !isRejecting && (
                       <>
                         <button
                           onClick={async () => {
@@ -2057,7 +2090,7 @@ function DocumentsTab({
       </div>
 
       {/* Send Rejection Email */}
-      {rejectedDocs.length > 0 && partnerEmail && (
+      {canEdit && rejectedDocs.length > 0 && partnerEmail && (
         <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -2148,21 +2181,23 @@ function DocumentsTab({
                 className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors"
               >
                 <span className="text-sm text-gray-500">{doc.name}</span>
-                <label
-                  className={`px-3 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}
-                >
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleUpload(doc.type, f);
-                      e.target.value = '';
-                    }}
-                  />
-                  {uploadingDoc === doc.type ? 'Uploading...' : 'Upload'}
-                </label>
+                {canEdit && (
+                  <label
+                    className={`px-3 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleUpload(doc.type, f);
+                        e.target.value = '';
+                      }}
+                    />
+                    {uploadingDoc === doc.type ? 'Uploading...' : 'Upload'}
+                  </label>
+                )}
               </div>
             ))}
           </div>

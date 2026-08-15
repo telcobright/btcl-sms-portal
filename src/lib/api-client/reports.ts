@@ -248,6 +248,122 @@ export const groupSalesByService = (sales: SaleRecord[]) => {
   return Array.from(buckets.values()).sort((a, b) => b.total - a.total);
 };
 
+// ------------------------------------------------- package sales matrix
+
+/**
+ * True when a sale is a genuine service-package purchase.
+ *
+ * The BTCL daily report counts package sales only — Hosted PBX, A2P SMS, VBS and
+ * Contact Center plans — so top-ups and free welcome bonuses are excluded. They are
+ * recognisable only by package name: TopUp rows are balance loads, "Welcome Talktime"
+ * is a zero-price signup bonus, and anything with "credit" is an internal ledger row
+ * (Postpaid_Credit is already excluded server-side; the pattern here is belt and
+ * braces).
+ */
+export const isPackageSale = (sale: SaleRecord): boolean =>
+  !/top\s*[-_]?\s*up|welcome|credit/i.test(sale.packageName);
+
+/** Service columns of the BTCL daily report, in its column order. */
+export const PACKAGE_MATRIX_SERVICES = [
+  { key: 'pbx', label: 'IPPBX' },
+  { key: 'sms', label: 'A2P SMS' },
+  { key: 'vbs', label: 'VBS' },
+  { key: 'hcc', label: 'CC' },
+] as const;
+
+export interface PackageMatrixRow {
+  /** ISO key for sorting, e.g. 2026-07-01. */
+  key: string;
+  /** As printed on the report: DD-MM-YYYY. */
+  label: string;
+  /** Distinct purchasing customers per service key. */
+  customers: Record<string, number>;
+  customersAll: number;
+  /** Revenue (price + VAT + AIT) per service key. */
+  revenue: Record<string, number>;
+  revenueAll: number;
+}
+
+const isoDay = (dateInput: string): string | null => {
+  const date = new Date(dateInput);
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString('en-CA');
+};
+
+const printDay = (isoKey: string): string => {
+  const [year, month, day] = isoKey.split('-');
+  return `${day}-${month}-${year}`;
+};
+
+/**
+ * The BTCL daily matrix: one row per date, customer counts and revenue per service.
+ *
+ * With a From/To range set, every date in the range gets a row — the printed report is
+ * a continuous run of dates, empty days included. With no range, only dates that have
+ * at least one sale appear, since eight months of mostly-empty rows helps nobody.
+ *
+ * "All" is the row sum across the four service columns, so the table adds up the way a
+ * reader checks it. For customers that means someone buying on two services the same
+ * day counts once per service; distinct-across-services would make All disagree with
+ * the columns beside it.
+ */
+export const buildPackageMatrix = (
+  sales: SaleRecord[],
+  fromDate?: string,
+  toDate?: string
+): PackageMatrixRow[] => {
+  const serviceKeys = new Set<string>(PACKAGE_MATRIX_SERVICES.map((s) => s.key));
+
+  // day -> service -> { partners, revenue }
+  const byDay = new Map<string, Map<string, { partners: Set<string>; revenue: number }>>();
+  sales.forEach((sale) => {
+    if (!serviceKeys.has(sale.service)) return;
+    const day = isoDay(sale.purchaseDate);
+    if (!day) return;
+    let services = byDay.get(day);
+    if (!services) {
+      services = new Map();
+      byDay.set(day, services);
+    }
+    let cell = services.get(sale.service);
+    if (!cell) {
+      cell = { partners: new Set(), revenue: 0 };
+      services.set(sale.service, cell);
+    }
+    cell.partners.add(String(sale.idPartner ?? sale.partnerName));
+    cell.revenue += sale.total;
+  });
+
+  let days: string[];
+  if (fromDate && toDate && fromDate <= toDate) {
+    days = [];
+    const cursor = new Date(`${fromDate}T00:00:00`);
+    const end = new Date(`${toDate}T00:00:00`);
+    // Hard stop at ~5 years of rows so a typoed year cannot hang the browser.
+    while (cursor <= end && days.length < 1830) {
+      days.push(cursor.toLocaleDateString('en-CA'));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  } else {
+    days = Array.from(byDay.keys()).sort();
+  }
+
+  return days.map((day) => {
+    const services = byDay.get(day);
+    const customers: Record<string, number> = {};
+    const revenue: Record<string, number> = {};
+    let customersAll = 0;
+    let revenueAll = 0;
+    PACKAGE_MATRIX_SERVICES.forEach(({ key }) => {
+      const cell = services?.get(key);
+      customers[key] = cell ? cell.partners.size : 0;
+      revenue[key] = cell ? cell.revenue : 0;
+      customersAll += customers[key];
+      revenueAll += revenue[key];
+    });
+    return { key: day, label: printDay(day), customers, customersAll, revenue, revenueAll };
+  });
+};
+
 // -------------------------------------------------------------------- CSV
 
 const csvCell = (value: string | number): string => {
@@ -308,6 +424,40 @@ export const buildSalesCsv = (sales: SaleRecord[]): string => {
   });
 
   return [header.map(csvCell).join(','), ...rows].join('\r\n');
+};
+
+/**
+ * CSV in the BTCL daily-report layout: a Date column, then customer counts per service,
+ * then revenue per service. CSV has no merged cells, so the two group titles sit on
+ * their own line above the service names — Excel renders it the way the printed form
+ * reads.
+ */
+export const buildPackageMatrixCsv = (rows: PackageMatrixRow[]): string => {
+  const services = PACKAGE_MATRIX_SERVICES;
+  const groupLine = [
+    'Date',
+    'Total Number Of Customer',
+    ...Array(services.length).fill(''),
+    'Total Revenue',
+    ...Array(services.length).fill(''),
+  ];
+  const headerLine = [
+    '',
+    ...services.map((s) => s.label),
+    'All',
+    ...services.map((s) => s.label),
+    'All',
+  ];
+  const dataLines = rows.map((row) => [
+    row.label,
+    ...services.map((s) => String(row.customers[s.key])),
+    String(row.customersAll),
+    ...services.map((s) => row.revenue[s.key].toFixed(2)),
+    row.revenueAll.toFixed(2),
+  ]);
+  return [groupLine, headerLine, ...dataLines]
+    .map((line) => line.map(csvCell).join(','))
+    .join('\r\n');
 };
 
 /** Trigger a browser download. The BOM makes Excel read UTF-8 (and Bangla names) correctly. */

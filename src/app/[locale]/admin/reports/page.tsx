@@ -13,9 +13,13 @@ import {
   Users,
 } from 'lucide-react';
 import {
+  buildPackageMatrix,
+  buildPackageMatrixCsv,
   buildSalesCsv,
   downloadCsv,
   getAllSales,
+  isPackageSale,
+  PACKAGE_MATRIX_SERVICES,
   groupSalesByPeriod,
   groupSalesByService,
   customerTypeLabel,
@@ -50,6 +54,12 @@ export default function AdminReportsPage() {
   const [failed, setFailed] = useState<{ label: string; reason: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 'all' is the page exactly as it was; 'package' reshapes the daily breakdown into
+  // the BTCL report format — per-service customer counts and revenue, package sales
+  // only (no top-ups or welcome bonuses).
+  const [reportMode, setReportMode] = useState<'all' | 'package'>('all');
+  const packageMode = reportMode === 'package';
 
   const [period, setPeriod] = useState<ReportPeriod>('daily');
   const [fromDate, setFromDate] = useState('');
@@ -97,7 +107,10 @@ export default function AdminReportsPage() {
     const to = toDate ? new Date(`${toDate}T23:59:59.999`) : null;
 
     return sales.filter((sale) => {
-      if (serviceFilter !== 'all' && sale.service !== serviceFilter) return false;
+      // The package matrix always shows all four service columns, so the service
+      // filter only applies to the normal report.
+      if (!packageMode && serviceFilter !== 'all' && sale.service !== serviceFilter) return false;
+      if (packageMode && !isPackageSale(sale)) return false;
       if (customerTypeFilter !== 'all') {
         const category = sale.customerCategory;
         if (customerTypeFilter === 'GOVERNMENT_ANY') {
@@ -123,13 +136,18 @@ export default function AdminReportsPage() {
       if (to && when > to) return false;
       return true;
     });
-  }, [sales, fromDate, toDate, serviceFilter, customerTypeFilter]);
+  }, [sales, fromDate, toDate, serviceFilter, customerTypeFilter, packageMode]);
 
   const periodGroups = useMemo(
     () => groupSalesByPeriod(filtered, period),
     [filtered, period]
   );
   const serviceGroups = useMemo(() => groupSalesByService(filtered), [filtered]);
+
+  const matrixRows = useMemo(
+    () => (packageMode ? buildPackageMatrix(filtered, fromDate, toDate) : []),
+    [packageMode, filtered, fromDate, toDate]
+  );
 
   // Any change to the filters can shrink the result set, so go back to page 1 rather
   // than stranding the admin on a page that no longer exists.
@@ -157,6 +175,13 @@ export default function AdminReportsPage() {
 
   const handleDownload = () => {
     const stamp = new Date().toLocaleDateString('en-CA');
+    if (packageMode) {
+      downloadCsv(
+        buildPackageMatrixCsv(matrixRows),
+        `btcl-package-sales-${fromDate || 'start'}-to-${toDate || 'latest'}-${stamp}.csv`
+      );
+      return;
+    }
     const scope = serviceFilter === 'all' ? 'all-services' : serviceFilter;
     const audience =
       customerTypeFilter === 'all' ? '' : `-${customerTypeFilter.toLowerCase()}`;
@@ -278,6 +303,31 @@ export default function AdminReportsPage() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6">
         <div className="flex flex-wrap items-end gap-4">
           <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Report</label>
+            <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+              {(
+                [
+                  { value: 'all', label: 'All Sales' },
+                  { value: 'package', label: 'Package Sales' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setReportMode(option.value)}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    reportMode === option.value
+                      ? 'bg-[#0D529E] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!packageMode && (
+          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Group by</label>
             <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
               {PERIODS.map((option) => (
@@ -295,6 +345,7 @@ export default function AdminReportsPage() {
               ))}
             </div>
           </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">From</label>
@@ -315,6 +366,7 @@ export default function AdminReportsPage() {
             />
           </div>
 
+          {!packageMode && (
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Service</label>
             <select
@@ -330,6 +382,7 @@ export default function AdminReportsPage() {
               ))}
             </select>
           </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Customer type</label>
@@ -364,6 +417,87 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
+      {packageMode && (
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h2 className="text-base font-semibold text-[#1F3C71]">
+              Daily Package Sales{' '}
+              <span className="font-normal text-gray-500 text-sm">
+                (top-ups and bonuses excluded)
+              </span>
+            </h2>
+            <span className="text-xs text-gray-500">
+              {fromDate && toDate
+                ? 'Every date in the selected range'
+                : 'Dates with at least one package sale — set a range for a continuous report'}
+            </span>
+          </div>
+          {!matrixRows.length ? (
+            <p className="px-6 py-10 text-sm text-gray-500 text-center">
+              No package sales match the current filters.
+            </p>
+          ) : (
+            <div className="overflow-x-auto max-h-[560px]">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-gray-50 text-gray-600 sticky top-0">
+                  <tr>
+                    <th rowSpan={2} className="px-4 py-2.5 text-left font-semibold border border-gray-200 align-middle">
+                      Date
+                    </th>
+                    <th colSpan={PACKAGE_MATRIX_SERVICES.length + 1} className="px-4 py-2 text-center font-semibold border border-gray-200">
+                      Total Number Of Customer
+                    </th>
+                    <th colSpan={PACKAGE_MATRIX_SERVICES.length + 1} className="px-4 py-2 text-center font-semibold border border-gray-200">
+                      Total Revenue
+                    </th>
+                  </tr>
+                  <tr>
+                    {PACKAGE_MATRIX_SERVICES.map((svc) => (
+                      <th key={`c-${svc.key}`} className="px-4 py-2 text-right font-semibold border border-gray-200">
+                        {svc.label}
+                      </th>
+                    ))}
+                    <th className="px-4 py-2 text-right font-semibold border border-gray-200 bg-gray-100">All</th>
+                    {PACKAGE_MATRIX_SERVICES.map((svc) => (
+                      <th key={`r-${svc.key}`} className="px-4 py-2 text-right font-semibold border border-gray-200">
+                        {svc.label}
+                      </th>
+                    ))}
+                    <th className="px-4 py-2 text-right font-semibold border border-gray-200 bg-gray-100">All</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrixRows.map((row) => (
+                    <tr key={row.key} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 border border-gray-200 whitespace-nowrap font-medium text-gray-900">
+                        {row.label}
+                      </td>
+                      {PACKAGE_MATRIX_SERVICES.map((svc) => (
+                        <td key={`c-${svc.key}`} className="px-4 py-2 border border-gray-200 text-right tabular-nums">
+                          {row.customers[svc.key] || ''}
+                        </td>
+                      ))}
+                      <td className="px-4 py-2 border border-gray-200 text-right tabular-nums font-semibold bg-gray-50">
+                        {row.customersAll || ''}
+                      </td>
+                      {PACKAGE_MATRIX_SERVICES.map((svc) => (
+                        <td key={`r-${svc.key}`} className="px-4 py-2 border border-gray-200 text-right tabular-nums">
+                          {row.revenue[svc.key] ? money(row.revenue[svc.key]) : ''}
+                        </td>
+                      ))}
+                      <td className="px-4 py-2 border border-gray-200 text-right tabular-nums font-semibold bg-gray-50">
+                        {row.revenueAll ? money(row.revenueAll) : ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {!packageMode && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* ---------------- Period breakdown ---------------- */}
         <section className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -443,8 +577,10 @@ export default function AdminReportsPage() {
           )}
         </section>
       </div>
+      )}
 
       {/* ---------------- Detail ---------------- */}
+      {!packageMode && (
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-[#1F3C71]">
@@ -581,6 +717,7 @@ export default function AdminReportsPage() {
           </div>
         )}
       </section>
+      )}
     </div>
   );
 }

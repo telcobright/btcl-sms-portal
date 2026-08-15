@@ -58,7 +58,9 @@ export default function AdminReportsPage() {
   // 'all' is the page exactly as it was; 'package' reshapes the daily breakdown into
   // the BTCL report format — per-service customer counts and revenue, package sales
   // only (no top-ups or welcome bonuses).
-  const [reportMode, setReportMode] = useState<'all' | 'package'>('all');
+  // Package Sales opens first: the BTCL daily report is what this page is opened for
+  // day to day, and All Sales stays one click away.
+  const [reportMode, setReportMode] = useState<'all' | 'package'>('package');
   const packageMode = reportMode === 'package';
 
   const [period, setPeriod] = useState<ReportPeriod>('daily');

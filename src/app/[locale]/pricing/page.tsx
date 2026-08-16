@@ -797,6 +797,29 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     'from-btcl-primary to-btcl-primary';
 
   // Renders the action button for a prepaid card
+  /**
+   * Why Bulk SMS cannot be bought right now, or null when it can.
+   *
+   * Derived once so the pricing section and the package buttons cannot disagree.
+   * Unknown eligibility counts as blocked: offering Buy after a failed check only
+   * leads to a refusal at payment. Admins are exempt, as elsewhere on this page.
+   */
+  const smsGate = (() => {
+    if (!isLoggedIn() || isAdmin) return null;
+    if (smsEligibility?.eligible) return null;
+    const state = smsEligibility?.state ?? 'UNKNOWN';
+    return {
+      state,
+      needsUpload: state === 'NOT_UPLOADED' || state === 'REJECTED',
+      rejectionReason: smsEligibility?.btrcRejectionReason ?? null,
+      message:
+        smsEligibility?.message ??
+        (locale === 'en'
+          ? 'Could not check your Bulk SMS eligibility. Please refresh.'
+          : 'বাল্ক এসএমএস যোগ্যতা যাচাই করা যায়নি। রিফ্রেশ করুন।'),
+    };
+  })();
+
   const renderPrepaidButton = (pkg: any, serviceId: string) => {
     if (typeof pkg.price !== 'number') {
       return (
@@ -810,11 +833,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     // Bulk SMS needs a BTRC aggregator licence approved on top of the mandatory
     // documents, so it gets its own prompt: upload it, wait for approval, or fix a
     // rejection. Admins are exempt, as they are from the document block below.
-    if (serviceId === 'bulk-sms' && isLoggedIn() && !isAdmin) {
-      const sms = smsEligibility;
-      if (!sms || !sms.eligible) {
-        const state = sms?.state ?? 'UNKNOWN';
-        const needsUpload = state === 'NOT_UPLOADED' || state === 'REJECTED';
+    if (serviceId === 'bulk-sms' && smsGate) {
+      {
+        const state = smsGate.state;
+        const needsUpload = smsGate.needsUpload;
+        const sms = { message: smsGate.message, btrcRejectionReason: smsGate.rejectionReason };
         return (
           <div className="space-y-2">
             <Button
@@ -1706,6 +1729,45 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                               ? 'Limit Exceeded (max 500,000 SMS)'
                               : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৫,০০,০০০ SMS)'}
                           </button>
+                        ) : smsGate ? (
+                          // Bulk SMS needs an approved BTRC aggregator licence on top of
+                          // the mandatory documents. This is the real buy control for SMS —
+                          // the section is hand-written and does not use
+                          // renderPrepaidButton, so the gate has to live here too.
+                          <div className="mt-4 space-y-2">
+                            <button
+                              disabled
+                              className="w-full py-3 rounded-xl font-semibold text-sm bg-gray-200 text-gray-500 cursor-not-allowed"
+                            >
+                              {locale === 'en'
+                                ? 'BTRC Licence Required'
+                                : 'বিটিআরসি লাইসেন্স প্রয়োজন'}
+                            </button>
+                            <p
+                              className={`text-xs text-center ${
+                                smsGate.state === 'REJECTED'
+                                  ? 'text-red-500'
+                                  : 'text-amber-600'
+                              }`}
+                            >
+                              {smsGate.message}
+                            </p>
+                            {smsGate.state === 'REJECTED' &&
+                              smsGate.rejectionReason && (
+                                <p className="text-xs text-center text-red-500">
+                                  {smsGate.rejectionReason}
+                                </p>
+                              )}
+                            {smsGate.needsUpload && (
+                              <Link href={`/${locale}/contact`}>
+                                <button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:bg-btcl-primary hover:text-white">
+                                  {locale === 'en'
+                                    ? 'Submit BTRC Licence'
+                                    : 'বিটিআরসি লাইসেন্স জমা দিন'}
+                                </button>
+                              </Link>
+                            )}
+                          </div>
                         ) : (
                           <button
                             onClick={handleSmsBuyNow}

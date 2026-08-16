@@ -2201,7 +2201,7 @@ export default function RegisterPage() {
 
                 <div className="mt-4">
                   <label className="block text-black font-medium mb-1">
-                    Upload BTRC Registration (Optional)
+                    Upload BTRC Aggregator Licence (Optional — required for Bulk SMS)
                   </label>
                   <Controller
                     name="btrcFile"

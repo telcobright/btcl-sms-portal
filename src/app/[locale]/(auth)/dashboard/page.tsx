@@ -993,7 +993,7 @@ export default function Dashboard() {
     },
     {
       type: 'btrc',
-      name: 'BTRC Registration',
+      name: 'BTRC Aggregator Licence',
       available: partnerExtra?.btrcRegistrationAvailable,
     },
     { type: 'photo', name: 'Photo', available: partnerExtra?.photoAvailable },

@@ -1794,7 +1794,7 @@ function DocumentsTab({
     taxreturn: 'Tax Return',
     bin: 'BIN Certificate',
     vat: 'VAT Document',
-    btrc: 'BTRC Registration',
+    btrc: 'BTRC Aggregator Licence',
     photo: 'Photo',
     sla: 'SLA Document',
   };

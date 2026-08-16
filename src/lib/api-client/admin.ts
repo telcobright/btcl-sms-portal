@@ -542,7 +542,7 @@ export const getDocumentsByPartner = async (
     { type: 'nidback', name: 'NID Back Side', available: false },
     { type: 'bin', name: 'BIN Certificate', available: false },
     { type: 'vat', name: 'VAT Document', available: false },
-    { type: 'btrc', name: 'BTRC Registration', available: false },
+    { type: 'btrc', name: 'BTRC Aggregator Licence', available: false },
     { type: 'photo', name: 'Photo', available: false },
     { type: 'sla', name: 'SLA Document', available: false },
   ];
@@ -577,7 +577,7 @@ export const getDocumentsByPartner = async (
       { type: 'nidback', name: 'NID Back Side', available: !!extra.nidBackAvailable },
       { type: 'bin', name: 'BIN Certificate', available: !!extra.binCertificateAvailable },
       { type: 'vat', name: 'VAT Document', available: !!extra.vatDocAvailable },
-      { type: 'btrc', name: 'BTRC Registration', available: !!extra.btrcRegistrationAvailable },
+      { type: 'btrc', name: 'BTRC Aggregator Licence', available: !!extra.btrcRegistrationAvailable },
       { type: 'photo', name: 'Photo', available: !!extra.photoAvailable },
       { type: 'sla', name: 'SLA Document', available: !!extra.slaAvailable },
     ];

@@ -14,6 +14,10 @@ import {
   VBS_BASE_URL,
 } from '@/config/api';
 import { jwtDecode } from 'jwt-decode';
+import {
+  getServiceEligibility,
+  type ServiceEligibilityState,
+} from '@/lib/api-client/admin';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -43,6 +47,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     Record<string, string | null>
   >({});
   const [purchaseBlocked, setPurchaseBlocked] = useState(false);
+  // Bulk SMS carries a second gate: every mandatory document approved plus an approved
+  // BTRC aggregator licence. Null means not yet known — treated as not eligible, since
+  // offering Buy on a failed check only leads to a refusal later.
+  const [smsEligibility, setSmsEligibility] = useState<ServiceEligibilityState | null>(null);
   const [docBlockReason, setDocBlockReason] = useState<
     'pending' | 'rejected' | null
   >(null);
@@ -159,6 +167,9 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           } catch {
             /* silent */
           }
+
+          const eligibility = await getServiceEligibility(idPartner, authToken);
+          if (eligibility) setSmsEligibility(eligibility.sms);
         }
 
         const response = await fetch(
@@ -796,6 +807,54 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         </Link>
       );
     }
+    // Bulk SMS needs a BTRC aggregator licence approved on top of the mandatory
+    // documents, so it gets its own prompt: upload it, wait for approval, or fix a
+    // rejection. Admins are exempt, as they are from the document block below.
+    if (serviceId === 'bulk-sms' && isLoggedIn() && !isAdmin) {
+      const sms = smsEligibility;
+      if (!sms || !sms.eligible) {
+        const state = sms?.state ?? 'UNKNOWN';
+        const needsUpload = state === 'NOT_UPLOADED' || state === 'REJECTED';
+        return (
+          <div className="space-y-2">
+            <Button
+              disabled
+              className="w-full py-3 px-6 rounded-xl font-semibold text-sm bg-gray-300 text-gray-600 cursor-not-allowed"
+            >
+              {locale === 'en' ? 'BTRC Licence Required' : 'বিটিআরসি লাইসেন্স প্রয়োজন'}
+            </Button>
+            <p
+              className={`text-xs text-center ${
+                state === 'REJECTED' ? 'text-red-500' : 'text-amber-600'
+              }`}
+            >
+              {sms?.message ??
+                (locale === 'en'
+                  ? 'Could not check your Bulk SMS eligibility. Please refresh.'
+                  : 'বাল্ক এসএমএস যোগ্যতা যাচাই করা যায়নি। রিফ্রেশ করুন।')}
+            </p>
+            {state === 'REJECTED' && sms?.btrcRejectionReason && (
+              <p className="text-xs text-center text-red-500">
+                {sms.btrcRejectionReason}
+              </p>
+            )}
+            {/* Customers have no self-service document upload yet, so this routes to
+                BTCL rather than to a page that does not exist. Point it at the upload
+                page once that is built. */}
+            {needsUpload && (
+              <Link href={`/${locale}/contact`}>
+                <Button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:bg-btcl-primary hover:text-white">
+                  {locale === 'en'
+                    ? 'Submit BTRC Licence'
+                    : 'বিটিআরসি লাইসেন্স জমা দিন'}
+                </Button>
+              </Link>
+            )}
+          </div>
+        );
+      }
+    }
+
     // Show disabled button when purchase is blocked due to documents
     if (purchaseBlocked && isLoggedIn()) {
       return (

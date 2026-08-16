@@ -121,6 +121,9 @@ export const API_ENDPOINTS = {
     updatePartnerDocument: '/partner/update-partner-document',
     deletePartnerDocument: '/partner/delete-partner-document',
     checkPurchaseEligibility: '/partner/check-purchase-eligibility',
+    // Per-service eligibility. Bulk SMS needs every mandatory document approved plus an
+    // approved BTRC aggregator licence, so the portal needs the reason, not just yes/no.
+    serviceEligibility: '/partner/service-eligibility',
     deactivatePartner: '/partner/deactivate-partner',
     reactivatePartner: '/partner/reactivate-partner',
   },

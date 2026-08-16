@@ -204,6 +204,54 @@ export const getPartnerCategoryCounts = async (
   }
 };
 
+export interface ServiceEligibilityState {
+  eligible: boolean;
+  /** APPROVED | PENDING | REJECTED | NOT_UPLOADED | MANDATORY_INCOMPLETE */
+  state: string;
+  message: string;
+  btrcStatus?: string | null;
+  btrcRejectionReason?: string | null;
+}
+
+export interface ServiceEligibility {
+  mandatoryApproved: boolean;
+  awaitingApproval: string[];
+  rejected: string[];
+  pbx: ServiceEligibilityState;
+  vbs: ServiceEligibilityState;
+  hcc: ServiceEligibilityState;
+  sms: ServiceEligibilityState;
+}
+
+/**
+ * Which services this partner may buy, and why not when they may not.
+ *
+ * Returns null on failure. The caller treats that as "unknown" rather than "eligible" —
+ * quietly showing a Buy button because a check failed would let someone start a purchase
+ * the server will refuse anyway.
+ */
+export const getServiceEligibility = async (
+  idPartner: number,
+  authToken: string
+): Promise<ServiceEligibility | null> => {
+  try {
+    const response = await axios.post<ServiceEligibility>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.serviceEligibility}`,
+      { id: idPartner },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    return response.data ?? null;
+  } catch (error) {
+    console.error('\u274c Service eligibility error:', error);
+    return null;
+  }
+};
+
 // ---------------------- ADMIN API FUNCTIONS ----------------------
 
 /**

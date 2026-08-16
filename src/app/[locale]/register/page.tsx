@@ -1991,14 +1991,12 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Trade License Number{!isCorporate && ' (Optional)'}
+                    Trade License Number <span className="text-red-500">*</span>
                   </label>
                   <Controller
                     name="tradeLicenseNumber"
                     control={otherInfoForm.control}
-                    rules={{
-                      required: isCorporate ? 'Trade license number is required' : false,
-                    }}
+                    rules={{ required: 'Trade license number is required' }}
                     render={({ field, fieldState }) => (
                       <>
                         <input
@@ -2022,12 +2020,12 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Upload Trade License{!isCorporate && ' (Optional)'}
+                    Upload Trade License <span className="text-red-500">*</span>
                   </label>
                   <Controller
                     name="tradeLicenseFile"
                     control={otherInfoForm.control}
-                    rules={{ required: isCorporate ? 'Trade license file is required' : false }}
+                    rules={{ required: 'Trade license file is required' }}
                     render={({ field: { onChange }, fieldState }) => (
                       <>
                         <input
@@ -2053,7 +2051,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    TIN Number
+                    TIN Number <span className="text-red-500">*</span>
                   </label>
                   <Controller
                     name="tinNumber"
@@ -2082,7 +2080,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Upload TIN
+                    Upload TIN <span className="text-red-500">*</span>
                   </label>
                   <Controller
                     name="tinFile"

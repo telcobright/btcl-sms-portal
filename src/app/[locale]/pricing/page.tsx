@@ -861,15 +861,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 {sms.btrcRejectionReason}
               </p>
             )}
-            {/* Customers have no self-service document upload yet, so this routes to
-                BTCL rather than to a page that does not exist. Point it at the upload
-                page once that is built. */}
             {needsUpload && (
-              <Link href={`/${locale}/contact`}>
+              <Link href={`/${locale}/dashboard/documents`}>
                 <Button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:bg-btcl-primary hover:text-white">
                   {locale === 'en'
-                    ? 'Submit BTRC Licence'
-                    : 'বিটিআরসি লাইসেন্স জমা দিন'}
+                    ? 'Upload BTRC Licence'
+                    : 'বিটিআরসি লাইসেন্স আপলোড করুন'}
                 </Button>
               </Link>
             )}
@@ -1759,11 +1756,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                                 </p>
                               )}
                             {smsGate.needsUpload && (
-                              <Link href={`/${locale}/contact`}>
+                              <Link href={`/${locale}/dashboard/documents`}>
                                 <button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:bg-btcl-primary hover:text-white">
                                   {locale === 'en'
-                                    ? 'Submit BTRC Licence'
-                                    : 'বিটিআরসি লাইসেন্স জমা দিন'}
+                                    ? 'Upload BTRC Licence'
+                                    : 'বিটিআরসি লাইসেন্স আপলোড করুন'}
                                 </button>
                               </Link>
                             )}

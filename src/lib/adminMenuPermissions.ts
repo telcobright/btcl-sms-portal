@@ -49,6 +49,7 @@ export const ADMIN_MENU_CATALOG: AdminMenuCatalogEntry[] = [
   { menuKey: '/admin', label: 'Dashboard', section: 'Overview' },
   { menuKey: '/admin/partners', label: 'Partners', section: 'Management' },
   { menuKey: '/admin/reports', label: 'Sales Reports', section: 'Management' },
+  { menuKey: '/admin/regulatory-report', label: 'BTRC Report', section: 'Management' },
   { menuKey: '/admin/emails', label: 'Sent Emails', section: 'Management' },
   { menuKey: '/admin/backend-guide', label: 'Backend Guide', section: 'System' },
   { menuKey: '/admin/documentation', label: 'Documentation', section: 'System' },

@@ -157,6 +157,9 @@ export const API_ENDPOINTS = {
   // issued it, so the browser cannot gather this from the other gateways itself.
   reports: {
     sales: '/admin/reports/sales',
+    // Monthly IPTSP / BTRC regulatory return, computed by the backend from the CDR/summary
+    // databases. Admin-only; consumed by /admin/regulatory-report.
+    iptspMonthly: '/admin/reports/iptsp-monthly',
   },
 
   // User/Dashboard endpoints

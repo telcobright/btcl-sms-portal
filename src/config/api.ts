@@ -175,6 +175,17 @@ export const API_ENDPOINTS = {
   payment: {
     unifiedPurchase: '/api/payment/unified/purchase', // Unified purchase (handles both payment gateway & direct purchase)
   },
+  /**
+   * Postpaid approvals. A postpaid checkout takes no money, so an operator
+   * decides whether the service is granted; approving releases the purchase
+   * into provisioning. Served by PaymentGateWay, same host as the purchase API.
+   */
+  approvals: {
+    pending: '/api/approvals/pending',
+    pendingCount: '/api/approvals/pending/count',
+    approve: (id: number) => `/api/approvals/${id}/approve`,
+    reject: (id: number) => `/api/approvals/${id}/reject`,
+  },
 
   // Per-user menu permissions for the /admin area (uses AUTH_BASE_URL).
   // Namespaced under admin-user/ so it never collides with the PBX portal's

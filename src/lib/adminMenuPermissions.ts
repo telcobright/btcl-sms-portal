@@ -48,6 +48,7 @@ export const ADMIN_ROLES = ['ROLE_ADMIN'];
 export const ADMIN_MENU_CATALOG: AdminMenuCatalogEntry[] = [
   { menuKey: '/admin', label: 'Dashboard', section: 'Overview' },
   { menuKey: '/admin/partners', label: 'Partners', section: 'Management' },
+  { menuKey: '/admin/approvals', label: 'Postpaid Approvals', section: 'Management' },
   { menuKey: '/admin/reports', label: 'Sales Reports', section: 'Management' },
   { menuKey: '/admin/regulatory-report', label: 'BTRC Report', section: 'Management' },
   { menuKey: '/admin/emails', label: 'Sent Emails', section: 'Management' },

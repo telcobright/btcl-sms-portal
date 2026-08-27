@@ -124,6 +124,15 @@ export interface PartnerListSummary {
   approvedCount: number;
   pendingCount: number;
   rejectedCount: number;
+  /**
+   * The four documents every category must supply, counted separately from the totals above.
+   *
+   * A mandatory document that was never uploaded counts as pending — it still has to be
+   * chased. Optional on the type because a backend older than this field simply omits it,
+   * and callers fall back rather than reading every partner one by one.
+   */
+  mandatoryPending?: number;
+  mandatoryRejected?: number;
   /** INDIVIDUAL | CORPORATE | GOVERNMENT. Null for rows predating the column. */
   customerCategory: string | null;
 }

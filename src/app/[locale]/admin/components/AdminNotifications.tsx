@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { getAllPartners, Partner, getPartnerTypeLabel } from '@/lib/api-client/admin';
+import {
+  getAllPartners,
+  getPartnerListSummary,
+  Partner,
+  PartnerListSummary,
+  getPartnerTypeLabel,
+} from '@/lib/api-client/admin';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface NotificationItem {
@@ -15,12 +21,46 @@ interface NotificationItem {
   totalDocs: number;
 }
 
+/** The four documents every customer must supply, whatever their category. */
+const MANDATORY = ['nidfront', 'nidback', 'tradelicense', 'tin'];
+
+/** How many of the newest customers the bell looks at. */
+const RECENT_PARTNERS = 20;
+
+/**
+ * One partner's outstanding mandatory documents, read the slow way.
+ *
+ * Only used against a backend that predates the batched counts in /partner/list-summary.
+ * A document with no row has never been uploaded, which counts as pending.
+ */
+async function countFromDocumentStatuses(
+  idPartner: number,
+  token: string
+): Promise<{ pending: number; rejected: number } | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id: idPartner }),
+    });
+    if (!res.ok) return null;
+    const statuses: Record<string, { status: string }> = await res.json();
+    return {
+      pending: MANDATORY.filter((d) => !statuses[d] || statuses[d].status === 'PENDING').length,
+      rejected: MANDATORY.filter((d) => statuses[d]?.status === 'REJECTED').length,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function AdminNotifications({ locale }: { locale: string }) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
 
   const fetchNotifications = async () => {
     const token = localStorage.getItem('authToken');
@@ -33,39 +73,45 @@ export default function AdminNotifications({ locale }: { locale: string }) {
       const sorted = [...list]
         .filter((p) => p.date1)
         .sort((a, b) => new Date(b.date1!).getTime() - new Date(a.date1!).getTime())
-        .slice(0, 20);
+        .slice(0, RECENT_PARTNERS);
 
-      const items: NotificationItem[] = [];
+      // One batched call for the whole set. This used to be a get-document-statuses POST
+      // per partner — twenty parallel requests every two minutes, and forty in development
+      // where StrictMode runs the effect twice — for a badge showing a single number.
+      const summaries = await getPartnerListSummary(sorted.map((p) => p.idPartner), token);
+      const byPartner = new Map<number, PartnerListSummary>(
+        summaries.map((s) => [s.idPartner, s])
+      );
 
-      const MANDATORY = ['nidfront', 'nidback', 'tradelicense', 'tin'];
-
-      await Promise.allSettled(
+      const counted = await Promise.allSettled(
         sorted.map(async (p) => {
-          try {
-            const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ id: p.idPartner }),
-            });
-            if (!res.ok) return;
-            const statuses: Record<string, { status: string }> = await res.json();
-            const pendingCount = MANDATORY.filter((d) => !statuses[d] || statuses[d].status === 'PENDING').length;
-            const rejectedCount = MANDATORY.filter((d) => statuses[d]?.status === 'REJECTED').length;
-            const needsReview = pendingCount + rejectedCount;
-            if (needsReview > 0) {
-              items.push({
-                id: p.idPartner,
-                partnerName: p.partnerName,
-                email: p.email,
-                partnerType: p.partnerType,
-                date: p.date1,
-                pendingDocs: pendingCount,
-                totalDocs: rejectedCount,
-              });
-            }
-          } catch {}
+          const summary = byPartner.get(p.idPartner);
+          const review =
+            summary?.mandatoryPending === undefined
+              ? // A backend without the mandatory counts: ask for this partner's documents
+                // directly. Slower, but the bell keeps working across a deploy in either
+                // order rather than silently reporting nothing outstanding.
+                await countFromDocumentStatuses(p.idPartner, token)
+              : {
+                  pending: summary.mandatoryPending,
+                  rejected: summary.mandatoryRejected ?? 0,
+                };
+          if (!review || review.pending + review.rejected === 0) return null;
+          return {
+            id: p.idPartner,
+            partnerName: p.partnerName,
+            email: p.email,
+            partnerType: p.partnerType,
+            date: p.date1,
+            pendingDocs: review.pending,
+            totalDocs: review.rejected,
+          } satisfies NotificationItem;
         })
       );
+
+      const items = counted
+        .map((r) => (r.status === 'fulfilled' ? r.value : null))
+        .filter((i): i is NotificationItem => i !== null);
 
       items.sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime());
       setNotifications(items);
@@ -76,7 +122,13 @@ export default function AdminNotifications({ locale }: { locale: string }) {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    // StrictMode runs this effect twice in development. Without the guard the whole
+    // fetch — partners plus summaries — ran twice on every page load, which is what made
+    // the network tab look like the bell was hammering the API.
+    if (!started.current) {
+      started.current = true;
+      fetchNotifications();
+    }
     const interval = setInterval(fetchNotifications, 120000);
     return () => clearInterval(interval);
   }, []);

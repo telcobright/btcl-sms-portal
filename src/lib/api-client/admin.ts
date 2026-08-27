@@ -988,7 +988,16 @@ export const getEmailLogs = async (
       { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` } }
     );
     const data = response.data;
-    if (data && typeof data === 'object' && 'content' in data) return data;
+    if (data && typeof data === 'object' && 'content' in data) {
+      // Jackson serializes the boolean `isHtml` getter as "html" (it strips the `is`
+      // prefix), so normalize both spellings — otherwise the detail drawer treats HTML
+      // emails as plain text and shows raw markup.
+      data.content = (data.content ?? []).map((r) => {
+        const anyR = r as EmailLogEntry & { html?: boolean };
+        return { ...r, isHtml: anyR.isHtml ?? anyR.html ?? false };
+      });
+      return data;
+    }
     return empty;
   } catch (error) {
     if (axios.isAxiosError(error)) {

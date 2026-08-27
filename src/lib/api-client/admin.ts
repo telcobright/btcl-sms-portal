@@ -939,6 +939,10 @@ export interface EmailLogEntry {
   body: string | null;
   isHtml: boolean;
   type: string | null;
+  /** Product line: pbx | vbs | cc | sms | general. Backs the admin tabs. */
+  service: string | null;
+  idPartner: number | null;
+  fromAddr: string | null;
   status: 'SENT' | 'FAILED' | string;
   errorMessage: string | null;
   createdAt: string | null;
@@ -957,6 +961,7 @@ export interface EmailLogFilter {
   size?: number;
   search?: string | null;
   type?: string | null;
+  service?: string | null;
   status?: string | null;
   startTime?: string | null;
   endTime?: string | null;
@@ -975,6 +980,7 @@ export const getEmailLogs = async (
         size: filter.size ?? 20,
         search: filter.search ?? null,
         type: filter.type ?? null,
+        service: filter.service ?? null,
         status: filter.status ?? null,
         startTime: filter.startTime ?? null,
         endTime: filter.endTime ?? null,

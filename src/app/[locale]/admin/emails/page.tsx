@@ -26,6 +26,29 @@ const TYPE_STYLES: Record<string, string> = {
   GENERAL: 'bg-gray-100 text-gray-600 border-gray-200',
 };
 
+// Service tabs. Value is the backend `service` tag; label is what the admin sees.
+// HCC is stored as `cc`. Empty value = All services.
+const SERVICE_TABS: { label: string; value: string }[] = [
+  { label: 'All', value: '' },
+  { label: 'PBX', value: 'pbx' },
+  { label: 'VBS', value: 'vbs' },
+  { label: 'HCC', value: 'cc' },
+  { label: 'SMS', value: 'sms' },
+  { label: 'General', value: 'general' },
+];
+
+const SERVICE_STYLES: Record<string, string> = {
+  pbx: 'bg-blue-50 text-blue-700 border-blue-200',
+  vbs: 'bg-purple-50 text-purple-700 border-purple-200',
+  cc: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  sms: 'bg-amber-50 text-amber-700 border-amber-200',
+  general: 'bg-gray-100 text-gray-600 border-gray-200',
+};
+
+const SERVICE_LABEL: Record<string, string> = {
+  pbx: 'PBX', vbs: 'VBS', cc: 'HCC', sms: 'SMS', general: 'General',
+};
+
 const PAGE_SIZE = 20;
 
 function formatDate(iso: string | null): string {
@@ -44,6 +67,7 @@ export default function AdminEmailsPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [type, setType] = useState('');
+  const [service, setService] = useState('');
   const [status, setStatus] = useState('');
   const [selected, setSelected] = useState<EmailLogEntry | null>(null);
 
@@ -65,7 +89,7 @@ export default function AdminEmailsPage() {
     setLoading(true);
     try {
       const res = await getEmailLogs(
-        { page, size: PAGE_SIZE, search: debouncedSearch || null, type: type || null, status: status || null },
+        { page, size: PAGE_SIZE, search: debouncedSearch || null, type: type || null, service: service || null, status: status || null },
         token
       );
       setData(res);
@@ -74,7 +98,7 @@ export default function AdminEmailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, type, status]);
+  }, [page, debouncedSearch, type, service, status]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -196,6 +220,26 @@ export default function AdminEmailsPage() {
 
       <ReadOnlyNotice />
 
+      {/* Service tabs */}
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-200 pb-2">
+        {SERVICE_TABS.map((tab) => {
+          const active = service === tab.value;
+          return (
+            <button
+              key={tab.value || 'all'}
+              onClick={() => { setService(tab.value); setPage(0); }}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-lg border transition-colors ${
+                active
+                  ? 'bg-[#0D529E] text-white border-[#0D529E] shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-blue-50 hover:text-[#0D529E]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px]">
@@ -245,17 +289,18 @@ export default function AdminEmailsPage() {
               <th className="px-4 py-3 font-semibold">Date</th>
               <th className="px-4 py-3 font-semibold">Recipient</th>
               <th className="px-4 py-3 font-semibold">Subject</th>
+              <th className="px-4 py-3 font-semibold">Service</th>
               <th className="px-4 py-3 font-semibold">Type</th>
               <th className="px-4 py-3 font-semibold">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading && rows.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-16 text-center">
+              <tr><td colSpan={6} className="px-4 py-16 text-center">
                 <svg className="w-7 h-7 mx-auto animate-spin text-[#0D529E]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-16 text-center text-gray-400">
+              <tr><td colSpan={6} className="px-4 py-16 text-center text-gray-400">
                 <svg className="w-10 h-10 mx-auto text-gray-200 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 No emails found
               </td></tr>
@@ -268,6 +313,11 @@ export default function AdminEmailsPage() {
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(r.createdAt)}</td>
                 <td className="px-4 py-3 text-gray-900 font-medium max-w-[200px] truncate" title={r.recipients}>{r.recipients}</td>
                 <td className="px-4 py-3 text-gray-700 max-w-[320px] truncate" title={r.subject || ''}>{r.subject || '—'}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${SERVICE_STYLES[r.service || 'general'] || SERVICE_STYLES.general}`}>
+                    {SERVICE_LABEL[r.service || 'general'] || (r.service || 'General')}
+                  </span>
+                </td>
                 <td className="px-4 py-3">
                   <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${TYPE_STYLES[r.type || 'GENERAL'] || TYPE_STYLES.GENERAL}`}>
                     {r.type || 'GENERAL'}

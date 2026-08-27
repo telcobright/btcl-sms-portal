@@ -232,6 +232,16 @@ export default function RegisterPage() {
   const watchedCustomerType = useWatch({ control: otherInfoForm.control, name: 'customerType' });
   const isNidFrontUploaded = !!watchedNidFrontSide;
 
+  // Switching between 10- and 17-digit changes which length is correct, so the number
+  // has to be re-checked. Without this the previous type's error stays on screen until
+  // the customer edits the number itself.
+  useEffect(() => {
+    if (personalInfoForm.getValues('nidNumber')) {
+      personalInfoForm.trigger('nidNumber');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedNidDigitType]);
+
   // NOTE: there is deliberately no beforeunload/unmount rollback here any more.
   // Registration goes through the atomic /partner/register endpoint, so closing the
   // tab mid-flow cannot leave a half-created partner — nothing is written until the
@@ -713,10 +723,13 @@ export default function RegisterPage() {
         }
 
         if (result.data.nidNumber) {
-          personalInfoForm.setValue('nidNumber', result.data.nidNumber, { shouldValidate: true });
+          // Type first: the number's length rule depends on it, so setting the number
+          // first validates a 17-digit NID against the 10-digit rule and leaves that
+          // error on screen.
           if (result.data.nidDigitType) {
             personalInfoForm.setValue('nidDigitType', result.data.nidDigitType, { shouldValidate: true });
           }
+          personalInfoForm.setValue('nidNumber', result.data.nidNumber, { shouldValidate: true });
           setNidExtractedFromOcr(true);
           toast.success('NID number extracted successfully!');
         }
@@ -1738,7 +1751,11 @@ export default function RegisterPage() {
                       rules={{
                         required: 'NID number is required',
                         validate: async (value) => {
-                          const digitType = watchedNidDigitType;
+                          // Read live: react-hook-form registers a Controller's `rules`
+                          // once and never re-registers them, so a captured
+                          // `watchedNidDigitType` stays stuck on its first-render value
+                          // ('10') no matter which type the customer actually picks.
+                          const digitType = personalInfoForm.getValues('nidDigitType');
                           if (digitType === '10' && value.length !== 10) {
                             return 'NID must be exactly 10 digits';
                           }

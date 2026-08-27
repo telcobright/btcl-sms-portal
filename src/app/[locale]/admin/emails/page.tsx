@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { getEmailLogs, EmailLogEntry, EmailLogPage } from '@/lib/api-client/admin';
 import { API_BASE_URL } from '@/config/api';
 import { showApiError } from '@/lib/api-error';
+import { useCanEdit } from '@/hooks/useCanEdit';
+import ReadOnlyNotice from '../components/ReadOnlyNotice';
 
 const TYPE_OPTIONS = [
   'WELCOME', 'APPROVAL', 'REJECTION', 'REGISTRATION', 'CONTACT',
@@ -34,6 +36,8 @@ function formatDate(iso: string | null): string {
 }
 
 export default function AdminEmailsPage() {
+  // Read only leaves the log fully browsable; only sending is withheld.
+  const canEdit = useCanEdit();
   const [data, setData] = useState<EmailLogPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -75,12 +79,14 @@ export default function AdminEmailsPage() {
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
   const openCompose = () => {
+    if (!canEdit) return;
     setForm({ to: '', subject: '', body: '', isHtml: false });
     setShowPreview(false);
     setComposeOpen(true);
   };
 
   const handleSend = async () => {
+    if (!canEdit) return;
     const to = form.to.trim();
     if (!to || !form.subject.trim() || !form.body.trim()) {
       toast.error('Recipient, subject and body are all required');
@@ -118,6 +124,38 @@ export default function AdminEmailsPage() {
     }
   };
 
+  // Resend a (typically failed) email by re-posting its stored recipients/subject/body.
+  const [resendingId, setResendingId] = useState<number | null>(null);
+  const resendEmail = async (entry: EmailLogEntry, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!canEdit) return;
+    const recipients = (entry.recipients || '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (recipients.length === 0) { toast.error('No recipient on this email to resend to'); return; }
+    if (!entry.body) { toast.error('This email has no stored body to resend'); return; }
+    setResendingId(entry.id);
+    try {
+      const toPayload = recipients.length > 1 ? recipients : recipients[0];
+      const res = await fetch(`${API_BASE_URL}/api/v1/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: toPayload, subject: entry.subject || '', body: entry.body || '', isHtml: entry.isHtml }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (res.ok && result.success !== false) {
+        toast.success('Email resent');
+        setSelected(null);
+        // Send is async + logged on a background thread — give it a moment, then refresh.
+        setTimeout(() => { if (page === 0) fetchLogs(); else setPage(0); }, 1800);
+      } else {
+        showApiError({ ...result, status: res.status }, { fallbackMessage: 'Failed to resend email' });
+      }
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Failed to resend email' });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
   const rows = data?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
@@ -142,17 +180,21 @@ export default function AdminEmailsPage() {
             </svg>
             Refresh
           </button>
-          <button
-            onClick={openCompose}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#0D529E] hover:bg-[#1F3C71] rounded-xl shadow-sm transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Compose
-          </button>
+          {canEdit && (
+            <button
+              onClick={openCompose}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#0D529E] hover:bg-[#1F3C71] rounded-xl shadow-sm transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Compose
+            </button>
+          )}
         </div>
       </div>
+
+      <ReadOnlyNotice />
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center gap-3">
@@ -238,10 +280,27 @@ export default function AdminEmailsPage() {
                       Sent
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-red-600 text-xs font-semibold">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                      Failed
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-red-600 text-xs font-semibold">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                        Failed
+                      </span>
+                      {canEdit && (
+                      <button
+                        onClick={(e) => resendEmail(r, e)}
+                        disabled={resendingId === r.id}
+                        title="Resend this email"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-[#0D529E] border border-[#0D529E]/30 rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {resendingId === r.id ? (
+                          <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        )}
+                        {resendingId === r.id ? 'Resending…' : 'Resend'}
+                      </button>
+                      )}
+                    </div>
                   )}
                 </td>
               </tr>
@@ -322,6 +381,24 @@ export default function AdminEmailsPage() {
                 <pre className="whitespace-pre-wrap break-words text-sm text-gray-700 font-sans">{selected.body || '(empty body)'}</pre>
               )}
             </div>
+
+            {/* Footer — resend for failed emails */}
+            {canEdit && selected.status === 'FAILED' && (
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-3 bg-gray-50/50">
+                <p className="text-xs text-gray-500">This email failed to send. You can retry with the same content.</p>
+                <button
+                  onClick={() => resendEmail(selected)}
+                  disabled={resendingId === selected.id}
+                  className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#0D529E] hover:bg-[#1F3C71] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendingId === selected.id ? (
+                    <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg> Resending…</>
+                  ) : (
+                    <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Resend Email</>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

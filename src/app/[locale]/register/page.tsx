@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller, SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { showApiError } from '@/lib/api-error';
+import { findOversizedDocument, MAX_DOCUMENT_LABEL, pickDocument } from '@/lib/uploadLimits';
 import { FEATURE_FLAGS, API_BASE_URL, NID_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 // Country list with codes
@@ -137,7 +138,6 @@ export default function RegisterPage() {
   // change with it, so the form has to re-render when the applicant switches type.
   const selectedCategory: CustomerCategory =
     verificationForm.watch('customerCategory') || 'CORPORATE';
-  const isCorporate = selectedCategory === 'CORPORATE';
   const isGovernment =
     selectedCategory === 'GOVERNMENT_INDIVIDUAL' ||
     selectedCategory === 'GOVERNMENT_CORPORATE';
@@ -831,6 +831,27 @@ export default function RegisterPage() {
         govtAuthorization: otherInfoData.govtAuthorizationFile ?? null,
       };
 
+      // Checked before sending, not after: the documents go up in one multipart request,
+      // so an oversized file would otherwise only fail once the whole upload had been
+      // attempted -- which on a slow connection looks like a random failure minutes later.
+      const oversized = findOversizedDocument({
+        'NID front side': registrationPayload.nidFront,
+        'NID back side': registrationPayload.nidBack,
+        'Trade licence': registrationPayload.tradeLicense,
+        'TIN certificate': registrationPayload.tinCertificate,
+        'BIN certificate': registrationPayload.binCertificate,
+        'Last tax return': registrationPayload.lastTaxReturn,
+        'BTRC aggregator licence': registrationPayload.btrcRegistration,
+        'Office order / authorisation letter': registrationPayload.govtAuthorization,
+        'Photo': registrationPayload.photo,
+        'VAT / joint stock document': registrationPayload.vatDoc,
+        'SLA': registrationPayload.sla,
+      });
+      if (oversized) {
+        toast.error(oversized, { duration: 6000 });
+        return;
+      }
+
       const partnerResponse = await registerPartner(registrationPayload);
       const idPartner = partnerResponse?.idPartner || partnerResponse?.id || null;
       if (!idPartner) {
@@ -967,6 +988,16 @@ export default function RegisterPage() {
             <p className="text-base text-gray-600">
               Please provide your information to get started
             </p>
+            {step === 3 && (
+              <p className="mt-3 inline-flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-800">
+                <span aria-hidden="true">&#9888;</span>
+                <span>
+                  Each document must be <strong>{MAX_DOCUMENT_LABEL} or smaller</strong>. Photos taken on a
+                  phone are often larger than this &mdash; re-take them at a lower resolution or crop the
+                  screenshot before uploading, otherwise the upload can fail on a slow connection.
+                </span>
+              </p>
+            )}
           </div>
 
           <div className="rounded-2xl border border-gray-200 bg-white p-7">
@@ -1505,7 +1536,7 @@ export default function RegisterPage() {
                               accept="image/*"
                               disabled={isExtractingOcr}
                               onChange={(e) => {
-                                const file = e.target.files?.[0] || null;
+                                const file = pickDocument(e, 'NID front side');
                                 onChange(file);
                                 // Trigger OCR extraction for image files
                                 if (file && file.type.startsWith('image/')) {
@@ -1568,7 +1599,7 @@ export default function RegisterPage() {
                               type="file"
                               accept="image/*,.pdf"
                               onChange={(e) =>
-                                onChange(e.target.files?.[0] || null)
+                                onChange(pickDocument(e, 'NID back side'))
                               }
                               className={`w-full px-3 py-2 border ${
                                 fieldState.error
@@ -2031,7 +2062,7 @@ export default function RegisterPage() {
                         <input
                           type="file"
                           onChange={(e) =>
-                            onChange(e.target.files?.[0] || null)
+                            onChange(pickDocument(e, 'Trade licence'))
                           }
                           className={`w-full px-3 py-2 border ${
                             fieldState.error
@@ -2091,7 +2122,7 @@ export default function RegisterPage() {
                         <input
                           type="file"
                           onChange={(e) =>
-                            onChange(e.target.files?.[0] || null)
+                            onChange(pickDocument(e, 'TIN certificate'))
                           }
                           className={`w-full px-3 py-2 border ${
                             fieldState.error
@@ -2111,18 +2142,17 @@ export default function RegisterPage() {
 
                 <div className="mt-4">
                   <label className="block text-black font-medium mb-1">
-                    Upload BIN Certificate{!isCorporate && ' (Optional)'}
+                    Upload BIN Certificate (Optional)
                   </label>
                   <Controller
                     name="bincertificate"
                     control={otherInfoForm.control}
-                    rules={{ required: isCorporate ? 'BIN Certificate is required' : false }}
                     render={({ field: { onChange }, fieldState }) => (
                       <>
                         <input
                           type="file"
                           onChange={(e) =>
-                            onChange(e.target.files?.[0] || null)
+                            onChange(pickDocument(e, 'BIN certificate'))
                           }
                           className={`w-full px-3 py-2 border ${
                             fieldState.error
@@ -2181,7 +2211,7 @@ export default function RegisterPage() {
                         <input
                           type="file"
                           onChange={(e) =>
-                            onChange(e.target.files?.[0] || null)
+                            onChange(pickDocument(e, 'Last tax return'))
                           }
                           className={`w-full px-3 py-2 border ${
                             fieldState.error
@@ -2209,7 +2239,7 @@ export default function RegisterPage() {
                     render={({ field: { onChange } }) => (
                       <input
                         type="file"
-                        onChange={(e) => onChange(e.target.files?.[0] || null)}
+                        onChange={(e) => onChange(pickDocument(e, 'BTRC aggregator licence'))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                       />
                     )}
@@ -2233,7 +2263,7 @@ export default function RegisterPage() {
                         <>
                           <input
                             type="file"
-                            onChange={(e) => onChange(e.target.files?.[0] || null)}
+                            onChange={(e) => onChange(pickDocument(e, 'Office order / authorisation letter'))}
                             className={`w-full px-3 py-2 border ${
                               fieldState.error ? 'border-red-500' : 'border-gray-300'
                             } rounded-md text-black`}
@@ -2272,7 +2302,7 @@ export default function RegisterPage() {
                     render={({ field: { onChange } }) => (
                       <input
                         type="file"
-                        onChange={(e) => onChange(e.target.files?.[0] || null)}
+                        onChange={(e) => onChange(pickDocument(e, 'Photo'))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                       />
                     )}

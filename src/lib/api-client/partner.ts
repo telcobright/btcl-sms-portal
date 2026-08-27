@@ -350,16 +350,43 @@ export const registerPartner = async (
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data as any;
-      // Spring's ResponseStatusException puts the reason in `message`; the
-      // validation errors are a single semicolon-joined string.
+      console.error('❌ Registration failed:', { status, code: error.code, data });
+
+      // No response at all means the request never reached the server: the upload ran out
+      // of time, or the connection dropped partway through it. This is by far the most
+      // common registration failure on mobile data, and it used to be reported with the
+      // same flat message as a server rejection — leaving the customer with nothing to act
+      // on and no reason to change anything before retrying.
+      if (!error.response) {
+        throw new Error(
+          error.code === 'ECONNABORTED'
+            ? 'Your documents did not finish uploading in time, so no account was created. ' +
+              'Please connect to a stronger network, check that each document is 5 MB or smaller, and try again.'
+            : 'The connection was lost while your documents were uploading, so no account was created. ' +
+              'Please check your internet connection and try again.'
+        );
+      }
+
+      // Spring's ResponseStatusException puts the reason in `message`; the validation
+      // errors are a single semicolon-joined string. A proxy's HTML error page is not a
+      // message worth showing, so it is discarded in favour of the status-specific text.
+      const body = typeof data === 'string' ? data.trim() : null;
       const serverMessage =
-        (typeof data === 'string' ? data : data?.message || data?.error) ?? null;
-      console.error('❌ Registration failed:', { status, data });
+        (body !== null ? (body.startsWith('<') ? null : body || null) : data?.message || data?.error) ??
+        null;
+      if (serverMessage) throw new Error(serverMessage);
+
+      if (status === 409) {
+        throw new Error('That company name or email is already registered.');
+      }
+      if (status === 413) {
+        throw new Error(
+          'Your documents are too large to upload, so no account was created. ' +
+            'Please make sure each document is 5 MB or smaller and try again.'
+        );
+      }
       throw new Error(
-        serverMessage ||
-          (status === 409
-            ? 'That company name or email is already registered.'
-            : 'Registration failed. No account was created — please try again.')
+        'Registration could not be completed and no account was created. Please try again.'
       );
     }
     throw error;

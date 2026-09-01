@@ -22,18 +22,34 @@ DEPLOY_PATH="/var/www/btcl-sms-portal"
 APP_NAME="btcl-sms-portal"
 PM2_APP_NAME="btcl-portal"
 
-# Load credentials from .env.deploy
+# Load credentials from .env.deploy, if there are any to load.
+# A password is only one of two ways in: with the deploying machine's key authorised on
+# the jump host, ssh/scp need no password at all - and sshpass, the only way to feed one
+# in non-interactively, is not installed everywhere this script runs.
 if [ -f ".env.deploy" ]; then
     source .env.deploy
-else
-    echo -e "${RED}Error: .env.deploy not found${NC}"
-    echo "Create .env.deploy with: JUMP_PASS='your_password'"
-    exit 1
 fi
 
-if [ -z "$JUMP_PASS" ]; then
-    echo -e "${RED}Error: SSH password not set${NC}"
-    exit 1
+if [ -n "$JUMP_PASS" ]; then
+    if ! command -v sshpass &> /dev/null; then
+        echo -e "${RED}Error: JUMP_PASS is set but sshpass is not installed${NC}"
+        echo "Install sshpass, or drop JUMP_PASS and authorise your key instead:"
+        echo "  ssh-copy-id -p $JUMP_PORT $JUMP_USER@$JUMP_HOST"
+        exit 1
+    fi
+    SSH=(sshpass -p "$JUMP_PASS" ssh)
+    SCP=(sshpass -p "$JUMP_PASS" scp)
+else
+    echo -e "${YELLOW}No JUMP_PASS set - using SSH key authentication${NC}"
+    SSH=(ssh)
+    SCP=(scp)
+    if ! ssh -p $JUMP_PORT -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=no $JUMP_USER@$JUMP_HOST true 2>/dev/null; then
+        echo -e "${RED}Error: cannot log in to $JUMP_USER@$JUMP_HOST with a key${NC}"
+        echo "Authorise this machine's key first:"
+        echo "  ssh-copy-id -p $JUMP_PORT $JUMP_USER@$JUMP_HOST"
+        echo "or put JUMP_PASS='your_password' in .env.deploy (needs sshpass)."
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}========================================${NC}"
@@ -68,12 +84,12 @@ echo -e "${GREEN}Package created: $DEPLOY_ARCHIVE${NC}"
 
 # Step 3: Upload to jump host
 echo -e "\n${YELLOW}Step 3: Uploading to jump host...${NC}"
-sshpass -p "$JUMP_PASS" scp -P $JUMP_PORT -o StrictHostKeyChecking=no \
+"${SCP[@]}" -P $JUMP_PORT -o StrictHostKeyChecking=no \
     $DEPLOY_ARCHIVE $JUMP_USER@$JUMP_HOST:/tmp/
 
 # Upload .env.production if it exists
 if [ -f ".env.production" ]; then
-    sshpass -p "$JUMP_PASS" scp -P $JUMP_PORT -o StrictHostKeyChecking=no \
+    "${SCP[@]}" -P $JUMP_PORT -o StrictHostKeyChecking=no \
         .env.production $JUMP_USER@$JUMP_HOST:/tmp/btcl.env
     echo -e "${GREEN}Env file uploaded!${NC}"
 fi
@@ -83,7 +99,7 @@ echo -e "${GREEN}Upload complete!${NC}"
 # Step 4: Deploy to LXC container and start with PM2
 echo -e "\n${YELLOW}Step 4: Deploying to LXC container...${NC}"
 
-sshpass -p "$JUMP_PASS" ssh -p $JUMP_PORT -o StrictHostKeyChecking=no \
+"${SSH[@]}" -p $JUMP_PORT -o StrictHostKeyChecking=no \
     $JUMP_USER@$JUMP_HOST << 'ENDSSH'
 
     echo "Connected to jump host"

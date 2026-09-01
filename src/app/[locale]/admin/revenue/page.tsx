@@ -23,10 +23,14 @@ import {
 
 const PAGE_SIZE = 25;
 
-const money = (v: string | null) =>
-  v == null
-    ? '—'
-    : Number(v).toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = (v: string | null) => {
+  if (v == null) return '—';
+  const n = Number(v);
+  // The gateway sends amounts as strings; a malformed one used to render as "NaN".
+  return Number.isFinite(n)
+    ? n.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '—';
+};
 
 const statusStyle = (status: string | null) => {
   if (isSettled(status)) return 'bg-green-100 text-green-700';
@@ -61,8 +65,10 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 export default function RevenuePage() {
   const [filters, setFilters] = useState<RevenueFilters>({ page: 0, size: PAGE_SIZE });
   const [q, setQ] = useState('');
+  const [storeId, setStoreId] = useState('');
   const [result, setResult] = useState<RevenuePage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
 
   // The query the table currently shows. Export reuses exactly this, so the file can
@@ -72,8 +78,19 @@ export default function RevenuePage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
+    // Read the token per request rather than leaning on axios's default Authorization
+    // header: that default is only set inside setAuthToken() at login and nothing puts
+    // it back, so a refresh or a bookmarked URL sent this request unauthenticated and
+    // the screen then blamed the account's permissions for it.
+    const authToken = localStorage.getItem('authToken') || undefined;
+    if (!authToken) {
+      setError('Your session has expired. Please sign in again.');
+      setResult(null);
+      setLoading(false);
+      return;
+    }
     try {
-      setResult(await getRevenueTransactions(applied));
+      setResult(await getRevenueTransactions(applied, authToken));
     } catch (e: any) {
       setError(
         e?.response?.status === 403
@@ -93,6 +110,60 @@ export default function RevenuePage() {
   // Any filter change returns to page 1; staying on page 7 of a new result set is meaningless.
   const setFilter = (patch: Partial<RevenueFilters>) =>
     setFilters((f) => ({ ...f, ...patch, page: 0 }));
+
+  // Store ID is typed, not picked from a list. Applying it straight from onChange fired
+  // one request per character, so it is debounced into the filters instead.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const next = storeId.trim() || undefined;
+      setFilters((f) => (f.storeId === next ? f : { ...f, storeId: next, page: 0 }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [storeId]);
+
+  /**
+   * Download the CSV.
+   *
+   * A plain <a href> cannot carry the bearer token - browser navigation sends no
+   * Authorization header, and btcl_auth is only a marker cookie for the Next
+   * middleware, not a credential the payment service reads. So fetch it and save
+   * the blob.
+   */
+  const exportCsv = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setError('Your session has expired. Please sign in again.');
+      return;
+    }
+    setExporting(true);
+    setError('');
+    try {
+      const res = await fetch(revenueExportUrl(applied), {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) {
+        setError(
+          res.status === 403
+            ? 'Your account does not have access to revenue reports.'
+            : 'Could not export transactions. Please try again.'
+        );
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `revenue-${applied.from || 'all'}-to-${applied.to || 'all'}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Could not export transactions. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const toggleCsv = (current: string | undefined, value: string) => {
     const set = new Set((current || '').split(',').filter(Boolean));
@@ -117,12 +188,13 @@ export default function RevenuePage() {
             All stores and services. Times shown in BST (UTC+6).
           </p>
         </div>
-        <a
-          href={revenueExportUrl(applied)}
-          className="px-4 py-2 rounded-lg bg-[#0D529E] text-white text-sm font-medium hover:bg-[#1F3C71]"
+        <button
+          onClick={exportCsv}
+          disabled={exporting}
+          className="px-4 py-2 rounded-lg bg-[#0D529E] text-white text-sm font-medium hover:bg-[#1F3C71] disabled:opacity-50"
         >
-          Export CSV
-        </a>
+          {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
       </div>
 
       {/* Totals cover the whole filtered set, not just this page. */}
@@ -149,6 +221,7 @@ export default function RevenuePage() {
           <Field label="From date">
             <input
               type="date"
+              value={filters.from || ''}
               className="input-field w-full"
               onChange={(e) => setFilter({ from: e.target.value || undefined })}
             />
@@ -156,6 +229,7 @@ export default function RevenuePage() {
           <Field label="To date">
             <input
               type="date"
+              value={filters.to || ''}
               className="input-field w-full"
               onChange={(e) => setFilter({ to: e.target.value || undefined })}
             />
@@ -163,9 +237,10 @@ export default function RevenuePage() {
           <Field label="Store ID">
             <input
               type="text"
+              value={storeId}
               placeholder="e.g. HostedIPPBXlive"
               className="input-field w-full"
-              onChange={(e) => setFilter({ storeId: e.target.value || undefined })}
+              onChange={(e) => setStoreId(e.target.value)}
             />
           </Field>
           <Field label="Search">

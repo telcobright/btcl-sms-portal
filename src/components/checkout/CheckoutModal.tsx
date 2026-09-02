@@ -69,7 +69,7 @@ export default function CheckoutModal({
 
   // Package tier order per service type (higher number = higher tier)
   const packageTierOrder: Record<string, Record<string, number>> = {
-    'hosted-pbx': { bronze: 1, silver: 2, gold: 3 },
+    'hosted-pbx': { starter: 1, economy: 2, bronze: 3, silver: 4, gold: 5 },
     'voice-broadcast': { basic: 1, standard: 2, enterprise: 3 },
     'contact-center': { basic: 1 },
     sms: { basic: 1, standard: 2, enterprise: 3 },
@@ -77,6 +77,8 @@ export default function CheckoutModal({
 
   // Map packageId → tier name
   const packageIdToName: Record<number, string> = {
+    9142: 'starter',
+    9143: 'economy', // PBX (new)
     9132: 'bronze',
     9133: 'silver',
     9134: 'gold', // PBX
@@ -449,6 +451,8 @@ export default function CheckoutModal({
   const getPackageIdInt = (packageId: string, service: string): number => {
     const packageIdMap: { [key: string]: { [key: string]: number } } = {
       'hosted-pbx': {
+        starter: 9142,
+        economy: 9143,
         bronze: 9132,
         silver: 9133,
         gold: 9134,

@@ -64,13 +64,15 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
   // Package tier order per service (higher number = higher tier)
   const packageTierOrder: Record<string, Record<string, number>> = {
-    'hosted-pbx': { bronze: 1, silver: 2, gold: 3 },
+    'hosted-pbx': { starter: 1, economy: 2, bronze: 3, silver: 4, gold: 5 },
     'voice-broadcast': { basic: 1, standard: 2, enterprise: 3 },
     'contact-center': { basic: 1 },
   };
 
   // Maps packageId integer → pkg.id string used in pricing cards
   const packageIdToSlug: Record<number, string> = {
+    9142: 'starter',
+    9143: 'economy',
     9132: 'bronze',
     9133: 'silver',
     9134: 'gold',
@@ -533,6 +535,56 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
   // Hosted PBX Pricing
   const pbxPackages = [
+    {
+      id: 'starter',
+      name: locale === 'en' ? 'Starter' : 'স্টার্টার',
+      extensions: 3,
+      callChannels: 2,
+      ivr: 1,
+      freeTalktime: 60,
+      callCharge: 0.45,
+      price: 250,
+      postpaidCredit: 1000,
+      popular: false,
+      features: [
+        locale === 'en' ? '3 Extensions' : '৩টি এক্সটেনশন',
+        locale === 'en' ? '2 Call Channels' : '২টি কল চ্যানেল',
+        locale === 'en' ? '1 IVR' : '১টি IVR',
+        locale === 'en' ? '60 Minutes Free Talktime' : '৬০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
+        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
+        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
+        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
+        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
+        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
+        locale === 'en' ? '৳0.45/min Call Charge' : '৳০.৪৫/মিনিট কল চার্জ',
+      ],
+    },
+    {
+      id: 'economy',
+      name: locale === 'en' ? 'Economy' : 'ইকোনমি',
+      extensions: 5,
+      callChannels: 2,
+      ivr: 1,
+      freeTalktime: 120,
+      callCharge: 0.45,
+      price: 450,
+      postpaidCredit: 2000,
+      popular: false,
+      features: [
+        locale === 'en' ? '5 Extensions' : '৫টি এক্সটেনশন',
+        locale === 'en' ? '2 Call Channels' : '২টি কল চ্যানেল',
+        locale === 'en' ? '1 IVR' : '১টি IVR',
+        locale === 'en' ? '120 Minutes Free Talktime' : '১২০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
+        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
+        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
+        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
+        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
+        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
+        locale === 'en' ? '৳0.45/min Call Charge' : '৳০.৪৫/মিনিট কল চার্জ',
+      ],
+    },
     {
       id: 'bronze',
       name: locale === 'en' ? 'Bronze' : 'ব্রোঞ্জ',

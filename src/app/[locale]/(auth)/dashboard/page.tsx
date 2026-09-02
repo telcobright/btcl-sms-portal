@@ -34,6 +34,8 @@ import toast from 'react-hot-toast';
 
 // Map idPackage to human-readable names (backend returns packageName=null)
 const PACKAGE_NAMES: Record<number, string> = {
+  9142: 'PBX Starter',
+  9143: 'PBX Economy',
   9132: 'PBX Bronze',
   9133: 'PBX Silver',
   9134: 'PBX Gold',

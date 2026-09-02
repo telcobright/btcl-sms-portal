@@ -510,10 +510,23 @@ export default function Dashboard() {
         const { service, data } = result.value;
         if (!Array.isArray(data) || data.length === 0) return;
 
-        // Find first active non-sentinel purchase
+        // Find the active SUBSCRIPTION PLAN that is NOT past its expiry.
+        // Two things a naive check gets wrong:
+        //  1. packagepurchase.status stays 'ACTIVE' after a package expires
+        //     (expiry is by date, not status) — so require expireDate > now.
+        //  2. TopUp / TF_min / Mint / Postpaid_Credit are ACTIVE-and-valid but
+        //     are NOT the plan — counting them made an expired Bronze look active
+        //     because the partner's TF_min was still valid. Exclude them.
+        // PACKAGE_NAMES is the subscription-plan whitelist (Bronze/Silver/Gold,
+        // VBS, CC, SMS tiers) — same idea as hosted-pbx /billing's PACKAGE_MAPPING.
+        // Only a plan counts, so TF_min (10000) / TopUp / Mint / Postpaid_Credit,
+        // which stay ACTIVE-and-valid, don't make an expired plan look active.
+        const now = new Date();
         const activeItem = data.find(
           (item: any) =>
-            item.idPackage !== 9999 && item.status?.toUpperCase() === 'ACTIVE'
+            PACKAGE_NAMES[item.idPackage] &&
+            item.status?.toUpperCase() === 'ACTIVE' &&
+            (!item.expireDate || new Date(item.expireDate) > now)
         );
         if (!activeItem) return;
 
@@ -583,9 +596,10 @@ export default function Dashboard() {
           const purchaseList = Array.isArray(data)
             ? data
             : data.content || data.data || data.purchases || data.list || [];
-          // Filter out idPackage 9999 before checking
+          // Only subscription plans count as "had a plan" (drives Renew vs Buy Now);
+          // TopUp / TF_min / Mint / Postpaid_Credit are not plans.
           const filteredList = purchaseList.filter(
-            (p: PurchaseHistory) => p.idPackage !== 9999
+            (p: PurchaseHistory) => PACKAGE_NAMES[p.idPackage]
           );
           if (filteredList.length > 0) {
             historyByService[service] = true;

@@ -232,10 +232,14 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               const purchases = Array.isArray(data)
                 ? data
                 : (data?.content ?? data?.data ?? []);
+              // Only subscription PLANS decide active/expired here — a partner's
+              // TopUp / TF_min / Mint / Postpaid_Credit are ACTIVE-and-valid but
+              // are NOT the plan, so they must not count (otherwise an expired
+              // Bronze looks "active" because TF_min is still valid).
               const active = purchases.find(
                 (p: any) =>
                   p.idPackage &&
-                  p.idPackage !== 9999 &&
+                  packageIdToSlug[p.idPackage] &&
                   p.status === 'ACTIVE' &&
                   (!p.expireDate || new Date(p.expireDate) > new Date())
               );
@@ -257,7 +261,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${authToken}`,
                 },
-                body: JSON.stringify({ page: 0, size: 5, idPartner }),
+                body: JSON.stringify({ page: 0, size: 20, idPartner }),
               }
             );
             if (historyRes.ok) {
@@ -265,8 +269,17 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               const history = Array.isArray(historyData)
                 ? historyData
                 : (historyData?.content ?? historyData?.data ?? []);
+              // Only consider purchases that map to a pricing plan (bronze/silver/…)
+              // — a partner's most recent purchase is often a TopUp/TF_min, which has
+              // no slug, so sorting all purchases would yield expiredSlug=null and the
+              // expired plan card would wrongly show "Buy Now" instead of "Renew Plan".
               const pastPurchase = history
-                .filter((p: any) => p.idPackage && p.idPackage !== 9999)
+                .filter(
+                  (p: any) =>
+                    p.idPackage &&
+                    p.idPackage !== 9999 &&
+                    packageIdToSlug[p.idPackage]
+                )
                 .sort(
                   (a: any, b: any) =>
                     new Date(b.purchaseDate).getTime() -
@@ -933,6 +946,29 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
         >
           ↻ {locale === 'en' ? 'Renew Plan' : 'প্ল্যান নবায়ন করুন'}
+        </Button>
+      );
+    }
+    if (expiredPackages[serviceId]) {
+      // Current plan is expired: the expired tier shows "Renew" (above); the other
+      // tiers become Upgrade (higher) / Downgrade (lower) relative to it, just like
+      // when the plan is active.
+      const tiers = packageTierOrder[serviceId] ?? {};
+      const expiredTier = tiers[expiredPackages[serviceId]!] ?? 0;
+      const thisTier = tiers[pkg.id] ?? 0;
+      const isUpgrade = thisTier > expiredTier;
+      return (
+        <Button
+          onClick={() => handleBuyNow(pkg, serviceId)}
+          className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
+        >
+          {isUpgrade
+            ? locale === 'en'
+              ? '↑ Upgrade Plan'
+              : '↑ আপগ্রেড করুন'
+            : locale === 'en'
+              ? '↓ Downgrade Plan'
+              : '↓ ডাউনগ্রেড করুন'}
         </Button>
       );
     }

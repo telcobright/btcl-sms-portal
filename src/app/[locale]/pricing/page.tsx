@@ -1048,9 +1048,20 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     isPostpaid = false
   ) => {
     const isSingle = packages.length === 1;
+    // Widen the container and fan the cards into a single row as the plan count
+    // grows (PBX now has 5 tiers: Starter/Economy/Bronze/Silver/Gold).
+    const containerMax = packages.length >= 5 ? 'max-w-screen-2xl' : 'max-w-6xl';
+    const cardGap = packages.length >= 5 ? 'gap-5' : 'gap-8';
+    const gridCols = isSingle
+      ? 'grid-cols-1 max-w-md mx-auto'
+      : packages.length >= 5
+      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
+      : packages.length === 4
+      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+      : 'grid-cols-1 md:grid-cols-3';
     return (
       <div id={serviceId} className={`py-20 ${bgClass}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`${containerMax} mx-auto px-4 sm:px-6 lg:px-8`}>
           {/* Section Header */}
           <div className="text-center mb-12">
             <div
@@ -1117,7 +1128,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
           {/* Cards Grid */}
           <div
-            className={`grid gap-8 ${isSingle ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-3'}`}
+            className={`grid ${cardGap} ${gridCols}`}
           >
             {packages.map((pkg: any) => (
               <div

@@ -51,6 +51,8 @@ export interface RevenueTransaction {
   subscriberName: string | null;
   subscriberMobile: string | null;
   subscriberEmail: string | null;
+  /** Telephone on the partner account - not the payer's number; the two often differ. */
+  partnerContact: string | null;
   idPartner: number | null;
   idPackage: number | null;
 }

@@ -332,6 +332,7 @@ export default function RevenuePage() {
                 <th className="px-4 py-3 font-semibold text-right">Amount</th>
                 <th className="px-4 py-3 font-semibold">Subscriber</th>
                 <th className="px-4 py-3 font-semibold">Mobile</th>
+                <th className="px-4 py-3 font-semibold">Partner Contact</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
               </tr>
@@ -339,14 +340,14 @@ export default function RevenuePage() {
             <tbody className="divide-y divide-gray-100">
               {loading && (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-gray-500">
+                  <td colSpan={10} className="text-center py-8 text-gray-500">
                     Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-gray-500">
+                  <td colSpan={10} className="text-center py-8 text-gray-500">
                     No transactions match these filters.
                   </td>
                 </tr>
@@ -363,6 +364,7 @@ export default function RevenuePage() {
                     <td className="px-4 py-3 text-right font-medium">{money(t.amount)}</td>
                     <td className="px-4 py-3">{t.subscriberName || '—'}</td>
                     <td className="px-4 py-3">{t.subscriberMobile || '—'}</td>
+                    <td className="px-4 py-3">{t.partnerContact || '—'}</td>
                     <td className="px-4 py-3 text-xs">{t.subscriberEmail || '—'}</td>
                     <td className="px-4 py-3">
                       <span

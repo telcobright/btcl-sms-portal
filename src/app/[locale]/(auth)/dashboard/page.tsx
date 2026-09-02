@@ -596,10 +596,11 @@ export default function Dashboard() {
           const purchaseList = Array.isArray(data)
             ? data
             : data.content || data.data || data.purchases || data.list || [];
-          // Only subscription plans count as "had a plan" (drives Renew vs Buy Now);
-          // TopUp / TF_min / Mint / Postpaid_Credit are not plans.
+          // Invoice History must show ALL purchases (plans + TopUp/TF_min/etc.);
+          // only the sentinel 9999 is dropped. The active-vs-expired plan decision
+          // is handled in fetchPurchaseData, not here.
           const filteredList = purchaseList.filter(
-            (p: PurchaseHistory) => PACKAGE_NAMES[p.idPackage]
+            (p: PurchaseHistory) => p.idPackage !== 9999
           );
           if (filteredList.length > 0) {
             historyByService[service] = true;

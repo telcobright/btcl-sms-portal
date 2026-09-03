@@ -550,7 +550,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         locale === 'en' ? '3 Extensions' : '৩টি এক্সটেনশন',
         locale === 'en' ? '2 Call Channels' : '২টি কল চ্যানেল',
         locale === 'en' ? '1 IVR' : '১টি IVR',
-        locale === 'en' ? '60 Minutes Free Talktime' : '৬০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? '60 Minutes Free Talktime*' : '৬০ মিনিট ফ্রি টকটাইম*',
         locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
         locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
         locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
@@ -575,7 +575,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         locale === 'en' ? '5 Extensions' : '৫টি এক্সটেনশন',
         locale === 'en' ? '2 Call Channels' : '২টি কল চ্যানেল',
         locale === 'en' ? '1 IVR' : '১টি IVR',
-        locale === 'en' ? '120 Minutes Free Talktime' : '১২০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? '120 Minutes Free Talktime*' : '১২০ মিনিট ফ্রি টকটাইম*',
         locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
         locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
         locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
@@ -600,7 +600,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         locale === 'en' ? '10 Extensions' : '১০টি এক্সটেনশন',
         locale === 'en' ? '5 Call Channels' : '৫টি কল চ্যানেল',
         locale === 'en' ? '2 IVR' : '২টি IVR',
-        locale === 'en' ? '500 Minutes Free Talktime' : '৫০০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? '500 Minutes Free Talktime*' : '৫০০ মিনিট ফ্রি টকটাইম*',
         locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
         locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
         locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
@@ -626,8 +626,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         locale === 'en' ? '7 Call Channels' : '৭টি কল চ্যানেল',
         locale === 'en' ? '5 IVR' : '৫টি IVR',
         locale === 'en'
-          ? '1000 Minutes Free Talktime'
-          : '১০০০ মিনিট ফ্রি টকটাইম',
+          ? '1000 Minutes Free Talktime*'
+          : '১০০০ মিনিট ফ্রি টকটাইম*',
         locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
         locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
         locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
@@ -653,8 +653,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         locale === 'en' ? '15 Call Channels' : '১৫টি কল চ্যানেল',
         locale === 'en' ? '10 IVR' : '১০টি IVR',
         locale === 'en'
-          ? '3000 Minutes Free Talktime'
-          : '৩০০০ মিনিট ফ্রি টকটাইম',
+          ? '3000 Minutes Free Talktime*'
+          : '৩০০০ মিনিট ফ্রি টকটাইম*',
         locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
         locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
         locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
@@ -1292,6 +1292,17 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               </div>
             ))}
           </div>
+
+          {/* Free talktime is a joining allowance, not part of the monthly subscription.
+              Read off the plans rather than hardcoded to the PBX section, so a section
+              whose plans carry no talktime does not show a footnote about it. */}
+          {packages.some((pkg) => pkg.freeTalktime) && (
+            <p className="mt-8 text-center text-sm text-gray-500">
+              {locale === 'en'
+                ? '*Free Talktime is a one-time allowance, given once when the package is activated. It is not renewed with each monthly billing cycle.'
+                : '*ফ্রি টকটাইম একবারই প্রদান করা হয় — প্যাকেজ চালুর সময় একবার। প্রতি মাসের বিলিং চক্রে এটি পুনরায় দেওয়া হয় না।'}
+            </p>
+          )}
         </div>
       </div>
     );

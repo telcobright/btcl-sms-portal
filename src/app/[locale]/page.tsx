@@ -691,7 +691,7 @@ function PricingPreviewSection({
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [
         locale === 'en' ? '10 Extensions' : '১০ এক্সটেনশন',
-        locale === 'en' ? '500 Min Free Talktime' : '৫০০ মিনিট ফ্রি টকটাইম',
+        locale === 'en' ? '500 Min Free Talktime*' : '৫০০ মিনিট ফ্রি টকটাইম*',
         locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
       ],
       color: 'from-btcl-primary to-btcl-primary',
@@ -844,6 +844,14 @@ function PricingPreviewSection({
             </div>
           ))}
         </div>
+
+        {/* Same condition the pricing page spells out: the talktime is a joining
+            allowance, and a monthly price beside it invites the opposite reading. */}
+        <p className="mt-8 text-center text-sm text-gray-500">
+          {locale === 'en'
+            ? '*Free Talktime is a one-time allowance, given once when the package is activated. It is not renewed with each monthly billing cycle.'
+            : '*ফ্রি টকটাইম একবারই প্রদান করা হয় — প্যাকেজ চালুর সময় একবার। প্রতি মাসের বিলিং চক্রে এটি পুনরায় দেওয়া হয় না।'}
+        </p>
 
         {/* VAT Notice */}
         <div className="mt-12 text-center">

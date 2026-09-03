@@ -649,7 +649,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       postpaidCredit: 20000,
       popular: false,
       features: [
-        locale === 'en' ? 'Up to 100 Extensions*' : '১০০টি পর্যন্ত এক্সটেনশন*',
+        locale === 'en' ? 'Up to 100 Extensions' : '১০০টি পর্যন্ত এক্সটেনশন',
         locale === 'en' ? '15 Call Channels' : '১৫টি কল চ্যানেল',
         locale === 'en' ? '10 IVR' : '১০টি IVR',
         locale === 'en'

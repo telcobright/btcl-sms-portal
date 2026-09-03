@@ -595,7 +595,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       callCharge: 0.45,
       price: 1200,
       postpaidCredit: 5000,
-      popular: false,
+      popular: true,
       features: [
         locale === 'en' ? '10 Extensions' : '১০টি এক্সটেনশন',
         locale === 'en' ? '5 Call Channels' : '৫টি কল চ্যানেল',
@@ -620,7 +620,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       callCharge: 0.4,
       price: 2500,
       postpaidCredit: 10000,
-      popular: true,
+      popular: false,
       features: [
         locale === 'en' ? '30 Extensions' : '৩০টি এক্সটেনশন',
         locale === 'en' ? '7 Call Channels' : '৭টি কল চ্যানেল',

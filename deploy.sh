@@ -58,10 +58,29 @@ echo -e "${GREEN}========================================${NC}"
 
 # Step 1: Build the application locally
 echo -e "\n${YELLOW}Step 1: Building application locally...${NC}"
+
+# Build against the remote backend, never a local development bridge.
+#
+# .env.local carries NEXT_PUBLIC_REPORT_API_URL=http://localhost:5055 so the regulatory
+# report can be worked on against report_bridge.py. Next bakes NEXT_PUBLIC_* into the
+# client bundle at build time, and a real environment variable wins over .env.local -- so
+# clearing it here makes the deployed bundle fall back to API_BASE_URL. Without this the
+# production page calls the deploying machine, gets nothing, and silently shows sample
+# data, which is exactly what reached alaapcloud.gov.bd once already.
+export NEXT_PUBLIC_REPORT_API_URL=""
+
 npm run build
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Build failed!${NC}"
+    exit 1
+fi
+
+# Belt and braces: refuse to ship a bundle that still points at localhost. The failure
+# mode above is invisible in the UI -- the page renders, just with the wrong numbers.
+if grep -rqs "localhost:5055" .next/static; then
+    echo -e "${RED}Build embeds localhost:5055 - refusing to deploy${NC}"
+    echo "A NEXT_PUBLIC_* localhost value leaked into the client bundle. Check .env* files."
     exit 1
 fi
 

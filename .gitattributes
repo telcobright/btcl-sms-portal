@@ -1,0 +1,5 @@
+# Shell scripts must keep LF endings.
+# core.autocrlf=true is normal on Windows checkouts, but bash treats the trailing CR as
+# part of the command and deploy.sh fails with "$: command not found" before it does
+# anything. These files are executed on Linux; pin them.
+*.sh text eol=lf

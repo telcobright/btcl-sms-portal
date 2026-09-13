@@ -22,6 +22,44 @@ import toast from 'react-hot-toast';
 import CheckoutForm from './CheckoutForm';
 import OrderSummary from './OrderSummary';
 
+// Contact Center: billing counts a package's agents in this unit (TelcoREST AgentSeats).
+const AGENT_UOM = 'LEN_A';
+
+// The one plan Contact Center sells (Hosted_Contact_Center_Basic).
+const CC_PLAN_PACKAGE_ID = 9140;
+
+// Billing writes expiry dates as Bangladesh wall-clock time with no zone.
+const BILLING_UTC_OFFSET_MS = 6 * 60 * 60 * 1000; // Asia/Dhaka has no daylight saving
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Days of use left before a billing expiry, in calendar days in Bangladesh: 21 to 31
+ * October is 10 whatever the time. A package ending later today counts as 1, and one
+ * that has ended counts as 0. Must match PaymentGateWay CcAgentPricing.daysLeft, which
+ * decides what is accepted.
+ */
+function daysLeftUntil(expireDate: string | null | undefined): number {
+  if (!expireDate) return 0;
+  const iso = expireDate.trim().replace(' ', 'T');
+  // Both instants as numbers whose UTC fields read as Bangladesh wall-clock time.
+  const expire = /(Z|[+-]\d{2}:?\d{2})$/i.test(iso)
+    ? Date.parse(iso) + BILLING_UTC_OFFSET_MS
+    : Date.parse(`${iso}Z`);
+  const now = Date.now() + BILLING_UTC_OFFSET_MS;
+  if (Number.isNaN(expire) || expire <= now) return 0;
+  return Math.max(1, Math.floor(expire / DAY_MS) - Math.floor(now / DAY_MS));
+}
+
+/**
+ * Price of adding agents for the days left: subtotal and VAT each rounded to the taka.
+ * Must match PaymentGateWay CcAgentPricing.subtotal and vat exactly.
+ */
+function addAgentsQuote(monthlyPrice: number, agents: number, days: number) {
+  const subtotal = Math.round((monthlyPrice * agents * days) / 30);
+  const vat = Math.round(subtotal * 0.15);
+  return { subtotal, vat, total: subtotal + vat };
+}
+
 interface DecodedToken {
   idPartner: number;
   email: string;
@@ -35,7 +73,11 @@ export default function CheckoutModal({
   onClose,
   serviceType = 'sms',
   locale = 'en',
+  mode = 'purchase',
 }: any) {
+  // "add-agents": agents join the Contact Center package that is already running, priced
+  // for the days left. Anything else is the normal purchase, renew, upgrade or downgrade.
+  const isAddingAgents = mode === 'add-agents' && serviceType === 'contact-center';
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -63,9 +105,11 @@ export default function CheckoutModal({
     isExpired: boolean;
   } | null>(null);
   const [purchaseAction, setPurchaseAction] = useState<
-    'new' | 'renew' | 'upgrade' | 'downgrade'
+    'new' | 'renew' | 'upgrade' | 'downgrade' | 'add-agents'
   >('new');
   const [currentPackageLoading, setCurrentPackageLoading] = useState(true);
+  // Agents on the running Contact Center package, from its LEN_A account.
+  const [currentAgents, setCurrentAgents] = useState<number | null>(null);
 
   // Package tier order per service type (higher number = higher tier)
   const packageTierOrder: Record<string, Record<string, number>> = {
@@ -139,10 +183,31 @@ export default function CheckoutModal({
     // Fetch current active package for this service to determine renew/upgrade/downgrade
     const fetchCurrentPackage = async () => {
       setCurrentPackageLoading(true);
+      // Adding agents keeps its own label, whatever the account holds.
+      const setAction = (action: 'new' | 'renew' | 'upgrade' | 'downgrade') =>
+        setPurchaseAction(isAddingAgents ? 'add-agents' : action);
+      // Contact Center sells one plan. Its top-up rows last a year and must not
+      // pass for the plan when deciding whether it is running.
+      const isPlanRow = (p: any) =>
+        serviceType !== 'contact-center' ||
+        Number(p?.idPackage) === CC_PLAN_PACKAGE_ID;
+      const rememberAgents = (purchase: any) => {
+        if (serviceType !== 'contact-center') return;
+        const account = (purchase?.packageAccounts ?? []).find(
+          (a: any) => a?.uom === AGENT_UOM
+        );
+        const agents = Number(account?.balanceAfter ?? account?.lastAmount ?? 0);
+        if (agents > 0) {
+          setCurrentAgents(agents);
+          // A renewal starts from the agents they have now rather than 1, so
+          // nobody renews for fewer by accident. The number stays editable.
+          if (!isAddingAgents) setAgentCount(agents);
+        }
+      };
       try {
         const { partnerId, authToken } = getTokenData();
         if (!partnerId || !authToken) {
-          setPurchaseAction('new');
+          setAction('new');
           return;
         }
 
@@ -170,6 +235,7 @@ export default function CheckoutModal({
             (p: any) =>
               p.idPackage &&
               p.idPackage !== 9999 &&
+              isPlanRow(p) &&
               p.status === 'ACTIVE' &&
               (!p.expireDate || new Date(p.expireDate) > new Date())
           );
@@ -183,16 +249,23 @@ export default function CheckoutModal({
               isExpired: false,
             });
 
+            rememberAgents(activePurchase);
+
+            if (isAddingAgents) {
+              setPurchaseAction('add-agents');
+              return;
+            }
+
             const tiers = packageTierOrder[serviceType] ?? {};
             const currentTier = tiers[currentSlug] ?? 0;
             const newTier = tiers[pkg?.id ?? ''] ?? 0;
 
             if (currentTier === 0 || newTier === 0 || pkg?.id === currentSlug) {
-              setPurchaseAction('renew');
+              setAction('renew');
             } else if (newTier > currentTier) {
-              setPurchaseAction('upgrade');
+              setAction('upgrade');
             } else {
-              setPurchaseAction('downgrade');
+              setAction('downgrade');
             }
             return;
           }
@@ -216,9 +289,11 @@ export default function CheckoutModal({
           const history = Array.isArray(historyData)
             ? historyData
             : (historyData?.content ?? historyData?.data ?? []);
-          const pastPurchase = history.find(
-            (p: any) => p.idPackage && p.idPackage !== 9999
-          );
+          const pastPurchase =
+            history.find(
+              (p: any) => p.idPackage && p.idPackage !== 9999 && isPlanRow(p)
+            ) ??
+            history.find((p: any) => p.idPackage && p.idPackage !== 9999);
 
           if (pastPurchase) {
             const currentSlug = packageIdToName[pastPurchase.idPackage] ?? '';
@@ -228,15 +303,16 @@ export default function CheckoutModal({
               expireDate: pastPurchase.expireDate ?? null,
               isExpired: true,
             });
-            setPurchaseAction('renew');
+            if (isPlanRow(pastPurchase)) rememberAgents(pastPurchase);
+            setAction('renew');
             return;
           }
         }
 
-        setPurchaseAction('new');
+        setAction('new');
       } catch (e) {
         console.error('Failed to fetch current package:', e);
-        setPurchaseAction('new');
+        setAction('new');
       } finally {
         setCurrentPackageLoading(false);
       }
@@ -245,6 +321,29 @@ export default function CheckoutModal({
     fetchPartnerPrePaidStatus();
     fetchCurrentPackage();
   }, [isOpen, serviceType]);
+
+  // Adding agents needs a package that is still running; otherwise the customer renews.
+  const addAgentsDays = isAddingAgents
+    ? daysLeftUntil(currentPackage?.expireDate)
+    : 0;
+  const addAgentsExpired =
+    isAddingAgents &&
+    !currentPackageLoading &&
+    (!currentPackage || currentPackage.isExpired || addAgentsDays === 0);
+  // A package bought before agents were counted has no number to add to.
+  const addAgentsUncounted =
+    isAddingAgents &&
+    !currentPackageLoading &&
+    !addAgentsExpired &&
+    currentAgents === null;
+  const addAgentsBlocked = addAgentsExpired || addAgentsUncounted;
+  const addAgentsBlockedMessage = addAgentsUncounted
+    ? locale === 'en'
+      ? 'This package does not record its agents yet. Renew it once, then you can add agents.'
+      : 'এই প্যাকেজে এখনও এজেন্ট সংখ্যা সংরক্ষিত নেই। একবার নবায়ন করুন, তারপর এজেন্ট যোগ করতে পারবেন।'
+    : locale === 'en'
+      ? 'Your package has expired. Renew it to change the number of agents.'
+      : 'আপনার প্যাকেজের মেয়াদ শেষ হয়ে গেছে। এজেন্ট সংখ্যা পরিবর্তন করতে প্যাকেজটি নবায়ন করুন।';
 
   const handleFormChange = (data: typeof formData) => {
     setFormData(data);
@@ -498,6 +597,22 @@ export default function CheckoutModal({
       return;
     }
 
+    if (isAddingAgents) {
+      if (currentPackageLoading) return;
+      if (customerPrePaid === 2) {
+        toast.error(
+          locale === 'en'
+            ? 'Agents cannot be added online on a postpaid account. Please contact your account manager.'
+            : 'পোস্টপেইড অ্যাকাউন্টে অনলাইনে এজেন্ট যোগ করা যায় না। অনুগ্রহ করে আপনার অ্যাকাউন্ট ম্যানেজারের সাথে যোগাযোগ করুন।'
+        );
+        return;
+      }
+      if (addAgentsBlocked) {
+        toast.error(addAgentsBlockedMessage);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -628,8 +743,17 @@ export default function CheckoutModal({
 
       // For Contact Center, calculate price based on agentCount state
       const effectiveAgentCount = agentCount === '' ? 1 : agentCount;
-      const basePrice =
-        serviceType === 'contact-center'
+      // Adding agents is charged for the days left on the running package, not a month.
+      const addQuote = isAddingAgents
+        ? addAgentsQuote(
+            pkg.price,
+            effectiveAgentCount,
+            daysLeftUntil(currentPackage?.expireDate)
+          )
+        : null;
+      const basePrice = addQuote
+        ? addQuote.subtotal
+        : serviceType === 'contact-center'
           ? pkg.price * effectiveAgentCount
           : pkg.price;
       const quantity =
@@ -642,7 +766,7 @@ export default function CheckoutModal({
               : 1;
 
       // Calculate VAT (15% of price) and total — use ceil for VBS/SMS slab pricing
-      const vatAmount = Math.ceil(basePrice * 0.15);
+      const vatAmount = addQuote ? addQuote.vat : Math.ceil(basePrice * 0.15);
       const totalAmount = basePrice + vatAmount;
 
       // VBS & SMS validity = 5 years (157680000 seconds), others = 30 days
@@ -671,7 +795,7 @@ export default function CheckoutModal({
         topupNumber: cleanPhone,
         countryTopup: 'Bangladesh',
         purchaseDate: null,
-        status: 'ACTIVE',
+        status: isAddingAgents ? 'ADD_AGENTS' : 'ACTIVE',
         autoRenewalStatus: ['hosted-pbx', 'contact-center'].includes(
           serviceType
         ),
@@ -1065,6 +1189,8 @@ export default function CheckoutModal({
                   >
                     {purchaseAction === 'renew' &&
                       (locale === 'en' ? '↻ Renewing' : '↻ নবায়ন')}
+                    {purchaseAction === 'add-agents' &&
+                      (locale === 'en' ? '+ Adding agents' : '+ এজেন্ট যোগ')}
                     {purchaseAction === 'upgrade' &&
                       (locale === 'en' ? '↑ Upgrading to' : '↑ আপগ্রেড')}{' '}
                     {purchaseAction === 'upgrade' && (
@@ -1084,7 +1210,13 @@ export default function CheckoutModal({
 
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-4xl font-bold text-btcl-gray-900">
-                {locale === 'en' ? 'Checkout' : 'চেকআউট'}
+                {isAddingAgents
+                  ? locale === 'en'
+                    ? 'Add Agents'
+                    : 'এজেন্ট যোগ করুন'
+                  : locale === 'en'
+                    ? 'Checkout'
+                    : 'চেকআউট'}
               </h2>
               <button
                 onClick={onClose}
@@ -1118,9 +1250,13 @@ export default function CheckoutModal({
             {serviceType === 'contact-center' && (
               <div className="bg-white rounded-xl shadow-md p-6 mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  {locale === 'en'
-                    ? 'Select Number of Agents'
-                    : 'এজেন্ট সংখ্যা নির্বাচন করুন'}
+                  {isAddingAgents
+                    ? locale === 'en'
+                      ? 'How many agents to add?'
+                      : 'কতজন এজেন্ট যোগ করবেন?'
+                    : locale === 'en'
+                      ? 'Select Number of Agents'
+                      : 'এজেন্ট সংখ্যা নির্বাচন করুন'}
                 </h3>
                 <div className="flex items-center justify-center gap-4">
                   <button
@@ -1178,22 +1314,51 @@ export default function CheckoutModal({
                     ৳{pkg?.price?.toLocaleString() || 0}/month
                   </span>
                 </div>
+                {isAddingAgents &&
+                  !currentPackageLoading &&
+                  (addAgentsBlocked ? (
+                    <p className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                      {addAgentsBlockedMessage}
+                    </p>
+                  ) : (
+                    <p className="mt-4 rounded-lg bg-btcl-primaryLight/10 border border-btcl-primaryLight/30 p-3 text-sm text-gray-700">
+                      {locale === 'en'
+                        ? `${currentAgents ? `You have ${currentAgents} agent${currentAgents === 1 ? '' : 's'}. ` : ''}New agents end with your package${currentPackage?.expireDate ? ` on ${new Date(currentPackage.expireDate).toLocaleDateString()}` : ''}, so you pay for ${addAgentsDays} day${addAgentsDays === 1 ? '' : 's'}.`
+                        : `${currentAgents ? `আপনার ${currentAgents} জন এজেন্ট আছে। ` : ''}নতুন এজেন্টদের মেয়াদ আপনার প্যাকেজের সাথেই${currentPackage?.expireDate ? ` ${new Date(currentPackage.expireDate).toLocaleDateString()} তারিখে` : ''} শেষ হবে, তাই আপনি ${addAgentsDays} দিনের মূল্য পরিশোধ করবেন।`}
+                    </p>
+                  ))}
               </div>
             )}
             <OrderSummary
               pkg={
                 serviceType === 'contact-center'
-                  ? {
-                      ...pkg,
-                      quantity: agentCount === '' ? 1 : agentCount,
-                      totalPrice:
-                        (pkg?.price || 0) *
-                        (agentCount === '' ? 1 : agentCount),
-                    }
+                  ? (() => {
+                      const agents = agentCount === '' ? 1 : agentCount;
+                      if (isAddingAgents) {
+                        const quote = addAgentsQuote(
+                          pkg?.price || 0,
+                          agents,
+                          addAgentsDays
+                        );
+                        return {
+                          ...pkg,
+                          quantity: agents,
+                          totalPrice: quote.subtotal,
+                          vatAmount: quote.vat,
+                          daysLeft: addAgentsDays,
+                        };
+                      }
+                      return {
+                        ...pkg,
+                        quantity: agents,
+                        totalPrice: (pkg?.price || 0) * agents,
+                      };
+                    })()
                   : pkg
               }
               onCheckout={handleCheckout}
               loading={loading}
+              disabled={addAgentsBlocked}
               serviceType={serviceType}
               locale={locale}
               purchaseAction={purchaseAction}

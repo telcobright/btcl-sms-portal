@@ -13,7 +13,7 @@ interface PendingProvision {
   packageIdInt: number;
   packageName: string;
   price: number;
-  purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade';
+  purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade' | 'add-agents';
 }
 
 const SERVICE_CONFIG: Record<
@@ -49,14 +49,16 @@ function ServiceSuccessPage({
   serviceType: string;
   userEmail: string;
   packageName: string;
-  purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade';
+  purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade' | 'add-agents';
 }) {
   const config = SERVICE_CONFIG[serviceType];
   const isNew = purchaseAction === 'new';
   const isDowngrade = purchaseAction === 'downgrade';
 
   const actionLabel =
-    purchaseAction === 'renew'
+    purchaseAction === 'add-agents'
+      ? 'Agents Added'
+      : purchaseAction === 'renew'
       ? 'Plan Renewed'
       : purchaseAction === 'upgrade'
         ? 'Plan Upgraded'
@@ -225,7 +227,7 @@ function SuccessContent() {
   const [userEmail, setUserEmail] = useState('');
   const [packageName, setPackageName] = useState('');
   const [purchaseAction, setPurchaseAction] = useState<
-    'new' | 'renew' | 'upgrade' | 'downgrade'
+    'new' | 'renew' | 'upgrade' | 'downgrade' | 'add-agents'
   >('new');
 
   useEffect(() => {

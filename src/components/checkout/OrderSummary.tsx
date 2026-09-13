@@ -7,13 +7,15 @@ export default function OrderSummary({
   serviceType = 'sms',
   locale = 'en',
   purchaseAction = 'new',
+  disabled = false,
 }: {
   pkg: any;
   onCheckout: () => void;
   loading: boolean;
   serviceType?: 'sms' | 'hosted-pbx' | 'contact-center' | 'voice-broadcast';
   locale?: string;
-  purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade';
+  purchaseAction?: 'new' | 'renew' | 'upgrade' | 'downgrade' | 'add-agents';
+  disabled?: boolean;
 }) {
   const getServiceIcon = () => {
     switch (serviceType) {
@@ -46,7 +48,7 @@ export default function OrderSummary({
       case 'hosted-pbx':
         return `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}`;
       case 'contact-center':
-        return `${pkg.quantity || 1} ${locale === 'en' ? 'Agent(s)' : 'এজেন্ট'}`;
+        return `${purchaseAction === 'add-agents' ? '+' : ''}${pkg.quantity || 1} ${locale === 'en' ? 'Agent(s)' : 'এজেন্ট'}`;
       case 'voice-broadcast':
         return pkg.vbsQuantity
           ? `${pkg.vbsQuantity.toLocaleString()} ${locale === 'en' ? 'Messages' : 'মেসেজ'}`
@@ -67,6 +69,9 @@ export default function OrderSummary({
   };
 
   const basePrice = getBasePrice();
+  // Adding agents passes the exact VAT the payment service expects; everything else rounds up as before.
+  const vat =
+    typeof pkg.vatAmount === 'number' ? pkg.vatAmount : Math.ceil(basePrice * 0.15);
 
   return (
     <div className="bg-btcl-gray-50 p-6 rounded-xl shadow-card text-btcl-gray-900">
@@ -116,7 +121,16 @@ export default function OrderSummary({
 
       <div className="space-y-3 text-sm">
         {/* Show quantity for Contact Center */}
-        {serviceType === 'contact-center' && pkg.quantity > 1 && (
+        {serviceType === 'contact-center' && purchaseAction === 'add-agents' && (
+          <div className="flex justify-between">
+            <span>{locale === 'en' ? 'Price' : 'মূল্য'}</span>
+            <span>
+              ৳{pkg.price.toLocaleString()} × {pkg.quantity} × {pkg.daysLeft}/30{' '}
+              {locale === 'en' ? 'days' : 'দিন'}
+            </span>
+          </div>
+        )}
+        {serviceType === 'contact-center' && pkg.quantity > 1 && purchaseAction !== 'add-agents' && (
           <div className="flex justify-between">
             <span>{locale === 'en' ? 'Unit Price' : 'একক মূল্য'}</span>
             <span>৳{pkg.price.toLocaleString()} × {pkg.quantity}</span>
@@ -135,12 +149,20 @@ export default function OrderSummary({
         </div>
         <div className="flex justify-between text-btcl-gray-600">
           <span>{locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}</span>
-          <span>৳{Math.ceil(basePrice * 0.15).toLocaleString()}</span>
+          <span>৳{vat.toLocaleString()}</span>
         </div>
         {(serviceType === 'hosted-pbx' || serviceType === 'contact-center') && (
           <div className="flex justify-between text-btcl-gray-600">
             <span>{locale === 'en' ? 'Billing' : 'বিলিং'}</span>
-            <span>{locale === 'en' ? 'Monthly' : 'মাসিক'}</span>
+            <span>
+              {purchaseAction === 'add-agents'
+                ? locale === 'en'
+                  ? `${pkg.daysLeft} day(s) left in your package`
+                  : `প্যাকেজের বাকি ${pkg.daysLeft} দিন`
+                : locale === 'en'
+                  ? 'Monthly'
+                  : 'মাসিক'}
+            </span>
           </div>
         )}
         {serviceType === 'voice-broadcast' && (
@@ -153,7 +175,7 @@ export default function OrderSummary({
         <div className="flex justify-between font-bold text-lg">
           <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
           <span className="text-btcl-primary">
-            ৳{(basePrice + Math.ceil(basePrice * 0.15)).toLocaleString()}
+            ৳{(basePrice + vat).toLocaleString()}
           </span>
         </div>
         {serviceType === 'hosted-pbx' && pkg.callCharge && (
@@ -166,7 +188,7 @@ export default function OrderSummary({
 
       <button
         onClick={onCheckout}
-        disabled={loading}
+        disabled={loading || disabled}
         className={`w-full text-white mt-8 py-3 rounded-xl font-semibold transition-colors duration-300 disabled:opacity-50 ${
           purchaseAction === 'downgrade'
             ? 'bg-amber-500 hover:bg-amber-600'
@@ -178,6 +200,8 @@ export default function OrderSummary({
       >
         {loading ? (
           locale === 'en' ? 'Processing...' : 'প্রসেস হচ্ছে...'
+        ) : purchaseAction === 'add-agents' ? (
+          locale === 'en' ? '+ Add Agents →' : '+ এজেন্ট যোগ করুন →'
         ) : purchaseAction === 'renew' ? (
           locale === 'en' ? '↻ Renew Plan →' : '↻ প্ল্যান নবায়ন করুন →'
         ) : purchaseAction === 'upgrade' ? (

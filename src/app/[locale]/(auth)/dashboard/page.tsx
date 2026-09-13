@@ -14,6 +14,7 @@ import {
 import { uploadPartnerDocument } from '@/lib/api-client/admin';
 import { showApiError } from '@/lib/api-error';
 import DocumentViewer from '@/components/ui/DocumentViewer';
+import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import { jwtDecode } from 'jwt-decode';
 import {
@@ -31,6 +32,10 @@ import { useLocale } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+
+// Contact Center plan, for adding agents from the dashboard. Same id and price as the
+// pricing page's Basic plan; the payment service checks the price regardless.
+const CC_BASIC_PACKAGE = { id: 'basic', name: 'Basic', price: 8500 };
 
 // Map idPackage to human-readable names (backend returns packageName=null)
 const PACKAGE_NAMES: Record<number, string> = {
@@ -201,6 +206,7 @@ interface PurchaseHistory {
 
 export default function Dashboard() {
   const locale = useLocale();
+  const [addAgentsOpen, setAddAgentsOpen] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [partnerExtra, setPartnerExtra] = useState<PartnerExtra | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1032,6 +1038,18 @@ export default function Dashboard() {
         onClose={() => setViewerDoc(null)}
       />
 
+      {/* Contact Center: add agents to the running package without renewing it */}
+      {addAgentsOpen && (
+        <CheckoutModal
+          pkg={CC_BASIC_PACKAGE}
+          isOpen={addAgentsOpen}
+          onClose={() => setAddAgentsOpen(false)}
+          serviceType="contact-center"
+          locale={locale}
+          mode="add-agents"
+        />
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
@@ -1369,37 +1387,46 @@ export default function Dashboard() {
 
             {/* HCC Portal */}
             {serviceData.hcc.valid ? (
-              <a
-                href={`https://cc.alaapcloud.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
-              >
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
-                    Alaap Cloud Contact Center
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    Access your HCC dashboard
-                  </p>
-                </div>
-                <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
-              </a>
+              <div className="flex flex-col gap-2">
+                <a
+                  href={`https://cc.alaapcloud.gov.bd/${partnerData?.partnerName?.toLowerCase().replace(/\s+/g, '_') || 'user'}/#/home`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
+                >
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
+                    <svg
+                      className="w-5 h-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
+                      Alaap Cloud Contact Center
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Access your HCC dashboard
+                    </p>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setAddAgentsOpen(true)}
+                  className="self-end px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white hover:bg-btcl-primary hover:text-white transition-all whitespace-nowrap"
+                >
+                  + Add agents
+                </button>
+              </div>
             ) : serviceHistory.hcc ? (
               <a
                 href="/en/pricing"

@@ -7,6 +7,7 @@ import {
   formatBst,
   isSettled,
   SERVICE_OPTIONS,
+  METHOD_OPTIONS,
   STATUS_OPTIONS,
   type RevenueFilters,
   type RevenuePage,
@@ -313,6 +314,30 @@ export default function RevenuePage() {
                   }
                 >
                   {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
+        <Field label="Payment Gateway">
+          <div className="flex flex-wrap gap-2">
+            {METHOD_OPTIONS.map((m) => {
+              const on = (filters.method || '').split(',').includes(m.value);
+              return (
+                <button
+                  key={m.value}
+                  onClick={() =>
+                    setFilter({ method: toggleCsv(filters.method, m.value) || undefined })
+                  }
+                  className={
+                    'px-3 py-1 rounded-full text-xs border ' +
+                    (on
+                      ? 'bg-[#0D529E] text-white border-[#0D529E]'
+                      : 'bg-white text-gray-600 border-gray-300')
+                  }
+                >
+                  {m.label}
                 </button>
               );
             })}

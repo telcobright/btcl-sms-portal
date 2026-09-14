@@ -33,6 +33,22 @@ export const SERVICE_OPTIONS = [
   { value: 'sms', label: 'A2P SMS' },
 ] as const;
 
+/**
+ * Payment Gateway filter. Values are the backend's PaymentMethod names, matched the same
+ * way the Payment Gateway column labels a row, so the filter and the column always agree.
+ */
+export const METHOD_OPTIONS = [
+  { value: 'bkash', label: 'bKash' },
+  { value: 'nagad', label: 'Nagad' },
+  { value: 'rocket', label: 'Rocket' },
+  { value: 'upay', label: 'Upay' },
+  { value: 'cellfin', label: 'Cellfin' },
+  { value: 'ipay', label: 'iPay' },
+  { value: 'visa', label: 'Visa' },
+  { value: 'mastercard', label: 'Mastercard' },
+  { value: 'amex', label: 'Amex' },
+] as const;
+
 export interface RevenueTransaction {
   storeId: string | null;
   serviceName: string | null;
@@ -86,6 +102,8 @@ export interface RevenueFilters {
   storeId?: string;
   /** store_type values, comma-joined by the caller */
   service?: string;
+  /** payment method values, comma-joined by the caller */
+  method?: string;
   status?: string;
   idPartner?: number;
   q?: string;
@@ -99,6 +117,7 @@ const toParams = (f: RevenueFilters) => {
   if (f.to) p.set('to', f.to);
   if (f.storeId) p.set('storeId', f.storeId);
   if (f.service) p.set('service_', f.service);
+  if (f.method) p.set('method', f.method);
   if (f.status) p.set('status', f.status);
   if (f.idPartner != null) p.set('idPartner', String(f.idPartner));
   if (f.q) p.set('q', f.q);

@@ -31,7 +31,6 @@ export const SERVICE_OPTIONS = [
   { value: 'vbs', label: 'Voice Broadcasting' },
   { value: 'cc', label: 'Hosted Contact Center' },
   { value: 'sms', label: 'A2P SMS' },
-  { value: 'wifi', label: 'WiFi' },
 ] as const;
 
 export interface RevenueTransaction {

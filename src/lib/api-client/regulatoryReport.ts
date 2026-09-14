@@ -15,10 +15,9 @@ import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
  * month as one object so a single backend endpoint can compute it straight from the databases
  * and the admin screen can render — and export — both returns without re-keying anything.
  *
- * The shape here is the contract the backend must satisfy; until that endpoint is deployed the
- * page falls back to SAMPLE_REPORT (real January 2026 figures) shown behind a clear "sample"
- * banner, so the layout is reviewable now and starts serving live data the moment the endpoint
- * lands — no frontend change required.
+ * The shape here is the contract the backend must satisfy. There is deliberately no sample or
+ * fallback data: this feeds a regulatory submission, so when the real report cannot be loaded the
+ * page shows an error and nothing else — never figures that could be mistaken for the month's.
  */
 
 // ── subscribers ──────────────────────────────────────────────────────────────
@@ -132,10 +131,8 @@ export interface RegulatoryMonthlyReport {
 
   btrc: BtrcSummary;
 
-  /** Set by the backend when it computed the report; absent on sample data. */
+  /** Set by the backend when it computed the report. */
   generatedAt?: string;
-  /** True only for the bundled preview data below — never set by the backend. */
-  isSample?: boolean;
 }
 
 export interface RegulatoryReportQuery {
@@ -212,31 +209,137 @@ const smsTotal = (rows: OperatorSmsRow[]) =>
 // ── fetch ────────────────────────────────────────────────────────────────────
 
 /**
+ * Why a report request failed, in the terms the admin screen explains it.
+ *
+ *   unauthorized — no session, or the backend said 401.
+ *   forbidden    — 403. On this route the gateway answers an expired/invalid token with the same
+ *                  bare 403 as a genuine permission refusal, so the two cannot be told apart.
+ *   timeout      — no answer within REPORT_TIMEOUT_MS.
+ *   network      — the request never got a response (offline, DNS, blocked, CORS).
+ *   server       — 5xx, or any other non-2xx status.
+ *   unexpected   — a 2xx whose body is not a report for the requested month.
+ */
+export type RegulatoryReportErrorKind =
+  | 'unauthorized'
+  | 'forbidden'
+  | 'timeout'
+  | 'network'
+  | 'server'
+  | 'unexpected';
+
+export class RegulatoryReportError extends Error {
+  readonly kind: RegulatoryReportErrorKind;
+  readonly status?: number;
+
+  constructor(kind: RegulatoryReportErrorKind, message: string, status?: number) {
+    super(message);
+    this.name = 'RegulatoryReportError';
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
+/**
+ * Where the report is fetched from.
+ *
+ * NEXT_PUBLIC_REPORT_API_URL points local development at the SSH bridge (report_bridge.py). It is
+ * honoured only outside production: NEXT_PUBLIC_* values are inlined at build time, so a
+ * developer's .env.local used to ship "http://localhost:5055" inside the production bundle, and
+ * every admin's browser then failed to reach the report at all.
+ */
+const REPORT_API_BASE =
+  (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_REPORT_API_URL) || API_BASE_URL;
+
+/** The backend builds a month in seconds; two minutes means something is wrong, not slow. */
+const REPORT_TIMEOUT_MS = 120_000;
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Accept a response only if it is a report, and specifically the report for the month asked for.
+ *
+ * Rendering a partial object would crash the page mid-table, and rendering another month's figures
+ * under the selected period is exactly the mistake this screen must never make.
+ */
+const assertReportFor = (data: unknown, query: RegulatoryReportQuery): RegulatoryMonthlyReport => {
+  const bad = (why: string) =>
+    new RegulatoryReportError('unexpected', `The server returned an unexpected response (${why}).`);
+
+  if (!isObject(data)) throw bad('not a report object');
+  for (const key of ['activeSubscribers', 'provisionedSubscribers', 'icxRows', 'icxConnectivity', 'pops']) {
+    if (!Array.isArray(data[key])) throw bad(`missing ${key}`);
+  }
+  if (!isObject(data.iptspIptsp)) throw bad('missing iptspIptsp');
+  const btrc = data.btrc;
+  if (!isObject(btrc) || !isObject(btrc.callVolume) || !Array.isArray(btrc.a2pSms) || !Array.isArray(btrc.p2pSms)) {
+    throw bad('missing BTRC summary');
+  }
+
+  const expectedMonth = MONTH_NAMES[query.month - 1];
+  const month = typeof data.reportingMonth === 'string' ? data.reportingMonth.trim() : '';
+  if (Number(data.reportingYear) !== query.year || month.toLowerCase() !== expectedMonth.toLowerCase()) {
+    throw bad(`it is for ${month || '?'} ${data.reportingYear ?? '?'}, not ${expectedMonth} ${query.year}`);
+  }
+  return data as unknown as RegulatoryMonthlyReport;
+};
+
+/**
  * Fetch the computed monthly report for one month.
  *
  * Served by the main backend (like the sales report) because it reads the CDR/summary databases
- * directly — the browser cannot gather cross-service regulatory figures itself. Throws if the
- * endpoint is unreachable or not yet deployed; the page treats that as "show sample".
+ * directly. Resolves only with a validated report for exactly the requested month; every failure
+ * rejects with a RegulatoryReportError. An aborted request rejects with axios's CanceledError,
+ * which callers treat as "superseded", not as a failure to show.
  */
-// Realtime source for the report. In production this is the TelcoREST /admin/reports/iptsp-monthly
-// endpoint (API_BASE_URL). For local development against the working DBs, set
-// NEXT_PUBLIC_REPORT_API_URL=http://localhost:5055 in .env.local to use the SSH bridge
-// (report_bridge.py) — which returns this exact shape — until the backend endpoint is deployed.
-const REPORT_API_BASE = process.env.NEXT_PUBLIC_REPORT_API_URL || API_BASE_URL;
-
 export const getRegulatoryReport = async (
   authToken: string,
-  query: RegulatoryReportQuery
+  query: RegulatoryReportQuery,
+  signal?: AbortSignal
 ): Promise<RegulatoryMonthlyReport> => {
-  const response = await axios.post<RegulatoryMonthlyReport>(
-    `${REPORT_API_BASE}${API_ENDPOINTS.reports.iptspMonthly}`,
-    query,
-    {
+  let data: unknown;
+  try {
+    const response = await axios.post<unknown>(`${REPORT_API_BASE}${API_ENDPOINTS.reports.iptspMonthly}`, query, {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-      timeout: 200000, // full-month SMS scan over SSH can take a while
+      timeout: REPORT_TIMEOUT_MS,
+      signal,
+    });
+    data = response.data;
+  } catch (e) {
+    if (axios.isCancel(e)) throw e;
+    if (axios.isAxiosError(e)) {
+      const status = e.response?.status;
+      if (status === 401) {
+        throw new RegulatoryReportError('unauthorized', 'Your session has expired. Please sign in again.', status);
+      }
+      if (status === 403) {
+        throw new RegulatoryReportError(
+          'forbidden',
+          'Access was denied. Your session may have expired, or your account may not be allowed to view this report. Sign in again; if it still fails, ask an administrator for access.',
+          status
+        );
+      }
+      if (status) {
+        throw new RegulatoryReportError(
+          'server',
+          `The report server returned an error (HTTP ${status}). Please try again; if it keeps failing, contact support.`,
+          status
+        );
+      }
+      if (e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT') {
+        throw new RegulatoryReportError(
+          'timeout',
+          `The report did not finish within ${REPORT_TIMEOUT_MS / 1000} seconds. Please try again.`
+        );
+      }
+      throw new RegulatoryReportError(
+        'network',
+        'Could not reach the report server. Check your network connection and try again.'
+      );
     }
-  );
-  return response.data;
+    throw new RegulatoryReportError('unexpected', 'The report could not be loaded because of an unexpected error.');
+  }
+  return assertReportFor(data, query);
 };
 
 // ── XLSX export (fills the official BTRC template, preserving its exact design) ───────────────
@@ -517,90 +620,5 @@ export const downloadCsv = (csv: string, filename: string): void => {
   URL.revokeObjectURL(url);
 };
 
-// ── sample (real January 2026 figures, for preview before the backend exists) ─
-
-const emptyZone = (zone: string): SubscriberZoneRow => ({ zone, ...ZERO_ZONE });
-
-export const SAMPLE_REPORT: RegulatoryMonthlyReport = {
-  operatorName: 'Bangladesh Telecommunications Company Limited',
-  licenseType: 'Nationwide',
-  operationStartDate: '26/03/2021',
-  reportingMonth: 'January',
-  reportingYear: 2026,
-
-  activeSubscribers: [
-    { zone: 'Central', prepaidIndividual: 1674917, prepaidCorporateNumbers: 0, prepaidCorporateChannels: 0, postpaidIndividual: 0, postpaidCorporateNumbers: 0, postpaidCorporateChannels: 0 },
-    emptyZone('North-East'),
-    emptyZone('North-West'),
-    emptyZone('South-East'),
-    emptyZone('South-West'),
-  ],
-  provisionedSubscribers: [
-    { zone: 'Central', prepaidIndividual: 2712073, prepaidCorporateNumbers: 0, prepaidCorporateChannels: 0, postpaidIndividual: 0, postpaidCorporateNumbers: 0, postpaidCorporateChannels: 0 },
-    emptyZone('North-East'),
-    emptyZone('North-West'),
-    emptyZone('South-East'),
-    emptyZone('South-West'),
-  ],
-  iptspIptsp: {
-    outOnnetMinutes: 65390.97, outOnnetCalls: 4045874,
-    outOtherMinutes: 147547.58, outOtherCalls: 175802,
-    inOnnetMinutes: 65390.97, inOnnetCalls: 4045874,
-    inOtherMinutes: 11174.58, inOtherCalls: 36003,
-  },
-  icxRows: [
-    {
-      icxName: 'BTCL ICX SBN', e1Count: 61,
-      outOffnetMinutes: 413686.03, outOffnetCalls: 271893,
-      outIntlMinutes: 117.52, outIntlCalls: 2998,
-      inOffnetMinutes: 0, inOffnetCalls: 0,
-      inIntlMinutes: 0, inIntlCalls: 0,
-    },
-    {
-      icxName: 'BTCL ICX Mohakhali', e1Count: 62,
-      outOffnetMinutes: 26013096.48, outOffnetCalls: 13551143,
-      outIntlMinutes: 1774.1, outIntlCalls: 8251,
-      inOffnetMinutes: 960779.75, inOffnetCalls: 4505747,
-      inIntlMinutes: 1336, inIntlCalls: 4958,
-    },
-  ],
-  icxConnectivity: [
-    { icxName: 'BTCL ICX Mohakhali', e1: 62 },
-    { icxName: 'BTCL ICX Sherebangla nagar', e1: 61 },
-  ],
-  pops: [
-    { address: 'BTCL Moghbazar', mediaGateways: 1 },
-    { address: 'BTCL Ramna', mediaGateways: 1 },
-  ],
-  bilateralSms: [],
-
-  btrc: {
-    subscribers: 1674917,
-    subscriberAppBased: 1674917, // all active are category INDIVIDUAL → App Based
-    subscriberNonAppIndividual: 0,
-    subscriberNonAppCorporate: 0,
-    callVolume: {
-      domMobileIn: 960779.75, domMobileOut: 26426782.51,
-      domOthersIn: 11174.58, domOthersOut: 147547.58,
-      tollFreeIn: 0, tollFreeOut: 0,
-      intlIn: 1336, intlOut: 1891.62,
-      total: 27549512.04,
-    },
-    a2pSms: [
-      { operator: 'Grameenphone', incoming: 0, outgoing: 0 },
-      { operator: 'Robi', incoming: 0, outgoing: 0 },
-      { operator: 'Banglalink', incoming: 0, outgoing: 0 },
-      { operator: 'Teletalk', incoming: 0, outgoing: 0 },
-    ],
-    p2pSms: [
-      { operator: 'Grameenphone', incoming: 48943, outgoing: 61985 },
-      { operator: 'Robi', incoming: 66167, outgoing: 39876 },
-      { operator: 'Banglalink', incoming: 37373, outgoing: 27453 },
-      { operator: 'Teletalk', incoming: 3609, outgoing: 2971 },
-    ],
-  },
-
-  isSample: true,
-};
 
 export { smsTotal };

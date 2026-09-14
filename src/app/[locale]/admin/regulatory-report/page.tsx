@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Building2,
@@ -9,13 +9,14 @@ import {
   FileSpreadsheet,
   Loader2,
   RefreshCw,
+  XCircle,
 } from 'lucide-react';
 import {
   downloadBtrcXlsx,
   downloadIptspXlsx,
   getRegulatoryReport,
   MONTH_NAMES,
-  SAMPLE_REPORT,
+  RegulatoryReportError,
   smsTotal,
   totalIcx,
   totalSubscribers,
@@ -33,8 +34,9 @@ import {
  * straight from the CDR/summary databases. The page renders the operator's detailed IPTSP report
  * and the flat BTRC submission from that one object, and exports the BTRC row as CSV.
  *
- * Until the backend endpoint is deployed the fetch fails and the page shows SAMPLE_REPORT (real
- * January 2026 figures) behind a prominent "sample data" banner — never presented as live.
+ * This feeds a regulatory submission, so the page only ever shows a report the backend returned
+ * for exactly the selected month. While loading, or after a failure, there are no figures on
+ * screen and nothing to export — never sample, default or a previous month's numbers.
  */
 
 // Minutes carry two decimals (billing minutes); counts are whole numbers.
@@ -47,42 +49,96 @@ const DEFAULT_YEAR = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullY
 const DEFAULT_MONTH = now.getMonth() === 0 ? 12 : now.getMonth(); // 1–12, previous month
 const YEARS = Array.from({ length: DEFAULT_YEAR - 2021 + 1 }, (_, i) => 2021 + i).reverse();
 
+/**
+ * The report screen is always in exactly one of these states, and each is tied to the period it
+ * was requested for. Anything shown or exported must come from a 'success' whose period matches
+ * the current selection — a stale success for another month is treated as nothing loaded.
+ */
+type LoadState =
+  | { status: 'loading'; month: number; year: number }
+  | { status: 'success'; month: number; year: number; report: RegulatoryMonthlyReport }
+  | { status: 'error'; month: number; year: number; error: RegulatoryReportError };
+
+const ERROR_TITLES: Record<RegulatoryReportError['kind'], string> = {
+  unauthorized: 'Session expired',
+  forbidden: 'Access denied',
+  timeout: 'The report timed out',
+  network: 'Could not connect',
+  server: 'Server error',
+  unexpected: 'Unexpected response',
+};
+
 export default function RegulatoryReportPage() {
   const [month, setMonth] = useState(DEFAULT_MONTH);
   const [year, setYear] = useState(DEFAULT_YEAR);
+  const [state, setState] = useState<LoadState>({ status: 'loading', month: DEFAULT_MONTH, year: DEFAULT_YEAR });
 
-  const [report, setReport] = useState<RegulatoryMonthlyReport | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Only the most recent request may touch the screen. Each load takes a new id and aborts the one
+  // before it; a response that arrives for an older id is dropped.
+  const requestSeq = useRef(0);
+  const inFlight = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    const id = ++requestSeq.current;
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
+
+    setState({ status: 'loading', month, year });
+
     const authToken = localStorage.getItem('authToken');
-    if (!authToken) return;
-    setLoading(true);
-    setError(null);
+    if (!authToken) {
+      setState({
+        status: 'error',
+        month,
+        year,
+        error: new RegulatoryReportError('unauthorized', 'Your session has expired. Please sign in again.'),
+      });
+      return;
+    }
+
     try {
-      const data = await getRegulatoryReport(authToken, { month, year });
-      setReport(data);
-    } catch {
-      // Endpoint not deployed yet (or unreachable): fall back to labelled sample so the
-      // layout stays reviewable. The banner below makes clear it is not live data.
-      setReport({ ...SAMPLE_REPORT, reportingMonth: MONTH_NAMES[month - 1], reportingYear: year });
-      setError('The report backend is not available yet — showing sample figures.');
-    } finally {
-      setLoading(false);
+      const report = await getRegulatoryReport(authToken, { month, year }, controller.signal);
+      if (id !== requestSeq.current) return;
+      setState({ status: 'success', month, year, report });
+    } catch (e) {
+      if (id !== requestSeq.current) return; // superseded or aborted: a newer request owns the screen
+      const error =
+        e instanceof RegulatoryReportError
+          ? e
+          : new RegulatoryReportError('unexpected', 'The report could not be loaded because of an unexpected error.');
+      setState({ status: 'error', month, year, error });
     }
   }, [month, year]);
 
   useEffect(() => {
     load();
+    return () => {
+      requestSeq.current++;
+      inFlight.current?.abort();
+    };
   }, [load]);
 
+  // A state for a different period than the one selected is stale, whatever its status. This also
+  // covers the single render between a period change and the effect that starts the new request.
+  const current = state.month === month && state.year === year;
+  const report = current && state.status === 'success' ? state.report : null;
+  const loading = !current || state.status === 'loading';
+  const failure = current && state.status === 'error' ? state.error : null;
+
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [reportType, setReportType] = useState<'btrc' | 'iptsp'>('btrc');
+
+  // A download error belongs to the report it was raised for.
+  useEffect(() => {
+    setDownloadError(null);
+  }, [month, year]);
 
   const handleDownload = async () => {
     if (!report) return;
     setDownloading(true);
+    setDownloadError(null);
     try {
       if (reportType === 'iptsp') {
         await downloadIptspXlsx(report);
@@ -90,27 +146,14 @@ export default function RegulatoryReportPage() {
         await downloadBtrcXlsx(report);
       }
     } catch {
-      setError('Could not build the Excel file (template missing?).');
+      setDownloadError('Could not build the Excel file (template missing?).');
     } finally {
       setDownloading(false);
     }
   };
 
-  if (loading && !report) {
-    return (
-      <div className="flex items-center justify-center py-24 text-gray-500">
-        <Loader2 className="w-6 h-6 animate-spin mr-2" />
-        Building the monthly report…
-      </div>
-    );
-  }
-
-  if (!report) return null;
-
-  const activeTotal = totalSubscribers(report.activeSubscribers);
-  const provTotal = totalSubscribers(report.provisionedSubscribers);
-  const icxTotal = totalIcx(report.icxRows);
-  const ii = report.iptspIptsp;
+  const periodLabel = `${MONTH_NAMES[month - 1]} ${year}`;
+  const exportDisabled = !report || downloading;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -122,14 +165,14 @@ export default function RegulatoryReportPage() {
             IPTSP / BTRC Monthly Report
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Regulatory return for {report.reportingMonth}, {report.reportingYear} — computed from
-            call and subscriber data.
+            Regulatory return for {periodLabel} — computed from call and subscriber data.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={load}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-[#0D529E] hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-[#0D529E] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -145,7 +188,8 @@ export default function RegulatoryReportPage() {
           </select>
           <button
             onClick={handleDownload}
-            disabled={downloading}
+            disabled={exportDisabled}
+            title={report ? undefined : 'Available once the report for the selected period has loaded'}
             className="flex items-center gap-2 px-4 py-2 bg-[#0D529E] text-white text-sm font-medium rounded-lg hover:bg-[#1F3C71] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
@@ -187,24 +231,66 @@ export default function RegulatoryReportPage() {
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-500 ml-auto">
             <CalendarDays className="w-4 h-4" />
-            Reporting period: {report.reportingMonth} {report.reportingYear}
+            Reporting period: {periodLabel}
           </div>
         </div>
       </div>
 
-      {report.isSample && (
+      {downloadError && (
         <div className="mb-5 flex items-start gap-2 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm">
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold">Sample data — not a live figure.</p>
-            <p className="mt-0.5">
-              {error ?? 'The report backend endpoint is not deployed yet.'} The numbers below are a
-              fixed January 2026 sample so the layout can be reviewed. Do not submit them.
-            </p>
+          <p>{downloadError}</p>
+        </div>
+      )}
+
+      {loading && (
+        <div
+          role="status"
+          className="flex items-center justify-center py-24 text-gray-500 bg-white rounded-xl border border-gray-200 shadow-sm"
+        >
+          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+          Building the {periodLabel} report…
+        </div>
+      )}
+
+      {failure && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-6">
+          <div className="flex items-start gap-3">
+            <XCircle className="w-6 h-6 shrink-0 text-red-600" />
+            <div className="flex-1">
+              <p className="font-semibold text-red-900">
+                {ERROR_TITLES[failure.kind]} — the {periodLabel} report could not be loaded
+              </p>
+              <p className="mt-1 text-sm text-red-800">{failure.message}</p>
+              <p className="mt-1 text-sm text-red-800">
+                No figures are shown and export is disabled until the report loads successfully.
+              </p>
+              <button
+                onClick={load}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {report && <ReportBody report={report} />}
+    </div>
+  );
+}
+
+/** The loaded report. Only ever rendered from a validated backend response for the selected period. */
+function ReportBody({ report }: { report: RegulatoryMonthlyReport }) {
+  const activeTotal = totalSubscribers(report.activeSubscribers);
+  const provTotal = totalSubscribers(report.provisionedSubscribers);
+  const icxTotal = totalIcx(report.icxRows);
+  const ii = report.iptspIptsp;
+
+  return (
+    <>
       {/* ---------------- Operator info ---------------- */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
         <div className="flex items-start gap-3">
@@ -413,7 +499,7 @@ export default function RegulatoryReportPage() {
           Generated {new Date(report.generatedAt).toLocaleString('en-GB')}
         </p>
       )}
-    </div>
+    </>
   );
 }
 

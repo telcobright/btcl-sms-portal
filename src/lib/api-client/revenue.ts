@@ -54,6 +54,10 @@ export interface RevenueTransaction {
   partnerContact: string | null;
   idPartner: number | null;
   idPackage: number | null;
+  /** SSLCommerz, or bKash/Nagad when paid to them directly. */
+  paymentGateway: string | null;
+  /** The method used inside SSLCommerz (bKash, Visa, ...); null until one is chosen. */
+  paymentMethod: string | null;
   /**
    * DID numbers allocated to this subscriber in this row's service.
    *

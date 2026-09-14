@@ -360,6 +360,7 @@ export default function RevenuePage() {
                 <th className="px-4 py-3 font-semibold">Transaction ID</th>
                 <th className="px-4 py-3 font-semibold">Date &amp; Time (BST)</th>
                 <th className="px-4 py-3 font-semibold text-right">Amount</th>
+                <th className="px-4 py-3 font-semibold">Payment Gateway</th>
                 <th className="px-4 py-3 font-semibold">Subscriber</th>
                 <th className="px-4 py-3 font-semibold">Mobile</th>
                 <th className="px-4 py-3 font-semibold">Partner Contact</th>
@@ -371,14 +372,14 @@ export default function RevenuePage() {
             <tbody className="divide-y divide-gray-100">
               {loading && (
                 <tr>
-                  <td colSpan={11} className="text-center py-8 text-gray-500">
+                  <td colSpan={12} className="text-center py-8 text-gray-500">
                     Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="text-center py-8 text-gray-500">
+                  <td colSpan={12} className="text-center py-8 text-gray-500">
                     No transactions match these filters.
                   </td>
                 </tr>
@@ -393,6 +394,12 @@ export default function RevenuePage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{formatBst(t.createdAt)}</td>
                     <td className="px-4 py-3 text-right font-medium">{money(t.amount)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {t.paymentGateway || '—'}
+                      {t.paymentMethod && (
+                        <span className="block text-xs text-gray-500">{t.paymentMethod}</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{t.subscriberName || '—'}</td>
                     <td className="px-4 py-3">{t.subscriberMobile || '—'}</td>
                     <td className="px-4 py-3">{t.partnerContact || '—'}</td>

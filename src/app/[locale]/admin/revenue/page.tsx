@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   getRevenueTransactions,
   revenueExportUrl,
@@ -84,59 +84,134 @@ const DidCell = ({ dids, onExpand }: { dids: string[]; onExpand: () => void }) =
   );
 };
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div>
-    <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-    {children}
-  </div>
-);
+/** Shared look for the toolbar's text and date inputs, so every control is the same height. */
+const CONTROL =
+  'h-9 rounded-lg border border-gray-300 bg-white px-2.5 text-sm text-gray-700 ' +
+  'placeholder:text-gray-400 focus:outline-none focus:border-[#0D529E] focus:ring-1 focus:ring-[#0D529E]';
 
-/** One toggle in a multi-select filter row. */
-const Chip = ({
-  on,
-  onClick,
-  children,
-}: {
-  on: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) => (
-  <button
-    type="button"
-    aria-pressed={on}
-    onClick={onClick}
-    className={
-      'px-3 py-1 rounded-full text-xs border transition-colors ' +
-      (on
-        ? 'bg-[#0D529E] text-white border-[#0D529E]'
-        : 'bg-white text-gray-600 border-gray-300 hover:border-[#0D529E] hover:text-[#0D529E]')
-    }
-  >
-    {children}
-  </button>
-);
+type Option = { readonly value: string; readonly label: string; readonly group?: string };
 
 /**
- * A labelled filter row. The label sits in a fixed-width column so every row's options
- * start at the same x, which is what makes a stack of chip groups scannable.
+ * A multi-select filter collapsed into one button.
+ *
+ * The button names what is selected (or "All"), so the toolbar still reads as a summary
+ * of the active filters without spending a row per filter on chips.
  */
-const FilterRow = ({
+const MultiSelect = ({
   label,
-  hint,
-  children,
+  options,
+  groups,
+  header,
+  value,
+  onChange,
 }: {
   label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) => (
-  <div className="grid grid-cols-1 md:grid-cols-[11rem_1fr] gap-2 md:gap-4 py-3 border-t border-gray-100">
-    <div className="md:pt-1">
-      <div className="text-xs font-semibold text-gray-700">{label}</div>
-      {hint && <div className="text-[11px] text-gray-400 mt-0.5">{hint}</div>}
+  options: readonly Option[];
+  groups?: readonly { readonly value: string; readonly label: string }[];
+  header?: string;
+  value: string | undefined;
+  onChange: (next: string | undefined) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const selected = (value || '').split(',').filter(Boolean);
+  const names = options.filter((o) => selected.includes(o.value)).map((o) => o.label);
+  const summary =
+    names.length === 0 ? 'All' : names.length <= 2 ? names.join(', ') : names.length + ' selected';
+
+  const toggle = (v: string) => {
+    const next = new Set(selected);
+    if (next.has(v)) next.delete(v);
+    else next.add(v);
+    onChange(Array.from(next).join(',') || undefined);
+  };
+
+  const sections = groups
+    ? groups.map((g) => ({ key: g.value, label: g.label, items: options.filter((o) => o.group === g.value) }))
+    : [{ key: 'all', label: undefined as string | undefined, items: options }];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={
+          'h-9 inline-flex items-center gap-1.5 rounded-lg border px-3 text-sm whitespace-nowrap ' +
+          (names.length
+            ? 'border-[#0D529E] bg-[#0D529E]/5 text-[#0D529E]'
+            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400')
+        }
+      >
+        <span className={names.length ? 'text-[#0D529E]/80' : 'text-gray-500'}>{label}:</span>
+        <span className="font-medium max-w-[9rem] truncate">{summary}</span>
+        <svg className="h-3.5 w-3.5 shrink-0 opacity-60" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 z-30 mt-1 min-w-[13rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+          {header && (
+            <div className="border-b border-gray-100 px-3 pb-1.5 pt-1 text-[11px] font-semibold text-[#1F3C71]">
+              {header}
+            </div>
+          )}
+          {sections.map((sec) => (
+            <div key={sec.key} className="py-0.5">
+              {sec.label && (
+                <div className="px-3 pb-0.5 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                  {sec.label}
+                </div>
+              )}
+              {sec.items.map((o) => (
+                <label
+                  key={o.value}
+                  className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-3.5 w-3.5 accent-[#0D529E]"
+                    checked={selected.includes(o.value)}
+                    onChange={() => toggle(o.value)}
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          ))}
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange(undefined)}
+              className="mt-0.5 w-full border-t border-gray-100 px-3 py-1.5 text-left text-xs font-medium text-[#0D529E] hover:bg-gray-50"
+            >
+              Clear selection
+            </button>
+          )}
+        </div>
+      )}
     </div>
-    <div>{children}</div>
-  </div>
-);
+  );
+};
 
 export default function RevenuePage() {
   const [filters, setFilters] = useState<RevenueFilters>({ page: 0, size: PAGE_SIZE });
@@ -244,19 +319,6 @@ export default function RevenuePage() {
     }
   };
 
-  const toggleCsv = (current: string | undefined, value: string) => {
-    const set = new Set((current || '').split(',').filter(Boolean));
-    if (set.has(value)) {
-      set.delete(value);
-    } else {
-      set.add(value);
-    }
-    return Array.from(set).join(',');
-  };
-
-  const csvHas = (current: string | undefined, value: string) =>
-    (current || '').split(',').includes(value);
-
   // Date range counts once: from and to are one filter to the person reading the report.
   const activeFilterCount = [
     filters.from || filters.to,
@@ -314,152 +376,101 @@ export default function RevenuePage() {
         />
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl">
-        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
-            {activeFilterCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#0D529E]/10 text-[#0D529E]">
-                {activeFilterCount} active
-              </span>
-            )}
+      <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date"
+              aria-label="From date"
+              title="From date"
+              value={filters.from || ''}
+              max={filters.to || undefined}
+              className={CONTROL + ' w-[9.5rem]'}
+              onChange={(e) => setFilter({ from: e.target.value || undefined })}
+            />
+            <span className="text-xs text-gray-400">to</span>
+            <input
+              type="date"
+              aria-label="To date"
+              title="To date"
+              value={filters.to || ''}
+              min={filters.from || undefined}
+              className={CONTROL + ' w-[9.5rem]'}
+              onChange={(e) => setFilter({ to: e.target.value || undefined })}
+            />
           </div>
-          <button
-            type="button"
-            onClick={clearFilters}
-            disabled={activeFilterCount === 0}
-            className="text-xs font-medium text-[#0D529E] hover:underline disabled:text-gray-300 disabled:no-underline"
+
+          <input
+            type="text"
+            aria-label="Store ID"
+            value={storeId}
+            placeholder="Store ID"
+            className={CONTROL + ' w-36'}
+            onChange={(e) => setStoreId(e.target.value)}
+          />
+
+          <form
+            className="relative min-w-[13rem] flex-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setFilter({ q: q.trim() || undefined });
+            }}
           >
-            Clear all
-          </button>
-        </div>
-
-        <div className="px-4 pb-1">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 py-3">
-            <div className="md:col-span-4">
-              <Field label="Date range">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    aria-label="From date"
-                    value={filters.from || ''}
-                    max={filters.to || undefined}
-                    className="input-field w-full"
-                    onChange={(e) => setFilter({ from: e.target.value || undefined })}
-                  />
-                  <span className="text-xs text-gray-400 shrink-0">to</span>
-                  <input
-                    type="date"
-                    aria-label="To date"
-                    value={filters.to || ''}
-                    min={filters.from || undefined}
-                    className="input-field w-full"
-                    onChange={(e) => setFilter({ to: e.target.value || undefined })}
-                  />
-                </div>
-              </Field>
-            </div>
-            <div className="md:col-span-3">
-              <Field label="Store ID">
-                <input
-                  type="text"
-                  value={storeId}
-                  placeholder="e.g. HostedIPPBXlive"
-                  className="input-field w-full"
-                  onChange={(e) => setStoreId(e.target.value)}
+            <input
+              type="text"
+              aria-label="Search"
+              value={q}
+              placeholder="Search TrxID, name, mobile or email"
+              className={CONTROL + ' w-full pr-9'}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <button
+              type="submit"
+              aria-label="Search"
+              className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-[#0D529E]"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path
+                  fillRule="evenodd"
+                  d="M8.5 3a5.5 5.5 0 1 0 3.3 9.9l3.15 3.15a1 1 0 0 0 1.4-1.4l-3.15-3.15A5.5 5.5 0 0 0 8.5 3zM5 8.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"
+                  clipRule="evenodd"
                 />
-              </Field>
-            </div>
-            <div className="md:col-span-5">
-              <Field label="Search">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={q}
-                    placeholder="TrxID, name, mobile or email"
-                    className="input-field w-full"
-                    onChange={(e) => setQ(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setFilter({ q: q.trim() || undefined });
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setFilter({ q: q.trim() || undefined })}
-                    className="px-4 py-2 rounded-lg bg-[#0D529E] text-white text-sm font-medium hover:bg-[#1F3C71]"
-                  >
-                    Go
-                  </button>
-                </div>
-              </Field>
-            </div>
-          </div>
+              </svg>
+            </button>
+          </form>
 
-          <FilterRow label="Service">
-            <div className="flex flex-wrap gap-2">
-              {SERVICE_OPTIONS.map((s) => (
-                <Chip
-                  key={s.value}
-                  on={csvHas(filters.service, s.value)}
-                  onClick={() =>
-                    setFilter({ service: toggleCsv(filters.service, s.value) || undefined })
-                  }
-                >
-                  {s.label}
-                </Chip>
-              ))}
-            </div>
-          </FilterRow>
+          <MultiSelect
+            label="Service"
+            options={SERVICE_OPTIONS}
+            value={filters.service}
+            onChange={(service) => setFilter({ service })}
+          />
+          {/* Every payment here is taken by SSLCommerz; only the method inside it differs, so the
+              gateway names the control and the methods are what you pick. */}
+          <MultiSelect
+            label="SSLCommerz"
+            header="Payment gateway: SSLCommerz"
+            options={METHOD_OPTIONS}
+            groups={METHOD_GROUPS}
+            value={filters.method}
+            onChange={(method) => setFilter({ method })}
+          />
+          <MultiSelect
+            label="Status"
+            options={STATUS_OPTIONS}
+            value={filters.status}
+            onChange={(status) => setFilter({ status })}
+          />
 
-          {/* Every payment in this report is taken by SSLCommerz; what differs is the method the
-              customer chose inside it. So the gateway is the frame and the methods sit within it. */}
-          <FilterRow label="Payment Gateway" hint="Method used inside the gateway">
-            <div className="rounded-lg border border-gray-200 overflow-hidden">
-              <div className="flex items-center gap-2 px-3 py-2 bg-[#0D529E]/5 border-b border-gray-200">
-                <span className="text-xs font-semibold text-[#1F3C71]">SSLCommerz</span>
-                <span className="text-[11px] text-gray-500">Payment gateway</span>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {METHOD_GROUPS.map((g) => (
-                  <div
-                    key={g.value}
-                    className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2"
-                  >
-                    <span className="sm:w-44 shrink-0 text-[11px] text-gray-500">{g.label}</span>
-                    <div className="flex flex-wrap gap-2">
-                      {METHOD_OPTIONS.filter((m) => m.group === g.value).map((m) => (
-                        <Chip
-                          key={m.value}
-                          on={csvHas(filters.method, m.value)}
-                          onClick={() =>
-                            setFilter({ method: toggleCsv(filters.method, m.value) || undefined })
-                          }
-                        >
-                          {m.label}
-                        </Chip>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </FilterRow>
-
-          <FilterRow label="Status">
-            <div className="flex flex-wrap gap-2">
-              {STATUS_OPTIONS.map((s) => (
-                <Chip
-                  key={s.value}
-                  on={csvHas(filters.status, s.value)}
-                  onClick={() =>
-                    setFilter({ status: toggleCsv(filters.status, s.value) || undefined })
-                  }
-                >
-                  {s.label}
-                </Chip>
-              ))}
-            </div>
-          </FilterRow>
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="h-9 px-2 text-xs font-medium text-[#0D529E] hover:underline"
+            >
+              Clear all ({activeFilterCount})
+            </button>
+          )}
         </div>
       </div>
 

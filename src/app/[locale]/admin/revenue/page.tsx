@@ -10,6 +10,7 @@ import {
   STATUS_OPTIONS,
   type RevenueFilters,
   type RevenuePage,
+  type RevenueTransaction,
 } from '@/lib/api-client/revenue';
 
 /**
@@ -55,6 +56,32 @@ const Tile = ({ label, value, tone }: { label: string; value: string; tone?: str
   </div>
 );
 
+/**
+ * The DID numbers this subscriber holds in this row's service.
+ *
+ * One number is the ordinary case and is shown as it is. Several are common enough -- one PBX
+ * subscriber holds seven, one SMS subscriber a hundred -- that listing them inline would wreck
+ * the row, so the cell still shows a number and puts the rest behind a count. Nothing is
+ * hidden; the table just stays a table.
+ */
+const DidCell = ({ dids, onExpand }: { dids: string[]; onExpand: () => void }) => {
+  if (dids.length === 0) return <span className="text-gray-400">—</span>;
+  return (
+    <div className="flex items-center gap-1.5 whitespace-nowrap">
+      <span className="font-mono text-xs">{dids[0]}</span>
+      {dids.length > 1 && (
+        <button
+          onClick={onExpand}
+          title={`Show all ${dids.length} DID numbers`}
+          className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#0D529E]/10 text-[#0D529E] hover:bg-[#0D529E]/20"
+        >
+          +{dids.length - 1}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
     <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -70,6 +97,9 @@ export default function RevenuePage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
+  // The row whose full DID list is open. Holding the row, not just the numbers, so the popup
+  // can name the subscriber and the service they belong to.
+  const [didRow, setDidRow] = useState<RevenueTransaction | null>(null);
 
   // The query the table currently shows. Export reuses exactly this, so the file can
   // never disagree with the totals on screen.
@@ -334,20 +364,21 @@ export default function RevenuePage() {
                 <th className="px-4 py-3 font-semibold">Mobile</th>
                 <th className="px-4 py-3 font-semibold">Partner Contact</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="px-4 py-3 font-semibold">DID Number</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading && (
                 <tr>
-                  <td colSpan={10} className="text-center py-8 text-gray-500">
+                  <td colSpan={11} className="text-center py-8 text-gray-500">
                     Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="text-center py-8 text-gray-500">
+                  <td colSpan={11} className="text-center py-8 text-gray-500">
                     No transactions match these filters.
                   </td>
                 </tr>
@@ -366,6 +397,9 @@ export default function RevenuePage() {
                     <td className="px-4 py-3">{t.subscriberMobile || '—'}</td>
                     <td className="px-4 py-3">{t.partnerContact || '—'}</td>
                     <td className="px-4 py-3 text-xs">{t.subscriberEmail || '—'}</td>
+                    <td className="px-4 py-3">
+                      <DidCell dids={t.didNumbers ?? []} onExpand={() => setDidRow(t)} />
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={
@@ -407,6 +441,55 @@ export default function RevenuePage() {
           </div>
         )}
       </div>
+
+      {didRow && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setDidRow(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-gray-200 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-base font-bold text-gray-900">Allocated DID numbers</h2>
+                {/* Both facts named: these numbers belong to this subscriber in this service
+                    only, and the same subscriber may hold different ones elsewhere. */}
+                <p className="text-xs text-gray-500 mt-0.5 truncate">
+                  {didRow.subscriberName || 'Subscriber'}
+                  {' · '}
+                  {didRow.serviceName || didRow.storeType || 'Service'}
+                </p>
+              </div>
+              <button
+                onClick={() => setDidRow(null)}
+                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-4 overflow-y-auto">
+              <ol className="space-y-1.5">
+                {(didRow.didNumbers ?? []).map((n, i) => (
+                  <li key={n} className="flex items-center gap-3 text-sm">
+                    <span className="w-6 text-xs text-gray-400 tabular-nums">{i + 1}.</span>
+                    <span className="font-mono">{n}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <div className="px-6 py-3 border-t border-gray-100 text-xs text-gray-500">
+              {(didRow.didNumbers ?? []).length} numbers allocated in this service.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

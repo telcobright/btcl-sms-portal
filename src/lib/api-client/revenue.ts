@@ -55,6 +55,15 @@ export interface RevenueTransaction {
   partnerContact: string | null;
   idPartner: number | null;
   idPackage: number | null;
+  /**
+   * DID numbers allocated to this subscriber in this row's service.
+   *
+   * Service-wise, not account-wide: a DID belongs to one service's numbering and the same
+   * subscriber can hold numbers in several, so a PBX row never shows the Contact Center ones.
+   * Null when the service has no DID source (WiFi) or its table could not be read; empty when
+   * the subscriber holds none.
+   */
+  didNumbers: string[] | null;
 }
 
 export interface RevenuePage {

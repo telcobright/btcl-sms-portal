@@ -8,6 +8,7 @@ import {
   isSettled,
   SERVICE_OPTIONS,
   METHOD_OPTIONS,
+  METHOD_GROUPS,
   STATUS_OPTIONS,
   type RevenueFilters,
   type RevenuePage,
@@ -87,6 +88,53 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
   <div>
     <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
     {children}
+  </div>
+);
+
+/** One toggle in a multi-select filter row. */
+const Chip = ({
+  on,
+  onClick,
+  children,
+}: {
+  on: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) => (
+  <button
+    type="button"
+    aria-pressed={on}
+    onClick={onClick}
+    className={
+      'px-3 py-1 rounded-full text-xs border transition-colors ' +
+      (on
+        ? 'bg-[#0D529E] text-white border-[#0D529E]'
+        : 'bg-white text-gray-600 border-gray-300 hover:border-[#0D529E] hover:text-[#0D529E]')
+    }
+  >
+    {children}
+  </button>
+);
+
+/**
+ * A labelled filter row. The label sits in a fixed-width column so every row's options
+ * start at the same x, which is what makes a stack of chip groups scannable.
+ */
+const FilterRow = ({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) => (
+  <div className="grid grid-cols-1 md:grid-cols-[11rem_1fr] gap-2 md:gap-4 py-3 border-t border-gray-100">
+    <div className="md:pt-1">
+      <div className="text-xs font-semibold text-gray-700">{label}</div>
+      {hint && <div className="text-[11px] text-gray-400 mt-0.5">{hint}</div>}
+    </div>
+    <div>{children}</div>
   </div>
 );
 
@@ -206,6 +254,25 @@ export default function RevenuePage() {
     return Array.from(set).join(',');
   };
 
+  const csvHas = (current: string | undefined, value: string) =>
+    (current || '').split(',').includes(value);
+
+  // Date range counts once: from and to are one filter to the person reading the report.
+  const activeFilterCount = [
+    filters.from || filters.to,
+    filters.storeId,
+    filters.q,
+    filters.service,
+    filters.method,
+    filters.status,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setQ('');
+    setStoreId('');
+    setFilters({ page: 0, size: PAGE_SIZE });
+  };
+
   const rows = result?.data ?? [];
   const totalPages = result?.totalPages ?? 0;
   const page = result?.page ?? 0;
@@ -247,126 +314,153 @@ export default function RevenuePage() {
         />
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Field label="From date">
-            <input
-              type="date"
-              value={filters.from || ''}
-              className="input-field w-full"
-              onChange={(e) => setFilter({ from: e.target.value || undefined })}
-            />
-          </Field>
-          <Field label="To date">
-            <input
-              type="date"
-              value={filters.to || ''}
-              className="input-field w-full"
-              onChange={(e) => setFilter({ to: e.target.value || undefined })}
-            />
-          </Field>
-          <Field label="Store ID">
-            <input
-              type="text"
-              value={storeId}
-              placeholder="e.g. HostedIPPBXlive"
-              className="input-field w-full"
-              onChange={(e) => setStoreId(e.target.value)}
-            />
-          </Field>
-          <Field label="Search">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={q}
-                placeholder="TrxID, name, mobile or email"
-                className="input-field w-full"
-                onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') setFilter({ q: q.trim() || undefined });
-                }}
-              />
-              <button
-                onClick={() => setFilter({ q: q.trim() || undefined })}
-                className="px-3 py-2 rounded-lg border border-gray-300 text-sm"
-              >
-                Go
-              </button>
-            </div>
-          </Field>
+      <div className="bg-white border border-gray-200 rounded-xl">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
+            {activeFilterCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#0D529E]/10 text-[#0D529E]">
+                {activeFilterCount} active
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={clearFilters}
+            disabled={activeFilterCount === 0}
+            className="text-xs font-medium text-[#0D529E] hover:underline disabled:text-gray-300 disabled:no-underline"
+          >
+            Clear all
+          </button>
         </div>
 
-        <Field label="Service">
-          <div className="flex flex-wrap gap-2">
-            {SERVICE_OPTIONS.map((s) => {
-              const on = (filters.service || '').split(',').includes(s.value);
-              return (
-                <button
+        <div className="px-4 pb-1">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 py-3">
+            <div className="md:col-span-4">
+              <Field label="Date range">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    aria-label="From date"
+                    value={filters.from || ''}
+                    max={filters.to || undefined}
+                    className="input-field w-full"
+                    onChange={(e) => setFilter({ from: e.target.value || undefined })}
+                  />
+                  <span className="text-xs text-gray-400 shrink-0">to</span>
+                  <input
+                    type="date"
+                    aria-label="To date"
+                    value={filters.to || ''}
+                    min={filters.from || undefined}
+                    className="input-field w-full"
+                    onChange={(e) => setFilter({ to: e.target.value || undefined })}
+                  />
+                </div>
+              </Field>
+            </div>
+            <div className="md:col-span-3">
+              <Field label="Store ID">
+                <input
+                  type="text"
+                  value={storeId}
+                  placeholder="e.g. HostedIPPBXlive"
+                  className="input-field w-full"
+                  onChange={(e) => setStoreId(e.target.value)}
+                />
+              </Field>
+            </div>
+            <div className="md:col-span-5">
+              <Field label="Search">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={q}
+                    placeholder="TrxID, name, mobile or email"
+                    className="input-field w-full"
+                    onChange={(e) => setQ(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setFilter({ q: q.trim() || undefined });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFilter({ q: q.trim() || undefined })}
+                    className="px-4 py-2 rounded-lg bg-[#0D529E] text-white text-sm font-medium hover:bg-[#1F3C71]"
+                  >
+                    Go
+                  </button>
+                </div>
+              </Field>
+            </div>
+          </div>
+
+          <FilterRow label="Service">
+            <div className="flex flex-wrap gap-2">
+              {SERVICE_OPTIONS.map((s) => (
+                <Chip
                   key={s.value}
+                  on={csvHas(filters.service, s.value)}
                   onClick={() =>
                     setFilter({ service: toggleCsv(filters.service, s.value) || undefined })
                   }
-                  className={
-                    'px-3 py-1 rounded-full text-xs border ' +
-                    (on
-                      ? 'bg-[#0D529E] text-white border-[#0D529E]'
-                      : 'bg-white text-gray-600 border-gray-300')
-                  }
                 >
                   {s.label}
-                </button>
-              );
-            })}
-          </div>
-        </Field>
+                </Chip>
+              ))}
+            </div>
+          </FilterRow>
 
-        <Field label="Payment Gateway">
-          <div className="flex flex-wrap gap-2">
-            {METHOD_OPTIONS.map((m) => {
-              const on = (filters.method || '').split(',').includes(m.value);
-              return (
-                <button
-                  key={m.value}
-                  onClick={() =>
-                    setFilter({ method: toggleCsv(filters.method, m.value) || undefined })
-                  }
-                  className={
-                    'px-3 py-1 rounded-full text-xs border ' +
-                    (on
-                      ? 'bg-[#0D529E] text-white border-[#0D529E]'
-                      : 'bg-white text-gray-600 border-gray-300')
-                  }
-                >
-                  {m.label}
-                </button>
-              );
-            })}
-          </div>
-        </Field>
+          {/* Every payment in this report is taken by SSLCommerz; what differs is the method the
+              customer chose inside it. So the gateway is the frame and the methods sit within it. */}
+          <FilterRow label="Payment Gateway" hint="Method used inside the gateway">
+            <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#0D529E]/5 border-b border-gray-200">
+                <span className="text-xs font-semibold text-[#1F3C71]">SSLCommerz</span>
+                <span className="text-[11px] text-gray-500">Payment gateway</span>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {METHOD_GROUPS.map((g) => (
+                  <div
+                    key={g.value}
+                    className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2"
+                  >
+                    <span className="sm:w-44 shrink-0 text-[11px] text-gray-500">{g.label}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {METHOD_OPTIONS.filter((m) => m.group === g.value).map((m) => (
+                        <Chip
+                          key={m.value}
+                          on={csvHas(filters.method, m.value)}
+                          onClick={() =>
+                            setFilter({ method: toggleCsv(filters.method, m.value) || undefined })
+                          }
+                        >
+                          {m.label}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FilterRow>
 
-        <Field label="Status">
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map((s) => {
-              const on = (filters.status || '').split(',').includes(s.value);
-              return (
-                <button
+          <FilterRow label="Status">
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.map((s) => (
+                <Chip
                   key={s.value}
+                  on={csvHas(filters.status, s.value)}
                   onClick={() =>
                     setFilter({ status: toggleCsv(filters.status, s.value) || undefined })
                   }
-                  className={
-                    'px-3 py-1 rounded-full text-xs border ' +
-                    (on
-                      ? 'bg-[#0D529E] text-white border-[#0D529E]'
-                      : 'bg-white text-gray-600 border-gray-300')
-                  }
                 >
                   {s.label}
-                </button>
-              );
-            })}
-          </div>
-        </Field>
+                </Chip>
+              ))}
+            </div>
+          </FilterRow>
+        </div>
       </div>
 
       {error && (

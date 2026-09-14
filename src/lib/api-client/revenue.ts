@@ -38,15 +38,21 @@ export const SERVICE_OPTIONS = [
  * way the Payment Gateway column labels a row, so the filter and the column always agree.
  */
 export const METHOD_OPTIONS = [
-  { value: 'bkash', label: 'bKash' },
-  { value: 'nagad', label: 'Nagad' },
-  { value: 'rocket', label: 'Rocket' },
-  { value: 'upay', label: 'Upay' },
-  { value: 'cellfin', label: 'Cellfin' },
-  { value: 'ipay', label: 'iPay' },
-  { value: 'visa', label: 'Visa' },
-  { value: 'mastercard', label: 'Mastercard' },
-  { value: 'amex', label: 'Amex' },
+  { value: 'bkash', label: 'bKash', group: 'mobile' },
+  { value: 'nagad', label: 'Nagad', group: 'mobile' },
+  { value: 'rocket', label: 'Rocket', group: 'mobile' },
+  { value: 'upay', label: 'Upay', group: 'mobile' },
+  { value: 'cellfin', label: 'Cellfin', group: 'mobile' },
+  { value: 'ipay', label: 'iPay', group: 'mobile' },
+  { value: 'visa', label: 'Visa', group: 'card' },
+  { value: 'mastercard', label: 'Mastercard', group: 'card' },
+  { value: 'amex', label: 'Amex', group: 'card' },
+] as const;
+
+/** How the methods are grouped under SSLCommerz in the filter. */
+export const METHOD_GROUPS = [
+  { value: 'mobile', label: 'Mobile banking & wallets' },
+  { value: 'card', label: 'Cards' },
 ] as const;
 
 export interface RevenueTransaction {

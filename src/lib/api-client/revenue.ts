@@ -55,6 +55,28 @@ export const METHOD_GROUPS = [
   { value: 'card', label: 'Cards' },
 ] as const;
 
+/**
+ * What a payment bought, as the payment service classifies it (RechargeKind there).
+ *
+ * A recharge is money added to an account: a top-up (the "TopUp" package, used by every
+ * service) or a prepaid bundle (SMS bundles, VBS boxes — packages that *are* the credit).
+ * A subscription plan is a PACKAGE and is not a recharge.
+ */
+export const KIND_OPTIONS = [
+  { value: 'TOPUP', label: 'Top-up' },
+  { value: 'PREPAID', label: 'Prepaid bundle' },
+] as const;
+
+/** The kinds the Recharge Report covers. Sent even when the user picks neither, so that
+ *  page can never widen into subscription sales. */
+export const RECHARGE_KINDS = 'TOPUP,PREPAID';
+
+export const KIND_LABELS: Record<string, string> = {
+  TOPUP: 'Top-up',
+  PREPAID: 'Prepaid bundle',
+  PACKAGE: 'Package',
+};
+
 export interface RevenueTransaction {
   storeId: string | null;
   serviceName: string | null;
@@ -76,6 +98,8 @@ export interface RevenueTransaction {
   partnerContact: string | null;
   idPartner: number | null;
   idPackage: number | null;
+  /** TOPUP | PREPAID | PACKAGE — derived by the payment service, see KIND_OPTIONS. */
+  kind: string | null;
   /** SSLCommerz, or bKash/Nagad when paid to them directly. */
   paymentGateway: string | null;
   /** The method used inside SSLCommerz (bKash, Visa, ...); null until one is chosen. */
@@ -111,6 +135,8 @@ export interface RevenueFilters {
   /** payment method values, comma-joined by the caller */
   method?: string;
   status?: string;
+  /** RechargeKind values, comma-joined. Absent means every kind. */
+  kind?: string;
   idPartner?: number;
   q?: string;
   page?: number;
@@ -125,6 +151,7 @@ const toParams = (f: RevenueFilters) => {
   if (f.service) p.set('service_', f.service);
   if (f.method) p.set('method', f.method);
   if (f.status) p.set('status', f.status);
+  if (f.kind) p.set('kind', f.kind);
   if (f.idPartner != null) p.set('idPartner', String(f.idPartner));
   if (f.q) p.set('q', f.q);
   if (f.page != null) p.set('page', String(f.page));

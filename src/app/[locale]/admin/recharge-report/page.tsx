@@ -35,6 +35,15 @@ import {
 
 const PAGE_SIZE = 25;
 
+/**
+ * How many subscribers the picker loads.
+ *
+ * Far above the real list (95 accounts on BTCL), so the dropdown holds everyone. If a
+ * deployment ever outgrows it the list is still browsable and searchable — it just stops
+ * at this many names.
+ */
+const PARTNER_LIMIT = 1000;
+
 /** Successful only on open; the Status filter is how you widen it. */
 const DEFAULT_FILTERS: RevenueFilters = {
   page: 0,
@@ -46,9 +55,10 @@ const DEFAULT_FILTERS: RevenueFilters = {
 /**
  * Pick the subscriber whose recharges to show.
  *
- * Typing searches the partner list by name; picking one filters by its id, which is what
- * the report keys on. The id is shown next to the name because two accounts can carry the
- * same company name, and the id is what appears in the export and in support tickets.
+ * The whole list opens on a click — there are under a hundred subscribers, so the dropdown
+ * loads them once and filters as you type, with no further requests. Typing matches the name
+ * or the partner id. The id is shown beside every name because two accounts can carry the
+ * same company name, and the id is what the export and support tickets carry.
  */
 const PartnerPicker = ({
   selected,
@@ -58,9 +68,11 @@ const PartnerPicker = ({
   onSelect: (partner: Partner | null) => void;
 }) => {
   const [term, setTerm] = useState('');
-  const [matches, setMatches] = useState<Partner[]>([]);
   const [open, setOpen] = useState(false);
-  const [searching, setSearching] = useState(false);
+  // null until the first open: an admin who never touches this filter costs no request.
+  const [partners, setPartners] = useState<Partner[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,33 +80,51 @@ const PartnerPicker = ({
     const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
-  // Debounced: applying straight from onChange fires one search per keystroke.
-  useEffect(() => {
-    const search = term.trim();
-    if (search.length < 2) {
-      setMatches([]);
-      return;
+  const load = useCallback(async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+    setLoading(true);
+    setFailed(false);
+    try {
+      const all = await getAllPartners(
+        { page: 0, size: PARTNER_LIMIT, partnerName: null, partnerType: null },
+        authToken
+      );
+      setPartners(
+        [...all].sort((a, b) => (a.partnerName || '').localeCompare(b.partnerName || ''))
+      );
+    } catch {
+      setPartners(null);
+      setFailed(true);
+    } finally {
+      setLoading(false);
     }
-    const timer = setTimeout(async () => {
-      const authToken = localStorage.getItem('authToken');
-      if (!authToken) return;
-      setSearching(true);
-      try {
-        setMatches(
-          await getAllPartners({ page: 0, size: 20, partnerName: search, partnerType: null }, authToken)
-        );
-      } catch {
-        setMatches([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [term]);
+  }, []);
+
+  useEffect(() => {
+    if (open && partners === null && !loading && !failed) load();
+  }, [open, partners, loading, failed, load]);
+
+  const matches = useMemo(() => {
+    const list = partners ?? [];
+    const t = term.trim().toLowerCase();
+    if (!t) return list;
+    return list.filter(
+      (p) =>
+        (p.partnerName || '').toLowerCase().includes(t) || String(p.idPartner).includes(t)
+    );
+  }, [partners, term]);
 
   if (selected) {
     return (
@@ -118,38 +148,68 @@ const PartnerPicker = ({
 
   return (
     <div className="relative" ref={ref}>
-      <input
-        type="text"
-        aria-label="Subscriber"
-        value={term}
-        placeholder="Subscriber name"
-        className={CONTROL + ' w-48'}
-        onChange={(e) => {
-          setTerm(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-      />
-      {open && term.trim().length >= 2 && (
-        <div className="absolute left-0 z-30 mt-1 max-h-72 min-w-[18rem] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-          {searching && <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>}
-          {!searching && matches.length === 0 && (
-            <div className="px-3 py-2 text-sm text-gray-500">No subscriber matches that name.</div>
-          )}
-          {matches.map((p) => (
+      <div className="relative">
+        <input
+          type="text"
+          aria-label="Subscriber"
+          aria-expanded={open}
+          value={term}
+          placeholder="All subscribers"
+          className={CONTROL + ' w-52 pr-7'}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+        />
+        <svg
+          className="pointer-events-none absolute right-2 top-3 h-3.5 w-3.5 opacity-60"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z" />
+        </svg>
+      </div>
+
+      {open && (
+        <div className="absolute left-0 z-30 mt-1 max-h-80 min-w-[20rem] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+          {loading && <div className="px-3 py-2 text-sm text-gray-500">Loading subscribers…</div>}
+          {failed && (
             <button
-              key={p.idPartner}
               type="button"
-              onClick={() => {
-                onSelect(p);
-                setOpen(false);
-              }}
-              className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+              onClick={load}
+              className="w-full px-3 py-2 text-left text-sm text-[#0D529E] hover:bg-gray-50"
             >
-              <span className="truncate">{p.partnerName}</span>
-              <span className="shrink-0 text-xs text-gray-400">#{p.idPartner}</span>
+              Could not load the subscriber list. Try again.
             </button>
-          ))}
+          )}
+          {!loading && !failed && matches.length === 0 && (
+            <div className="px-3 py-2 text-sm text-gray-500">
+              {partners && partners.length > 0 ? 'No subscriber matches that.' : 'No subscribers found.'}
+            </div>
+          )}
+          {!loading && !failed && matches.length > 0 && (
+            <>
+              <div className="px-3 pb-1 pt-0.5 text-[11px] text-gray-400">
+                {term.trim() ? matches.length + ' of ' + (partners?.length ?? 0) : matches.length} subscribers
+              </div>
+              {matches.map((p) => (
+                <button
+                  key={p.idPartner}
+                  type="button"
+                  onClick={() => {
+                    onSelect(p);
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <span className="truncate">{p.partnerName || '(no name)'}</span>
+                  <span className="shrink-0 text-xs text-gray-400">#{p.idPartner}</span>
+                </button>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -245,12 +305,13 @@ export default function RechargeReportPage() {
   };
 
   // The date range counts once: from and to are one filter to the person reading the report.
-  // The default status is not counted — a filter badge that starts at 1 reads as a mistake.
+  // Neither the default status nor the recharge kinds count: both are on from the start, and a
+  // badge reading "Clear all (1)" before anything is chosen reads as a mistake in the page.
   const activeFilterCount = [
     filters.from || filters.to,
     filters.idPartner,
     filters.service,
-    filters.kind,
+    filters.kind !== RECHARGE_KINDS,
     filters.status !== DEFAULT_FILTERS.status,
     filters.q,
   ].filter(Boolean).length;

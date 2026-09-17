@@ -24,7 +24,7 @@
     "heic2any": "^0.0.4",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.552.0",
-    "next": "^15.5.2",
+    "next": "15.5.25",
     "next-auth": "^4.24.7",
     "next-intl": "^3.17.2",
     "react": "^18",

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   API_BASE_URL,
@@ -8,16 +8,16 @@ import {
   HCC_BASE_URL,
   PBX_BASE_URL,
   VBS_BASE_URL,
-} from '@/config/api';
+} from "@/config/api";
 import {
   getAllPartners,
   getPartnerCategoryCounts,
   getPartnerTypeLabel,
   Partner,
-} from '@/lib/api-client/admin';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+} from "@/lib/api-client/admin";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface ServicePartner {
   id: number;
@@ -32,6 +32,33 @@ interface ServiceStats {
   revenue: number;
   partners: ServicePartner[];
 }
+// Per-service package counts cost one request per partner (there is no batched
+// equivalent), so these bound the blast radius of that fan-out.
+const SERVICE_CONCURRENCY = 6;
+const SERVICE_TIMEOUT_MS = 15000;
+// Consecutive transport failures before a service is written off for this load.
+const FAILURE_CUTOFF = 3;
+
+/** Runs `fn` over `items`, never more than `limit` at a time. */
+async function mapWithLimit<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      // Each worker keeps claiming the next index, so a slow item delays only itself.
+      while (next < items.length) {
+        const i = next++;
+        await fn(items[i]);
+      }
+    },
+  );
+  await Promise.all(workers);
+}
+
 const EMPTY: ServiceStats = {
   subscribers: 0,
   active: 0,
@@ -45,13 +72,13 @@ interface DocReviewItem {
   email: string | null;
   partnerType: number;
   date: string | null;
-  status: 'pending' | 'rejected' | 'approved';
+  status: "pending" | "rejected" | "approved";
   detail: string;
 }
 
 export default function AdminDashboard() {
   const params = useParams();
-  const locale = params.locale || 'en';
+  const locale = params.locale || "en";
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState(0);
   // Null until loaded, and stays null if the call fails, so the cards can show a dash
@@ -59,7 +86,12 @@ export default function AdminDashboard() {
   const [categoryCounts, setCategoryCounts] =
     useState<Awaited<ReturnType<typeof getPartnerCategoryCounts>>>(null);
   const [recent, setRecent] = useState<Partner[]>([]);
-  const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY, sms: EMPTY });
+  const [svc, setSvc] = useState({
+    pbx: EMPTY,
+    hcc: EMPTY,
+    vbs: EMPTY,
+    sms: EMPTY,
+  });
   const [openSvc, setOpenSvc] = useState<any>(null); // service card whose partner list is shown
   const [docReviews, setDocReviews] = useState<DocReviewItem[]>([]);
   const [reviewLoading, setReviewLoading] = useState(true);
@@ -68,7 +100,7 @@ export default function AdminDashboard() {
     let cancelled = false;
     (async () => {
       try {
-        const t = localStorage.getItem('authToken');
+        const t = localStorage.getItem("authToken");
         if (!t) {
           setLoading(false);
           setReviewLoading(false);
@@ -76,11 +108,11 @@ export default function AdminDashboard() {
         }
         const all = await getAllPartners(
           { page: 0, size: 1000, partnerName: null, partnerType: null },
-          t
+          t,
         );
         if (cancelled) return;
         const list = (Array.isArray(all) ? all : []).filter((p) =>
-          [3, 4, 5, 6].includes(p.partnerType)
+          [3, 4, 5, 6].includes(p.partnerType),
         );
         setCustomers(list.length);
 
@@ -94,9 +126,9 @@ export default function AdminDashboard() {
             .filter((p) => p.date1)
             .sort(
               (a, b) =>
-                new Date(b.date1!).getTime() - new Date(a.date1!).getTime()
+                new Date(b.date1!).getTime() - new Date(a.date1!).getTime(),
             )
-            .slice(0, 4)
+            .slice(0, 4),
         );
 
         const stats: any = {
@@ -106,10 +138,10 @@ export default function AdminDashboard() {
           sms: { ...EMPTY },
         };
         const urls = [
-          { k: 'pbx', u: PBX_BASE_URL },
-          { k: 'hcc', u: HCC_BASE_URL },
-          { k: 'vbs', u: VBS_BASE_URL },
-          { k: 'sms', u: BULK_SMS_BASE_URL },
+          { k: "pbx", u: PBX_BASE_URL },
+          { k: "hcc", u: HCC_BASE_URL },
+          { k: "vbs", u: VBS_BASE_URL },
+          { k: "sms", u: BULK_SMS_BASE_URL },
         ];
         // All customers (not a 30-partner sample) so per-service counts are accurate.
         const sample = list;
@@ -119,60 +151,78 @@ export default function AdminDashboard() {
             const parts: ServicePartner[] = [];
             let act = 0,
               rev = 0;
-            await Promise.allSettled(
-              sample.map(async (p) => {
-                try {
-                  const r = await fetch(
-                    `${u}${API_ENDPOINTS.package.getPurchaseForPartner}`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${t}`,
-                      },
-                      body: JSON.stringify({ idPartner: p.idPartner }),
-                    }
+            // There is no batched per-service equivalent of this endpoint, so the
+            // counts cost one request per partner. Left unbounded that is a burst of
+            // hundreds per service; cap how many are in flight at once.
+            //
+            // A service that is down costs one *failed* request per partner, each
+            // held open until the gateway gives up — which is how a single dead
+            // backend fills the console with hundreds of errors and stalls the card.
+            // Count consecutive transport failures and stop asking after a few: a
+            // reachable service never trips this, and an unreachable one is written
+            // off in FAILURE_CUTOFF requests instead of `sample.length`.
+            let consecutiveFailures = 0;
+            let abandoned = false;
+
+            const loadPartner = async (p: Partner) => {
+              if (abandoned) return;
+              try {
+                const r = await fetch(
+                  `${u}${API_ENDPOINTS.package.getPurchaseForPartner}`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${t}`,
+                    },
+                    body: JSON.stringify({ idPartner: p.idPartner }),
+                    signal: AbortSignal.timeout(SERVICE_TIMEOUT_MS),
+                  },
+                );
+                // A reply of any status means the service answered, so this is not
+                // the kind of failure the cutoff is meant to catch.
+                consecutiveFailures = 0;
+                if (r.ok) {
+                  const d = await r.json();
+                  const v = (Array.isArray(d) ? d : []).filter(
+                    (x: any) => x.idPackage !== 9999,
                   );
-                  if (r.ok) {
-                    const d = await r.json();
-                    const v = (Array.isArray(d) ? d : []).filter(
-                      (x: any) => x.idPackage !== 9999
+                  if (v.length) {
+                    subs.add(p.idPartner);
+                    v.forEach((x: any) => {
+                      if (x.status === "ACTIVE") act++;
+                      rev += x.total || x.price || 0;
+                    });
+                    // Build a one-line summary for this partner in this service.
+                    const activeP = v.filter((x: any) => x.status === "ACTIVE");
+                    const rows = activeP.length ? activeP : v;
+                    let balSum = 0;
+                    let uom = "";
+                    rows.forEach((x: any) =>
+                      (x.packageAccounts || []).forEach((a: any) => {
+                        balSum += a.balanceAfter || 0;
+                        if (a.uom) uom = a.uom;
+                      }),
                     );
-                    if (v.length) {
-                      subs.add(p.idPartner);
-                      v.forEach((x: any) => {
-                        if (x.status === 'ACTIVE') act++;
-                        rev += x.total || x.price || 0;
-                      });
-                      // Build a one-line summary for this partner in this service.
-                      const activeP = v.filter(
-                        (x: any) => x.status === 'ACTIVE'
-                      );
-                      const rows = activeP.length ? activeP : v;
-                      let balSum = 0;
-                      let uom = '';
-                      rows.forEach((x: any) =>
-                        (x.packageAccounts || []).forEach((a: any) => {
-                          balSum += a.balanceAfter || 0;
-                          if (a.uom) uom = a.uom;
-                        })
-                      );
-                      parts.push({
-                        id: p.idPartner,
-                        name: p.partnerName || `#${p.idPartner}`,
-                        status: activeP.length
-                          ? 'ACTIVE'
-                          : v[0]?.status || '—',
-                        plan: (activeP[0] || v[0])?.packageName || '—',
-                        balance: balSum
-                          ? `${balSum.toLocaleString()} ${uom}`.trim()
-                          : '—',
-                      });
-                    }
+                    parts.push({
+                      id: p.idPartner,
+                      name: p.partnerName || `#${p.idPartner}`,
+                      status: activeP.length ? "ACTIVE" : v[0]?.status || "—",
+                      plan: (activeP[0] || v[0])?.packageName || "—",
+                      balance: balSum
+                        ? `${balSum.toLocaleString()} ${uom}`.trim()
+                        : "—",
+                    });
                   }
-                } catch {}
-              })
-            );
+                }
+              } catch {
+                // Network error, abort or timeout — the service did not answer.
+                consecutiveFailures += 1;
+                if (consecutiveFailures >= FAILURE_CUTOFF) abandoned = true;
+              }
+            };
+
+            await mapWithLimit(sample, SERVICE_CONCURRENCY, loadPartner);
             parts.sort((a, b) => a.name.localeCompare(b.name));
             stats[k] = {
               subscribers: subs.size,
@@ -180,7 +230,7 @@ export default function AdminDashboard() {
               revenue: rev,
               partners: parts,
             };
-          })
+          }),
         );
         if (cancelled) return;
         setSvc(stats);
@@ -190,12 +240,12 @@ export default function AdminDashboard() {
 
         // Fetch document review status for ALL partners (mandatory docs only),
         // throttled in batches so we don't fire hundreds of requests at once.
-        const MANDATORY = ['nidfront', 'nidback', 'tradelicense', 'tin'];
+        const MANDATORY = ["nidfront", "nidback", "tradelicense", "tin"];
         const toReview = [...list]
           .filter((p) => p.date1)
           .sort(
             (a, b) =>
-              new Date(b.date1!).getTime() - new Date(a.date1!).getTime()
+              new Date(b.date1!).getTime() - new Date(a.date1!).getTime(),
           );
 
         const buildItem = async (p: Partner): Promise<DocReviewItem | null> => {
@@ -203,24 +253,24 @@ export default function AdminDashboard() {
             const r = await fetch(
               `${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`,
               {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                  'Content-Type': 'application/json',
+                  "Content-Type": "application/json",
                   Authorization: `Bearer ${t}`,
                 },
                 body: JSON.stringify({ id: p.idPartner }),
-              }
+              },
             );
             if (!r.ok) return null;
             const statuses: Record<string, { status: string }> = await r.json();
             const pending = MANDATORY.filter(
-              (d) => !statuses[d] || statuses[d].status === 'PENDING'
+              (d) => !statuses[d] || statuses[d].status === "PENDING",
             ).length;
             const rejected = MANDATORY.filter(
-              (d) => statuses[d]?.status === 'REJECTED'
+              (d) => statuses[d]?.status === "REJECTED",
             ).length;
             const approved = MANDATORY.filter(
-              (d) => statuses[d]?.status === 'APPROVED'
+              (d) => statuses[d]?.status === "APPROVED",
             ).length;
             const base = {
               id: p.idPartner,
@@ -231,31 +281,31 @@ export default function AdminDashboard() {
             };
             const daysAgo = p.date1
               ? Math.floor(
-                  (Date.now() - new Date(p.date1).getTime()) / 86400000
+                  (Date.now() - new Date(p.date1).getTime()) / 86400000,
                 )
               : 0;
             const daysLabel =
               daysAgo === 0
-                ? 'Today'
+                ? "Today"
                 : daysAgo === 1
-                  ? '1 day ago'
+                  ? "1 day ago"
                   : `${daysAgo} days ago`;
             if (rejected > 0)
               return {
                 ...base,
-                status: 'rejected',
+                status: "rejected",
                 detail: `${rejected} rejected · ${daysLabel}`,
               };
             if (pending > 0)
               return {
                 ...base,
-                status: 'pending',
+                status: "pending",
                 detail: `${pending} pending · ${daysLabel}`,
               };
             if (approved === MANDATORY.length)
               return {
                 ...base,
-                status: 'approved',
+                status: "approved",
                 detail: `All approved · ${daysLabel}`,
               };
             return null;
@@ -270,18 +320,18 @@ export default function AdminDashboard() {
         for (let i = 0; i < toReview.length; i += BATCH) {
           if (cancelled) return;
           const results = await Promise.allSettled(
-            toReview.slice(i, i + BATCH).map(buildItem)
+            toReview.slice(i, i + BATCH).map(buildItem),
           );
           results.forEach((res) => {
-            if (res.status === 'fulfilled' && res.value)
+            if (res.status === "fulfilled" && res.value)
               collected.push(res.value);
           });
           if (cancelled) return;
           setDocReviews(
             [...collected].sort(
               (a, b) =>
-                new Date(b.date!).getTime() - new Date(a.date!).getTime()
-            )
+                new Date(b.date!).getTime() - new Date(a.date!).getTime(),
+            ),
           );
         }
         if (!cancelled) setReviewLoading(false);
@@ -322,57 +372,59 @@ export default function AdminDashboard() {
       </div>
     );
 
-  const totalActive = svc.pbx.active + svc.hcc.active + svc.vbs.active + svc.sms.active;
-  const totalRev = svc.pbx.revenue + svc.hcc.revenue + svc.vbs.revenue + svc.sms.revenue;
+  const totalActive =
+    svc.pbx.active + svc.hcc.active + svc.vbs.active + svc.sms.active;
+  const totalRev =
+    svc.pbx.revenue + svc.hcc.revenue + svc.vbs.revenue + svc.sms.revenue;
 
   const services = [
     {
-      k: 'pbx',
-      name: 'Alaap Cloud IP PBX',
-      icon: '📞',
-      grad: 'from-blue-500 to-blue-600',
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      text: 'text-blue-700',
+      k: "pbx",
+      name: "Alaap Cloud IP PBX",
+      icon: "📞",
+      grad: "from-blue-500 to-blue-600",
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+      text: "text-blue-700",
       s: svc.pbx,
-      portal: 'https://ippbx.alaapcloud.gov.bd:5174/',
-      plans: 'Bronze / Silver / Gold',
+      portal: "https://ippbx.alaapcloud.gov.bd:5174/",
+      plans: "Bronze / Silver / Gold",
     },
     {
-      k: 'hcc',
-      name: 'Contact Center',
-      icon: '👥',
-      grad: 'from-purple-500 to-purple-600',
-      bg: 'bg-purple-50',
-      border: 'border-purple-200',
-      text: 'text-purple-700',
+      k: "hcc",
+      name: "Contact Center",
+      icon: "👥",
+      grad: "from-purple-500 to-purple-600",
+      bg: "bg-purple-50",
+      border: "border-purple-200",
+      text: "text-purple-700",
       s: svc.hcc,
-      portal: 'https://cc.alaapcloud.gov.bd/',
-      plans: 'Basic (per agent)',
+      portal: "https://cc.alaapcloud.gov.bd/",
+      plans: "Basic (per agent)",
     },
     {
-      k: 'vbs',
-      name: 'Voice Broadcast',
-      icon: '📢',
-      grad: 'from-orange-500 to-orange-600',
-      bg: 'bg-orange-50',
-      border: 'border-orange-200',
-      text: 'text-orange-700',
+      k: "vbs",
+      name: "Voice Broadcast",
+      icon: "📢",
+      grad: "from-orange-500 to-orange-600",
+      bg: "bg-orange-50",
+      border: "border-orange-200",
+      text: "text-orange-700",
       s: svc.vbs,
-      portal: 'https://vbs.alaapcloud.gov.bd/',
-      plans: 'Basic / Standard / Corporate',
+      portal: "https://vbs.alaapcloud.gov.bd/",
+      plans: "Basic / Standard / Corporate",
     },
     {
-      k: 'sms',
-      name: 'Bulk SMS',
-      icon: '💬',
-      grad: 'from-emerald-500 to-emerald-600',
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-200',
-      text: 'text-emerald-700',
+      k: "sms",
+      name: "Bulk SMS",
+      icon: "💬",
+      grad: "from-emerald-500 to-emerald-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-200",
+      text: "text-emerald-700",
       s: svc.sms,
       portal: BULK_SMS_PORTAL_URL,
-      plans: 'Slab-based pricing',
+      plans: "Slab-based pricing",
     },
   ];
 
@@ -394,50 +446,51 @@ export default function AdminDashboard() {
         {/* Stats */}
         {[
           {
-            label: 'Customers',
+            label: "Customers",
             value: customers,
-            icon: '👤',
-            color: 'text-[#0D529E]',
-            bg: 'bg-btcl-primaryLight/10',
+            icon: "👤",
+            color: "text-[#0D529E]",
+            bg: "bg-btcl-primaryLight/10",
           },
           {
-            label: 'Individual',
-            value: categoryCounts ? categoryCounts.INDIVIDUAL : '—',
-            icon: '🧍',
-            color: 'text-teal-600',
-            bg: 'bg-teal-50',
+            label: "Individual",
+            value: categoryCounts ? categoryCounts.INDIVIDUAL : "—",
+            icon: "🧍",
+            color: "text-teal-600",
+            bg: "bg-teal-50",
           },
           {
-            label: 'Corporate',
-            value: categoryCounts ? categoryCounts.CORPORATE : '—',
-            icon: '🏢',
-            color: 'text-indigo-600',
-            bg: 'bg-indigo-50',
+            label: "Corporate",
+            value: categoryCounts ? categoryCounts.CORPORATE : "—",
+            icon: "🏢",
+            color: "text-indigo-600",
+            bg: "bg-indigo-50",
           },
           {
             // Both government forms in one card: the dashboard strip is a summary, and the
             // split is available on the partners list where it can be filtered.
-            label: 'Government',
+            label: "Government",
             value: categoryCounts
-              ? categoryCounts.GOVERNMENT_INDIVIDUAL + categoryCounts.GOVERNMENT_CORPORATE
-              : '—',
-            icon: '🏛️',
-            color: 'text-emerald-700',
-            bg: 'bg-emerald-50',
+              ? categoryCounts.GOVERNMENT_INDIVIDUAL +
+                categoryCounts.GOVERNMENT_CORPORATE
+              : "—",
+            icon: "🏛️",
+            color: "text-emerald-700",
+            bg: "bg-emerald-50",
           },
           {
-            label: 'Active Plans',
+            label: "Active Plans",
             value: totalActive,
-            icon: '📋',
-            color: 'text-blue-600',
-            bg: 'bg-blue-50',
+            icon: "📋",
+            color: "text-blue-600",
+            bg: "bg-blue-50",
           },
           {
-            label: 'Revenue',
+            label: "Revenue",
             value: `৳${totalRev.toLocaleString()}`,
-            icon: '💰',
-            color: 'text-orange-600',
-            bg: 'bg-orange-50',
+            icon: "💰",
+            color: "text-orange-600",
+            bg: "bg-orange-50",
           },
         ].map((s) => (
           <div
@@ -491,7 +544,9 @@ export default function AdminDashboard() {
             <div className="p-4 flex flex-col flex-1">
               <div className="grid grid-cols-3 divide-x divide-gray-100 mb-3">
                 <div className="text-center px-1">
-                  <p className={`text-xl font-extrabold ${sv.text} leading-none`}>
+                  <p
+                    className={`text-xl font-extrabold ${sv.text} leading-none`}
+                  >
                     {sv.s.subscribers}
                   </p>
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider mt-1.5">
@@ -516,7 +571,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <p className="text-[11px] text-gray-400 mb-3">
-                Plans:{' '}
+                Plans:{" "}
                 <span className="text-gray-600 font-medium">{sv.plans}</span>
               </p>
               <button
@@ -525,11 +580,11 @@ export default function AdminDashboard() {
                 className={`mt-auto w-full text-xs font-semibold rounded-xl py-2.5 transition ring-1 ring-inset ${
                   sv.s.subscribers
                     ? `${sv.bg} ${sv.text} ${sv.border} hover:brightness-[0.97]`
-                    : 'bg-gray-50 text-gray-400 ring-gray-200 cursor-not-allowed'
+                    : "bg-gray-50 text-gray-400 ring-gray-200 cursor-not-allowed"
                 }`}
               >
                 👥 View {sv.s.subscribers} subscriber
-                {sv.s.subscribers === 1 ? '' : 's'} →
+                {sv.s.subscribers === 1 ? "" : "s"} →
               </button>
             </div>
           </div>
@@ -571,16 +626,16 @@ export default function AdminDashboard() {
                   className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 transition-colors group"
                 >
                   <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center text-white text-[10px] font-bold ${i % 3 === 0 ? 'bg-[#0D529E]' : i % 3 === 1 ? 'bg-blue-500' : 'bg-purple-500'}`}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center text-white text-[10px] font-bold ${i % 3 === 0 ? "bg-[#0D529E]" : i % 3 === 1 ? "bg-blue-500" : "bg-purple-500"}`}
                   >
-                    {p.partnerName?.charAt(0).toUpperCase() || '?'}
+                    {p.partnerName?.charAt(0).toUpperCase() || "?"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-gray-900 truncate">
                       {p.partnerName}
                     </p>
                     <p className="text-[10px] text-gray-400 truncate">
-                      {p.email || 'No email'}
+                      {p.email || "No email"}
                     </p>
                   </div>
                   <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-btcl-primaryLight/10 text-[#0D529E]">
@@ -601,91 +656,91 @@ export default function AdminDashboard() {
           <div className="flex-1 overflow-y-auto space-y-1 pr-1">
             {[
               {
-                label: 'Manage Partners',
+                label: "Manage Partners",
                 href: `/${locale}/admin/partners`,
-                icon: '👤',
-                color: 'bg-btcl-primaryLight/10 text-[#0D529E]',
+                icon: "👤",
+                color: "bg-btcl-primaryLight/10 text-[#0D529E]",
               },
               {
-                label: 'Sales Reports',
+                label: "Sales Reports",
                 href: `/${locale}/admin/reports`,
-                icon: '📊',
-                color: 'bg-btcl-primaryLight/10 text-[#0D529E]',
+                icon: "📊",
+                color: "bg-btcl-primaryLight/10 text-[#0D529E]",
               },
               // Every BTCL portal, so an admin does not have to remember which host and
               // port each one lives on. PBX has three separate entry points — admin, user
               // and the legacy portal — which are easy to confuse from the URL alone.
               {
-                label: 'Service Portal',
-                href: 'https://www.alaapcloud.gov.bd',
-                icon: '🌐',
-                color: 'bg-btcl-primaryLight/10 text-[#0D529E]',
+                label: "Service Portal",
+                href: "https://www.alaapcloud.gov.bd",
+                icon: "🌐",
+                color: "bg-btcl-primaryLight/10 text-[#0D529E]",
                 ext: true,
               },
               {
-                label: 'Alaap PBX Admin',
-                href: 'https://ippbx.alaapcloud.gov.bd:3001',
-                icon: '📞',
-                color: 'bg-blue-50 text-blue-600',
+                label: "Alaap PBX Admin",
+                href: "https://ippbx.alaapcloud.gov.bd:3001",
+                icon: "📞",
+                color: "bg-blue-50 text-blue-600",
                 ext: true,
               },
               {
-                label: 'Alaap PBX User',
-                href: 'https://ippbx.alaapcloud.gov.bd:5174/login',
-                icon: '📞',
-                color: 'bg-blue-50 text-blue-600',
+                label: "Alaap PBX User",
+                href: "https://ippbx.alaapcloud.gov.bd:5174/login",
+                icon: "📞",
+                color: "bg-blue-50 text-blue-600",
                 ext: true,
               },
               {
-                label: 'Alaap PBX Legacy Portal',
-                href: 'https://ippbx.alaapcloud.gov.bd',
-                icon: '🗄️',
-                color: 'bg-slate-100 text-slate-600',
+                label: "Alaap PBX Legacy Portal",
+                href: "https://ippbx.alaapcloud.gov.bd",
+                icon: "🗄️",
+                color: "bg-slate-100 text-slate-600",
                 ext: true,
               },
               {
-                label: 'Contact Center Admin',
-                href: 'https://cc.alaapcloud.gov.bd:4001/',
-                icon: '👥',
-                color: 'bg-purple-50 text-purple-600',
+                label: "Contact Center Admin",
+                href: "https://cc.alaapcloud.gov.bd:4001/",
+                icon: "👥",
+                color: "bg-purple-50 text-purple-600",
                 ext: true,
               },
               {
-                label: 'VBS Admin / User',
-                href: 'https://vbs.alaapcloud.gov.bd/',
-                icon: '📢',
-                color: 'bg-orange-50 text-orange-600',
+                label: "VBS Admin / User",
+                href: "https://vbs.alaapcloud.gov.bd/",
+                icon: "📢",
+                color: "bg-orange-50 text-orange-600",
                 ext: true,
               },
               {
-                label: 'BTCL SMS Portal',
+                label: "BTCL SMS Portal",
                 href: BULK_SMS_PORTAL_URL,
-                icon: '💬',
-                color: 'bg-emerald-50 text-emerald-600',
+                icon: "💬",
+                color: "bg-emerald-50 text-emerald-600",
                 ext: true,
               },
               {
-                label: 'Cateleya CMS',
-                href: 'https://114.130.145.75:6443/a/login',
-                icon: '🛠️',
-                color: 'bg-rose-50 text-rose-600',
+                label: "Cateleya CMS",
+                href: "https://114.130.145.75:6443/a/login",
+                icon: "🛠️",
+                color: "bg-rose-50 text-rose-600",
                 ext: true,
               },
               {
-                label: 'User Dashboard',
+                label: "User Dashboard",
                 href: `/${locale}/dashboard`,
-                icon: '🏠',
-                color: 'bg-gray-100 text-gray-600',
+                icon: "🏠",
+                color: "bg-gray-100 text-gray-600",
               },
               {
-                label: 'Pricing Page',
+                label: "Pricing Page",
                 href: `/${locale}/pricing`,
-                icon: '💳',
-                color: 'bg-btcl-primaryLight/10 text-btcl-primary',
+                icon: "💳",
+                color: "bg-btcl-primaryLight/10 text-btcl-primary",
               },
             ].map((l) => {
               const cls =
-                'flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors group';
+                "flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors group";
               const inner = (
                 <>
                   <div
@@ -770,7 +825,7 @@ export default function AdminDashboard() {
                   </p>
                   <p className="text-[11px] text-white/75">
                     {openSvc.s.partners.length} subscriber
-                    {openSvc.s.partners.length === 1 ? '' : 's'}
+                    {openSvc.s.partners.length === 1 ? "" : "s"}
                   </p>
                 </div>
               </div>
@@ -795,7 +850,7 @@ export default function AdminDashboard() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-800 truncate">
-                      {pt.name}{' '}
+                      {pt.name}{" "}
                       <span className="text-gray-400 text-[11px] font-normal">
                         #{pt.id}
                       </span>
@@ -806,9 +861,9 @@ export default function AdminDashboard() {
                   </div>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${
-                      pt.status === 'ACTIVE'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-500'
+                      pt.status === "ACTIVE"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-500"
                     }`}
                   >
                     {pt.status}
@@ -836,54 +891,54 @@ function DocReviewPanel({
   locale: string;
   loading?: boolean;
 }) {
-  const [tab, setTab] = useState<'pending' | 'rejected' | 'approved'>(
-    'pending'
+  const [tab, setTab] = useState<"pending" | "rejected" | "approved">(
+    "pending",
   );
 
-  const pending = reviews.filter((r) => r.status === 'pending');
-  const rejected = reviews.filter((r) => r.status === 'rejected');
-  const approved = reviews.filter((r) => r.status === 'approved');
+  const pending = reviews.filter((r) => r.status === "pending");
+  const rejected = reviews.filter((r) => r.status === "rejected");
+  const approved = reviews.filter((r) => r.status === "approved");
 
   const tabs = [
     {
-      key: 'pending' as const,
-      label: 'Pending',
+      key: "pending" as const,
+      label: "Pending",
       count: pending.length,
-      color: 'amber',
-      bg: 'bg-amber-500',
+      color: "amber",
+      bg: "bg-amber-500",
     },
     {
-      key: 'rejected' as const,
-      label: 'Rejected',
+      key: "rejected" as const,
+      label: "Rejected",
       count: rejected.length,
-      color: 'red',
-      bg: 'bg-red-500',
+      color: "red",
+      bg: "bg-red-500",
     },
     {
-      key: 'approved' as const,
-      label: 'Approved',
+      key: "approved" as const,
+      label: "Approved",
       count: approved.length,
-      color: 'green',
-      bg: 'bg-emerald-500',
+      color: "green",
+      bg: "bg-emerald-500",
     },
   ];
 
   const current =
-    tab === 'pending' ? pending : tab === 'rejected' ? rejected : approved;
+    tab === "pending" ? pending : tab === "rejected" ? rejected : approved;
 
   const avatarStyle =
-    tab === 'pending'
-      ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-      : tab === 'rejected'
-        ? 'bg-gradient-to-br from-red-400 to-red-600'
-        : 'bg-gradient-to-br from-emerald-400 to-emerald-600';
+    tab === "pending"
+      ? "bg-gradient-to-br from-amber-400 to-orange-500"
+      : tab === "rejected"
+        ? "bg-gradient-to-br from-red-400 to-red-600"
+        : "bg-gradient-to-br from-emerald-400 to-emerald-600";
 
   const hoverStyle =
-    tab === 'pending'
-      ? 'hover:bg-amber-50 hover:border-amber-200'
-      : tab === 'rejected'
-        ? 'hover:bg-red-50 hover:border-red-200'
-        : 'hover:bg-emerald-50 hover:border-emerald-200';
+    tab === "pending"
+      ? "hover:bg-amber-50 hover:border-amber-200"
+      : tab === "rejected"
+        ? "hover:bg-red-50 hover:border-red-200"
+        : "hover:bg-emerald-50 hover:border-emerald-200";
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col min-h-0">
@@ -896,15 +951,15 @@ function DocReviewPanel({
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
                 tab === t.key
                   ? `${t.bg} text-white shadow-sm`
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               }`}
             >
               {t.label}
               <span
                 className={`min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center ${
                   tab === t.key
-                    ? 'bg-white/25 text-white'
-                    : 'bg-gray-200 text-gray-600'
+                    ? "bg-white/25 text-white"
+                    : "bg-gray-200 text-gray-600"
                 }`}
               >
                 {t.count}
@@ -934,8 +989,8 @@ function DocReviewPanel({
               />
             </svg>
           )}
-          {current.length} partner{current.length !== 1 ? 's' : ''}
-          {loading ? ' so far' : ' loaded'}
+          {current.length} partner{current.length !== 1 ? "s" : ""}
+          {loading ? " so far" : " loaded"}
         </span>
       </div>
       <div className="flex-1 overflow-y-auto space-y-1">
@@ -976,18 +1031,18 @@ function DocReviewPanel({
                   strokeLinejoin="round"
                   strokeWidth={1.5}
                   d={
-                    tab === 'approved'
-                      ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-                      : 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4'
+                    tab === "approved"
+                      ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      : "M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                   }
                 />
               </svg>
               <p className="text-xs text-gray-400">
-                {tab === 'pending'
-                  ? 'No pending reviews'
-                  : tab === 'rejected'
-                    ? 'No rejected docs'
-                    : 'No approved partners yet'}
+                {tab === "pending"
+                  ? "No pending reviews"
+                  : tab === "rejected"
+                    ? "No rejected docs"
+                    : "No approved partners yet"}
               </p>
             </div>
           )
@@ -1001,7 +1056,7 @@ function DocReviewPanel({
               <div
                 className={`w-7 h-7 rounded-md ${avatarStyle} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}
               >
-                {r.name?.charAt(0).toUpperCase() || '?'}
+                {r.name?.charAt(0).toUpperCase() || "?"}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-gray-900 truncate">

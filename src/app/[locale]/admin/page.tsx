@@ -39,6 +39,22 @@ const SERVICE_CONCURRENCY = 6;
 const SERVICE_TIMEOUT_MS = 15000;
 // Consecutive transport failures before a service is written off for this load.
 const FAILURE_CUTOFF = 3;
+// Partners per batched request. The service caps a single call at 500 ids.
+const SUMMARY_CHUNK = 100;
+// Longer than a single-partner call: this one answers for a hundred of them.
+const SUMMARY_TIMEOUT_MS = 30000;
+
+/** One partner's package standing on one service, from /package/list-purchase-summary. */
+interface PurchaseSummaryRow {
+  idPartner: number;
+  subscribed: boolean;
+  activeCount: number;
+  revenue: number;
+  status: string | null;
+  plan: string | null;
+  balance: number;
+  uom: string | null;
+}
 
 /** Runs `fn` over `items`, never more than `limit` at a time. */
 async function mapWithLimit<T>(
@@ -146,6 +162,40 @@ export default function AdminDashboard() {
         ];
         // All customers (not a 30-partner sample) so per-service counts are accurate.
         const sample = list;
+        const byId = new Map(sample.map((p) => [p.idPartner, p]));
+
+        /**
+         * Package standing for a chunk of partners in one call.
+         *
+         * Returns null when the service has no such endpoint yet, which is the signal to
+         * fall back — the portal and the services deploy separately, so this ships before
+         * the backend reaches all four.
+         */
+        const fetchSummary = async (
+          base: string,
+          ids: number[],
+        ): Promise<PurchaseSummaryRow[] | null> => {
+          try {
+            const r = await fetch(
+              `${base}${API_ENDPOINTS.package.listPurchaseSummary}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${t}`,
+                },
+                body: JSON.stringify({ idPartners: ids }),
+                signal: AbortSignal.timeout(SUMMARY_TIMEOUT_MS),
+              },
+            );
+            if (!r.ok) return null;
+            const d = await r.json();
+            return Array.isArray(d) ? (d as PurchaseSummaryRow[]) : null;
+          } catch {
+            return null;
+          }
+        };
+
         await Promise.allSettled(
           urls.map(async ({ k, u }) => {
             const subs = new Set<number>();
@@ -223,7 +273,48 @@ export default function AdminDashboard() {
               }
             };
 
-            await mapWithLimit(sample, SERVICE_CONCURRENCY, loadPartner);
+            // Preferred path: ask for every partner at once, in chunks. Falls through to
+            // the per-partner loop above only while a service is still on a build without
+            // the batch endpoint.
+            let batched = true;
+            for (let i = 0; i < sample.length; i += SUMMARY_CHUNK) {
+              const slice = sample.slice(i, i + SUMMARY_CHUNK);
+              const rows = await fetchSummary(
+                u,
+                slice.map((p) => p.idPartner),
+              );
+              if (!rows) {
+                batched = false;
+                break;
+              }
+              rows.forEach((row) => {
+                if (!row?.subscribed) return;
+                const partner = byId.get(row.idPartner);
+                subs.add(row.idPartner);
+                act += Number(row.activeCount) || 0;
+                rev += Number(row.revenue) || 0;
+                const balance = Number(row.balance) || 0;
+                parts.push({
+                  id: row.idPartner,
+                  name: partner?.partnerName || `#${row.idPartner}`,
+                  status: row.status || "—",
+                  plan: row.plan || "—",
+                  balance: balance
+                    ? `${balance.toLocaleString()} ${row.uom ?? ""}`.trim()
+                    : "—",
+                });
+              });
+            }
+
+            if (!batched) {
+              // Start clean: a partial batch must not be double counted by the fallback.
+              subs.clear();
+              parts.length = 0;
+              act = 0;
+              rev = 0;
+              await mapWithLimit(sample, SERVICE_CONCURRENCY, loadPartner);
+            }
+
             parts.sort((a, b) => a.name.localeCompare(b.name));
             stats[k] = {
               subscribers: subs.size,

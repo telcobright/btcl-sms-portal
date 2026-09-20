@@ -147,6 +147,10 @@ export const API_ENDPOINTS = {
   // Package endpoints
   package: {
     getPurchaseForPartner: '/package/getPurchaseForPartner',
+    // Same figures for a list of partners in one call. The admin dashboard needs them
+    // for every customer on every service, which one-at-a-time makes a request per
+    // customer per service.
+    listPurchaseSummary: '/package/list-purchase-summary',
     purchasePackage: '/package/purchase-package',
     getAllPurchasePartnerWise: '/package/get-all-purchase-partner-wise',
     getAllPurchase: '/package/get-all-purchase',

@@ -12,6 +12,7 @@ import {
 import {
   getAllPartners,
   getPartnerCategoryCounts,
+  getPartnerListSummary,
   getPartnerTypeLabel,
   Partner,
 } from "@/lib/api-client/admin";
@@ -248,6 +249,54 @@ export default function AdminDashboard() {
               new Date(b.date1!).getTime() - new Date(a.date1!).getTime(),
           );
 
+        // Turns mandatory-document counts into the row the panel shows. Shared by the
+        // batched path and the per-partner fallback so both classify identically.
+        const itemFrom = (
+          p: Partner,
+          pending: number,
+          rejected: number,
+        ): DocReviewItem | null => {
+          const approved = MANDATORY.length - pending - rejected;
+          const base = {
+            id: p.idPartner,
+            name: p.partnerName,
+            email: p.email,
+            partnerType: p.partnerType,
+            date: p.date1,
+          };
+          const daysAgo = p.date1
+            ? Math.floor((Date.now() - new Date(p.date1).getTime()) / 86400000)
+            : 0;
+          const daysLabel =
+            daysAgo === 0
+              ? "Today"
+              : daysAgo === 1
+                ? "1 day ago"
+                : `${daysAgo} days ago`;
+          if (rejected > 0)
+            return {
+              ...base,
+              status: "rejected",
+              detail: `${rejected} rejected \u00b7 ${daysLabel}`,
+            };
+          if (pending > 0)
+            return {
+              ...base,
+              status: "pending",
+              detail: `${pending} pending \u00b7 ${daysLabel}`,
+            };
+          if (approved === MANDATORY.length)
+            return {
+              ...base,
+              status: "approved",
+              detail: `All approved \u00b7 ${daysLabel}`,
+            };
+          return null;
+        };
+
+        // Fallback for a backend older than the mandatory-* fields: read one partner's
+        // statuses directly. Kept so the panel stays correct whatever ships first,
+        // rather than silently reporting nothing outstanding.
         const buildItem = async (p: Partner): Promise<DocReviewItem | null> => {
           try {
             const r = await fetch(
@@ -269,46 +318,7 @@ export default function AdminDashboard() {
             const rejected = MANDATORY.filter(
               (d) => statuses[d]?.status === "REJECTED",
             ).length;
-            const approved = MANDATORY.filter(
-              (d) => statuses[d]?.status === "APPROVED",
-            ).length;
-            const base = {
-              id: p.idPartner,
-              name: p.partnerName,
-              email: p.email,
-              partnerType: p.partnerType,
-              date: p.date1,
-            };
-            const daysAgo = p.date1
-              ? Math.floor(
-                  (Date.now() - new Date(p.date1).getTime()) / 86400000,
-                )
-              : 0;
-            const daysLabel =
-              daysAgo === 0
-                ? "Today"
-                : daysAgo === 1
-                  ? "1 day ago"
-                  : `${daysAgo} days ago`;
-            if (rejected > 0)
-              return {
-                ...base,
-                status: "rejected",
-                detail: `${rejected} rejected · ${daysLabel}`,
-              };
-            if (pending > 0)
-              return {
-                ...base,
-                status: "pending",
-                detail: `${pending} pending · ${daysLabel}`,
-              };
-            if (approved === MANDATORY.length)
-              return {
-                ...base,
-                status: "approved",
-                detail: `All approved · ${daysLabel}`,
-              };
-            return null;
+            return itemFrom(p, pending, rejected);
           } catch {
             return null;
           }
@@ -316,16 +326,49 @@ export default function AdminDashboard() {
 
         setReviewLoading(true);
         const collected: DocReviewItem[] = [];
-        const BATCH = 10;
-        for (let i = 0; i < toReview.length; i += BATCH) {
+        // list-summary returns the mandatory-document counts for many partners at once,
+        // so this panel costs a request per chunk rather than one per partner. Chunked
+        // rather than sent as a single list so the SQL stays a sane size and the panel
+        // still fills in progressively.
+        const CHUNK = 100;
+        for (let i = 0; i < toReview.length; i += CHUNK) {
           if (cancelled) return;
-          const results = await Promise.allSettled(
-            toReview.slice(i, i + BATCH).map(buildItem),
+          const slice = toReview.slice(i, i + CHUNK);
+          const summaries = await getPartnerListSummary(
+            slice.map((p) => p.idPartner),
+            t,
           );
-          results.forEach((res) => {
-            if (res.status === "fulfilled" && res.value)
-              collected.push(res.value);
+          if (cancelled) return;
+          const byPartner = new Map(summaries.map((x) => [x.idPartner, x]));
+
+          // Partners the batch could not answer for — an older backend with no
+          // mandatory-* fields, or a row missing from the response — fall back to a
+          // direct read. Normally this list is empty.
+          const needsFallback: Partner[] = [];
+          slice.forEach((p) => {
+            const summary = byPartner.get(p.idPartner);
+            if (!summary || summary.mandatoryPending === undefined) {
+              needsFallback.push(p);
+              return;
+            }
+            const item = itemFrom(
+              p,
+              summary.mandatoryPending,
+              summary.mandatoryRejected ?? 0,
+            );
+            if (item) collected.push(item);
           });
+
+          if (needsFallback.length) {
+            const results = await Promise.allSettled(
+              needsFallback.map(buildItem),
+            );
+            results.forEach((res) => {
+              if (res.status === "fulfilled" && res.value)
+                collected.push(res.value);
+            });
+          }
+
           if (cancelled) return;
           setDocReviews(
             [...collected].sort(

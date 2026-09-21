@@ -671,7 +671,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     {
       min: 1,
       max: 20000,
-      rate: 0.9,
+      rate: 0.4,
       packageId: 'basic',
       packageIdInt: 9135,
       name: locale === 'en' ? 'Basic' : 'বেসিক',
@@ -679,7 +679,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     {
       min: 20001,
       max: 50000,
-      rate: 0.8,
+      rate: 0.4,
       packageId: 'standard',
       packageIdInt: 9136,
       name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড',
@@ -687,7 +687,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     {
       min: 50001,
       max: Infinity,
-      rate: 0.6,
+      rate: 0.4,
       packageId: 'enterprise',
       packageIdInt: 9137,
       name: locale === 'en' ? 'Corporate' : 'কর্পোরেট',

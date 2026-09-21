@@ -703,7 +703,7 @@ function PricingPreviewSection({
         locale === 'en'
           ? 'Alaap Cloud Voice Broadcasting Service'
           : 'Alaap Cloud Voice Broadcasting Service',
-      price: '৳0.90',
+      price: '৳0.40',
       unit: locale === 'en' ? '/message' : '/মেসেজ',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [

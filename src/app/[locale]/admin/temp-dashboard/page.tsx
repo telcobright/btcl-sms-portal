@@ -966,7 +966,10 @@ export default function TempAdminDashboard() {
                       {pt.name}{" "}
                       <span className="text-[11px] font-normal text-gray-400">#{pt.id}</span>
                     </p>
-                    <p className="truncate text-[11px] text-gray-400">{pt.plan}</p>
+                    <p className="truncate text-[11px] text-gray-400">
+                      {pt.plan}
+                      <span className="sm:hidden"> · {pt.balance}</span>
+                    </p>
                   </div>
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${
@@ -977,7 +980,9 @@ export default function TempAdminDashboard() {
                   >
                     {pt.status}
                   </span>
-                  <span className="w-24 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-700">
+                  {/* On a phone the row has no width for a fourth column, so the
+                      balance moves under the plan rather than squeezing the name. */}
+                  <span className="hidden w-24 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-700 sm:block">
                     {pt.balance}
                   </span>
                 </Link>

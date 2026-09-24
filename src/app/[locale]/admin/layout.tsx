@@ -29,6 +29,18 @@ export default function AdminLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState('Admin');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Below lg the sidebar is off-canvas; this is what opens it.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // The page behind a drawer must not scroll under it.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [mobileNavOpen]);
 
   useEffect(() => {
     const checkAdminRole = () => {
@@ -119,27 +131,53 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar */}
-      <AdminSidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} />
+      {/* Sidebar — a column on a desktop, a drawer under one */}
+      <AdminSidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((c) => !c)}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
+      />
+
+      {/* Tapping away closes it, which is what everyone tries first. */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px] lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Admin Control Panel</h2>
-              <p className="text-sm text-gray-500">Manage BTCL Services & Partners</p>
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-3 sm:py-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* The only way to the menu once the sidebar is off-canvas. */}
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-[#0D529E] hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+                aria-label="Open menu"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 truncate">Admin Control Panel</h2>
+                <p className="hidden sm:block text-sm text-gray-500">Manage BTCL Services &amp; Partners</p>
+              </div>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 sm:gap-6 shrink-0">
               {/* Notification Bell */}
               <AdminNotifications locale={String(locale)} />
 
               {/* Divider */}
-              <div className="h-8 w-px bg-gray-200"></div>
+              <div className="hidden sm:block h-8 w-px bg-gray-200"></div>
 
-              {/* User Info */}
-              <div className="flex items-center gap-3">
+              {/* User Info — the name is the first thing a narrow header can lose */}
+              <div className="hidden sm:flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#0D529E] to-[#0D529E] rounded-xl flex items-center justify-center shadow-lg shadow-btcl-primary/10">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -154,12 +192,13 @@ export default function AdminLayout({
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                className="flex items-center gap-2 px-2 sm:px-4 py-2 sm:py-2.5 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                aria-label="Logout"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Logout
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
@@ -169,7 +208,7 @@ export default function AdminLayout({
         <PasswordExpiryBanner />
 
         {/* Page Content */}
-        <main className="flex-1 p-8 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           {children}
         </main>
       </div>

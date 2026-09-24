@@ -21,9 +21,17 @@ interface NavSection {
 interface AdminSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  /** Below lg the sidebar is a drawer: off-canvas until the header opens it. */
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
+export default function AdminSidebar({
+  collapsed,
+  onToggle,
+  mobileOpen = false,
+  onMobileClose,
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const params = useParams();
   const locale = params.locale || 'en';
@@ -175,7 +183,11 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
   };
 
   return (
-    <aside className={`${collapsed ? 'w-[72px]' : 'w-64'} bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 h-screen sticky top-0 flex flex-col transition-all duration-300 shrink-0`}>
+    <aside
+      className={`${collapsed ? 'lg:w-[72px]' : 'lg:w-64'} w-64 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 h-screen flex flex-col transition-transform duration-300 shrink-0 fixed inset-y-0 left-0 z-40 lg:sticky lg:top-0 lg:translate-x-0 ${
+        mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+      }`}
+    >
       {/* Logo + Toggle */}
       <div className={`${collapsed ? 'p-3' : 'p-5'} flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <Link href={`/${locale}/admin`} className="flex items-center justify-center min-w-0">
@@ -187,20 +199,30 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
         </Link>
         <button
           onClick={onToggle}
-          className={`p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors ${collapsed ? '' : 'shrink-0'}`}
+          className={`hidden lg:block p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors ${collapsed ? '' : 'shrink-0'}`}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg className={`w-4 h-4 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
           </svg>
         </button>
+        {/* Collapsing a drawer means nothing; closing it does. */}
+        <button
+          onClick={onMobileClose}
+          className="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors shrink-0"
+          aria-label="Close menu"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 overflow-y-auto">
+      <nav className="flex-1 px-2 overflow-y-auto" onClick={onMobileClose}>
         {visibleSections.map((section) => (
           <div key={section.title} className="mb-4">
-            {!collapsed && (
+            {(!collapsed || mobileOpen) && (
               <p className="px-3 mb-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
                 {section.title}
               </p>
@@ -210,7 +232,7 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
+                    className={`flex items-center ${collapsed && !mobileOpen ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-[#0D529E] to-[#0D529E] text-white shadow-lg shadow-btcl-primary/20'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
@@ -220,8 +242,8 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
                     <span className={`shrink-0 ${isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'}`}>
                       {item.icon}
                     </span>
-                    {!collapsed && <span className="font-medium text-sm">{item.name}</span>}
-                    {!collapsed && item.badge && (
+                    {(!collapsed || mobileOpen) && <span className="font-medium text-sm">{item.name}</span>}
+                    {(!collapsed || mobileOpen) && item.badge && (
                       <span className="ml-auto px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded-full">
                         {item.badge}
                       </span>
@@ -242,13 +264,13 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
 
       {/* Admin Info Card */}
       <div className={`${collapsed ? 'p-2 mx-1' : 'p-3 mx-2'} mb-3 bg-gray-800/50 rounded-lg border border-gray-700/50`}>
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+        <div className={`flex items-center ${collapsed && !mobileOpen ? 'justify-center' : 'gap-3'}`}>
           <div className={`${collapsed ? 'w-8 h-8' : 'w-9 h-9'} bg-gradient-to-br from-[#0D529E] to-[#0D529E] rounded-lg flex items-center justify-center shrink-0`}>
             <svg className={`${collapsed ? 'w-4 h-4' : 'w-4 h-4'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          {!collapsed && (
+          {(!collapsed || mobileOpen) && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-white truncate">Administrator</p>
               <p className="text-[10px] text-gray-500">Super Admin</p>

@@ -164,6 +164,12 @@ export const API_ENDPOINTS = {
     // for every customer on every service, which one-at-a-time makes a request per
     // customer per service.
     listPurchaseSummary: '/package/list-purchase-summary',
+    // Every product's figures in ONE request to OUR OWN backend, which reads each
+    // product's schema directly. The four *_BASE_URL calls below it exist because the
+    // dashboard used to ask each product's API instead, and could not: every product
+    // signs its tokens with its own secret, so three of four refused and it fell back
+    // to a request per customer per service.
+    allServicesSummary: '/admin/all-services-summary',
     purchasePackage: '/package/purchase-package',
     getAllPurchasePartnerWise: '/package/get-all-purchase-partner-wise',
     getAllPurchase: '/package/get-all-purchase',

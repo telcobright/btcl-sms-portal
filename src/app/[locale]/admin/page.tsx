@@ -196,7 +196,76 @@ export default function AdminDashboard() {
           }
         };
 
-        await Promise.allSettled(
+        /**
+         * Every product in one request, from our own backend.
+         *
+         * It reads each product's schema directly -- four of them share this operator's
+         * database server and the fifth is reachable from it -- so there is no second
+         * token, no second origin, and nothing to fall back to. Returns null when the
+         * backend predates this endpoint, which is the signal to use the old fan-out
+         * below; the portal and the services deploy separately.
+         */
+        const fetchCombined = async (): Promise<Record<string, any> | null> => {
+          try {
+            const r = await fetch(
+              `${API_BASE_URL}${API_ENDPOINTS.package.allServicesSummary}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${t}`,
+                },
+                body: JSON.stringify({ idPartners: sample.map((p) => p.idPartner) }),
+                signal: AbortSignal.timeout(SUMMARY_TIMEOUT_MS),
+              },
+            );
+            if (!r.ok) return null;
+            const d = await r.json();
+            return d && typeof d === "object" && !Array.isArray(d) ? d : null;
+          } catch {
+            return null;
+          }
+        };
+
+        // Turns one product's rows into the card the dashboard shows. The rows are the
+        // same shape the batched per-service endpoint returned, so this is the same
+        // mapping that was already being done four times over.
+        const cardFrom = (product: any) => {
+          const parts: ServicePartner[] = [];
+          (product?.partners ?? []).forEach((row: any) => {
+            if (!row?.subscribed) return;
+            const partner = byId.get(row.idPartner);
+            const balance = Number(row.balance) || 0;
+            parts.push({
+              id: row.idPartner,
+              name: partner?.partnerName || `#${row.idPartner}`,
+              status: row.status || "—",
+              plan: row.plan || "—",
+              balance: balance
+                ? `${balance.toLocaleString()} ${row.uom ?? ""}`.trim()
+                : "—",
+            });
+          });
+          parts.sort((a, b) => a.name.localeCompare(b.name));
+          return {
+            subscribers: Number(product?.subscribers) || 0,
+            active: Number(product?.activeCount) || 0,
+            revenue: Number(product?.revenue) || 0,
+            partners: parts,
+          };
+        };
+
+        const combined = await fetchCombined();
+        if (combined) {
+          urls.forEach(({ k }) => {
+            const product = combined[k];
+            // A product the backend could not read keeps its empty card and says so in
+            // its own error field; the other three still render.
+            if (product && !product.error) {
+              stats[k] = cardFrom(product);
+            }
+          });
+        } else await Promise.allSettled(
           urls.map(async ({ k, u }) => {
             const subs = new Set<number>();
             const parts: ServicePartner[] = [];

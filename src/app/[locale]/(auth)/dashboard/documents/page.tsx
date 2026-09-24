@@ -39,7 +39,11 @@ const DOCUMENTS: { type: string; label: string; note?: string }[] = [
     note: 'Required to purchase Bulk SMS packages.',
   },
   { type: 'govtauthorization', label: 'Office Order / Authorisation Letter' },
-  { type: 'photo', label: 'Photograph' },
+  {
+    type: 'photo',
+    label: 'Photograph',
+    note: 'Permanent — this cannot be replaced once BTCL has it.',
+  },
   { type: 'taxreturn', label: 'Last Tax Return' },
 ];
 
@@ -164,6 +168,12 @@ export default function CustomerDocumentsPage() {
           const state = statuses[doc.type];
           const tone = badge(state?.status);
           const busy = uploading === doc.type;
+          // The photograph is the identity on the account, so it is given once and not
+          // swapped afterwards. A rejected one is the exception — the server allows that
+          // replacement, because otherwise one bad upload would leave the account unable
+          // to clear review at all.
+          const locked =
+            doc.type === 'photo' && !!state?.status && state.status !== 'REJECTED';
           return (
             <div
               key={doc.type}
@@ -198,15 +208,22 @@ export default function CustomerDocumentsPage() {
               />
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || locked}
                 onClick={() => inputs.current[doc.type]?.click()}
-                className="px-4 py-2 text-sm font-semibold rounded-lg border-2 border-btcl-primary text-btcl-primary bg-white hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title={
+                  locked
+                    ? 'Your photograph is permanent. Contact support if it needs correcting.'
+                    : undefined
+                }
+                className="px-4 py-2 text-sm font-semibold rounded-lg border-2 border-btcl-primary text-btcl-primary bg-white hover:bg-btcl-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-btcl-primary transition-colors"
               >
                 {busy
                   ? 'Uploading…'
-                  : state?.status
-                    ? 'Replace'
-                    : 'Upload'}
+                  : locked
+                    ? 'Permanent'
+                    : state?.status
+                      ? 'Replace'
+                      : 'Upload'}
               </button>
             </div>
           );

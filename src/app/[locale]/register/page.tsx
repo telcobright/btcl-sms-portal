@@ -149,6 +149,18 @@ export default function RegisterPage() {
    */
   const postpaidAllowed = FEATURE_FLAGS.POSTPAID_ENABLED && isGovernment;
 
+  /**
+   * A private individual registers as a person, not a business: there is no trade licence
+   * and no TIN to give. Asking for either made the form impossible to complete, so both the
+   * numbers and the certificates are dropped for this category, and the identity documents
+   * plus a photograph stand in their place.
+   *
+   * Government Individual is deliberately not included. It still asks for both, which is
+   * very likely wrong for the same reason, but that is a policy call rather than a blocked
+   * form and is left alone here.
+   */
+  const isPrivateIndividual = selectedCategory === 'INDIVIDUAL';
+
   // Belt and braces: the individual options are disabled in the form, but a value could
   // still survive in state from a cached session or a devtools edit. Fall back to the
   // corporate equivalent rather than submitting a category registration is not open for.
@@ -1116,7 +1128,7 @@ export default function RegisterPage() {
                 />
                 <p className="mt-2 text-xs text-gray-500">
                   {selectedCategory === 'INDIVIDUAL'
-                    ? 'You will be asked for your NID, TIN certificate and a photograph.'
+                    ? 'You will be asked for both sides of your NID and a photograph. The photograph is permanent and cannot be changed later.'
                     : selectedCategory === 'GOVERNMENT_INDIVIDUAL'
                       ? 'You will be asked for your NID, a photograph and an office order / authorisation letter.'
                       : selectedCategory === 'GOVERNMENT_CORPORATE'
@@ -2039,12 +2051,13 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Trade License Number <span className="text-red-500">*</span>
+                    Trade License Number{' '}
+                    {!isPrivateIndividual && <span className="text-red-500">*</span>}
                   </label>
                   <Controller
                     name="tradeLicenseNumber"
                     control={otherInfoForm.control}
-                    rules={{ required: 'Trade license number is required' }}
+                    rules={{ required: isPrivateIndividual ? false : 'Trade license number is required' }}
                     render={({ field, fieldState }) => (
                       <>
                         <input
@@ -2068,12 +2081,13 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Upload Trade License <span className="text-red-500">*</span>
+                    Upload Trade License{' '}
+                    {!isPrivateIndividual && <span className="text-red-500">*</span>}
                   </label>
                   <Controller
                     name="tradeLicenseFile"
                     control={otherInfoForm.control}
-                    rules={{ required: 'Trade license file is required' }}
+                    rules={{ required: isPrivateIndividual ? false : 'Trade license file is required' }}
                     render={({ field: { onChange }, fieldState }) => (
                       <>
                         <input
@@ -2099,12 +2113,13 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    TIN Number <span className="text-red-500">*</span>
+                    TIN Number{' '}
+                    {!isPrivateIndividual && <span className="text-red-500">*</span>}
                   </label>
                   <Controller
                     name="tinNumber"
                     control={otherInfoForm.control}
-                    rules={{ required: 'TIN number is required' }}
+                    rules={{ required: isPrivateIndividual ? false : 'TIN number is required' }}
                     render={({ field, fieldState }) => (
                       <>
                         <input
@@ -2128,12 +2143,13 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Upload TIN <span className="text-red-500">*</span>
+                    Upload TIN{' '}
+                    {!isPrivateIndividual && <span className="text-red-500">*</span>}
                   </label>
                   <Controller
                     name="tinFile"
                     control={otherInfoForm.control}
-                    rules={{ required: 'TIN file is required' }}
+                    rules={{ required: isPrivateIndividual ? false : 'TIN file is required' }}
                     render={({ field: { onChange }, fieldState }) => (
                       <>
                         <input

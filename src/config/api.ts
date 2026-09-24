@@ -37,11 +37,24 @@ export const PAYMENT_BASE_URL = `${ROOT_URL}`;
  * Set to true to enable, false to skip verification (for testing)
  */
 export const FEATURE_FLAGS = {
-  /** Enable/Disable OTP verification during registration */
-  OTP_VERIFICATION_ENABLED: true,
+  /**
+   * Enable/Disable OTP verification during registration.
+   *
+   * Temporarily false while individual registration is being brought up, so a sign-up can
+   * be walked through end to end without waiting on SMS or email delivery. Turn back on
+   * before this is open to the public — with it off, nobody proves they hold the phone
+   * number or mailbox they registered with.
+   */
+  OTP_VERIFICATION_ENABLED: false,
 
-  /** Enable/Disable NID verification during registration */
-  NID_VERIFICATION_ENABLED: true,
+  /**
+   * Enable/Disable NID verification against the Election Commission.
+   *
+   * Temporarily false alongside OTP, for the same reason. With it off the NID number and
+   * date of birth are taken at face value and only the uploaded images are checked, by an
+   * admin, after the fact.
+   */
+  NID_VERIFICATION_ENABLED: false,
 
   /** Enable/Disable SSLCommerz payment */
   PAYMENT_ENABLED: true,
@@ -68,9 +81,9 @@ export const FEATURE_FLAGS = {
    * The categories, their document rules and every admin view already support
    * individuals; this only controls whether the public form offers them yet.
    *
-   * Set to true to open individual registration. Nothing else needs to change.
+   * Set to true to open individual registration.
    */
-  INDIVIDUAL_REGISTRATION_ENABLED: false,
+  INDIVIDUAL_REGISTRATION_ENABLED: true,
 } as const;
 
 // API Endpoints

@@ -40,21 +40,19 @@ export const FEATURE_FLAGS = {
   /**
    * Enable/Disable OTP verification during registration.
    *
-   * Temporarily false while individual registration is being brought up, so a sign-up can
-   * be walked through end to end without waiting on SMS or email delivery. Turn back on
-   * before this is open to the public — with it off, nobody proves they hold the phone
-   * number or mailbox they registered with.
+   * Off, nobody proves they hold the phone number or mailbox they registered with. It was
+   * switched off briefly while individual registration was brought up and is back on.
    */
-  OTP_VERIFICATION_ENABLED: false,
+  OTP_VERIFICATION_ENABLED: true,
 
   /**
    * Enable/Disable NID verification against the Election Commission.
    *
-   * Temporarily false alongside OTP, for the same reason. With it off the NID number and
-   * date of birth are taken at face value and only the uploaded images are checked, by an
-   * admin, after the fact.
+   * Off, the NID number and date of birth are taken at face value and only the uploaded
+   * images are checked, by an admin, after the fact. Switched off briefly alongside OTP
+   * while individual registration was brought up; back on.
    */
-  NID_VERIFICATION_ENABLED: false,
+  NID_VERIFICATION_ENABLED: true,
 
   /** Enable/Disable SSLCommerz payment */
   PAYMENT_ENABLED: true,

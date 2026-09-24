@@ -183,6 +183,38 @@ class LineOnlyInputTest(unittest.TestCase):
         self.assertEqual(f["nameBn"], "হুমায়ুন আহমেদ")
 
 
+class RealServiceReadTest(unittest.TestCase):
+    """The live service's actual output for a real smart card, after rotation fixed it."""
+    REAL = ["গণপ্রজাতন্তট্রী বাংলাদেশ সরকার",
+            "জাতীয় পরিচয়পত্র Government of the People's Republic of Bangladesh National ID Card",
+            "47 (H3} 2000", "হুমায়ুন আহমেদ", "IName", "HUNIAYUNAHIIED", "পিতা", "মোঃ খোরশবেদ সনম",
+            "মাত]", "নুরজাহান বেগম", "Date or Birth 17 Maj 2008:", "হরূমা১ন ৩-মদ NID No 421 296 4672"]
+
+    def test_real_read(self):
+        r = P.parse(P.items_from_lines(self.REAL))
+        f = r["fields"]
+        self.assertEqual(f["nidNumberRaw"], "4212964672")
+        self.assertEqual(f["nameBn"], "হুমায়ুন আহমেদ")
+        # "IName" is the label; the value is what the engine read, fused, for the form to fix
+        self.assertEqual(f["nameEn"], "HUNIAYUNAHIIED")
+        self.assertEqual(r["how"]["nameEn"], "label")
+        # field says 2008, watermark says 2000: disputed, so not filled in
+        self.assertIsNone(f["dateOfBirth"])
+        self.assertEqual(r["how"]["dateOfBirth"], "disputed")
+
+    def test_month_confusions(self):
+        self.assertEqual(P._month_from("Maj"), 5)
+        self.assertEqual(P._month_from("Mav"), 5)
+        self.assertEqual(P._month_from("0ct"), 10)
+        self.assertEqual(P._month_from("Mar"), 3)
+        self.assertIsNone(P._month_from("Mxy"))   # a full step from May, Mar and more
+
+    def test_agreeing_copies_are_not_disputed(self):
+        lines = ["Date of Birth 17 May 2000", "NID No 421 296 4672", "17 May 2000"]
+        r = P.parse(P.items_from_lines(lines))
+        self.assertEqual(r["fields"]["dateOfBirth"], "2000-05-17")
+
+
 class OrientationTest(unittest.TestCase):
     def test_reading_with_fields_beats_sideways_junk(self):
         good = P.items_from_easyocr(smart_card_upright())

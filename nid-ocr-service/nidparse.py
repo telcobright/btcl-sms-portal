@@ -362,11 +362,32 @@ def _month_from(word: str) -> Optional[int]:
         return None
     if w[:3] in _MONTHS and (len(w) == 3 or any(name.startswith(w) for name in _MONTH_NAMES) or w == "sept"):
         return _MONTHS[w[:3]]
-    # OCR mangling: "Mav" for May, "0ct" for Oct
+    # OCR mangling. A letter with the same shape and descender as the printed one is a
+    # half-step ("Maj" for May, "Mav" for May); any other substitution is a full step. A
+    # token is accepted only when exactly one month is within a step of it — "Maj" is one
+    # half-step from May and a full step from Mar, so it is May; a token equally close to
+    # two months is not guessed.
+    if len(w) == 3:
+        close = [m for m in _MONTHS if _month_distance(w, m) <= 0.5]
+        if len(close) == 1:
+            return _MONTHS[close[0]]
+        return None
     for name in _MONTH_NAMES:
-        if difflib.SequenceMatcher(None, w, name[:len(w)]).ratio() >= 0.75 and len(w) >= 3:
+        if difflib.SequenceMatcher(None, w, name[:len(w)]).ratio() >= 0.8:
             return _MONTHS[name[:3]]
     return None
+
+
+_HALF_STEP = {("y", "j"), ("y", "v"), ("i", "l"), ("o", "0"), ("u", "v"), ("n", "r"), ("c", "e")}
+
+
+def _month_distance(a: str, b: str) -> float:
+    d = 0.0
+    for x, y in zip(a, b):
+        if x == y:
+            continue
+        d += 0.5 if (x, y) in _HALF_STEP or (y, x) in _HALF_STEP else 1.0
+    return d
 
 
 def _valid(y: int, m: int, d: int) -> Optional[str]:
@@ -456,7 +477,30 @@ def find_dob(lines: List[List[dict]], nid: Optional[str]) -> Tuple[Optional[str]
             cur["score"] += 0.5
     best = max(by_value.values(), key=lambda c: c["score"])
     how = "label" if best["score"] >= 3.0 else "pattern"
+
+    # Smart cards print the date a second time inside the ghost watermark. That copy is
+    # usually too mangled to parse as a date, but its year survives. If that year is a
+    # digit-confusion away from the year we chose ("2008" beside "2000"), the two reads
+    # disagree and there is no way to tell which is right. An empty field is better than a
+    # silently wrong date of birth on an identity record, so nothing is filled in.
+    chosen_year = best["value"][:4]
+    for line in lines:
+        text = line_text(line)
+        if _dates_in(text):
+            continue  # a full date; that is a candidate, not a stray year
+        for tok in re.findall(r"(?<!\d)(?:19|20)\d{2}(?!\d)", " ".join(digitish(t) for t in text.split(" "))):
+            if tok != chosen_year and _confusable_year(tok, chosen_year):
+                return None, None, "disputed"
     return best["value"], _mean_conf(best["items"]), how
+
+
+_CONFUSABLE_DIGITS = {("0", "8"), ("3", "8"), ("6", "8"), ("1", "7"), ("5", "6"), ("0", "6"), ("2", "7"), ("9", "0")}
+
+
+def _confusable_year(a: str, b: str) -> bool:
+    """True when the two years differ in exactly one digit and that pair is one OCR mixes up."""
+    diffs = [(x, y) for x, y in zip(a, b) if x != y]
+    return len(diffs) == 1 and (diffs[0] in _CONFUSABLE_DIGITS or diffs[0][::-1] in _CONFUSABLE_DIGITS)
 
 
 # ---------------------------------------------------------------------------

@@ -79,9 +79,11 @@ export const FEATURE_FLAGS = {
    * The categories, their document rules and every admin view already support
    * individuals; this only controls whether the public form offers them yet.
    *
-   * Set to true to open individual registration.
+   * Set to true to open individual registration. The document rules, the prepaid
+   * enforcement and the permanent photograph are all in place for it; only the option on
+   * the form is withheld until BTCL is ready to take individuals.
    */
-  INDIVIDUAL_REGISTRATION_ENABLED: true,
+  INDIVIDUAL_REGISTRATION_ENABLED: false,
 } as const;
 
 // API Endpoints

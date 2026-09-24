@@ -727,10 +727,23 @@ export default function RegisterPage() {
       setOcrResult(result);
 
       if (result.success && result.data) {
+        // Below this the engine itself was unsure. The value is still filled in — it is
+        // usually right and always editable — but the applicant is asked to check it
+        // rather than told it succeeded.
+        const DOUBTFUL = 0.6;
+        const doubtful = (field: keyof NonNullable<NidOcrResult['confidence']>) => {
+          const c = result.confidence?.[field];
+          return typeof c === 'number' && c < DOUBTFUL;
+        };
+        const report = (field: keyof NonNullable<NidOcrResult['confidence']>, label: string) => {
+          if (doubtful(field)) toast(`Please double-check the ${label} — the scan was unclear.`, { icon: '⚠️' });
+          else toast.success(`${label} extracted successfully!`);
+        };
+
         // Auto-fill form fields with extracted data
         if (result.data.name) {
           personalInfoForm.setValue('fullName', result.data.name, { shouldValidate: true });
-          toast.success('Name extracted successfully!');
+          report('name', 'name');
         }
 
         if (result.data.nidNumber) {
@@ -742,12 +755,12 @@ export default function RegisterPage() {
           }
           personalInfoForm.setValue('nidNumber', result.data.nidNumber, { shouldValidate: true });
           setNidExtractedFromOcr(true);
-          toast.success('NID number extracted successfully!');
+          report('nidNumber', 'NID number');
         }
 
         if (result.data.dateOfBirth) {
           personalInfoForm.setValue('dateOfBirth', result.data.dateOfBirth, { shouldValidate: true });
-          toast.success('Date of birth extracted successfully!');
+          report('dateOfBirth', 'date of birth');
         }
 
         // Overall success message

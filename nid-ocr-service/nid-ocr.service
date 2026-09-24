@@ -1,0 +1,19 @@
+[Unit]
+Description=NID OCR Microservice (EasyOCR, free/on-prem)
+After=network.target
+
+[Service]
+Type=simple
+User=telcobright
+WorkingDirectory=/home/telcobright/nid-ocr-service
+# Bind to the LXD bridge IP so the "Services" container (where the Next.js portal
+# runs) can reach it at http://10.10.194.1:7002, while it stays off the public NIC.
+ExecStart=/home/telcobright/nid-ocr-service/venv/bin/uvicorn app:app --host 10.10.194.1 --port 7002 --workers 1
+Restart=on-failure
+RestartSec=5
+# EasyOCR thread caps (keep CPU usage reasonable on the shared box)
+Environment=OMP_NUM_THREADS=4
+Environment=MKL_NUM_THREADS=4
+
+[Install]
+WantedBy=multi-user.target

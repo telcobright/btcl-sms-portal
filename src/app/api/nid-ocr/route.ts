@@ -40,6 +40,10 @@ function normalizeNid(
   return { nidNumber: null, nidDigitType: null };
 }
 
+function numberOrNull(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const form = await request.formData();
@@ -89,9 +93,16 @@ export async function POST(request: NextRequest) {
         dateOfBirth: f.dateOfBirth ?? null,
         nidDigitType,
       },
+      // Per-field confidence from the service (0..1), keyed as the form knows them.
+      confidence: {
+        name: numberOrNull(json.confidence?.nameEn),
+        nidNumber: numberOrNull(json.confidence?.nidNumberRaw),
+        dateOfBirth: numberOrNull(json.confidence?.dateOfBirth),
+      },
       meta: {
         nidNumberRaw: f.nidNumberRaw ?? null,
         engine: json.engine ?? 'easyocr',
+        orientation: typeof json.orientation === 'number' ? json.orientation : null,
         lineCount: Array.isArray(json.lines) ? json.lines.length : null,
       },
     });

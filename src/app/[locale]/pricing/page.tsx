@@ -964,10 +964,27 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         </div>
       );
     }
+    // The plan the customer is already on. It still says so, but renewing it early is
+    // allowed now: the backend starts the new period at the current expiry rather than
+    // today (PackagePurchaseService.renewalStart), so no paid day is lost. Before that
+    // it restarted from today, and a dead button was the only thing stopping a customer
+    // from losing the remainder — which also left the PBX portal telling them to "renew
+    // before it expires" with nowhere to do it.
     if (activePackages[serviceId] === pkg.id) {
       return (
-        <div className="w-full py-3 px-6 rounded-xl font-semibold text-sm text-center bg-gray-100 text-gray-500 border-2 border-gray-200 cursor-not-allowed select-none">
-          ✓ {locale === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
+        <div className="space-y-2">
+          <Button
+            onClick={() => handleBuyNow(pkg, serviceId)}
+            className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
+          >
+            ↻ {locale === 'en' ? 'Renew Plan' : 'প্ল্যান নবায়ন করুন'}
+          </Button>
+          <p className="text-xs text-center text-gray-500">
+            ✓{' '}
+            {locale === 'en'
+              ? 'Your current plan — renewing adds to the time you have left'
+              : 'আপনার বর্তমান প্ল্যান — নবায়ন করলে অবশিষ্ট সময়ের সাথে যোগ হবে'}
+          </p>
         </div>
       );
     }

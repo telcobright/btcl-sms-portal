@@ -13,7 +13,7 @@ export const ROOT_URL = 'https://www.alaapcloud.gov.bd';
 export const VBS_BASE_URL = 'https://vbs.alaapcloud.gov.bd/FREESWITCHREST';
 
 // Hosted PBX specific base URL (with port 4000)
-export const PBX_BASE_URL = 'https://vbs.alaapcloud.gov.bd:4000/FREESWITCHREST';
+export const PBX_BASE_URL = 'https://ippbx.alaapcloud.gov.bd/FREESWITCHREST';
 
 // HCC API Base URL for partner creation
 export const HCC_BASE_URL = 'https://cc.alaapcloud.gov.bd/FREESWITCHREST';

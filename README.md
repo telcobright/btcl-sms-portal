@@ -78,7 +78,7 @@ All API base URLs are centralised in `src/config/api.ts`:
 
 ```ts
 ROOT_URL        = 'https://www.alaapcloud.gov.bd'
-PBX_BASE_URL    = 'https://vbs.alaapcloud.gov.bd:4000/FREESWITCHREST'  // Hosted PBX
+PBX_BASE_URL    = 'https://ippbx.alaapcloud.gov.bd/FREESWITCHREST'  // Hosted PBX
 VBS_BASE_URL    = 'https://vbs.alaapcloud.gov.bd/FREESWITCHREST'       // Voice Broadcast
 HCC_BASE_URL    = 'https://cc.alaapcloud.gov.bd/FREESWITCHREST'       // Contact Center
 ```

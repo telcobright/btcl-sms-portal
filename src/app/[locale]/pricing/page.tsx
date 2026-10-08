@@ -129,49 +129,24 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           return;
         }
 
-        // Fetch document statuses to check if purchase should be blocked
+        // Whether this partner may buy at all is decided by the server, per customer
+        // category: a private individual has no trade licence or TIN to approve, so a
+        // fixed list of four documents here would show them "under review" forever.
         if (!adminRole) {
-          try {
-            const MAJOR_DOCS = ['nidfront', 'nidback', 'tradelicense', 'tin'];
-            const docRes = await fetch(
-              `${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({ id: idPartner }),
-              }
-            );
-            if (docRes.ok) {
-              const docData: Record<
-                string,
-                { status: string; rejectionReason: string }
-              > = await docRes.json();
-              const hasRejected = MAJOR_DOCS.some(
-                (d) => docData[d]?.status === 'REJECTED'
-              );
-              const hasPending = MAJOR_DOCS.some(
-                (d) =>
-                  !docData[d] ||
-                  docData[d].status === 'PENDING' ||
-                  docData[d].status === ''
-              );
-              if (hasRejected) {
-                setPurchaseBlocked(true);
-                setDocBlockReason('rejected');
-              } else if (hasPending) {
-                setPurchaseBlocked(true);
-                setDocBlockReason('pending');
-              }
-            }
-          } catch {
-            /* silent */
-          }
-
           const eligibility = await getServiceEligibility(idPartner, authToken);
-          if (eligibility) setSmsEligibility(eligibility.sms);
+          if (eligibility) {
+            setSmsEligibility(eligibility.sms);
+            if (eligibility.rejected.length > 0) {
+              setPurchaseBlocked(true);
+              setDocBlockReason('rejected');
+            } else if (!eligibility.mandatoryApproved) {
+              setPurchaseBlocked(true);
+              setDocBlockReason('pending');
+            } else {
+              setPurchaseBlocked(false);
+              setDocBlockReason(null);
+            }
+          }
         }
 
         const response = await fetch(

@@ -11,7 +11,7 @@ import {
   PBX_BASE_URL,
   VBS_BASE_URL,
 } from '@/config/api';
-import { uploadPartnerDocument } from '@/lib/api-client/admin';
+import { uploadPartnerDocument, getServiceEligibility } from '@/lib/api-client/admin';
 import { showApiError } from '@/lib/api-error';
 import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
@@ -365,7 +365,6 @@ export default function Dashboard() {
     }
   };
 
-  const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
 
   const handleBuyNow = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (purchaseBlocked) {
@@ -401,8 +400,8 @@ export default function Dashboard() {
   );
 
   const fetchDocStatuses = async (partnerId: number) => {
+    const authToken = localStorage.getItem('authToken');
     try {
-      const authToken = localStorage.getItem('authToken');
       const res = await fetch(
         buildApiUrl(API_ENDPOINTS.partner.getDocumentStatuses),
         {
@@ -418,27 +417,24 @@ export default function Dashboard() {
       const data: Record<string, { status: string; rejectionReason: string }> =
         await res.json();
       setDocStatuses(data);
-      // Check if any major doc is not APPROVED (REJECTED or PENDING)
-      const hasRejected = Object.entries(data).some(
-        ([docType, info]) =>
-          MAJOR_DOCS.has(docType) && info.status === 'REJECTED'
-      );
-      const hasPendingOrMissing = [...MAJOR_DOCS].some((docType) => {
-        const info = data[docType];
-        return !info || info.status === 'PENDING' || info.status === '';
-      });
-      if (hasRejected) {
-        setPurchaseBlocked(true);
-        setDocBlockReason('rejected');
-      } else if (hasPendingOrMissing) {
-        setPurchaseBlocked(true);
-        setDocBlockReason('pending');
-      } else {
-        setPurchaseBlocked(false);
-        setDocBlockReason(null);
-      }
     } catch (err) {
       console.warn('Failed to load document statuses:', err);
+    }
+
+    // Whether purchasing is blocked is the server's call, made per customer category.
+    // Deriving it here from a fixed list of four documents left an individual — who has
+    // no trade licence or TIN to approve — "under review" forever.
+    const eligibility = await getServiceEligibility(partnerId, authToken ?? '');
+    if (!eligibility) return;
+    if (eligibility.rejected.length > 0) {
+      setPurchaseBlocked(true);
+      setDocBlockReason('rejected');
+    } else if (!eligibility.mandatoryApproved) {
+      setPurchaseBlocked(true);
+      setDocBlockReason('pending');
+    } else {
+      setPurchaseBlocked(false);
+      setDocBlockReason(null);
     }
   };
 

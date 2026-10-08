@@ -3,6 +3,7 @@
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
+import SlabPricingSection from '@/components/pricing/SlabPricingSection';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
 import {
@@ -18,6 +19,15 @@ import {
   getServiceEligibility,
   type ServiceEligibilityState,
 } from '@/lib/api-client/admin';
+import { getServicePricing } from '@/lib/api-client/servicePricing';
+import {
+  maxBuyableQuantity,
+  quote,
+  slabName,
+  type Quote,
+  type ServicePricing,
+  type ServicePricingMap,
+} from '@/lib/servicePricing';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -424,64 +434,32 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     },
   ];
 
-  // Bulk SMS slab pricing
-  const smsSlabs = [
-    {
-      min: 1,
-      max: 20000,
-      rate: 0.32,
-      packageId: 'basic',
-      name: locale === 'en' ? 'Basic' : 'বেসিক',
-    },
-    {
-      min: 20001,
-      max: 50000,
-      rate: 0.3,
-      packageId: 'standard',
-      name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড',
-    },
-    {
-      min: 50001,
-      max: 100000,
-      rate: 0.28,
-      packageId: 'enterprise',
-      name: locale === 'en' ? 'Corporate' : 'কর্পোরেট',
-    },
-    {
-      min: 100001,
-      max: 500000,
-      rate: 0.14,
-      packageId: 'premium',
-      name: locale === 'en' ? 'Premium' : 'প্রিমিয়াম',
-    },
-  ];
+  // Voice Broadcasting and Bulk SMS are priced by slabs an admin edits at /admin/pricing.
+  // PaymentGateWay refuses a purchase whose amounts differ from these, so there is no
+  // built-in fallback: if they cannot be loaded, the sections say so and offer no Buy.
+  const [servicePricing, setServicePricing] = useState<ServicePricingMap | null>(null);
+  const [pricingStatus, setPricingStatus] = useState<'loading' | 'error' | 'ready'>('loading');
+
+  const loadServicePricing = React.useCallback(async () => {
+    setPricingStatus('loading');
+    try {
+      setServicePricing(await getServicePricing());
+      setPricingStatus('ready');
+    } catch (err) {
+      console.error('Could not load service pricing:', err);
+      setPricingStatus('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    loadServicePricing();
+  }, [loadServicePricing]);
 
   const [smsQuantity, setSmsQuantity] = useState<number | ''>('');
-
-  const getSmsSlab = (qty: number) =>
-    smsSlabs.find((s) => qty >= s.min && qty <= s.max) ||
-    (qty > smsSlabs[smsSlabs.length - 1].max
-      ? smsSlabs[smsSlabs.length - 1]
-      : smsSlabs[0]);
-
-  const smsCurrentSlab =
-    typeof smsQuantity === 'number' && smsQuantity >= 1
-      ? getSmsSlab(smsQuantity)
+  const smsQuote =
+    servicePricing?.sms && typeof smsQuantity === 'number' && smsQuantity >= 1
+      ? quote(servicePricing.sms, smsQuantity)
       : null;
-  const smsBasePrice =
-    smsCurrentSlab && typeof smsQuantity === 'number'
-      ? Math.ceil(smsQuantity * smsCurrentSlab.rate)
-      : 0;
-  const smsVat = Math.ceil(smsBasePrice * 0.15);
-  const smsTotal = smsBasePrice + smsVat;
-  const SMS_MAX_QTY = 500000; // Premium tier cap: 500,000 messages
-  const SMS_MIN_TOTAL = 10;
-  const smsExceedsMax =
-    typeof smsQuantity === 'number' && smsQuantity > SMS_MAX_QTY;
-  const smsUnderMin =
-    typeof smsQuantity === 'number' &&
-    smsQuantity >= 1 &&
-    smsTotal < SMS_MIN_TOTAL;
 
   // Contact Center Pricing
   const contactCenterPackages = [
@@ -641,56 +619,53 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     },
   ];
 
-  // Voice Broadcast slab pricing
-  const vbsSlabs = [
-    {
-      min: 1,
-      max: 20000,
-      rate: 0.4,
-      packageId: 'basic',
-      packageIdInt: 9135,
-      name: locale === 'en' ? 'Basic' : 'বেসিক',
-    },
-    {
-      min: 20001,
-      max: 50000,
-      rate: 0.4,
-      packageId: 'standard',
-      packageIdInt: 9136,
-      name: locale === 'en' ? 'Standard' : 'স্ট্যান্ডার্ড',
-    },
-    {
-      min: 50001,
-      max: Infinity,
-      rate: 0.4,
-      packageId: 'enterprise',
-      packageIdInt: 9137,
-      name: locale === 'en' ? 'Corporate' : 'কর্পোরেট',
-    },
-  ];
-
+  // Voice Broadcast: slabs and limits come from the admin panel (see loadServicePricing).
   const [vbsQuantity, setVbsQuantity] = useState<number | ''>('');
-
-  const getVbsSlab = (qty: number) =>
-    vbsSlabs.find((s) => qty >= s.min && qty <= s.max) || vbsSlabs[0];
-
-  const vbsCurrentSlab =
-    typeof vbsQuantity === 'number' && vbsQuantity >= 1
-      ? getVbsSlab(vbsQuantity)
+  const vbsQuote =
+    servicePricing?.vbs && typeof vbsQuantity === 'number' && vbsQuantity >= 1
+      ? quote(servicePricing.vbs, vbsQuantity)
       : null;
-  const vbsBasePrice =
-    vbsCurrentSlab && typeof vbsQuantity === 'number'
-      ? Math.ceil(vbsQuantity * vbsCurrentSlab.rate)
-      : 0;
-  const vbsVat = Math.ceil(vbsBasePrice * 0.15);
-  const vbsTotal = vbsBasePrice + vbsVat;
-  const VBS_MAX_TOTAL = 500000;
-  const VBS_MIN_TOTAL = 10;
-  const vbsExceedsMax = vbsTotal > VBS_MAX_TOTAL;
-  const vbsUnderMin =
-    typeof vbsQuantity === 'number' &&
-    vbsQuantity >= 1 &&
-    vbsTotal < VBS_MIN_TOTAL;
+
+  // Short keys the checkout uses to tell a renewal from an upgrade. Slabs keep the key of
+  // the package they buy; a slab on any other package has none, and checks out as a renewal.
+  const slabPackageKeys: Record<number, string> = {
+    9135: 'basic', 9136: 'standard', 9137: 'enterprise', // Voice Broadcasting
+    9138: 'basic', 9139: 'standard', 9140: 'enterprise', 9141: 'premium', // Bulk SMS
+  };
+
+  /** What CheckoutModal needs for a slab purchase. Amounts are the ones PaymentGateWay expects. */
+  const slabPackage = (q: Quote) => ({
+    id: slabPackageKeys[q.slab!.packageId] ?? `package-${q.slab!.packageId}`,
+    packageIdInt: q.slab!.packageId,
+    name: slabName(q.slab!, locale),
+    price: q.price,
+    vat: q.vat,
+    total: q.total,
+    rate: q.slab!.rate,
+    features: [],
+  });
+
+  /** Why this quantity cannot be bought, or null when it can. */
+  const slabQuoteProblem = (pricing: ServicePricing | undefined, q: Quote | null): string | null => {
+    const en = locale === 'en';
+    if (!pricing) return en ? 'Prices are not loaded yet. Please try again.' : 'মূল্য এখনও লোড হয়নি। আবার চেষ্টা করুন।';
+    if (!q) return null;
+    if (q.noSlab || q.overMaxQuantity) {
+      const max = maxBuyableQuantity(pricing);
+      return en
+        ? `Maximum ${max?.toLocaleString() ?? ''} messages per purchase`
+        : `প্রতি ক্রয়ে সর্বোচ্চ ${max?.toLocaleString() ?? ''} মেসেজ`;
+    }
+    if (q.underMin)
+      return en
+        ? `Minimum purchase amount is ৳${pricing.limits.minTotal.toLocaleString()}`
+        : `সর্বনিম্ন ক্রয় পরিমাণ ৳${pricing.limits.minTotal.toLocaleString()}`;
+    if (q.overMaxTotal)
+      return en
+        ? `Total amount cannot exceed ৳${pricing.limits.maxTotal?.toLocaleString()} per purchase`
+        : `প্রতি ক্রয়ে মোট পরিমাণ ৳${pricing.limits.maxTotal?.toLocaleString()} এর বেশি হতে পারবে না`;
+    return null;
+  };
 
   const handleVbsBuyNow = () => {
     if (!isLoggedIn()) {
@@ -718,38 +693,15 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       }
       return;
     }
-    if (!vbsCurrentSlab || typeof vbsQuantity !== 'number' || vbsQuantity < 1) {
-      toast.error(
-        locale === 'en'
-          ? 'Please enter a valid quantity (minimum 1)'
-          : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)'
-      );
-      return;
-    }
-    if (vbsUnderMin) {
-      toast.error(
-        locale === 'en'
-          ? 'Minimum purchase amount is ৳10'
-          : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০'
-      );
-      return;
-    }
-    if (vbsExceedsMax) {
-      toast.error(
-        locale === 'en'
-          ? 'Total amount cannot exceed ৳5,00,000 per purchase'
-          : 'প্রতি ক্রয়ে মোট পরিমাণ ৳৫,০০,০০০ এর বেশি হতে পারবে না'
-      );
+    const problem = slabQuoteProblem(servicePricing?.vbs, vbsQuote);
+    if (problem || !vbsQuote?.slab || typeof vbsQuantity !== 'number') {
+      toast.error(problem ?? (locale === 'en' ? 'Please enter a valid quantity (minimum 1)' : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)'));
       return;
     }
     setSelectedService('voice-broadcast');
     setSelectedPackage({
-      id: vbsCurrentSlab.packageId,
-      name: vbsCurrentSlab.name,
-      price: vbsBasePrice,
-      rate: vbsCurrentSlab.rate,
+      ...slabPackage(vbsQuote),
       vbsQuantity: vbsQuantity,
-      features: [],
     });
     setIsCheckoutOpen(true);
   };
@@ -781,38 +733,15 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       }
       return;
     }
-    if (!smsCurrentSlab || typeof smsQuantity !== 'number' || smsQuantity < 1) {
-      toast.error(
-        locale === 'en'
-          ? 'Please enter a valid quantity (minimum 1)'
-          : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)'
-      );
-      return;
-    }
-    if (smsUnderMin) {
-      toast.error(
-        locale === 'en'
-          ? 'Minimum purchase amount is ৳10'
-          : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০'
-      );
-      return;
-    }
-    if (smsExceedsMax) {
-      toast.error(
-        locale === 'en'
-          ? 'Maximum 500,000 messages per purchase'
-          : 'প্রতি ক্রয়ে সর্বোচ্চ ৫,০০,০০০ মেসেজ'
-      );
+    const problem = slabQuoteProblem(servicePricing?.sms, smsQuote);
+    if (problem || !smsQuote?.slab || typeof smsQuantity !== 'number') {
+      toast.error(problem ?? (locale === 'en' ? 'Please enter a valid quantity (minimum 1)' : 'অনুগ্রহ করে সঠিক পরিমাণ লিখুন (সর্বনিম্ন ১)'));
       return;
     }
     setSelectedService('bulk-sms');
     setSelectedPackage({
-      id: smsCurrentSlab.packageId,
-      name: smsCurrentSlab.name,
-      price: smsBasePrice,
-      rate: smsCurrentSlab.rate,
+      ...slabPackage(smsQuote),
       smsQuantity: smsQuantity,
-      features: [],
     });
     setIsCheckoutOpen(true);
   };
@@ -1442,198 +1371,21 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             'bg-white',
             'bg-btcl-primaryLight/10 text-btcl-primaryDark'
           )}
-          {/* Voice Broadcast — Slab-based pricing */}
-          <div id="voice-broadcast" className="py-20 bg-btcl-primaryLight/5">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
-                  <img
-                    src="/alaap_voice_broadcasting.png"
-                    alt=""
-                    className="h-10 w-10 object-contain"
-                  />
-                  <h2 className="text-2xl font-bold">
-                    {locale === 'en'
-                      ? 'Alaap Cloud Voice Broadcasting Service'
-                      : 'Alaap Cloud Voice Broadcasting Service'}
-                  </h2>
-                </div>
-                <p className="text-gray-600 text-lg">
-                  {locale === 'en'
-                    ? 'Pay per message — volume-based pricing'
-                    : 'প্রতি মেসেজ মূল্য — পরিমাণ ভিত্তিক'}
-                </p>
-              </div>
-
-              {/* Slab Rate Table */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-btcl-primaryLight/10">
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                        {locale === 'en' ? 'Message Range' : 'মেসেজ পরিসীমা'}
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                        {locale === 'en' ? 'Slab' : 'স্ল্যাব'}
-                      </th>
-                      <th className="px-6 py-4 text-right font-semibold text-gray-700">
-                        {locale === 'en' ? 'Rate / Message' : 'প্রতি মেসেজ রেট'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vbsSlabs.map((slab, idx) => (
-                      <tr
-                        key={idx}
-                        className={`border-t border-gray-100 ${vbsCurrentSlab === slab ? 'bg-btcl-primaryLight/10 font-semibold' : ''}`}
-                      >
-                        <td className="px-6 py-3 text-gray-800">
-                          {slab.max === Infinity
-                            ? `${slab.min.toLocaleString()}+`
-                            : `${slab.min.toLocaleString()} – ${slab.max.toLocaleString()}`}
-                        </td>
-                        <td className="px-6 py-3 text-gray-600">{slab.name}</td>
-                        <td className="px-6 py-3 text-right text-gray-800">
-                          ৳{slab.rate.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Quantity Input + Price Calculator */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Left — Input */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {locale === 'en'
-                        ? 'Enter Number of Messages'
-                        : 'মেসেজ সংখ্যা লিখুন'}
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={vbsQuantity}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setVbsQuantity(
-                          val === '' ? '' : Math.max(1, parseInt(val) || 1)
-                        );
-                      }}
-                      placeholder={
-                        locale === 'en' ? 'e.g. 15000' : 'যেমন ১৫০০০'
-                      }
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-btcl-primary focus:border-btcl-primary outline-none"
-                    />
-                    {vbsCurrentSlab && (
-                      <p className="mt-2 text-sm text-btcl-primary font-medium">
-                        {locale === 'en'
-                          ? `Slab: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/message`
-                          : `স্ল্যাব: ${vbsCurrentSlab.name} — ৳${vbsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
-                      </p>
-                    )}
-                    {vbsUnderMin && (
-                      <p className="mt-1 text-sm text-red-600 font-medium">
-                        {locale === 'en'
-                          ? 'Minimum purchase amount is ৳10 (incl. VAT)'
-                          : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০ (ভ্যাটসহ)'}
-                      </p>
-                    )}
-                    {vbsExceedsMax && (
-                      <p className="mt-1 text-sm text-red-600 font-medium">
-                        {locale === 'en'
-                          ? 'Maximum purchase limit is ৳5,00,000 (incl. VAT)'
-                          : 'সর্বোচ্চ ক্রয় সীমা ৳৫,০০,০০০ (ভ্যাটসহ)'}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Right — Price Breakdown */}
-                  <div className="space-y-3">
-                    {vbsCurrentSlab &&
-                    typeof vbsQuantity === 'number' &&
-                    vbsQuantity >= 1 ? (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">
-                            {typeof vbsQuantity === 'number'
-                              ? vbsQuantity.toLocaleString()
-                              : 0}{' '}
-                            × ৳{vbsCurrentSlab.rate.toFixed(2)}
-                          </span>
-                          <span className="font-medium">
-                            ৳{vbsBasePrice.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">
-                            {locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}
-                          </span>
-                          <span>৳{vbsVat.toLocaleString()}</span>
-                        </div>
-                        <hr className="border-gray-200" />
-                        <div className="flex justify-between text-lg font-bold">
-                          <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
-                          <span className="text-btcl-primary">
-                            ৳{vbsTotal.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {locale === 'en'
-                            ? 'Validity: 5 Years'
-                            : 'মেয়াদ: ৫ বছর'}
-                        </div>
-
-                        {purchaseBlocked && isLoggedIn() ? (
-                          <button
-                            disabled
-                            className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed"
-                          >
-                            {locale === 'en'
-                              ? 'Purchase Disabled'
-                              : 'ক্রয় নিষ্ক্রিয়'}
-                          </button>
-                        ) : vbsUnderMin ? (
-                          <button
-                            disabled
-                            className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed"
-                          >
-                            {locale === 'en'
-                              ? 'Minimum ৳10 Required'
-                              : 'সর্বনিম্ন ৳১০ প্রয়োজন'}
-                          </button>
-                        ) : vbsExceedsMax ? (
-                          <button
-                            disabled
-                            className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed"
-                          >
-                            {locale === 'en'
-                              ? 'Limit Exceeded (max ৳5,00,000)'
-                              : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৳৫,০০,০০০)'}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={handleVbsBuyNow}
-                            className="w-full mt-4 transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
-                          >
-                            {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                        {locale === 'en'
-                          ? 'Enter quantity to see pricing'
-                          : 'মূল্য দেখতে পরিমাণ লিখুন'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Voice Broadcast — Slab-based pricing (admin-edited, /admin/pricing) */}
+          <SlabPricingSection
+            id="voice-broadcast"
+            locale={locale}
+            icon="/alaap_voice_broadcasting.png"
+            title="Alaap Cloud Voice Broadcasting Service"
+            pricing={servicePricing?.vbs}
+            status={pricingStatus}
+            onRetry={loadServicePricing}
+            quantity={vbsQuantity}
+            setQuantity={setVbsQuantity}
+            currentQuote={vbsQuote}
+            purchaseDisabled={purchaseBlocked && isLoggedIn()}
+            onBuy={handleVbsBuyNow}
+          />
           {renderSection(
             'contact-center',
             '/alaap_cloud_contact_center.png',
@@ -1645,249 +1397,62 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             'bg-white',
             'bg-btcl-primaryLight/10 text-btcl-primaryDark'
           )}
-          {/* Bulk SMS — Slab-based pricing */}
-          <div id="bulk-sms" className="py-20 bg-btcl-primaryLight/5">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
-                  <img
-                    src="/bulk_sms.png"
-                    alt=""
-                    className="h-10 w-10 object-contain"
-                  />
-                  <h2 className="text-2xl font-bold">
-                    {locale === 'en' ? 'Bulk SMS Service' : 'Bulk SMS Service'}
-                  </h2>
-                </div>
-                <p className="text-gray-600 text-lg">
-                  {locale === 'en'
-                    ? 'Pay per message — volume-based pricing'
-                    : 'প্রতি মেসেজ মূল্য — পরিমাণ ভিত্তিক'}
-                </p>
-                <div className="mt-3 flex justify-center">
-                  <AggregatorTag />
-                </div>
-              </div>
-
-              {/* Slab Rate Table */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-btcl-primaryLight/10">
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                        {locale === 'en' ? 'Message Range' : 'মেসেজ পরিসীমা'}
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                        {locale === 'en' ? 'Slab' : 'স্ল্যাব'}
-                      </th>
-                      <th className="px-6 py-4 text-right font-semibold text-gray-700">
-                        {locale === 'en' ? 'Rate / Message' : 'প্রতি মেসেজ রেট'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {smsSlabs.map((slab, idx) => (
-                      <tr
-                        key={idx}
-                        className={`border-t border-gray-100 ${smsCurrentSlab === slab ? 'bg-btcl-primaryLight/10 font-semibold' : ''}`}
-                      >
-                        <td className="px-6 py-3 text-gray-800">
-                          {slab.max === Infinity
-                            ? `${slab.min.toLocaleString()}+`
-                            : `${slab.min.toLocaleString()} – ${slab.max.toLocaleString()}`}
-                        </td>
-                        <td className="px-6 py-3 text-gray-600">
-                          <span className="inline-flex flex-wrap items-center gap-2">
-                            {slab.name}
-                            {slab.packageId === 'premium' && (
-                              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                                {locale === 'en'
-                                  ? 'Conditions applicable'
-                                  : 'শর্ত প্রযোজ্য'}
-                              </span>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3 text-right text-gray-800">
-                          ৳{slab.rate.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Quantity Input + Price Calculator */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Left — Input */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {locale === 'en'
-                        ? 'Enter Number of Messages'
-                        : 'মেসেজ সংখ্যা লিখুন'}
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={smsQuantity}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSmsQuantity(
-                          val === '' ? '' : Math.max(1, parseInt(val) || 1)
-                        );
-                      }}
-                      placeholder={
-                        locale === 'en' ? 'e.g. 15000' : 'যেমন ১৫০০০'
-                      }
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 text-lg text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-btcl-primary focus:border-btcl-primary outline-none"
-                    />
-                    {smsCurrentSlab && (
-                      <p className="mt-2 text-sm text-btcl-primary font-medium">
-                        {locale === 'en'
-                          ? `Slab: ${smsCurrentSlab.name} — ৳${smsCurrentSlab.rate.toFixed(2)}/message`
-                          : `স্ল্যাব: ${smsCurrentSlab.name} — ৳${smsCurrentSlab.rate.toFixed(2)}/মেসেজ`}
-                      </p>
-                    )}
-                    {smsUnderMin && (
-                      <p className="mt-1 text-sm text-red-600 font-medium">
-                        {locale === 'en'
-                          ? 'Minimum purchase amount is ৳10 (incl. VAT)'
-                          : 'সর্বনিম্ন ক্রয় পরিমাণ ৳১০ (ভ্যাটসহ)'}
-                      </p>
-                    )}
-                    {smsExceedsMax && (
-                      <p className="mt-1 text-sm text-red-600 font-medium">
-                        {locale === 'en'
-                          ? 'Maximum purchase limit is 500,000 messages'
-                          : 'সর্বোচ্চ ক্রয় সীমা ৫,০০,০০০ মেসেজ'}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Right — Price Breakdown */}
-                  <div className="space-y-3">
-                    {smsCurrentSlab &&
-                    typeof smsQuantity === 'number' &&
-                    smsQuantity >= 1 ? (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">
-                            {typeof smsQuantity === 'number'
-                              ? smsQuantity.toLocaleString()
-                              : 0}{' '}
-                            × ৳{smsCurrentSlab.rate.toFixed(2)}
-                          </span>
-                          <span className="font-medium">
-                            ৳{smsBasePrice.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">
-                            {locale === 'en' ? 'VAT (15%)' : 'ভ্যাট (১৫%)'}
-                          </span>
-                          <span>৳{smsVat.toLocaleString()}</span>
-                        </div>
-                        <hr className="border-gray-200" />
-                        <div className="flex justify-between text-lg font-bold">
-                          <span>{locale === 'en' ? 'Total' : 'মোট'}</span>
-                          <span className="text-btcl-primary">
-                            ৳{smsTotal.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {locale === 'en'
-                            ? 'Validity: 5 Years'
-                            : 'মেয়াদ: ৫ বছর'}
-                        </div>
-
-                        {purchaseBlocked && isLoggedIn() ? (
-                          <button
-                            disabled
-                            className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-gray-300 text-gray-600 cursor-not-allowed"
-                          >
-                            {locale === 'en'
-                              ? 'Purchase Disabled'
-                              : 'ক্রয় নিষ্ক্রিয়'}
-                          </button>
-                        ) : smsUnderMin ? (
-                          <button
-                            disabled
-                            className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed"
-                          >
-                            {locale === 'en'
-                              ? 'Minimum ৳10 Required'
-                              : 'সর্বনিম্ন ৳১০ প্রয়োজন'}
-                          </button>
-                        ) : smsExceedsMax ? (
-                          <button
-                            disabled
-                            className="w-full mt-4 py-3 rounded-xl font-semibold text-lg bg-red-100 text-red-400 cursor-not-allowed"
-                          >
-                            {locale === 'en'
-                              ? 'Limit Exceeded (max 500,000 SMS)'
-                              : 'সীমা অতিক্রান্ত (সর্বোচ্চ ৫,০০,০০০ SMS)'}
-                          </button>
-                        ) : smsGate ? (
-                          // Bulk SMS needs an approved BTRC aggregator licence on top of
-                          // the mandatory documents. This is the real buy control for SMS —
-                          // the section is hand-written and does not use
-                          // renderPrepaidButton, so the gate has to live here too.
-                          <div className="mt-4 space-y-2">
-                            <button
-                              disabled
-                              className="w-full py-3 rounded-xl font-semibold text-sm bg-gray-200 text-gray-500 cursor-not-allowed"
-                            >
-                              {locale === 'en'
-                                ? 'BTRC Licence Required'
-                                : 'বিটিআরসি লাইসেন্স প্রয়োজন'}
-                            </button>
-                            <p
-                              className={`text-xs text-center ${
-                                smsGate.state === 'REJECTED'
-                                  ? 'text-red-500'
-                                  : 'text-amber-600'
-                              }`}
-                            >
-                              {smsGate.message}
-                            </p>
-                            {smsGate.state === 'REJECTED' &&
-                              smsGate.rejectionReason && (
-                                <p className="text-xs text-center text-red-500">
-                                  {smsGate.rejectionReason}
-                                </p>
-                              )}
-                            {smsGate.needsUpload && (
-                              <Link href={`/${locale}/dashboard/documents`}>
-                                <button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:bg-btcl-primary hover:text-white">
-                                  {locale === 'en'
-                                    ? 'Upload BTRC Licence'
-                                    : 'বিটিআরসি লাইসেন্স আপলোড করুন'}
-                                </button>
-                              </Link>
-                            )}
-                          </div>
-                        ) : (
-                          <button
-                            onClick={handleSmsBuyNow}
-                            className="w-full mt-4 transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
-                          >
-                            {locale === 'en' ? 'Buy Now' : 'এখনই কিনুন'}
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                        {locale === 'en'
-                          ? 'Enter quantity to see pricing'
-                          : 'মূল্য দেখতে পরিমাণ লিখুন'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+          {/* Bulk SMS — Slab-based pricing (admin-edited, /admin/pricing) */}
+          <SlabPricingSection
+            id="bulk-sms"
+            locale={locale}
+            icon="/bulk_sms.png"
+            title="Bulk SMS Service"
+            headerExtra={<AggregatorTag />}
+            pricing={servicePricing?.sms}
+            status={pricingStatus}
+            onRetry={loadServicePricing}
+            quantity={smsQuantity}
+            setQuantity={setSmsQuantity}
+            currentQuote={smsQuote}
+            purchaseDisabled={purchaseBlocked && isLoggedIn()}
+            // Bulk SMS needs an approved BTRC aggregator licence on top of the mandatory
+            // documents, so the gate replaces the Buy button here.
+            gate={
+              smsGate ? (
+              <div className="mt-4 space-y-2">
+              <button
+                disabled
+                className="w-full py-3 rounded-xl font-semibold text-sm bg-gray-200 text-gray-500 cursor-not-allowed"
+              >
+                {locale === 'en'
+                  ? 'BTRC Licence Required'
+                  : 'বিটিআরসি লাইসেন্স প্রয়োজন'}
+              </button>
+              <p
+                className={`text-xs text-center ${
+                  smsGate.state === 'REJECTED'
+                    ? 'text-red-500'
+                    : 'text-amber-600'
+                }`}
+              >
+                {smsGate.message}
+              </p>
+              {smsGate.state === 'REJECTED' &&
+                smsGate.rejectionReason && (
+                  <p className="text-xs text-center text-red-500">
+                    {smsGate.rejectionReason}
+                  </p>
+                )}
+              {smsGate.needsUpload && (
+                <Link href={`/${locale}/dashboard/documents`}>
+                  <button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white py-2.5 px-6 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:bg-btcl-primary hover:text-white">
+                    {locale === 'en'
+                      ? 'Upload BTRC Licence'
+                      : 'বিটিআরসি লাইসেন্স আপলোড করুন'}
+                  </button>
+                </Link>
+              )}
             </div>
-          </div>
+              ) : undefined
+            }
+            onBuy={handleSmsBuyNow}
+          />
         </>
       )}
 

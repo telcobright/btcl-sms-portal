@@ -53,54 +53,6 @@ const PACKAGE_NAMES: Record<number, string> = {
   9141: 'Bulk SMS Premium',
 };
 
-// Mock packages data
-const packages = [
-  {
-    id: 'small',
-    name: 'Small Business',
-    sms: 20000,
-    rate: 0.32,
-    validity: 30,
-    features: [
-      'Basic API Access',
-      'Email Support',
-      'Standard Delivery',
-      'Basic Reports',
-      'Single Sender ID',
-    ],
-  },
-  {
-    id: 'medium',
-    name: 'Medium Business',
-    sms: 50000,
-    rate: 0.3,
-    validity: 60,
-    features: [
-      'Advanced API',
-      'Priority Support',
-      'Fast Delivery',
-      'Custom Sender ID',
-      'Detailed Analytics',
-      'Multiple Projects',
-    ],
-  },
-  {
-    id: 'large',
-    name: 'Large Business',
-    sms: 100000,
-    rate: 0.28,
-    validity: 90,
-    features: [
-      'Premium API',
-      '24/7 Phone Support',
-      'Instant Delivery',
-      'Multiple Sender IDs',
-      'Advanced Analytics',
-      'Dedicated Manager',
-      'Priority Routing',
-    ],
-  },
-];
 
 interface PartnerExtra {
   partnerId: number;
@@ -214,7 +166,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accountStatus, setAccountStatus] = useState('active');
-  const [currentPackage, setCurrentPackage] = useState(packages[1]);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [serviceData, setServiceData] = useState<

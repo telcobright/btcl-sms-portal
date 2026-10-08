@@ -159,6 +159,16 @@ export const API_ENDPOINTS = {
     test: '/admin/nid-credential/test',
   },
 
+  // Voice Broadcasting / Bulk SMS slab pricing, edited from /admin/pricing. The read is
+  // public (the pricing page is shown before login); the admin read and the update check the
+  // caller's admin role. PaymentGateWay checks every VBS / SMS purchase against these slabs.
+  // The admin read is "details", not "get": TelcoREST matches public paths by suffix.
+  servicePricing: {
+    get: '/service-pricing/get',
+    adminDetails: '/admin/service-pricing/details',
+    update: '/admin/service-pricing/update',
+  },
+
   // Package endpoints
   package: {
     getPurchaseForPartner: '/package/getPurchaseForPartner',

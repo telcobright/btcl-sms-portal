@@ -558,6 +558,13 @@ export default function CheckoutModal({
     }
   };
 
+  // Package to buy. Voice Broadcasting and Bulk SMS slabs carry their own (an admin picks it
+  // per slab at /admin/pricing); the table below covers the fixed plans.
+  const packageIdIntFor = (p: any, service: string): number =>
+    ['voice-broadcast', 'bulk-sms'].includes(service) && Number.isInteger(p?.packageIdInt)
+      ? p.packageIdInt
+      : getPackageIdInt(p?.id, service);
+
   // Map package string ID to integer ID based on service type
   const getPackageIdInt = (packageId: string, service: string): number => {
     const packageIdMap: { [key: string]: { [key: string]: number } } = {
@@ -826,8 +833,13 @@ export default function CheckoutModal({
               ? pkg.smsQuantity
               : 1;
 
-      // Calculate VAT (15% of price) and total — use ceil for VBS/SMS slab pricing
-      const vatAmount = addQuote ? addQuote.vat : Math.ceil(basePrice * 0.15);
+      // Calculate VAT (15% of price) and total. VBS/SMS slabs bring theirs from the quote
+      // (src/lib/servicePricing.ts), which is exactly what PaymentGateWay checks against.
+      const vatAmount = addQuote
+        ? addQuote.vat
+        : ['voice-broadcast', 'bulk-sms'].includes(serviceType) && Number.isFinite(pkg.vat)
+          ? pkg.vat
+          : Math.ceil(basePrice * 0.15);
       const totalAmount = basePrice + vatAmount;
 
       // VBS & SMS validity = 5 years (157680000 seconds), others = 30 days
@@ -841,7 +853,7 @@ export default function CheckoutModal({
               : 2592000;
 
       const payload = {
-        idPackage: getPackageIdInt(pkg.id, serviceType),
+        idPackage: packageIdIntFor(pkg, serviceType),
         idPartner: partnerId,
         cusName: partnerData.partnerName || partnerData.alternateNameInvoice,
         cusEmail: partnerData.email,
@@ -912,7 +924,7 @@ export default function CheckoutModal({
               partnerId,
               email,
               packageId: pkg.id,
-              packageIdInt: getPackageIdInt(pkg.id, serviceType),
+              packageIdInt: packageIdIntFor(pkg, serviceType),
               packageName: pkg.name,
               price: pkg.price,
               purchaseAction,

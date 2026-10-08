@@ -1,5 +1,6 @@
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
+import StartingFromPrice from '@/components/pricing/StartingFromPrice';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
 import { pageMetadata } from '@/config/seo';
@@ -31,16 +32,6 @@ interface Service {
   color: string;
   href: string;
   restricted?: boolean;
-}
-
-interface PricingPlan {
-  id: string;
-  name: string;
-  sms: number;
-  rate: number;
-  validity: number;
-  popular: boolean;
-  features: string[];
 }
 
 interface HomePageProps {
@@ -214,57 +205,6 @@ export default async function HomePage({ params }: HomePageProps) {
     },
   ];
 
-  // Pricing plans data
-  const pricingPlans: PricingPlan[] = [
-    {
-      id: 'small',
-      name: locale === 'en' ? 'Small Business' : 'ছোট ব্যবসা',
-      sms: 20000,
-      rate: 0.32,
-      validity: 30,
-      popular: false,
-      features: [
-        locale === 'en' ? 'Basic API Access' : 'বেসিক API অ্যাক্সেস',
-        locale === 'en' ? 'Email Support' : 'ইমেইল সাপোর্ট',
-        locale === 'en' ? 'Standard Delivery' : 'স্ট্যান্ডার্ড ডেলিভারি',
-        locale === 'en' ? 'Basic Reports' : 'বেসিক রিপোর্ট',
-        locale === 'en' ? 'Single Sender ID' : 'একক প্রেরক ID',
-      ],
-    },
-    {
-      id: 'medium',
-      name: locale === 'en' ? 'Medium Business' : 'মাঝারি ব্যবসা',
-      sms: 50000,
-      rate: 0.3,
-      validity: 60,
-      popular: true,
-      features: [
-        locale === 'en' ? 'Advanced API' : 'অ্যাডভান্সড API',
-        locale === 'en' ? 'Priority Support' : 'অগ্রাধিকার সাপোর্ট',
-        locale === 'en' ? 'Fast Delivery' : 'দ্রুত ডেলিভারি',
-        locale === 'en' ? 'Custom Sender ID' : 'কাস্টম প্রেরক ID',
-        locale === 'en' ? 'Detailed Analytics' : 'বিস্তারিত অ্যানালিটিক্স',
-        locale === 'en' ? 'Multiple Projects' : 'একাধিক প্রকল্প',
-      ],
-    },
-    {
-      id: 'large',
-      name: locale === 'en' ? 'Large Business' : 'বড় ব্যবসা',
-      sms: 100000,
-      rate: 0.28,
-      validity: 90,
-      popular: false,
-      features: [
-        locale === 'en' ? 'Premium API' : 'প্রিমিয়াম API',
-        locale === 'en' ? '24/7 Phone Support' : '২৪/৭ ফোন সাপোর্ট',
-        locale === 'en' ? 'Instant Delivery' : 'তাৎক্ষণিক ডেলিভারি',
-        locale === 'en' ? 'Multiple Sender IDs' : 'একাধিক প্রেরক ID',
-        locale === 'en' ? 'Advanced Analytics' : 'উন্নত অ্যানালিটিক্স',
-        locale === 'en' ? 'Dedicated Manager' : 'ডেডিকেটেড ম্যানেজার',
-        locale === 'en' ? 'Priority Routing' : 'অগ্রাধিকার রাউটিং',
-      ],
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -280,11 +220,7 @@ export default async function HomePage({ params }: HomePageProps) {
       <FeaturesSection features={features} t={t} />
 
       {/* Pricing Preview Section */}
-      <PricingPreviewSection
-        pricingPlans={pricingPlans}
-        locale={locale}
-        t={t}
-      />
+      <PricingPreviewSection locale={locale} t={t} />
 
       {/* Testimonials Section - hidden */}
       {/* <TestimonialsSection locale={locale} t={t} /> */}
@@ -671,15 +607,7 @@ function FeaturesSection({ features, t }: { features: Feature[]; t: any }) {
 }
 
 // Pricing Preview Section Component
-function PricingPreviewSection({
-  pricingPlans,
-  locale,
-  t,
-}: {
-  pricingPlans: PricingPlan[];
-  locale: string;
-  t: any;
-}) {
+function PricingPreviewSection({ locale, t }: { locale: string; t: any }) {
   // Pricing data - Order: Alaap Cloud IP PBX, Voice Broadcast, Contact Center, Bulk SMS
   const servicePricing = [
     {
@@ -703,7 +631,9 @@ function PricingPreviewSection({
         locale === 'en'
           ? 'Alaap Cloud Voice Broadcasting Service'
           : 'Alaap Cloud Voice Broadcasting Service',
-      price: '৳0.40',
+      // Lowest slab rate, loaded from the admin-edited pricing.
+      slabService: 'vbs' as const,
+      price: '',
       unit: locale === 'en' ? '/message' : '/মেসেজ',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [
@@ -736,7 +666,9 @@ function PricingPreviewSection({
       id: 'bulk-sms',
       icon: '/bulk_sms.png',
       name: locale === 'en' ? 'Bulk SMS Service' : 'Bulk SMS Service',
-      price: '৳0.30',
+      // Lowest slab rate, loaded from the admin-edited pricing.
+      slabService: 'sms' as const,
+      price: '',
       unit: locale === 'en' ? '/SMS' : '/এসএমএস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
       features: [
@@ -792,15 +724,25 @@ function PricingPreviewSection({
                 <h3 className="mb-1 text-xl font-bold text-gray-900">
                   {service.name}
                 </h3>
-                <div className="mb-2 text-xs text-gray-500">
-                  {service.description}
-                </div>
-                <div>
-                  <span className="text-3xl font-bold text-gray-900">
-                    {service.price}
-                  </span>
-                  <span className="text-sm text-gray-600">{service.unit}</span>
-                </div>
+                {'slabService' in service && service.slabService ? (
+                  <StartingFromPrice
+                    service={service.slabService}
+                    description={service.description}
+                    unit={service.unit}
+                  />
+                ) : (
+                  <>
+                    <div className="mb-2 text-xs text-gray-500">
+                      {service.description}
+                    </div>
+                    <div>
+                      <span className="text-3xl font-bold text-gray-900">
+                        {service.price}
+                      </span>
+                      <span className="text-sm text-gray-600">{service.unit}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="mb-5 space-y-2">
@@ -876,98 +818,6 @@ function PricingPreviewSection({
         </div>
       </div>
     </section>
-  );
-}
-
-// Pricing Card Component
-function PricingCard({ pkg, locale }: { pkg: PricingPlan; locale: string }) {
-  return (
-    <div
-      className={`relative rounded-2xl border bg-white shadow-lg transition-all duration-300 hover:shadow-2xl ${
-        pkg.popular
-          ? 'scale-105 transform border-2 border-orange-400 shadow-2xl'
-          : 'border-gray-200'
-      }`}
-    >
-      {pkg.popular && (
-        <div className="absolute -top-4 left-1/2 z-10 -translate-x-1/2 transform">
-          <div className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-lg">
-            {locale === 'en' ? 'POPULAR' : 'জনপ্রিয়'}
-          </div>
-        </div>
-      )}
-
-      <div className="px-8 py-8">
-        <div className="mb-4 text-center">
-          <h3 className="mb-6 text-2xl font-bold text-gray-900">{pkg.name}</h3>
-          <div className="mb-4">
-            <span className="text-4xl font-bold text-gray-900">
-              ৳{pkg.rate.toFixed(2)}
-            </span>
-            <span className="text-lg text-gray-600">/SMS</span>
-          </div>
-          <div className="mb-6 text-sm font-medium text-gray-500">
-            {locale === 'en' ? 'Total:' : 'মোট:'} ৳
-            {(pkg.sms * pkg.rate).toLocaleString()}
-          </div>
-          <div className="space-y-2 rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
-            <div className="flex items-center justify-center">
-              <svg
-                className="mr-2 h-4 w-4 text-btcl-primary"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-              </svg>
-              {pkg.sms.toLocaleString()} SMS
-            </div>
-            <div className="flex items-center justify-center">
-              <svg
-                className="mr-2 h-4 w-4 text-btcl-primary"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {pkg.validity} {locale === 'en' ? 'days validity' : 'দিন মেয়াদ'}
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <Link href={`/${locale}/packages/${pkg.id}/purchase`}>
-            <Button className="w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white">
-              {locale === 'en' ? 'Get Started' : 'শুরু করুন'}
-            </Button>
-          </Link>
-        </div>
-
-        <div className="space-y-3">
-          {pkg.features.map((feature, index) => (
-            <div key={index} className="flex items-start">
-              <svg
-                className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-btcl-primary"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-sm font-medium text-gray-700">
-                {feature}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 

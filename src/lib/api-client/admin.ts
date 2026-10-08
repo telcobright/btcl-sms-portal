@@ -239,6 +239,42 @@ export interface ServiceEligibility {
  * quietly showing a Buy button because a check failed would let someone start a purchase
  * the server will refuse anyway.
  */
+export interface DepositStatus {
+  idPartner: number;
+  /** Owed at all: only a government individual on postpaid. */
+  required: boolean;
+  paid: boolean;
+  amount: number;
+  currency: string;
+  partnerName?: string;
+  paidAt?: string;
+  paidAmount?: number;
+  tranId?: string;
+  gateway?: string;
+}
+
+/**
+ * Whether this partner owes the one-time security deposit and whether it is paid.
+ * Null on failure — the checkout then does not offer the deposit step, and the server
+ * refuses the purchase if one was owed, which is the safe way round.
+ */
+export const getDepositStatus = async (
+  idPartner: number,
+  authToken: string
+): Promise<DepositStatus | null> => {
+  try {
+    const response = await axios.post<DepositStatus>(
+      `${API_BASE_URL}${API_ENDPOINTS.partner.depositStatus}`,
+      { id: idPartner },
+      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` } }
+    );
+    return response.data ?? null;
+  } catch (error) {
+    console.error('\u274c Deposit status error:', error);
+    return null;
+  }
+};
+
 export const getServiceEligibility = async (
   idPartner: number,
   authToken: string

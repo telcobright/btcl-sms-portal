@@ -11,15 +11,16 @@ import {
 import {
   ensurePartnerInService,
   getPartnerById,
-  getUserByEmail,
-} from '@/lib/api-client/partner';
-import { unifiedPurchase } from '@/lib/api-client/payment';
+  getUserByEmail, } from '@/lib/api-client/partner';
+import { getDepositStatus, type DepositStatus } from '@/lib/api-client/admin';
+import { unifiedPurchase, initiateDeposit } from '@/lib/api-client/payment';
 import { showApiError } from '@/lib/api-error';
 import { Dialog } from '@headlessui/react';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import CheckoutForm from './CheckoutForm';
+import DepositStep from './DepositStep';
 import OrderSummary from './OrderSummary';
 
 // Contact Center: billing counts a package's agents in this unit (TelcoREST AgentSeats).
@@ -94,6 +95,12 @@ export default function CheckoutModal({
   const [userHasPbx, setUserHasPbx] = useState(false);
   const [purchasedPackageName, setPurchasedPackageName] = useState('');
   const [customerPrePaid, setCustomerPrePaid] = useState<number | null>(null);
+  // One-time security deposit owed by a government individual on postpaid. Null until
+  // known; the server refuses a purchase while it is owed, so the step shown here is the
+  // customer's way through rather than a client-side rule.
+  const [deposit, setDeposit] = useState<DepositStatus | null>(null);
+  const [depositBusy, setDepositBusy] = useState(false);
+  const depositGate = !!deposit && deposit.required && !deposit.paid;
   const [partnerDataLoading, setPartnerDataLoading] = useState(true);
   const [agentCount, setAgentCount] = useState<number | ''>(1);
 
@@ -163,6 +170,9 @@ export default function CheckoutModal({
         const partnerData = await getPartnerById(partnerId, authToken);
         const prePaidValue = partnerData.customerPrePaid || 1;
         setCustomerPrePaid(prePaidValue);
+        if (prePaidValue === 2) {
+          setDeposit(await getDepositStatus(partnerId, authToken));
+        }
 
         // Auto-select SSLCommerz if customerPrePaid is 1
         if (prePaidValue === 1) {
@@ -576,7 +586,56 @@ export default function CheckoutModal({
     return packageIdMap[service]?.[packageId] || 9132;
   };
 
+  const handlePayDeposit = async () => {
+    const { partnerId, email, authToken } = getTokenData();
+    if (!partnerId || !authToken) return;
+    setDepositBusy(true);
+    try {
+      const partnerData = await getPartnerById(partnerId, authToken);
+      const url = await initiateDeposit({
+        idPartner: partnerId,
+        cusName: partnerData.partnerName || partnerData.alternateNameOther || '',
+        cusEmail: partnerData.email || email || '',
+        cusPhone: (partnerData.telephone || '').replace('+', ''),
+        cusAdd1: partnerData.address1 || 'Dhaka',
+        cusCity: partnerData.city || 'Dhaka',
+        cusCountry: 'Bangladesh',
+      });
+      // The success page reads this to show a deposit confirmation rather than a package one.
+      sessionStorage.setItem(
+        'pendingServiceProvision',
+        JSON.stringify({
+          serviceType: 'deposit',
+          partnerId,
+          email,
+          packageId: pkg.id,
+          packageIdInt: 0,
+          packageName: pkg.name,
+          price: deposit?.amount ?? 100,
+          purchaseAction,
+        })
+      );
+      window.location.href = url;
+    } catch (error) {
+      console.error('Deposit initiation failed:', error);
+      toast.error(
+        locale === 'en'
+          ? 'Could not start the deposit payment. Please try again.'
+          : 'জামানত পেমেন্ট শুরু করা যায়নি। আবার চেষ্টা করুন।'
+      );
+      setDepositBusy(false);
+    }
+  };
+
   const handleCheckout = async () => {
+    if (depositGate) {
+      toast.error(
+        locale === 'en'
+          ? 'Please pay the one-time security deposit first.'
+          : 'অনুগ্রহ করে প্রথমে এককালীন জামানত পরিশোধ করুন।'
+      );
+      return;
+    }
     // Only require payment method if customerPrePaid is 1 (payment gateway)
     if (customerPrePaid === 1 && !selectedPayment) {
       toast.error(
@@ -1329,6 +1388,16 @@ export default function CheckoutModal({
                   ))}
               </div>
             )}
+            {depositGate ? (
+              <DepositStep
+                amount={Number(deposit?.amount ?? 100)}
+                currency={deposit?.currency ?? 'BDT'}
+                packageName={pkg.name}
+                busy={depositBusy}
+                onPay={handlePayDeposit}
+                locale={locale}
+              />
+            ) : (
             <OrderSummary
               pkg={
                 serviceType === 'contact-center'
@@ -1363,6 +1432,7 @@ export default function CheckoutModal({
               locale={locale}
               purchaseAction={purchaseAction}
             />
+            )}
           </div>
         </Dialog.Panel>
       </div>

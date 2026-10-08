@@ -137,6 +137,9 @@ export const API_ENDPOINTS = {
     // Per-service eligibility. Bulk SMS needs every mandatory document approved plus an
     // approved BTRC aggregator licence, so the portal needs the reason, not just yes/no.
     serviceEligibility: '/partner/service-eligibility',
+    // One-time security deposit a government individual on postpaid pays before the
+    // first purchase: whether it is owed, and whether it has been paid.
+    depositStatus: '/partner/deposit-status',
     deactivatePartner: '/partner/deactivate-partner',
     reactivatePartner: '/partner/reactivate-partner',
   },
@@ -196,6 +199,8 @@ export const API_ENDPOINTS = {
 
   // Payment endpoints
   payment: {
+    // Security deposit (PBX merchant, marked value_d=deposit). 100 BDT, once.
+    depositInitiate: '/api/payment/ssl/deposit/initiate',
     unifiedPurchase: '/api/payment/unified/purchase', // Unified purchase (handles both payment gateway & direct purchase)
   },
   /**

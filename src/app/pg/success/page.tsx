@@ -242,6 +242,31 @@ function SuccessContent() {
     }
   }, []);
 
+  // The one-time security deposit: nothing was provisioned, the customer now buys.
+  if (serviceType === 'deposit') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl">✓</div>
+          <h1 className="text-2xl font-bold text-gray-900">Security deposit received</h1>
+          <p className="mt-3 text-gray-600">
+            Your one-time deposit{amount ? ` of ${amount} BDT` : ''} has been recorded. You can now
+            complete your purchase{packageName ? ` of ${packageName}` : ''}. A receipt is on your dashboard.
+          </p>
+          {transactionId && <p className="mt-2 text-xs text-gray-400">Transaction {transactionId}</p>}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link href="/en/pricing" className="rounded-xl bg-btcl-primary px-6 py-3 text-sm font-semibold text-white hover:bg-btcl-primaryDark">
+              Continue to packages
+            </Link>
+            <Link href="/en/dashboard" className="rounded-xl border-2 border-btcl-primary px-6 py-3 text-sm font-semibold text-btcl-primary hover:bg-btcl-primary hover:text-white">
+              Go to dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Service-specific success page (PBX, VBS, CC)
   if (serviceType && SERVICE_CONFIG[serviceType]) {
     return (

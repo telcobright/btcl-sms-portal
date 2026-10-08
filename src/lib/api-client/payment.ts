@@ -48,3 +48,35 @@ export const unifiedPurchase = async (payload: any, serviceType: string, custome
         throw error;
     }
 };
+
+/**
+ * Start the one-time 100 BDT security deposit through SSLCommerz. Resolves to the gateway
+ * page URL to send the customer to; the IPN records the deposit on the partner.
+ */
+export const initiateDeposit = async (payload: {
+    idPartner: number;
+    cusName: string;
+    cusEmail: string;
+    cusPhone: string;
+    cusAdd1?: string;
+    cusCity?: string;
+    cusCountry?: string;
+}): Promise<string> => {
+    const response = await axios.post(
+        `${PAYMENT_BASE_URL}${API_ENDPOINTS.payment.depositInitiate}`,
+        {
+            ...payload,
+            idPackage: 0,
+            total: 100,
+            currency: 'BDT',
+            productName: 'Security Deposit — Alaap Cloud',
+            productDetails: 'One-time security deposit (government individual, postpaid)',
+            status: 'ACTIVE',
+        }
+    );
+    const url = response.data?.redirectUrl ?? response.data?.GatewayPageURL;
+    if (typeof url !== 'string' || !url.startsWith('http')) {
+        throw new Error('Payment gateway did not return a redirect URL');
+    }
+    return url;
+};

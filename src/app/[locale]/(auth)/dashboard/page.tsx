@@ -11,7 +11,7 @@ import {
   PBX_BASE_URL,
   VBS_BASE_URL,
 } from '@/config/api';
-import { uploadPartnerDocument, getServiceEligibility } from '@/lib/api-client/admin';
+import { uploadPartnerDocument, getServiceEligibility, getDepositStatus, type DepositStatus } from '@/lib/api-client/admin';
 import { showApiError } from '@/lib/api-error';
 import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
@@ -209,6 +209,8 @@ export default function Dashboard() {
   const [addAgentsOpen, setAddAgentsOpen] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [partnerExtra, setPartnerExtra] = useState<PartnerExtra | null>(null);
+  // One-time security deposit (government individual, postpaid). Null until loaded.
+  const [deposit, setDeposit] = useState<DepositStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accountStatus, setAccountStatus] = useState('active');
@@ -357,6 +359,8 @@ export default function Dashboard() {
       // Fetch additional partner extra information
       await fetchPartnerExtra(idPartner);
       await fetchDocStatuses(idPartner);
+      const token = localStorage.getItem('authToken');
+      if (token) setDeposit(await getDepositStatus(idPartner, token));
     } catch (err) {
       console.error('Error fetching user data:', err);
       setError('Failed to load user data');
@@ -671,6 +675,32 @@ export default function Dashboard() {
   };
 
   // Generate and download invoice as PDF
+  // The receipt is built from the immutable deposit record, so it is always the same
+  // document — "stored in the profile" without a file to lose.
+  const handleDownloadDepositReceipt = () => {
+    if (!deposit?.paid) return;
+    const paidAt = deposit.paidAt ? new Date(deposit.paidAt).toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' }) : '—';
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Security Deposit Receipt</title>
+<style>body{font-family:Arial,sans-serif;color:#111;margin:40px}h1{color:#0D529E;margin:0 0 4px}.muted{color:#666}
+table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{padding:8px 0;border-bottom:1px solid #eee}td:first-child{color:#666;width:45%}
+.total{font-size:22px;font-weight:bold}.stamp{margin-top:32px;display:inline-block;border:2px solid #16a34a;color:#16a34a;padding:6px 14px;border-radius:8px;font-weight:bold}</style></head><body>
+<h1>Bangladesh Telecommunications Company Limited</h1><div class="muted">Alaap Cloud — Security Deposit Receipt</div>
+<table>
+<tr><td>Customer</td><td>${deposit.partnerName ?? partnerData?.partnerName ?? ''}</td></tr>
+<tr><td>Customer ID</td><td>${deposit.idPartner}</td></tr>
+<tr><td>Purpose</td><td>One-time security deposit (government individual, postpaid)</td></tr>
+<tr><td>Amount</td><td class="total">${Number(deposit.paidAmount ?? deposit.amount).toLocaleString()} ${deposit.currency}</td></tr>
+<tr><td>Paid on</td><td>${paidAt}</td></tr>
+<tr><td>Transaction ID</td><td>${deposit.tranId ?? ''}</td></tr>
+<tr><td>Payment channel</td><td>${deposit.gateway ?? 'SSLCommerz'} (MFS)</td></tr>
+</table>
+<div class="stamp">PAID</div>
+<p class="muted" style="margin-top:28px;font-size:12px">This deposit is held against the account and is not a package payment. Generated from BTCL records; this receipt remains available on your dashboard.</p>
+</body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 300); }
+  };
+
   const handleDownloadInvoice = (purchase: PurchaseHistory) => {
     const invoiceId = `INV-${purchase.id || '00000'}`;
     const pkgName = purchase.packageName || 'Package';
@@ -1202,6 +1232,34 @@ export default function Dashboard() {
                 : 'Please contact support to activate your account'}
             </p>
           </div>
+
+          {deposit?.required && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-7">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">Security Deposit</h3>
+                <span className={`px-4 py-1.5 rounded-full text-xs font-semibold border ${deposit.paid ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                  {deposit.paid ? 'Paid' : 'Required'}
+                </span>
+              </div>
+              {deposit.paid ? (
+                <>
+                  <p className="text-sm text-gray-600">
+                    {Number(deposit.paidAmount ?? deposit.amount).toLocaleString()} {deposit.currency} paid on{' '}
+                    {deposit.paidAt ? new Date(deposit.paidAt).toLocaleDateString('en-GB', { timeZone: 'Asia/Dhaka' }) : '—'}.
+                    This one-time deposit is held against your postpaid account.
+                  </p>
+                  <button type="button" onClick={handleDownloadDepositReceipt} className="mt-4 rounded-lg border-2 border-btcl-primary px-4 py-2 text-sm font-semibold text-btcl-primary hover:bg-btcl-primary hover:text-white transition-colors">
+                    Download receipt
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  A one-time deposit of {Number(deposit.amount).toLocaleString()} {deposit.currency} is required before your
+                  first purchase. You will be asked for it at checkout, paid by bKash, Nagad or Rocket.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="rounded-2xl border border-gray-200 bg-white p-7">
             <div className="flex items-center justify-between mb-4">

@@ -100,6 +100,7 @@ export interface PartnerExtra {
   btrcRegistrationAvailable: boolean;
   photoAvailable: boolean;
   slaAvailable: boolean;
+  govtAuthorizationAvailable?: boolean;
 }
 
 export interface GetPartnersResponse {
@@ -590,6 +591,7 @@ export const getDocumentsByPartner = async (
     { type: 'btrc', name: 'BTRC Aggregator Licence', available: false },
     { type: 'photo', name: 'Photo', available: false },
     { type: 'sla', name: 'SLA Document', available: false },
+    { type: 'govtauthorization', name: 'Office ID / Certifying Letter', available: false },
   ];
 
   try {
@@ -625,6 +627,11 @@ export const getDocumentsByPartner = async (
       { type: 'btrc', name: 'BTRC Aggregator Licence', available: !!extra.btrcRegistrationAvailable },
       { type: 'photo', name: 'Photo', available: !!extra.photoAvailable },
       { type: 'sla', name: 'SLA Document', available: !!extra.slaAvailable },
+      {
+        type: 'govtauthorization',
+        name: 'Office ID / Certifying Letter',
+        available: !!extra.govtAuthorizationAvailable,
+      },
     ];
   } catch (error) {
     console.warn('Failed to fetch partner extra:', error);

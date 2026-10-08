@@ -78,6 +78,8 @@ interface PartnerExtra {
   slaAvailable: boolean;
   btrcRegistrationAvailable: boolean;
   lastTaxReturnAvailable: boolean;
+  govtAuthorizationAvailable?: boolean;
+  customerCategory?: string | null;
   uploadedBy: string;
   uploadedAt: string;
 }
@@ -1018,6 +1020,17 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
       name: 'SLA Document',
       available: partnerExtra?.slaAvailable,
     },
+    // Only a government customer has an office letter to give.
+    ...(partnerExtra?.govtAuthorizationAvailable ||
+    partnerExtra?.customerCategory?.startsWith('GOVERNMENT')
+      ? [
+          {
+            type: 'govtauthorization',
+            name: 'Office ID / Certifying Letter',
+            available: partnerExtra?.govtAuthorizationAvailable,
+          },
+        ]
+      : []),
   ];
 
   return (

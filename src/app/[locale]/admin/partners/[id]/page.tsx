@@ -36,6 +36,11 @@ import toast from 'react-hot-toast';
 import UserMenuPermissionsModal from '../../components/UserMenuPermissionsModal';
 import ReadOnlyNotice from '../../components/ReadOnlyNotice';
 import { useCanEdit } from '@/hooks/useCanEdit';
+import {
+  categoryLabel,
+  DOCUMENT_LABELS,
+  requiredDocumentsFor,
+} from '@/lib/document-rules';
 
 type TabType =
   | 'overview'
@@ -603,6 +608,7 @@ export default function PartnerDetailsPage() {
             onRefresh={fetchData}
             partnerEmail={partner?.email || ''}
             partnerName={partner?.partnerName || ''}
+            customerCategory={partnerExtra?.customerCategory ?? null}
           />
         )}
       </div>
@@ -1745,8 +1751,6 @@ function SubscriptionsTab({
 /* ═══════════════════════════════════════════════════════════════════
    Documents Tab
    ═══════════════════════════════════════════════════════════════════ */
-const MAJOR_DOCS = new Set(['nidfront', 'nidback', 'tradelicense', 'tin']);
-
 function DocumentsTab({
   documents,
   viewDocument,
@@ -1760,6 +1764,7 @@ function DocumentsTab({
   onRefresh,
   partnerEmail,
   partnerName,
+  customerCategory,
 }: {
   documents: PartnerDocument[];
   viewDocument: (t: string, n: string) => Promise<void>;
@@ -1773,8 +1778,12 @@ function DocumentsTab({
   onRefresh: () => void;
   partnerEmail: string;
   partnerName: string;
+  customerCategory: string | null;
 }) {
   const canEdit = useCanEdit();
+  // What this partner must have approved before they can buy, by their category — the
+  // rule the server enforces. Everything else is optional and never blocks purchasing.
+  const required = new Set(requiredDocumentsFor(customerCategory));
   const [rejectingDoc, setRejectingDoc] = useState<string | null>(null);
   const [rejectionReasons, setRejectionReasons] = useState<
     Record<string, string>
@@ -1784,7 +1793,16 @@ function DocumentsTab({
   const [sendingRejectionEmail, setSendingRejectionEmail] = useState(false);
 
   const available = documents.filter((d) => d.available);
-  const missing = documents.filter((d) => !d.available);
+  // A partner outside government has no office letter to give; listing it as missing is noise.
+  const missing = documents
+    .filter((d) => !d.available)
+    .filter((d) => d.type !== 'govtauthorization' || required.has(d.type))
+    .sort((a, b) => Number(required.has(b.type)) - Number(required.has(a.type)));
+  const missingRequired = missing.filter((d) => required.has(d.type)).length;
+  const requiredNames = [...required].map((t) => DOCUMENT_LABELS[t] ?? t);
+  const requiredApproved = [...required].every(
+    (t) => docStatuses[t]?.status === 'APPROVED'
+  );
 
   const DOC_NAMES: Record<string, string> = {
     nidfront: 'NID Front',
@@ -1797,6 +1815,7 @@ function DocumentsTab({
     btrc: 'BTRC Aggregator Licence',
     photo: 'Photo',
     sla: 'SLA Document',
+    govtauthorization: 'Office ID / Certifying Letter',
   };
 
   const rejectedDocs = Object.entries(docStatuses)
@@ -1936,6 +1955,21 @@ function DocumentsTab({
 
   return (
     <div className="p-6 space-y-6">
+      {/* What this category must supply, and whether purchasing is unlocked */}
+      <div
+        className={`rounded-lg border px-4 py-3 text-sm ${requiredApproved ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}
+      >
+        <p>
+          <span className="font-semibold">{categoryLabel(customerCategory)}</span>{' '}
+          — mandatory: {requiredNames.join(', ')}.
+        </p>
+        <p className="mt-1 text-xs">
+          {requiredApproved
+            ? 'All mandatory documents are approved — this customer can purchase.'
+            : 'Purchasing unlocks once every mandatory document is approved. Optional documents never block it.'}
+        </p>
+      </div>
+
       {/* Uploaded Documents */}
       <div>
         <h3 className="text-sm font-semibold text-gray-700 mb-3">
@@ -1962,9 +1996,13 @@ function DocumentsTab({
                       <p className="text-sm font-medium text-gray-900">
                         {doc.name}
                       </p>
-                      {MAJOR_DOCS.has(doc.type) && (
+                      {required.has(doc.type) ? (
                         <span className="text-[10px] font-bold uppercase tracking-wide text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
                           Required
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                          Optional
                         </span>
                       )}
                       <span
@@ -2173,14 +2211,26 @@ function DocumentsTab({
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
             Missing ({missing.length})
+            {missingRequired > 0 && (
+              <span className="ml-2 text-xs font-normal text-red-600">
+                {missingRequired} required
+              </span>
+            )}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {missing.map((doc) => (
               <div
                 key={doc.type}
-                className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                className={`flex items-center justify-between p-3 border border-dashed rounded-lg transition-colors ${required.has(doc.type) ? 'border-red-300 bg-red-50/40 hover:bg-red-50' : 'border-gray-300 bg-gray-50/50 hover:bg-gray-50'}`}
               >
-                <span className="text-sm text-gray-500">{doc.name}</span>
+                <span className="text-sm text-gray-500">
+                  {doc.name}
+                  <span
+                    className={`ml-2 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${required.has(doc.type) ? 'text-red-600 bg-red-100' : 'text-gray-500 bg-gray-100'}`}
+                  >
+                    {required.has(doc.type) ? 'Required' : 'Optional'}
+                  </span>
+                </span>
                 {canEdit && (
                   <label
                     className={`px-3 py-1 text-xs font-medium rounded-full bg-[#0D529E] text-white hover:bg-[#1F3C71] cursor-pointer transition-colors ${uploadingDoc === doc.type ? 'opacity-50 pointer-events-none' : ''}`}

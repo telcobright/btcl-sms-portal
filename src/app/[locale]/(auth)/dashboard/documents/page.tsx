@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { categoryLabel, requiredDocumentsFor } from '@/lib/document-rules';
 
 /**
  * Customer-facing document page.
@@ -38,7 +39,7 @@ const DOCUMENTS: { type: string; label: string; note?: string }[] = [
     label: 'BTRC Aggregator Licence',
     note: 'Required to purchase Bulk SMS packages.',
   },
-  { type: 'govtauthorization', label: 'Office Order / Authorisation Letter' },
+  { type: 'govtauthorization', label: 'Office ID / Certifying Letter' },
   {
     type: 'photo',
     label: 'Photograph',
@@ -46,6 +47,25 @@ const DOCUMENTS: { type: string; label: string; note?: string }[] = [
   },
   { type: 'taxreturn', label: 'Last Tax Return' },
 ];
+
+/**
+ * Which documents the customer has actually supplied. The status list cannot say: it reports
+ * PENDING for every type, uploaded or not, which showed "Under review" for documents never
+ * sent and locked a photograph that did not exist.
+ */
+const AVAILABLE_FLAG: Record<string, string> = {
+  nidfront: 'nidFrontAvailable',
+  nidback: 'nidBackAvailable',
+  tradelicense: 'tradeLicenseAvailable',
+  tin: 'tinCertificateAvailable',
+  bin: 'binCertificateAvailable',
+  btrc: 'btrcRegistrationAvailable',
+  govtauthorization: 'govtAuthorizationAvailable',
+  photo: 'photoAvailable',
+  taxreturn: 'lastTaxReturnAvailable',
+};
+
+type PartnerExtra = Record<string, unknown> & { customerCategory?: string | null };
 
 const ACCEPTED = '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp';
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -55,6 +75,7 @@ export default function CustomerDocumentsPage() {
   const locale = params.locale || 'en';
 
   const [statuses, setStatuses] = useState<Record<string, DocState>>({});
+  const [extra, setExtra] = useState<PartnerExtra | null>(null);
   const [idPartner, setIdPartner] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -71,18 +92,21 @@ export default function CustomerDocumentsPage() {
       setIdPartner(partner);
       if (!partner) return;
 
-      const response = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.partner.getDocumentStatuses}`,
-        {
+      const post = (path: string) =>
+        fetch(`${API_BASE_URL}${path}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({ id: partner }),
-        }
-      );
-      if (response.ok) setStatuses(await response.json());
+        });
+      const [statusRes, extraRes] = await Promise.all([
+        post(API_ENDPOINTS.partner.getDocumentStatuses),
+        post(API_ENDPOINTS.partner.getPartnerExtra).catch(() => null),
+      ]);
+      if (statusRes.ok) setStatuses(await statusRes.json());
+      if (extraRes?.ok) setExtra(await extraRes.json());
     } catch {
       toast.error('Could not load your documents.');
     } finally {
@@ -140,6 +164,20 @@ export default function CustomerDocumentsPage() {
     }
   };
 
+  // Without the details we cannot tell uploaded from not, so trust the status as before.
+  const uploaded = (type: string) =>
+    extra ? !!extra[AVAILABLE_FLAG[type]] : !!statuses[type]?.status;
+  const category = extra?.customerCategory ?? null;
+  const required = new Set(requiredDocumentsFor(category));
+  const statusOf = (type: string) => (uploaded(type) ? statuses[type]?.status : undefined);
+  const shown = DOCUMENTS
+    // Only a government customer has an office letter to give.
+    .filter((d) => d.type !== 'govtauthorization' || required.has(d.type) || uploaded(d.type))
+    .sort((a, b) => Number(required.has(b.type)) - Number(required.has(a.type)));
+  const requiredDocs = shown.filter((d) => required.has(d.type));
+  const approvedCount = requiredDocs.filter((d) => statusOf(d.type) === 'APPROVED').length;
+  const allApproved = approvedCount === requiredDocs.length;
+
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Loading your documents…</div>;
   }
@@ -159,13 +197,29 @@ export default function CustomerDocumentsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-[#1F3C71]">My Documents</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-6">
+      <p className="text-sm text-gray-500 mt-1 mb-4">
         Upload or replace a document. Anything you replace goes back to BTCL for review.
       </p>
 
+      {extra && (
+        <div
+          className={`rounded-xl border px-4 py-3 mb-6 text-sm ${allApproved ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}
+        >
+          <p className="font-semibold">
+            {categoryLabel(category)} account — {approvedCount} of {requiredDocs.length} required
+            documents approved
+          </p>
+          <p className="text-xs mt-1">
+            {allApproved
+              ? 'You can purchase any package. Optional documents are not needed for that.'
+              : 'You can purchase packages once BTCL approves every document marked Required. Optional ones are not needed.'}
+          </p>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {DOCUMENTS.map((doc) => {
-          const state = statuses[doc.type];
+        {shown.map((doc) => {
+          const state = uploaded(doc.type) ? statuses[doc.type] : undefined;
           const tone = badge(state?.status);
           const busy = uploading === doc.type;
           // The photograph is the identity on the account, so it is given once and not
@@ -173,7 +227,7 @@ export default function CustomerDocumentsPage() {
           // replacement, because otherwise one bad upload would leave the account unable
           // to clear review at all.
           const locked =
-            doc.type === 'photo' && !!state?.status && state.status !== 'REJECTED';
+            doc.type === 'photo' && uploaded('photo') && state?.status !== 'REJECTED';
           return (
             <div
               key={doc.type}
@@ -182,6 +236,13 @@ export default function CustomerDocumentsPage() {
               <div className="flex-1 min-w-[220px]">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold text-gray-900">{doc.label}</p>
+                  {extra && (
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${required.has(doc.type) ? 'text-orange-700 bg-orange-50' : 'text-gray-500 bg-gray-100'}`}
+                    >
+                      {required.has(doc.type) ? 'Required' : 'Optional'}
+                    </span>
+                  )}
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${tone.cls}`}>
                     {tone.text}
                   </span>

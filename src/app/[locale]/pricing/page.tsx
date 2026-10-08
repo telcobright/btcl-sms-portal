@@ -19,7 +19,10 @@ import {
   getServiceEligibility,
   type ServiceEligibilityState,
 } from '@/lib/api-client/admin';
-import { getServicePricing } from '@/lib/api-client/servicePricing';
+import {
+  describeServicePricingError,
+  getServicePricing,
+} from '@/lib/api-client/servicePricing';
 import {
   maxBuyableQuantity,
   quote,
@@ -439,15 +442,28 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // built-in fallback: if they cannot be loaded, the sections say so and offer no Buy.
   const [servicePricing, setServicePricing] = useState<ServicePricingMap | null>(null);
   const [pricingStatus, setPricingStatus] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [pricingError, setPricingError] = useState<string | null>(null);
+  // Read by the loader for the toast language, without making the loader (and so the fetch)
+  // change every time the locale does.
+  const localeRef = React.useRef(locale);
+  localeRef.current = locale;
 
   const loadServicePricing = React.useCallback(async () => {
     setPricingStatus('loading');
+    setPricingError(null);
     try {
       setServicePricing(await getServicePricing());
       setPricingStatus('ready');
     } catch (err) {
       console.error('Could not load service pricing:', err);
+      const reason = describeServicePricingError(err);
+      setPricingError(reason);
       setPricingStatus('error');
+      // One toast for both sections; a retry replaces it rather than stacking another.
+      toast.error(
+        `${localeRef.current === 'en' ? 'Could not load prices' : 'মূল্য লোড করা যায়নি'} (${reason})`,
+        { id: 'service-pricing-error' }
+      );
     }
   }, []);
 
@@ -1379,6 +1395,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             title="Alaap Cloud Voice Broadcasting Service"
             pricing={servicePricing?.vbs}
             status={pricingStatus}
+            errorText={pricingError}
             onRetry={loadServicePricing}
             quantity={vbsQuantity}
             setQuantity={setVbsQuantity}
@@ -1406,6 +1423,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             headerExtra={<AggregatorTag />}
             pricing={servicePricing?.sms}
             status={pricingStatus}
+            errorText={pricingError}
             onRetry={loadServicePricing}
             quantity={smsQuantity}
             setQuantity={setSmsQuantity}

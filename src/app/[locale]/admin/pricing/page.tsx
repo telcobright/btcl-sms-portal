@@ -55,6 +55,12 @@ const SERVICES: { key: PricedService; title: string; description: string }[] = [
   },
 ];
 
+/**
+ * Package a purchase is recorded against, for a service with no slabs yet. Existing slabs keep
+ * their own package and new slabs copy the one above, so admins never pick one.
+ */
+const DEFAULT_PACKAGE: Record<PricedService, number> = { vbs: 9135, sms: 9138 };
+
 // Inputs are kept as text so a field can be empty while it is being typed.
 interface SlabRow {
   nameEn: string;
@@ -284,7 +290,9 @@ function ServiceCard({
           minQty: String(nextMin),
           maxQty: '',
           rate: last?.rate ?? '',
-          packageId: last?.packageId ?? '',
+          // Not shown on this page. A new slab is recorded against the same package as the
+          // slab above it; the first slab of an empty service gets the service's basic package.
+          packageId: last?.packageId ?? String(DEFAULT_PACKAGE[service]),
           conditionsApply: false,
         },
       ],
@@ -388,7 +396,7 @@ function ServiceCard({
 
       {/* Slabs */}
       <div className="overflow-x-auto -mx-4 sm:mx-0">
-        <table className="min-w-[860px] w-full text-sm">
+        <table className="min-w-[760px] w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
               <th className="px-2 py-2 w-16">Order</th>
@@ -397,7 +405,6 @@ function ServiceCard({
               <th className="px-2 py-2 w-28">From</th>
               <th className="px-2 py-2 w-28">To</th>
               <th className="px-2 py-2 w-28">Rate (৳/msg)</th>
-              <th className="px-2 py-2 w-28">Package ID</th>
               <th className="px-2 py-2 w-28 text-center">Conditions badge</th>
               <th className="px-2 py-2 w-12" />
             </tr>
@@ -469,15 +476,6 @@ function ServiceCard({
                     disabled={!canEdit}
                   />
                 </td>
-                <td className="px-2 py-2">
-                  <input
-                    className={inputClass}
-                    inputMode="numeric"
-                    value={row.packageId}
-                    onChange={(e) => updateRow(i, { packageId: e.target.value.replace(/[^\d]/g, '') })}
-                    disabled={!canEdit}
-                  />
-                </td>
                 <td className="px-2 py-2 text-center">
                   <input
                     type="checkbox"
@@ -502,7 +500,7 @@ function ServiceCard({
             ))}
             {draft.slabs.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-2 py-6 text-center text-gray-500">
+                <td colSpan={8} className="px-2 py-6 text-center text-gray-500">
                   No slabs yet.
                 </td>
               </tr>
@@ -513,9 +511,6 @@ function ServiceCard({
 
       <p className="mt-3 text-xs text-gray-500">
         Slabs must run on from 1 with no gaps or overlaps. Only the last slab may leave “To” blank.
-        Package ID is the package in the {service === 'vbs' ? 'Voice Broadcasting' : 'Bulk SMS'}{' '}
-        system that a purchase in this slab is recorded against; a new slab may reuse an existing
-        package.
       </p>
 
       {problem && (draft.slabs.length > 0 || dirty) && (

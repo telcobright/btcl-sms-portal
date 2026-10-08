@@ -167,7 +167,8 @@ Following the `NidCredentialController` pattern: POST endpoints, admin checked w
 
 - New route `src/app/[locale]/admin/pricing/page.tsx`, titled "Service Pricing".
 - Sidebar entry and `ADMIN_MENU_CATALOG` entry `/admin/pricing` in the Management section, so per-user menu permissions cover it.
-- One card per service. Each card shows the limits (minimum total, maximum total, maximum quantity) and an editable slab table with columns: order handle, English name, Bangla name, from, to (blank = open-ended), rate per message, package ID, "Conditions applicable" checkbox, remove.
+- One card per service. Each card shows the limits (minimum total, maximum total, maximum quantity) and an editable slab table with columns: order handle, English name, Bangla name, from, to (blank = open-ended), rate per message, "Conditions applicable" checkbox, remove.
+- The package is not shown or edited. Existing slabs keep theirs; a new slab copies the package of the slab above it; the first slab of an empty service gets the basic package (VBS 9135, SMS 9138).
 - "Add slab" appends a slab whose `from` is the previous `to + 1`. Moving or removing a slab does not renumber ranges automatically; the admin fixes them and the inline check points at the problem.
 - The same validation rules run in the browser before saving, so most mistakes show next to the field. The server's message is shown if it still refuses.
 - A preview line under each table shows what a few sample quantities cost, using the shared helper.
@@ -198,7 +199,7 @@ Step 3 must not ship before step 2: the old portal still has the rounding bug, s
 
 ## Out of scope
 
-- Creating new packages in the SMS or VBS databases. A new slab must use an existing package id. The purchase is recorded against that package, so its name in purchase history and invoices is the package's name, not the slab's.
+- Creating new packages in the SMS or VBS databases. A new slab reuses the package of the slab above it. The purchase is recorded against that package, so its name in purchase history and invoices is the package's name, not the slab's.
 - Editing VAT. It stays 15%.
 - Pricing for PBX and Contact Center.
 - Scheduled price changes and price history pages. The audit table records changes, but there is no page for it yet.

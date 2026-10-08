@@ -89,3 +89,43 @@ export const servicePricingErrorMessage = (error: unknown, fallback: string): st
   }
   return fallback;
 };
+
+const STATUS_TEXT: Record<number, string> = {
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'Not Found',
+  405: 'Method Not Allowed',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
+  504: 'Gateway Timeout',
+};
+
+/**
+ * Why loading the prices failed, with the HTTP status, e.g. "HTTP 403 Forbidden" or
+ * "HTTP 500 Internal Server Error: Table 'tenant_master.service_pricing' doesn't exist".
+ * Shown to the customer so a support call can say exactly what went wrong.
+ */
+export const describeServicePricingError = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    const res = error.response;
+    if (!res) {
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return 'Request timed out';
+      return 'Network error: no response from the server';
+    }
+    // HTTP/2 responses carry no status text, so fall back to the standard reason phrase.
+    const reason = res.statusText || STATUS_TEXT[res.status] || '';
+    const data = res.data as { message?: unknown; error?: unknown; errorCode?: unknown } | string | undefined;
+    let detail = '';
+    if (data && typeof data === 'object') {
+      const m = data.message ?? data.error;
+      if (typeof m === 'string') detail = m;
+    } else if (typeof data === 'string' && data.trim() && !data.trimStart().startsWith('<')) {
+      detail = data.trim().slice(0, 200);
+    }
+    return `HTTP ${res.status}${reason ? ` ${reason}` : ''}${detail ? `: ${detail}` : ''}`;
+  }
+  return error instanceof Error ? error.message : 'Unknown error';
+};

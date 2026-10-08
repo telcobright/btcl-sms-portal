@@ -26,6 +26,8 @@ interface Props {
   headerExtra?: React.ReactNode;
   pricing: ServicePricing | undefined;
   status: 'loading' | 'error' | 'ready';
+  /** Why the prices failed to load, with the HTTP status (shown under the message). */
+  errorText?: string | null;
   onRetry: () => void;
   quantity: number | '';
   setQuantity: (q: number | '') => void;
@@ -45,6 +47,7 @@ export default function SlabPricingSection({
   headerExtra,
   pricing,
   status,
+  errorText,
   onRetry,
   quantity,
   setQuantity,
@@ -102,8 +105,13 @@ export default function SlabPricingSection({
                 <p className="text-gray-700 font-medium">
                   {en ? 'Prices could not be loaded.' : 'মূল্য লোড করা যায়নি।'}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  {en ? 'Please check your connection and try again.' : 'সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।'}
+                {errorText && (
+                  <p className="mt-2 inline-block rounded-md bg-red-50 px-3 py-1 font-mono text-xs text-red-700 break-all">
+                    {errorText}
+                  </p>
+                )}
+                <p className="text-sm text-gray-500 mt-2">
+                  {en ? 'Please try again. If it keeps failing, contact support with the error above.' : 'আবার চেষ্টা করুন। বারবার ব্যর্থ হলে উপরের ত্রুটিসহ সাপোর্টে যোগাযোগ করুন।'}
                 </p>
                 <button
                   onClick={onRetry}

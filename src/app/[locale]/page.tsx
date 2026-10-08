@@ -338,13 +338,13 @@ function ServicesShowcaseSection({
         </div>
 
         {/* For Individuals: the one package sold to a personal account */}
-        <div className="mt-14 grid grid-cols-1 items-start gap-8 lg:grid-cols-5">
-          <div className="lg:col-span-2 lg:pt-6">
+        <div className="mt-14 grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
+          <div>
             <div className="mb-4 inline-flex rounded-full bg-gradient-to-r from-btcl-primary to-btcl-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
               {locale === 'en' ? 'Individual' : 'ব্যক্তিগত'}
             </div>
             <h3 className="mb-3 text-2xl font-bold text-gray-900 md:text-3xl">
-              Individual IP-Telephone
+              Alaap Individual IP-Telephone
             </h3>
             <p className="mb-6 text-base leading-relaxed text-gray-600">
               {locale === 'en'
@@ -359,7 +359,7 @@ function ServicesShowcaseSection({
               <span>→</span>
             </Link>
           </div>
-          <div className="lg:col-span-3">
+          <div className="mx-auto w-full max-w-md pt-4">
             <IndividualTariff locale={locale} />
           </div>
         </div>

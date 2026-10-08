@@ -329,7 +329,7 @@ export default function Dashboard() {
   };
 
 
-  // An Individual is sold Individual IP-Telephone, not the four services below, so their
+  // An Individual is sold Alaap Individual IP-Telephone, not the four services below, so their
   // dashboard offers that instead of Buy and Renew (see individual-tariff.ts).
   const isIndividual = isIndividualCategory(partnerExtra?.customerCategory);
   // The documents this customer's category must have approved before buying anything.
@@ -1336,7 +1336,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
             </div>
           )}
           {isIndividual && (
-            <div className="mb-4">
+            <div className="mx-auto mb-4 max-w-md pt-4">
               <IndividualTariff
                 locale={locale}
                 action={<IndividualSubscribeAction locale={locale} />}

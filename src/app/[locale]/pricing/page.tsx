@@ -86,7 +86,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // The customer's category decides what they are sold: an Individual gets the Individual
   // IP-Telephone package, everyone else the packages below. Null until read, and for visitors and admins.
   const [customerCategory, setCustomerCategory] = useState<string | null>(null);
-  // An Individual is sold Individual IP-Telephone, never the packages on this page (see
+  // An Individual is sold Alaap Individual IP-Telephone, never the packages on this page (see
   // individual-tariff.ts). PaymentGateWay refuses those too; this is about not offering them.
   const individualView = !isAdmin && isIndividualCategory(customerCategory);
   // Read while rendering, so a signed-in customer's first frame already waits for their
@@ -1368,9 +1368,9 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               },
               {
                 id: 'iptsp-individual',
-                icon: '📞',
-                en: 'Individual IP-Telephone',
-                bn: 'Individual IP-Telephone',
+                icon: '/alaap_cloud_ip_pbx.png',
+                en: 'Alaap Individual IP-Telephone',
+                bn: 'Alaap Individual IP-Telephone',
               },
             ]
               .filter((s) =>
@@ -1901,27 +1901,27 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       </div>
       )}
 
-      {/* ── Individual IP-Telephone ── */}
+      {/* ── Alaap Individual IP-Telephone — laid out like the IP PBX section ── */}
       {showIndividualTariff && (
-        <div id="iptsp-individual" className="py-20 bg-btcl-primaryLight/5">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10">
+        <div id="iptsp-individual" className="py-20 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
               <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
-                <span className="text-4xl">📞</span>
-                <h2 className="text-2xl font-bold">
-                  Individual IP-Telephone
-                </h2>
+                <img src="/alaap_cloud_ip_pbx.png" alt="" className="h-10 w-10 object-contain" />
+                <h2 className="text-2xl font-bold">Alaap Individual IP-Telephone</h2>
               </div>
               <p className="text-gray-600 text-lg">
                 {locale === 'en'
-                  ? 'For customers registered as an Individual'
-                  : 'ব্যক্তিগত হিসেবে নিবন্ধিত গ্রাহকদের জন্য'}
+                  ? 'Monthly subscription pricing for Individual accounts'
+                  : 'ব্যক্তিগত অ্যাকাউন্টের জন্য মাসিক সাবস্ক্রিপশন মূল্য'}
               </p>
             </div>
-            <IndividualTariff
-              locale={locale}
-              action={<IndividualSubscribeAction locale={locale} />}
-            />
+            <div className="max-w-md mx-auto pt-4">
+              <IndividualTariff
+                locale={locale}
+                action={<IndividualSubscribeAction locale={locale} />}
+              />
+            </div>
           </div>
         </div>
       )}

@@ -2,112 +2,72 @@ import { INDIVIDUAL_PACKAGE, INDIVIDUAL_SUBSCRIBE_URL } from '@/lib/individual-t
 import type { ReactNode } from 'react';
 
 /**
- * The Individual IP-Telephone package as BTCL's package sheet lists it: a headline price, then
- * every feature and term row for row. No hooks, so the home page can render it on the server.
+ * The Alaap Individual IP-Telephone plan card, drawn like the Alaap Cloud IP PBX plans on the
+ * pricing page: name, monthly price, the action, then a checked feature list, with the
+ * free-talktime terms as a footnote. No hooks, so the home page can render it on the server.
  */
 export function IndividualTariff({
   locale,
   action,
 }: {
   locale: string;
-  /** Shown under the table, e.g. the subscribe button. */
+  /** Sits between the price and the features, where a plan's Buy button goes. */
   action?: ReactNode;
 }) {
   const lang = locale === 'en' ? 'en' : 'bn';
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-gray-200 bg-btcl-primaryLight/10 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary">
-            <svg
-              className="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">{INDIVIDUAL_PACKAGE.name}</h3>
-            <p className="text-sm text-gray-600">
-              {lang === 'en' ? 'Category' : 'ক্যাটাগরি'}:{' '}
-              <span className="font-semibold text-btcl-primaryDark">
-                {INDIVIDUAL_PACKAGE.category[lang]}
-              </span>
-            </p>
+    <div>
+      <div className="group relative rounded-2xl border border-gray-200 bg-white shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:border-btcl-primary">
+        <div className="absolute -top-4 left-1/2 z-10 -translate-x-1/2 transform">
+          <div className="whitespace-nowrap rounded-full bg-gradient-to-r from-btcl-primary to-btcl-primaryDark px-6 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-lg">
+            {lang === 'en' ? 'Individual' : 'ব্যক্তিগত'}
           </div>
         </div>
-        <div className="sm:text-right">
-          <span className="text-3xl font-bold text-gray-900">
-            ৳{INDIVIDUAL_PACKAGE.monthlyCharge}
-          </span>
-          <span className="text-sm text-gray-600">
-            /{lang === 'en' ? 'month' : 'মাস'}
-          </span>
-          <div className="text-xs text-gray-500">
-            {lang === 'en'
-              ? `VAT applicable · ${INDIVIDUAL_PACKAGE.freeMinutes} free minutes every month`
-              : `ভ্যাট প্রযোজ্য · প্রতি মাসে ${INDIVIDUAL_PACKAGE.freeMinutes} মিনিট ফ্রি টকটাইম`}
+        <div className="p-7">
+          {/* Price display */}
+          <div className="mb-5 text-center">
+            <h3 className="mb-3 text-xl font-bold text-gray-900">{INDIVIDUAL_PACKAGE.name}</h3>
+            <div className="mb-4">
+              <span className="text-3xl font-bold text-gray-900">
+                ৳{INDIVIDUAL_PACKAGE.monthlyCharge.toLocaleString()}
+              </span>
+              <span className="text-sm text-gray-600">/{lang === 'en' ? 'month' : 'মাস'}</span>
+              <div className="mt-2 text-xs text-gray-500">
+                {lang === 'en' ? '1 Extension · VAT applicable' : '১টি এক্সটেনশন · ভ্যাট প্রযোজ্য'}
+              </div>
+            </div>
+          </div>
+
+          {/* Action button */}
+          {action && <div className="mb-6">{action}</div>}
+
+          {/* Features */}
+          <div className="space-y-2">
+            {INDIVIDUAL_PACKAGE.features.map((feature) => (
+              <div key={feature.en} className="flex items-start gap-2">
+                <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-btcl-primaryLight/10">
+                  <svg
+                    className="h-3 w-3 text-btcl-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium leading-snug text-gray-700">
+                  {feature[lang]}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <tr>
-            <th scope="col" className="w-2/5 px-4 py-3 sm:w-1/3 sm:px-6">
-              {lang === 'en' ? 'Feature' : 'ফিচার'}
-            </th>
-            <th scope="col" className="px-4 py-3 sm:px-6">
-              {lang === 'en' ? 'Details' : 'বিবরণ'}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {INDIVIDUAL_PACKAGE.features.map((feature) => (
-            <tr key={feature.label.en} className="align-top">
-              <th
-                scope="row"
-                className="px-4 py-2.5 text-left font-medium text-gray-700 sm:px-6"
-              >
-                {feature.label[lang]}
-              </th>
-              <td className="px-4 py-2.5 leading-snug text-gray-900 sm:px-6">
-                {feature.value === true ? (
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-btcl-primary">
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    {lang === 'en' ? 'Yes' : 'হ্যাঁ'}
-                  </span>
-                ) : (
-                  <span className="font-medium text-gray-800">{feature.value[lang]}</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {action && <div className="border-t border-gray-200 px-5 py-5 sm:px-6">{action}</div>}
+      <p className="mt-6 text-center text-sm text-gray-500">
+        {INDIVIDUAL_PACKAGE.talktimeNote[lang]}
+      </p>
     </div>
   );
 }
@@ -119,7 +79,7 @@ export function IndividualSubscribeAction({ locale }: { locale: string }) {
     return (
       <a
         href={INDIVIDUAL_SUBSCRIBE_URL}
-        className="block w-full rounded-lg bg-btcl-primary px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-btcl-primaryDark"
+        className="block w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-center text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
       >
         {en ? 'Subscribe' : 'সাবস্ক্রাইব করুন'}
       </a>
@@ -130,7 +90,7 @@ export function IndividualSubscribeAction({ locale }: { locale: string }) {
       <button
         type="button"
         disabled
-        className="w-full cursor-not-allowed rounded-lg bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-500"
+        className="w-full cursor-not-allowed rounded-xl bg-gray-300 px-6 py-3 text-sm font-semibold text-gray-600"
       >
         {en ? 'Coming Soon' : 'শীঘ্রই আসছে'}
       </button>

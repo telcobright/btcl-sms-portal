@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { getPendingApprovals, storeLabel, type ServiceApproval } from '@/lib/api-client/approvals';
 import {
   getAllPartners,
   getPartnerListSummary,
@@ -58,6 +59,8 @@ export default function AdminNotifications({ locale }: { locale: string }) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  // Postpaid purchase requests waiting for a decision; the NOC also gets these by mail.
+  const [approvals, setApprovals] = useState<ServiceApproval[]>([]);
   const [lastFetched, setLastFetched] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const started = useRef(false);
@@ -66,6 +69,7 @@ export default function AdminNotifications({ locale }: { locale: string }) {
     const token = localStorage.getItem('authToken');
     if (!token) return;
     setLoading(true);
+    getPendingApprovals(token).then(setApprovals).catch(() => {});
     try {
       const partners = await getAllPartners({ page: 0, size: 1000, partnerName: null, partnerType: null }, token);
       const list = (Array.isArray(partners) ? partners : []).filter((p) => [3, 4, 5, 6].includes(p.partnerType));
@@ -141,7 +145,7 @@ export default function AdminNotifications({ locale }: { locale: string }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const count = notifications.length;
+  const count = notifications.length + approvals.length;
 
   const timeAgo = (date: string | null) => {
     if (!date) return '';
@@ -191,6 +195,39 @@ export default function AdminNotifications({ locale }: { locale: string }) {
 
           {/* Notification list */}
           <div className="max-h-[400px] overflow-y-auto">
+            {approvals.length > 0 && (
+              <div className="border-b border-gray-100">
+                <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                    Purchase requests · {approvals.length} awaiting approval
+                  </p>
+                  <Link href={`/${locale}/admin/approvals`} onClick={() => setOpen(false)} className="text-[11px] text-[#0D529E] hover:underline">
+                    Review
+                  </Link>
+                </div>
+                {approvals.slice(0, 5).map((a) => (
+                  <Link
+                    key={`approval-${a.id}`}
+                    href={`/${locale}/admin/approvals`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-start gap-3 px-4 py-2.5 hover:bg-amber-50/60 transition-colors group"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#0D529E] to-[#1F3C71] flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">
+                      REQ
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#0D529E]">
+                        {a.cusName || `Partner #${a.idPartner}`}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {storeLabel(a.storeType)}{a.idPackage ? ` · package #${a.idPackage}` : ''}{a.quantity && a.quantity > 1 ? ` × ${a.quantity}` : ''}
+                      </p>
+                      <span className="text-[10px] text-gray-400">{timeAgo(a.createdAt)}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
             {loading && notifications.length === 0 ? (
               <div className="flex items-center justify-center py-10">
                 <svg className="w-6 h-6 animate-spin text-[#0D529E]" fill="none" viewBox="0 0 24 24">
@@ -198,7 +235,7 @@ export default function AdminNotifications({ locale }: { locale: string }) {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
               </div>
-            ) : notifications.length === 0 ? (
+            ) : notifications.length === 0 && approvals.length === 0 ? (
               <div className="py-10 text-center">
                 <svg className="w-12 h-12 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

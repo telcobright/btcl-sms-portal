@@ -90,6 +90,8 @@ export default function CheckoutModal({
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  // A postpaid order is queued for BTCL to approve; nothing is activated yet.
+  const [showPendingPopup, setShowPendingPopup] = useState(false);
   const [showVbsSuccessPopup, setShowVbsSuccessPopup] = useState(false);
   const [successEmail, setSuccessEmail] = useState('');
   const [userHasPbx, setUserHasPbx] = useState(false);
@@ -928,47 +930,13 @@ export default function CheckoutModal({
       // customerPrePaid = 2: Direct purchase completed (no payment gateway) - NOT for VBS
       else if (effectivePrePaid === 2) {
         if (response.status === 'SUCCESS') {
-          toast.success(
-            locale === 'en'
-              ? 'Purchase completed successfully!'
-              : 'ক্রয় সফল হয়েছে!'
-          );
-
-          // Show success popup for Hosted PBX
-          if (serviceType === 'hosted-pbx' && email) {
-            // Check if user already has PBX
-            try {
-              const userData = await getUserByEmail(email, authToken);
-              setUserHasPbx(!!userData?.pbxUuid);
-            } catch (e) {
-              setUserHasPbx(false);
-            }
-            setSuccessEmail(email);
-            setPurchasedPackageName(pkg.name);
-            setShowSuccessPopup(true);
-            setLoading(false);
-            return;
-          }
-
-          // Show success popup for Voice Broadcast
-          if (serviceType === 'voice-broadcast' && email) {
-            setSuccessEmail(email);
-            setPurchasedPackageName(pkg.name);
-            setShowVbsSuccessPopup(true);
-            setLoading(false);
-            return;
-          }
-
-          // Show success popup for Contact Center
-          if (serviceType === 'contact-center' && email) {
-            setSuccessEmail(email);
-            setPurchasedPackageName(pkg.name);
-            setShowSuccessPopup(true);
-            setLoading(false);
-            return;
-          }
-
-          onClose();
+          // The gateway queued the request for BTCL's approval (service_approved);
+          // nothing is provisioned until an admin approves it. Say that, rather than
+          // "purchase completed", which is what this used to show.
+          setPurchasedPackageName(pkg.name);
+          setShowPendingPopup(true);
+          setLoading(false);
+          return;
         } else {
           showApiError(response, {
             fallbackMessage:
@@ -1165,6 +1133,59 @@ export default function CheckoutModal({
       </Dialog>
     );
   };
+
+  if (showPendingPopup) {
+    const en = locale === 'en';
+    return (
+      <Dialog open={isOpen} onClose={() => {}} className="relative z-50 font-bengali">
+        <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-6 overflow-y-auto">
+          <Dialog.Panel className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-8 text-center bg-gradient-to-r from-amber-500 to-amber-600">
+              <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <svg className="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white">{en ? 'Request submitted' : 'অনুরোধ জমা হয়েছে'}</h2>
+              <p className="text-white/80 mt-2 font-medium">{en ? 'Awaiting BTCL approval' : 'BTCL-এর অনুমোদনের অপেক্ষায়'}</p>
+            </div>
+            <div className="px-6 py-6">
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 text-sm text-gray-700 leading-relaxed">
+                {en ? (
+                  <>
+                    Your postpaid request for <b>{purchasedPackageName}</b> has been sent to BTCL. It will be
+                    reviewed and approved shortly; your service is activated the moment it is approved, and
+                    you will receive an email confirming it. Nothing is charged until then.
+                  </>
+                ) : (
+                  <>
+                    <b>{purchasedPackageName}</b>-এর জন্য আপনার পোস্টপেইড অনুরোধ BTCL-এ পাঠানো হয়েছে। শীঘ্রই এটি
+                    পর্যালোচনা করে অনুমোদন দেওয়া হবে; অনুমোদনের সাথে সাথে সেবা চালু হবে এবং আপনি ইমেইলে নিশ্চিতকরণ পাবেন।
+                  </>
+                )}
+              </div>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href={`/${locale}/dashboard`}
+                  className="flex-1 text-center rounded-xl bg-[#0D529E] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1F3C71]"
+                >
+                  {en ? 'Go to Dashboard' : 'ড্যাশবোর্ডে যান'}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => { setShowPendingPopup(false); onClose(); }}
+                  className="flex-1 rounded-xl border-2 border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  {en ? 'Close' : 'বন্ধ করুন'}
+                </button>
+              </div>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+    );
+  }
 
   if (showSuccessPopup) {
     const isCC = serviceType === 'contact-center';

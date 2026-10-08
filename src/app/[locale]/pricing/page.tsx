@@ -83,10 +83,10 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [docBlockReason, setDocBlockReason] = useState<
     'pending' | 'rejected' | null
   >(null);
-  // The customer's category decides what they are sold: an Individual gets the IPTSP voice
-  // tariff, everyone else the packages below. Null until read, and for visitors and admins.
+  // The customer's category decides what they are sold: an Individual gets the Individual
+  // IP-Telephone package, everyone else the packages below. Null until read, and for visitors and admins.
   const [customerCategory, setCustomerCategory] = useState<string | null>(null);
-  // An Individual is sold the IPTSP voice tariff, never the packages on this page (see
+  // An Individual is sold Individual IP-Telephone, never the packages on this page (see
   // individual-tariff.ts). PaymentGateWay refuses those too; this is about not offering them.
   const individualView = !isAdmin && isIndividualCategory(customerCategory);
   // Read while rendering, so a signed-in customer's first frame already waits for their
@@ -1327,8 +1327,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           <p className="text-xl text-white mb-8 max-w-3xl mx-auto">
             {individualView
               ? locale === 'en'
-                ? 'Your account is registered as an Individual. This is the tariff available to you.'
-                : 'আপনার অ্যাকাউন্টটি ব্যক্তিগত হিসেবে নিবন্ধিত। আপনার জন্য প্রযোজ্য ট্যারিফ নিচে দেওয়া হলো।'
+                ? 'Your account is registered as an Individual. This is the package available to you.'
+                : 'আপনার অ্যাকাউন্টটি ব্যক্তিগত হিসেবে নিবন্ধিত। আপনার জন্য প্রযোজ্য প্যাকেজ নিচে দেওয়া হলো।'
               : locale === 'en'
                 ? 'Transparent pricing for all our corporate communication services. Choose the plan that fits your business needs.'
                 : 'আমাদের সমস্ত কর্পোরেট যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
@@ -1369,8 +1369,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               {
                 id: 'iptsp-individual',
                 icon: '📞',
-                en: 'IPTSP Voice (Individual)',
-                bn: 'আইপিটিএসপি ভয়েস (ব্যক্তিগত)',
+                en: 'Individual IP-Telephone',
+                bn: 'Individual IP-Telephone',
               },
             ]
               .filter((s) =>
@@ -1901,7 +1901,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       </div>
       )}
 
-      {/* ── IPTSP Voice Call Service — Individual ── */}
+      {/* ── Individual IP-Telephone ── */}
       {showIndividualTariff && (
         <div id="iptsp-individual" className="py-20 bg-btcl-primaryLight/5">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1909,9 +1909,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
                 <span className="text-4xl">📞</span>
                 <h2 className="text-2xl font-bold">
-                  {locale === 'en'
-                    ? 'IPTSP Voice Call Service'
-                    : 'আইপিটিএসপি ভয়েস কল সেবা'}
+                  Individual IP-Telephone
                 </h2>
               </div>
               <p className="text-gray-600 text-lg">

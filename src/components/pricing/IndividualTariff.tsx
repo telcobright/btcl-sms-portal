@@ -1,9 +1,9 @@
-import { INDIVIDUAL_SUBSCRIBE_URL, INDIVIDUAL_TARIFF } from '@/lib/individual-tariff';
+import { INDIVIDUAL_PACKAGE, INDIVIDUAL_SUBSCRIBE_URL } from '@/lib/individual-tariff';
 import type { ReactNode } from 'react';
 
 /**
- * The Individual IPTSP voice tariff as BTCL publishes it: a headline price, then the rate
- * table row for row. No hooks, so the home page can render it on the server.
+ * The Individual IP-Telephone package as BTCL's package sheet lists it: a headline price, then
+ * every feature and term row for row. No hooks, so the home page can render it on the server.
  */
 export function IndividualTariff({
   locale,
@@ -35,28 +35,26 @@ export function IndividualTariff({
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900">
-              {INDIVIDUAL_TARIFF.title[lang]}
-            </h3>
+            <h3 className="text-lg font-bold text-gray-900">{INDIVIDUAL_PACKAGE.name}</h3>
             <p className="text-sm text-gray-600">
               {lang === 'en' ? 'Category' : 'ক্যাটাগরি'}:{' '}
               <span className="font-semibold text-btcl-primaryDark">
-                {INDIVIDUAL_TARIFF.category[lang]}
+                {INDIVIDUAL_PACKAGE.category[lang]}
               </span>
             </p>
           </div>
         </div>
         <div className="sm:text-right">
           <span className="text-3xl font-bold text-gray-900">
-            ৳{INDIVIDUAL_TARIFF.monthlyCharge}
+            ৳{INDIVIDUAL_PACKAGE.monthlyCharge}
           </span>
           <span className="text-sm text-gray-600">
             /{lang === 'en' ? 'month' : 'মাস'}
           </span>
           <div className="text-xs text-gray-500">
             {lang === 'en'
-              ? `${INDIVIDUAL_TARIFF.freeMinutes} free minutes every month`
-              : `প্রতি মাসে ${INDIVIDUAL_TARIFF.freeMinutes} মিনিট ফ্রি টকটাইম`}
+              ? `VAT applicable · ${INDIVIDUAL_PACKAGE.freeMinutes} free minutes every month`
+              : `ভ্যাট প্রযোজ্য · প্রতি মাসে ${INDIVIDUAL_PACKAGE.freeMinutes} মিনিট ফ্রি টকটাইম`}
           </div>
         </div>
       </div>
@@ -64,26 +62,45 @@ export function IndividualTariff({
       <table className="w-full text-sm">
         <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
           <tr>
-            <th scope="col" className="w-12 px-3 py-3 text-center sm:px-4">
-              {lang === 'en' ? 'SN' : 'ক্রম'}
+            <th scope="col" className="w-2/5 px-4 py-3 sm:w-1/3 sm:px-6">
+              {lang === 'en' ? 'Feature' : 'ফিচার'}
             </th>
-            <th scope="col" className="px-3 py-3 sm:px-4">
-              {lang === 'en' ? 'Description' : 'বিবরণ'}
-            </th>
-            <th scope="col" className="px-3 py-3 text-right sm:px-4">
-              {lang === 'en' ? 'Rate / Charge / Volume' : 'রেট / চার্জ / পরিমাণ'}
+            <th scope="col" className="px-4 py-3 sm:px-6">
+              {lang === 'en' ? 'Details' : 'বিবরণ'}
             </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {INDIVIDUAL_TARIFF.rows.map((row, index) => (
-            <tr key={row.description.en}>
-              <td className="px-3 py-3 text-center text-gray-500 sm:px-4">{index + 1}</td>
-              <td className="px-3 py-3 font-medium leading-snug text-gray-800 sm:px-4">
-                {row.description[lang]}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-right font-semibold text-gray-900 sm:px-4">
-                {row.rate[lang]}
+          {INDIVIDUAL_PACKAGE.features.map((feature) => (
+            <tr key={feature.label.en} className="align-top">
+              <th
+                scope="row"
+                className="px-4 py-2.5 text-left font-medium text-gray-700 sm:px-6"
+              >
+                {feature.label[lang]}
+              </th>
+              <td className="px-4 py-2.5 leading-snug text-gray-900 sm:px-6">
+                {feature.value === true ? (
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-btcl-primary">
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {lang === 'en' ? 'Yes' : 'হ্যাঁ'}
+                  </span>
+                ) : (
+                  <span className="font-medium text-gray-800">{feature.value[lang]}</span>
+                )}
               </td>
             </tr>
           ))}

@@ -337,31 +337,31 @@ function ServicesShowcaseSection({
           ))}
         </div>
 
-        {/* For Individuals: the one service sold to a personal account, with its tariff */}
-        <div className="mt-14 grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
-          <div>
+        {/* For Individuals: the one package sold to a personal account */}
+        <div className="mt-14 grid grid-cols-1 items-start gap-8 lg:grid-cols-5">
+          <div className="lg:col-span-2 lg:pt-6">
             <div className="mb-4 inline-flex rounded-full bg-gradient-to-r from-btcl-primary to-btcl-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
               {locale === 'en' ? 'Individual' : 'ব্যক্তিগত'}
             </div>
             <h3 className="mb-3 text-2xl font-bold text-gray-900 md:text-3xl">
-              {locale === 'en'
-                ? 'IPTSP Voice Call Service'
-                : 'আইপিটিএসপি ভয়েস কল সেবা'}
+              Individual IP-Telephone
             </h3>
             <p className="mb-6 text-base leading-relaxed text-gray-600">
               {locale === 'en'
-                ? "Voice calling for customers registered as an Individual, on BTCL's IPTSP network: one monthly subscription, with free talktime every month."
-                : 'ব্যক্তিগত হিসেবে নিবন্ধিত গ্রাহকদের জন্য বিটিসিএল আইপিটিএসপি নেটওয়ার্কে ভয়েস কল সেবা: একটি মাসিক সাবস্ক্রিপশন, প্রতি মাসে ফ্রি টকটাইম সহ।'}
+                ? 'For customers registered as an Individual: one DID number and one extension, with IVR, call recording, call forwarding and voice message to email. 250 free minutes with every paid month.'
+                : 'ব্যক্তিগত হিসেবে নিবন্ধিত গ্রাহকদের জন্য: একটি ডিআইডি নম্বর ও একটি এক্সটেনশন, সাথে IVR, কল রেকর্ডিং, কল ফরওয়ার্ডিং ও ভয়েস মেসেজ টু ইমেইল। প্রতিটি পরিশোধিত মাসে ২৫০ মিনিট ফ্রি টকটাইম।'}
             </p>
             <Link
               href={`/${locale}/pricing#iptsp-individual`}
               className="inline-flex items-center gap-2 text-sm font-bold text-btcl-primary transition-all duration-300 hover:gap-3"
             >
-              {locale === 'en' ? 'View tariff' : 'ট্যারিফ দেখুন'}
+              {locale === 'en' ? 'View details' : 'বিস্তারিত দেখুন'}
               <span>→</span>
             </Link>
           </div>
-          <IndividualTariff locale={locale} />
+          <div className="lg:col-span-3">
+            <IndividualTariff locale={locale} />
+          </div>
         </div>
 
         {/* View All Services CTA */}

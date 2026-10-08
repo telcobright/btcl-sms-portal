@@ -329,7 +329,7 @@ export default function Dashboard() {
   };
 
 
-  // An Individual is sold the IPTSP voice tariff, not the four services below, so their
+  // An Individual is sold Individual IP-Telephone, not the four services below, so their
   // dashboard offers that instead of Buy and Renew (see individual-tariff.ts).
   const isIndividual = isIndividualCategory(partnerExtra?.customerCategory);
   // The documents this customer's category must have approved before buying anything.

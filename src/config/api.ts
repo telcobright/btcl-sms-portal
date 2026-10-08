@@ -80,10 +80,9 @@ export const FEATURE_FLAGS = {
    * individuals; this only controls whether the public form offers them yet.
    *
    * Set to true to open individual registration. The document rules, the prepaid
-   * enforcement and the permanent photograph are all in place for it; only the option on
-   * the form is withheld until BTCL is ready to take individuals.
+   * enforcement and the permanent photograph are all in place for it.
    */
-  INDIVIDUAL_REGISTRATION_ENABLED: false,
+  INDIVIDUAL_REGISTRATION_ENABLED: true,
 } as const;
 
 // API Endpoints

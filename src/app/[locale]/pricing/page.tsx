@@ -3,6 +3,10 @@
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
+import {
+  IndividualSubscribeAction,
+  IndividualTariff,
+} from '@/components/pricing/IndividualTariff';
 import SlabPricingSection from '@/components/pricing/SlabPricingSection';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
@@ -19,10 +23,13 @@ import {
   getServiceEligibility,
   type ServiceEligibilityState,
 } from '@/lib/api-client/admin';
+import { getPrimaryCustomerCategory } from '@/lib/api-client/partner';
 import {
   describeServicePricingError,
   getServicePricing,
 } from '@/lib/api-client/servicePricing';
+import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
+import { isIndividualCategory } from '@/lib/individual-tariff';
 import {
   maxBuyableQuantity,
   quote,
@@ -42,6 +49,15 @@ interface DecodedToken {
   sub?: string;
   roles?: { name: string }[];
 }
+
+const subscribeToNothing = () => () => {};
+const hasAuthToken = () => {
+  try {
+    return !!localStorage.getItem('authToken');
+  } catch {
+    return false;
+  }
+};
 
 const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [selectedService, setSelectedService] = useState('hosted-pbx');
@@ -67,6 +83,16 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [docBlockReason, setDocBlockReason] = useState<
     'pending' | 'rejected' | null
   >(null);
+  // The customer's category decides what they are sold: an Individual gets the IPTSP voice
+  // tariff, everyone else the packages below. Null until read, and for visitors and admins.
+  const [customerCategory, setCustomerCategory] = useState<string | null>(null);
+  // An Individual is sold the IPTSP voice tariff, never the packages on this page (see
+  // individual-tariff.ts). PaymentGateWay refuses those too; this is about not offering them.
+  const individualView = !isAdmin && isIndividualCategory(customerCategory);
+  // Read while rendering, so a signed-in customer's first frame already waits for their
+  // account rather than showing plans that may not be theirs. The server cannot see the
+  // token, so it renders the public page.
+  const signedIn = React.useSyncExternalStore(subscribeToNothing, hasAuthToken, () => false);
   // PBX pre-purchase notice (IP-phones / IP whitelisting)
   const [pbxNoticeOpen, setPbxNoticeOpen] = useState(false);
   const [pbxPendingPkg, setPbxPendingPkg] = useState<{
@@ -108,6 +134,17 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     return false;
   };
 
+  /** True, after saying why, when this customer may not buy the packages on this page. */
+  const refusedAsIndividual = () => {
+    if (!individualView) return false;
+    toast.error(
+      locale === 'en'
+        ? 'These packages are not available to Individual accounts.'
+        : 'এই প্যাকেজগুলো ব্যক্তিগত অ্যাকাউন্টের জন্য প্রযোজ্য নয়।'
+    );
+    return true;
+  };
+
   // Fetch user type from API by decoding JWT token
   useEffect(() => {
     const fetchUserType = async () => {
@@ -146,7 +183,11 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         // category: a private individual has no trade licence or TIN to approve, so a
         // fixed list of four documents here would show them "under review" forever.
         if (!adminRole) {
-          const eligibility = await getServiceEligibility(idPartner, authToken);
+          const [eligibility, category] = await Promise.all([
+            getServiceEligibility(idPartner, authToken),
+            getPrimaryCustomerCategory(idPartner, authToken),
+          ]);
+          setCustomerCategory(category);
           if (eligibility) {
             setSmsEligibility(eligibility.sms);
             if (eligibility.rejected.length > 0) {
@@ -317,6 +358,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`);
       return;
     }
+    if (refusedAsIndividual()) return;
     if (purchaseBlocked) {
       if (docBlockReason === 'rejected') {
         toast.error(
@@ -355,6 +397,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`);
       return;
     }
+    if (refusedAsIndividual()) return;
     if (purchaseBlocked) {
       if (docBlockReason === 'rejected') {
         toast.error(
@@ -693,6 +736,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`);
       return;
     }
+    if (refusedAsIndividual()) return;
     if (purchaseBlocked) {
       if (docBlockReason === 'rejected') {
         toast.error(
@@ -733,6 +777,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`);
       return;
     }
+    if (refusedAsIndividual()) return;
     if (purchaseBlocked) {
       if (docBlockReason === 'rejected') {
         toast.error(
@@ -1245,12 +1290,25 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     );
   };
 
+  // A signed-in customer's plans wait for their account, so an Individual is not shown
+  // packages that are not theirs to buy while it loads.
+  const resolvingAccount = signedIn && isLoadingUserType;
+  const showRegularPlans = !resolvingAccount && !individualView;
+  // The Individual tariff is public; after sign-in it is shown to the customers it is for.
+  const showIndividualTariff =
+    !resolvingAccount && (!signedIn || isAdmin || individualView);
   const showPrepaid =
-    isAdmin || isLoadingUserType || userType === null || userType === 'prepaid';
+    showRegularPlans &&
+    (isAdmin || isLoadingUserType || userType === null || userType === 'prepaid');
   const showPostpaid =
-    isAdmin ||
-    (!isLoadingUserType &&
-      (userType === 'postpaid' || (userType === null && !isLoggedIn())));
+    showRegularPlans &&
+    (isAdmin ||
+      (!isLoadingUserType &&
+        (userType === 'postpaid' || (userType === null && !isLoggedIn()))));
+  // The documents this customer's category must have approved, named in the banner below.
+  const requiredDocNames = requiredDocumentsFor(customerCategory)
+    .map((type) => DOCUMENT_LABELS[type] ?? type)
+    .join(', ');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1267,9 +1325,13 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             {locale === 'en' ? 'Service Pricing' : 'সেবা মূল্য'}
           </h1>
           <p className="text-xl text-white mb-8 max-w-3xl mx-auto">
-            {locale === 'en'
-              ? 'Transparent pricing for all our corporate communication services. Choose the plan that fits your business needs.'
-              : 'আমাদের সমস্ত কর্পোরেট যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
+            {individualView
+              ? locale === 'en'
+                ? 'Your account is registered as an Individual. This is the tariff available to you.'
+                : 'আপনার অ্যাকাউন্টটি ব্যক্তিগত হিসেবে নিবন্ধিত। আপনার জন্য প্রযোজ্য ট্যারিফ নিচে দেওয়া হলো।'
+              : locale === 'en'
+                ? 'Transparent pricing for all our corporate communication services. Choose the plan that fits your business needs.'
+                : 'আমাদের সমস্ত কর্পোরেট যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}
           </p>
           {/* Quick jump links */}
           <div className="flex flex-wrap justify-center gap-3 mt-2">
@@ -1304,7 +1366,17 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                 en: 'Short Code Parking',
                 bn: 'শর্ট কোড পার্কিং',
               },
-            ].map((s) => (
+              {
+                id: 'iptsp-individual',
+                icon: '📞',
+                en: 'IPTSP Voice (Individual)',
+                bn: 'আইপিটিএসপি ভয়েস (ব্যক্তিগত)',
+              },
+            ]
+              .filter((s) =>
+                s.id === 'iptsp-individual' ? showIndividualTariff : showRegularPlans
+              )
+              .map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
@@ -1362,13 +1434,22 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               >
                 {docBlockReason === 'rejected'
                   ? locale === 'en'
-                    ? 'One or more required documents (NID Front, NID Back, Trade License, TIN) have been rejected. Please re-upload corrected documents from your dashboard. BTCL will review within 3 working days.'
+                    ? `One or more required documents (${requiredDocNames}) have been rejected. Please re-upload corrected documents from your dashboard. BTCL will review within 3 working days.`
                     : 'এক বা একাধিক প্রয়োজনীয় নথি প্রত্যাখ্যান করা হয়েছে। অনুগ্রহ করে আপনার ড্যাশবোর্ড থেকে সংশোধিত নথি পুনরায় আপলোড করুন।'
                   : locale === 'en'
-                    ? 'BTCL will review and approve your required documents (NID Front, NID Back, Trade License, TIN) within 3 working days. Document approval is mandatory before making any purchase.'
-                    : 'BTCL আপনার প্রয়োজনীয় নথি (NID সামনে, NID পিছনে, ট্রেড লাইসেন্স, TIN) ৩ কার্যদিবসের মধ্যে পর্যালোচনা ও অনুমোদন করবে। যেকোনো ক্রয়ের আগে নথি অনুমোদন বাধ্যতামূলক।'}
+                    ? `BTCL will review and approve your required documents (${requiredDocNames}) within 3 working days. Document approval is mandatory before making any purchase.`
+                    : `BTCL আপনার প্রয়োজনীয় নথি (${requiredDocNames}) ৩ কার্যদিবসের মধ্যে পর্যালোচনা ও অনুমোদন করবে। যেকোনো ক্রয়ের আগে নথি অনুমোদন বাধ্যতামূলক।`}
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {resolvingAccount && (
+        <div className="flex justify-center py-24" role="status">
+          <div className="flex items-center gap-3 text-gray-500">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-btcl-primary border-t-transparent" />
+            {locale === 'en' ? 'Loading your plans…' : 'আপনার প্ল্যান লোড হচ্ছে…'}
           </div>
         </div>
       )}
@@ -1505,6 +1586,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       )}
 
       {/* ── Short Code Parking Service ── */}
+      {showRegularPlans && (
       <div id="short-code" className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header - matches other sections */}
@@ -1817,6 +1899,34 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           </div>
         </div>
       </div>
+      )}
+
+      {/* ── IPTSP Voice Call Service — Individual ── */}
+      {showIndividualTariff && (
+        <div id="iptsp-individual" className="py-20 bg-btcl-primaryLight/5">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
+                <span className="text-4xl">📞</span>
+                <h2 className="text-2xl font-bold">
+                  {locale === 'en'
+                    ? 'IPTSP Voice Call Service'
+                    : 'আইপিটিএসপি ভয়েস কল সেবা'}
+                </h2>
+              </div>
+              <p className="text-gray-600 text-lg">
+                {locale === 'en'
+                  ? 'For customers registered as an Individual'
+                  : 'ব্যক্তিগত হিসেবে নিবন্ধিত গ্রাহকদের জন্য'}
+              </p>
+            </div>
+            <IndividualTariff
+              locale={locale}
+              action={<IndividualSubscribeAction locale={locale} />}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Contact CTA */}
       <div className="py-16 bg-gradient-to-r from-btcl-primary to-btcl-primaryDark">

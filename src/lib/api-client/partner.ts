@@ -737,15 +737,18 @@ export const createPartnerInService = async (
  *
  * Returns null rather than throwing: a replicated partner missing its category is a
  * reporting gap, and refusing the purchase over one would be far worse.
+ *
+ * The body is `{ id }`, the key get-partner-extra reads. It used to send `{ idPartner }`,
+ * which the endpoint ignores, so every call came back without a category.
  */
-const getPrimaryCustomerCategory = async (
+export const getPrimaryCustomerCategory = async (
   idPartner: number,
   authToken: string
 ): Promise<string | null> => {
   try {
     const response = await axios.post(
       `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`,
-      { idPartner },
+      { id: idPartner },
       {
         headers: {
           'Content-Type': 'application/json',

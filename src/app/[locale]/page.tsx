@@ -1,5 +1,6 @@
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
+import { IndividualTariff } from '@/components/pricing/IndividualTariff';
 import StartingFromPrice from '@/components/pricing/StartingFromPrice';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
@@ -334,6 +335,33 @@ function ServicesShowcaseSection({
           {services.map((service, index) => (
             <ServiceCard key={service.id} service={service} index={index} />
           ))}
+        </div>
+
+        {/* For Individuals: the one service sold to a personal account, with its tariff */}
+        <div className="mt-14 grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
+          <div>
+            <div className="mb-4 inline-flex rounded-full bg-gradient-to-r from-btcl-primary to-btcl-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+              {locale === 'en' ? 'Individual' : 'ব্যক্তিগত'}
+            </div>
+            <h3 className="mb-3 text-2xl font-bold text-gray-900 md:text-3xl">
+              {locale === 'en'
+                ? 'IPTSP Voice Call Service'
+                : 'আইপিটিএসপি ভয়েস কল সেবা'}
+            </h3>
+            <p className="mb-6 text-base leading-relaxed text-gray-600">
+              {locale === 'en'
+                ? "Voice calling for customers registered as an Individual, on BTCL's IPTSP network: one monthly subscription, with free talktime every month."
+                : 'ব্যক্তিগত হিসেবে নিবন্ধিত গ্রাহকদের জন্য বিটিসিএল আইপিটিএসপি নেটওয়ার্কে ভয়েস কল সেবা: একটি মাসিক সাবস্ক্রিপশন, প্রতি মাসে ফ্রি টকটাইম সহ।'}
+            </p>
+            <Link
+              href={`/${locale}/pricing#iptsp-individual`}
+              className="inline-flex items-center gap-2 text-sm font-bold text-btcl-primary transition-all duration-300 hover:gap-3"
+            >
+              {locale === 'en' ? 'View tariff' : 'ট্যারিফ দেখুন'}
+              <span>→</span>
+            </Link>
+          </div>
+          <IndividualTariff locale={locale} />
         </div>
 
         {/* View All Services CTA */}

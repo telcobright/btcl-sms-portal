@@ -15,6 +15,12 @@ import { uploadPartnerDocument, getServiceEligibility, getDepositStatus, type De
 import { showApiError } from '@/lib/api-error';
 import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
+import {
+  IndividualSubscribeAction,
+  IndividualTariff,
+} from '@/components/pricing/IndividualTariff';
+import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
+import { isIndividualCategory } from '@/lib/individual-tariff';
 import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import { jwtDecode } from 'jwt-decode';
 import {
@@ -323,17 +329,26 @@ export default function Dashboard() {
   };
 
 
+  // An Individual is sold the IPTSP voice tariff, not the four services below, so their
+  // dashboard offers that instead of Buy and Renew (see individual-tariff.ts).
+  const isIndividual = isIndividualCategory(partnerExtra?.customerCategory);
+  // The documents this customer's category must have approved before buying anything.
+  const requiredDocs = requiredDocumentsFor(partnerExtra?.customerCategory);
+  const requiredDocNames = requiredDocs
+    .map((type) => DOCUMENT_LABELS[type] ?? type)
+    .join(', ');
+
   const handleBuyNow = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (purchaseBlocked) {
       e.preventDefault();
       if (docBlockReason === 'rejected') {
         toast.error(
-          'Your package purchase is restricted because one or more required documents (NID Front, NID Back, Trade License, or TIN) have been rejected. Please re-upload the rejected documents and wait for approval.',
+          `Your package purchase is restricted because one or more required documents (${requiredDocNames}) have been rejected. Please re-upload the rejected documents and wait for approval.`,
           { duration: 6000 }
         );
       } else {
         toast.error(
-          'Your package purchase is restricted. BTCL is reviewing your required documents (NID Front, NID Back, Trade License, TIN). Approval takes up to 3 working days.',
+          `Your package purchase is restricted. BTCL is reviewing your required documents (${requiredDocNames}). Approval takes up to 3 working days.`,
           { duration: 6000 }
         );
       }
@@ -346,7 +361,8 @@ export default function Dashboard() {
   // the service stop first. Renewing early now adds to the time remaining instead of
   // restarting from today (RTC-Manager PackagePurchaseService.renewalStart), which is what
   // makes this safe to offer. Routed through handleBuyNow so document review still blocks.
-  const RenewPill = ({ label }: { label: string }) => (
+  const RenewPill = ({ label }: { label: string }) =>
+    isIndividual ? null : (
     <a
       href="/en/pricing"
       onClick={handleBuyNow}
@@ -1108,15 +1124,12 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 >
                   {docBlockReason === 'rejected'
                     ? 'One or more of your required documents have been rejected. Please re-upload the corrected documents from the Documents section below. Once re-uploaded, BTCL will review them within 3 working days.'
-                    : 'BTCL will review and approve your submitted documents within 3 working days. Document approval for all required documents (NID Front, NID Back, Trade License, TIN) is mandatory to make any purchase.'}
+                    : `BTCL will review and approve your submitted documents within 3 working days. Document approval for all required documents (${requiredDocNames}) is mandatory to make any purchase.`}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {[
-                    { type: 'nidfront', label: 'NID Front' },
-                    { type: 'nidback', label: 'NID Back' },
-                    { type: 'tradelicense', label: 'Trade License' },
-                    { type: 'tin', label: 'TIN Certificate' },
-                  ].map((doc) => {
+                  {requiredDocs
+                    .map((type) => ({ type, label: DOCUMENT_LABELS[type] ?? type }))
+                    .map((doc) => {
                     const status = docStatuses[doc.type]?.status || 'PENDING';
                     return (
                       <span
@@ -1266,7 +1279,9 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
               <ExternalLink className="w-5 h-5 text-btcl-primary" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Service Portals</h3>
+            <h3 className="text-xl font-bold text-gray-900">
+              {isIndividual ? 'Your Service' : 'Service Portals'}
+            </h3>
           </div>
           {purchaseBlocked && docBlockReason === 'rejected' && (
             <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
@@ -1286,10 +1301,9 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                   Package purchase is currently restricted
                 </p>
                 <p className="text-xs leading-relaxed text-red-600 mt-1">
-                  One or more of your required documents (NID Front, NID Back,
-                  Trade License, or TIN) have been rejected. Please re-upload
-                  the rejected documents from the Documents section below and
-                  wait for admin approval.
+                  One or more of your required documents ({requiredDocNames})
+                  have been rejected. Please re-upload the rejected documents
+                  from the Documents section below and wait for admin approval.
                 </p>
               </div>
             </div>
@@ -1312,13 +1326,21 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                   Documents under review — Purchase disabled
                 </p>
                 <p className="text-xs leading-relaxed text-amber-600 mt-1">
-                  BTCL will review and approve your required documents (NID
-                  Front, NID Back, Trade License, TIN) within 3 working days.
+                  BTCL will review and approve your required documents (
+                  {requiredDocNames}) within 3 working days.
                   Document approval is mandatory before making any purchase. You
                   will be able to purchase packages once all required documents
                   are approved.
                 </p>
               </div>
+            </div>
+          )}
+          {isIndividual && (
+            <div className="mb-4">
+              <IndividualTariff
+                locale={locale}
+                action={<IndividualSubscribeAction locale={locale} />}
+              />
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1358,7 +1380,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </a>
                 <RenewPill label="↻ Renew" />
               </div>
-            ) : serviceHistory.pbx ? (
+            ) : isIndividual ? null : serviceHistory.pbx ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
@@ -1465,7 +1487,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </button>
                 <RenewPill label="↻ Renew" />
               </div>
-            ) : serviceHistory.hcc ? (
+            ) : isIndividual ? null : serviceHistory.hcc ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
@@ -1565,7 +1587,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </a>
                 <RenewPill label="↻ Renew" />
               </div>
-            ) : serviceHistory.vbs ? (
+            ) : isIndividual ? null : serviceHistory.vbs ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
@@ -1668,7 +1690,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </a>
                 <RenewPill label="+ Buy more" />
               </div>
-            ) : serviceHistory.sms ? (
+            ) : isIndividual ? null : serviceHistory.sms ? (
               <a
                 href="/en/pricing#bulk-sms"
                 onClick={handleBuyNow}

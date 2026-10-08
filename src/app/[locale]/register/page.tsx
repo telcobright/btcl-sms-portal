@@ -1144,8 +1144,8 @@ export default function RegisterPage() {
                     : selectedCategory === 'GOVERNMENT_INDIVIDUAL'
                       ? 'You will be asked for both sides of your NID, a photograph and your office ID card or certifying letter. The photograph is permanent and cannot be changed later.'
                       : selectedCategory === 'GOVERNMENT_CORPORATE'
-                        ? 'You will be asked for your NID and an office order / authorisation letter.'
-                        : 'You will be asked for your trade licence, TIN and BIN certificate.'}
+                        ? 'You will be asked for both sides of your NID, your trade licence, TIN and an office ID card or certifying letter.'
+                        : 'You will be asked for both sides of your NID, your trade licence, TIN and BIN certificate.'}
                 </p>
               </div>
 
@@ -2187,11 +2187,18 @@ export default function RegisterPage() {
 
                 <div className="mt-4">
                   <label className="block text-black font-medium mb-1">
-                    Upload BIN Certificate (Optional)
+                    Upload BIN Certificate{' '}
+                    {selectedCategory === 'CORPORATE' ? (
+                      <span className="text-red-500">*</span>
+                    ) : (
+                      '(Optional)'
+                    )}
                   </label>
                   <Controller
                     name="bincertificate"
                     control={otherInfoForm.control}
+                    // A private company must hold a BIN; no other category does.
+                    rules={{ required: selectedCategory === 'CORPORATE' ? 'BIN certificate is required' : false }}
                     render={({ field: { onChange }, fieldState }) => (
                       <>
                         <input
@@ -2217,12 +2224,19 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-black font-medium mb-1">
-                    Tax Return Date
+                    Tax Return Date (Optional)
                   </label>
                   <Controller
                     name="taxReturnDate"
                     control={otherInfoForm.control}
-                    rules={{ required: 'Tax return date is required' }}
+                    // The tax return is optional for every category, so the date is only
+                    // asked for when a return is actually uploaded.
+                    rules={{
+                      validate: (v) =>
+                        otherInfoForm.getValues('taxReturnFile') && !v
+                          ? 'Enter the date of the tax return you uploaded'
+                          : true,
+                    }}
                     render={({ field, fieldState }) => (
                       <>
                         <input
@@ -2294,7 +2308,7 @@ export default function RegisterPage() {
                 {isGovernment && (
                   <div className="mt-4">
                     <label className="block text-black font-medium mb-1">
-                      Upload Office Order / Authorisation Letter
+                      Upload Office ID Card / Certifying Letter <span className="text-red-500">*</span>
                     </label>
                     <Controller
                       name="govtAuthorizationFile"

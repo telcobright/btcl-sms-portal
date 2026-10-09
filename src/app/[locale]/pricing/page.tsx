@@ -3,10 +3,7 @@
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
-import {
-  IndividualSubscribeAction,
-  IndividualTariff,
-} from '@/components/pricing/IndividualTariff';
+import { IndividualTariff } from '@/components/pricing/IndividualTariff';
 import SlabPricingSection from '@/components/pricing/SlabPricingSection';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
@@ -29,7 +26,7 @@ import {
   getServicePricing,
 } from '@/lib/api-client/servicePricing';
 import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
-import { isIndividualCategory } from '@/lib/individual-tariff';
+import { INDIVIDUAL_PACKAGE, isIndividualCategory } from '@/lib/individual-tariff';
 import {
   maxBuyableQuantity,
   quote,
@@ -115,6 +112,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     9132: 'bronze',
     9133: 'silver',
     9134: 'gold',
+    [INDIVIDUAL_PACKAGE.packageId]: INDIVIDUAL_PACKAGE.slug,
     9135: 'basic',
     9136: 'standard',
     9137: 'enterprise',
@@ -134,9 +132,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     return false;
   };
 
-  /** True, after saying why, when this customer may not buy the packages on this page. */
-  const refusedAsIndividual = () => {
-    if (!individualView) return false;
+  /**
+   * True, after saying why, when this customer may not buy the package. An Individual buys
+   * the Individual plan and no other.
+   */
+  const refusedAsIndividual = (pkgId?: string) => {
+    if (!individualView || pkgId === INDIVIDUAL_PACKAGE.slug) return false;
     toast.error(
       locale === 'en'
         ? 'These packages are not available to Individual accounts.'
@@ -358,7 +359,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`);
       return;
     }
-    if (refusedAsIndividual()) return;
+    if (refusedAsIndividual(pkg?.id)) return;
     if (purchaseBlocked) {
       if (docBlockReason === 'rejected') {
         toast.error(
@@ -397,7 +398,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       router.push(`/${locale}/login`);
       return;
     }
-    if (refusedAsIndividual()) return;
+    if (refusedAsIndividual(pkg?.id)) return;
     if (purchaseBlocked) {
       if (docBlockReason === 'rejected') {
         toast.error(
@@ -1297,6 +1298,14 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // The Individual tariff is public; after sign-in it is shown to the customers it is for.
   const showIndividualTariff =
     !resolvingAccount && (!signedIn || isAdmin || individualView);
+  // What the checkout needs to sell the Individual plan, in the shape of the IP PBX plans.
+  const individualPlan = {
+    id: INDIVIDUAL_PACKAGE.slug,
+    name: INDIVIDUAL_PACKAGE.name,
+    price: INDIVIDUAL_PACKAGE.monthlyCharge,
+    extensions: 1,
+    features: INDIVIDUAL_PACKAGE.features.map((f) => (locale === 'en' ? f.en : f.bn)),
+  };
   const showPrepaid =
     showRegularPlans &&
     (isAdmin || isLoadingUserType || userType === null || userType === 'prepaid');
@@ -1917,9 +1926,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               </p>
             </div>
             <div className="max-w-md mx-auto pt-4">
+              {/* Bought through the IP PBX checkout, so it gets the IP PBX plans' button:
+                  Buy Now, Renew Plan, or the reason it cannot be bought yet. An admin only
+                  reads the page. */}
               <IndividualTariff
                 locale={locale}
-                action={<IndividualSubscribeAction locale={locale} />}
+                action={isAdmin ? undefined : renderPrepaidButton(individualPlan, 'hosted-pbx')}
               />
             </div>
           </div>

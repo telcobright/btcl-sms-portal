@@ -46,7 +46,7 @@ export default function OrderSummary({
   const getPackageDetails = () => {
     switch (serviceType) {
       case 'hosted-pbx':
-        return `${pkg.extensions} ${locale === 'en' ? 'Extensions' : 'এক্সটেনশন'}`;
+        return `${pkg.extensions} ${locale === 'en' ? (pkg.extensions === 1 ? 'Extension' : 'Extensions') : 'এক্সটেনশন'}`;
       case 'contact-center':
         return `${purchaseAction === 'add-agents' ? '+' : ''}${pkg.quantity || 1} ${locale === 'en' ? 'Agent(s)' : 'এজেন্ট'}`;
       case 'voice-broadcast':

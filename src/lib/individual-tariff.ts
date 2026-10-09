@@ -15,22 +15,22 @@ export function isIndividualCategory(category: string | null | undefined): boole
   return (category ?? '').trim().toUpperCase() === 'INDIVIDUAL';
 }
 
-/**
- * Where an Individual subscribes. Null until the package exists, and the package then says
- * "Coming soon" rather than offering a button that leads nowhere.
- */
-export const INDIVIDUAL_SUBSCRIBE_URL: string | null = null;
-
 type Bilingual = { en: string; bn: string };
 
 /** As BTCL's package sheet lists it, written as feature lines like the IP PBX plans. */
 export const INDIVIDUAL_PACKAGE: {
+  /** The plan's key in the checkout, beside starter, bronze and the other IP PBX plans. */
+  slug: string;
+  /** Its package in the IP PBX service, which is where it is bought and provisioned. */
+  packageId: number;
   name: string;
   monthlyCharge: number;
   features: Bilingual[];
   /** Explains the asterisk on the free talktime line. */
   talktimeNote: Bilingual;
 } = {
+  slug: 'individual',
+  packageId: 10002,
   name: 'Alaap Individual IP-Telephone',
   monthlyCharge: 100,
   features: [

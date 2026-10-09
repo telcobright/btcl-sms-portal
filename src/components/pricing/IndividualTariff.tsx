@@ -1,4 +1,4 @@
-import { INDIVIDUAL_PACKAGE, INDIVIDUAL_SUBSCRIBE_URL } from '@/lib/individual-tariff';
+import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
 import type { ReactNode } from 'react';
 
 /**
@@ -67,37 +67,6 @@ export function IndividualTariff({
 
       <p className="mt-6 text-center text-sm text-gray-500">
         {INDIVIDUAL_PACKAGE.talktimeNote[lang]}
-      </p>
-    </div>
-  );
-}
-
-/** Subscribe, once INDIVIDUAL_SUBSCRIBE_URL is set; until then, an honest "Coming soon". */
-export function IndividualSubscribeAction({ locale }: { locale: string }) {
-  const en = locale === 'en';
-  if (INDIVIDUAL_SUBSCRIBE_URL) {
-    return (
-      <a
-        href={INDIVIDUAL_SUBSCRIBE_URL}
-        className="block w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-center text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
-      >
-        {en ? 'Subscribe' : 'সাবস্ক্রাইব করুন'}
-      </a>
-    );
-  }
-  return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        disabled
-        className="w-full cursor-not-allowed rounded-xl bg-gray-300 px-6 py-3 text-sm font-semibold text-gray-600"
-      >
-        {en ? 'Coming Soon' : 'শীঘ্রই আসছে'}
-      </button>
-      <p className="text-center text-xs text-gray-500">
-        {en
-          ? 'Online subscription for Individual accounts opens soon.'
-          : 'ব্যক্তিগত অ্যাকাউন্টের জন্য অনলাইন সাবস্ক্রিপশন শীঘ্রই চালু হবে।'}
       </p>
     </div>
   );

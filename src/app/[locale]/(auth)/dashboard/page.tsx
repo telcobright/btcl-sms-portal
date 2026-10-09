@@ -15,12 +15,9 @@ import { uploadPartnerDocument, getServiceEligibility, getDepositStatus, type De
 import { showApiError } from '@/lib/api-error';
 import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
-import {
-  IndividualSubscribeAction,
-  IndividualTariff,
-} from '@/components/pricing/IndividualTariff';
+import { IndividualTariff } from '@/components/pricing/IndividualTariff';
 import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
-import { isIndividualCategory } from '@/lib/individual-tariff';
+import { INDIVIDUAL_PACKAGE, isIndividualCategory } from '@/lib/individual-tariff';
 import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import { jwtDecode } from 'jwt-decode';
 import {
@@ -50,6 +47,7 @@ const PACKAGE_NAMES: Record<number, string> = {
   9132: 'PBX Bronze',
   9133: 'PBX Silver',
   9134: 'PBX Gold',
+  [INDIVIDUAL_PACKAGE.packageId]: INDIVIDUAL_PACKAGE.name,
   9135: 'VBS Basic',
   9136: 'VBS Standard',
   9137: 'VBS Corporate',
@@ -1337,9 +1335,19 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
           )}
           {isIndividual && (
             <div className="mx-auto mb-4 max-w-md pt-4">
+              {/* The plan is bought on the pricing page, like every other; routed through
+                  handleBuyNow so document review still blocks it. */}
               <IndividualTariff
                 locale={locale}
-                action={<IndividualSubscribeAction locale={locale} />}
+                action={
+                  <a
+                    href={`/${locale}/pricing#iptsp-individual`}
+                    onClick={handleBuyNow}
+                    className="block w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-center text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
+                  >
+                    {serviceData.pbx.valid || serviceHistory.pbx ? '↻ Renew Plan' : 'Subscribe'}
+                  </a>
+                }
               />
             </div>
           )}

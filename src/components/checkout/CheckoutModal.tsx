@@ -135,6 +135,7 @@ export default function CheckoutModal({
     9132: 'bronze',
     9133: 'silver',
     9134: 'gold', // PBX
+    10002: 'individual', // PBX, Individual customers only
     9135: 'basic',
     9136: 'standard',
     9137: 'enterprise', // VBS
@@ -574,6 +575,7 @@ export default function CheckoutModal({
         bronze: 9132,
         silver: 9133,
         gold: 9134,
+        individual: 10002,
       },
       'voice-broadcast': {
         basic: 9135,
@@ -781,7 +783,8 @@ export default function CheckoutModal({
         switch (serviceType) {
           case 'hosted-pbx':
             return {
-              name: `Alaap Cloud IP PBX - ${pkg.name}`,
+              // The Individual plan carries its own full name.
+              name: pkg.id === 'individual' ? pkg.name : `Alaap Cloud IP PBX - ${pkg.name}`,
               category: 'Alaap Cloud IP PBX',
             };
           case 'voice-broadcast':

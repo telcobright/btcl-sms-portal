@@ -402,14 +402,16 @@ export default function Dashboard() {
   // the service stop first. Renewing early now adds to the time remaining instead of
   // restarting from today (RTC-Manager PackagePurchaseService.renewalStart), which is what
   // makes this safe to offer. Routed through handleBuyNow so document review still blocks.
+  // A client-side link, not a page load: a full load paints the public pricing page, every plan
+  // included, before the customer's account decides what they are shown.
   const RenewPill = ({ label, href = '/en/pricing' }: { label: string; href?: string }) => (
-    <a
+    <Link
       href={href}
       onClick={handleBuyNow}
       className="self-end px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white hover:bg-btcl-primary hover:text-white transition-all whitespace-nowrap"
     >
       {label}
-    </a>
+    </Link>
   );
 
   const fetchDocStatuses = async (partnerId: number) => {
@@ -1404,7 +1406,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                     <RenewPill label="↻ Renew" href={`/${locale}/pricing#iptsp-individual`} />
                   </div>
                 ) : serviceHistory.pbx ? (
-                  <a
+                  <Link
                     href={`/${locale}/pricing#iptsp-individual`}
                     onClick={handleBuyNow}
                     className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
@@ -1421,9 +1423,9 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                     <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
                       Renew Now
                     </span>
-                  </a>
+                  </Link>
                 ) : (
-                  <a
+                  <Link
                     href={`/${locale}/pricing#iptsp-individual`}
                     onClick={handleBuyNow}
                     className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
@@ -1442,7 +1444,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                     <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
                       Buy Now
                     </span>
-                  </a>
+                  </Link>
                 )}
                 <ComingSoonTile name="Alaap Cloud IP PBX" iconPath={SERVICE_ICONS.pbx} />
                 <ComingSoonTile name="Alaap Cloud Contact Center" iconPath={SERVICE_ICONS.hcc} />

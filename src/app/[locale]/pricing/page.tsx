@@ -1314,6 +1314,17 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     (isAdmin ||
       (!isLoadingUserType &&
         (userType === 'postpaid' || (userType === null && !isLoggedIn()))));
+  // A link to one plan (/pricing#iptsp-individual, #bulk-sms) is followed while a signed-in
+  // customer's account is still loading and, on a full page load, while the page still shows
+  // every plan. The browser scrolls to where that plan sat among them and stays put when the
+  // others are hidden, which left an Individual looking at the footer. So once the page shows
+  // what it will, go to the plan the link named.
+  useEffect(() => {
+    if (resolvingAccount) return;
+    const id = window.location.hash.slice(1);
+    if (id) document.getElementById(id)?.scrollIntoView({ block: 'start' });
+  }, [resolvingAccount]);
+
   // The documents this customer's category must have approved, named in the banner below.
   const requiredDocNames = requiredDocumentsFor(customerCategory)
     .map((type) => DOCUMENT_LABELS[type] ?? type)

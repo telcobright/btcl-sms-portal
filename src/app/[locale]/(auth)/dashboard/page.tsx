@@ -15,7 +15,6 @@ import { uploadPartnerDocument, getServiceEligibility, getDepositStatus, type De
 import { showApiError } from '@/lib/api-error';
 import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
-import { IndividualTariff } from '@/components/pricing/IndividualTariff';
 import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE, isIndividualCategory } from '@/lib/individual-tariff';
 import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
@@ -39,6 +38,50 @@ import toast from 'react-hot-toast';
 // Contact Center plan, for adding agents from the dashboard. Same id and price as the
 // pricing page's Basic plan; the payment service checks the price regardless.
 const CC_BASIC_PACKAGE = { id: 'basic', name: 'Basic', price: 8500 };
+
+// Service Portals tile icons, shared by the live tiles and the Coming Soon ones.
+const SERVICE_ICONS = {
+  pbx: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
+  hcc: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+  vbs: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z',
+  sms: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+};
+
+/**
+ * A service an Individual cannot buy yet. They are sold Alaap Individual IP-Telephone alone
+ * (the payment service refuses the rest), so these say what is coming rather than offer a
+ * Buy Now that could only end in a refusal. Not a link.
+ */
+function ComingSoonTile({
+  name,
+  iconPath,
+  tag,
+}: {
+  name: string;
+  iconPath: string;
+  tag?: React.ReactNode;
+}) {
+  return (
+    <div
+      aria-disabled="true"
+      className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 cursor-not-allowed"
+    >
+      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300">
+        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath} />
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-bold text-gray-500">{name}</h4>
+        <p className="text-sm text-gray-400">Not yet available</p>
+        {tag && <div className="mt-1.5">{tag}</div>}
+      </div>
+      <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-gray-300 text-gray-500 bg-white whitespace-nowrap">
+        Coming Soon
+      </span>
+    </div>
+  );
+}
 
 // Map idPackage to human-readable names (backend returns packageName=null)
 const PACKAGE_NAMES: Record<number, string> = {
@@ -359,10 +402,9 @@ export default function Dashboard() {
   // the service stop first. Renewing early now adds to the time remaining instead of
   // restarting from today (RTC-Manager PackagePurchaseService.renewalStart), which is what
   // makes this safe to offer. Routed through handleBuyNow so document review still blocks.
-  const RenewPill = ({ label }: { label: string }) =>
-    isIndividual ? null : (
+  const RenewPill = ({ label, href = '/en/pricing' }: { label: string; href?: string }) => (
     <a
-      href="/en/pricing"
+      href={href}
       onClick={handleBuyNow}
       className="self-end px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white hover:bg-btcl-primary hover:text-white transition-all whitespace-nowrap"
     >
@@ -1277,9 +1319,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-btcl-primaryLight/10">
               <ExternalLink className="w-5 h-5 text-btcl-primary" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">
-              {isIndividual ? 'Your Service' : 'Service Portals'}
-            </h3>
+            <h3 className="text-xl font-bold text-gray-900">Service Portals</h3>
           </div>
           {purchaseBlocked && docBlockReason === 'rejected' && (
             <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
@@ -1333,25 +1373,84 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
               </div>
             </div>
           )}
-          {isIndividual && (
-            <div className="mx-auto mb-4 max-w-md pt-4">
-              {/* The plan is bought on the pricing page, like every other; routed through
-                  handleBuyNow so document review still blocks it. */}
-              <IndividualTariff
-                locale={locale}
-                action={
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {isIndividual ? (
+              <>
+                {/* Alaap Individual IP-Telephone: the one service an Individual can buy. It is
+                    an IP PBX plan, so it counts as their PBX subscription and its portal is
+                    the IP PBX portal. Bought and renewed on the pricing page, through
+                    handleBuyNow so document review still blocks it. */}
+                {serviceData.pbx.valid ? (
+                  <div className="flex flex-col gap-2">
+                    <a
+                      href="https://ippbx.alaapcloud.gov.bd:5174/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-4 p-4 rounded-xl bg-btcl-primaryLight/10 border-2 border-btcl-primaryLight/30 hover:border-btcl-primary hover:shadow-lg transition-all"
+                    >
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-btcl-primary group-hover:scale-110 transition-transform">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={SERVICE_ICONS.pbx} />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 group-hover:text-btcl-primary transition-colors">
+                          {INDIVIDUAL_PACKAGE.name}
+                        </h4>
+                        <p className="text-sm text-gray-600">Access your IP-Telephone dashboard</p>
+                      </div>
+                      <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
+                    </a>
+                    <RenewPill label="↻ Renew" href={`/${locale}/pricing#iptsp-individual`} />
+                  </div>
+                ) : serviceHistory.pbx ? (
                   <a
                     href={`/${locale}/pricing#iptsp-individual`}
                     onClick={handleBuyNow}
-                    className="block w-full transform rounded-lg border-2 border-btcl-primary bg-white px-6 py-2.5 text-center text-sm font-semibold text-btcl-primary transition-all duration-300 hover:scale-105 hover:bg-btcl-primary hover:text-white"
+                    className="group flex items-center gap-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 hover:border-amber-400 hover:shadow-lg transition-all"
                   >
-                    {serviceData.pbx.valid || serviceHistory.pbx ? '↻ Renew Plan' : 'Subscribe'}
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 group-hover:scale-110 transition-transform">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={SERVICE_ICONS.pbx} />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-amber-800">{INDIVIDUAL_PACKAGE.name}</h4>
+                      <p className="text-sm text-amber-600">Package expired</p>
+                    </div>
+                    <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-amber-500 text-amber-700 bg-white group-hover:bg-amber-500 group-hover:text-white transition-all whitespace-nowrap">
+                      Renew Now
+                    </span>
                   </a>
-                }
-              />
-            </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ) : (
+                  <a
+                    href={`/${locale}/pricing#iptsp-individual`}
+                    onClick={handleBuyNow}
+                    className="group flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-2 border-gray-200 border-dashed hover:border-btcl-primary hover:bg-btcl-primaryLight/5 hover:shadow-lg transition-all"
+                  >
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-300 group-hover:bg-btcl-primary group-hover:scale-110 transition-all">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={SERVICE_ICONS.pbx} />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-700 group-hover:text-btcl-primary transition-colors">
+                        {INDIVIDUAL_PACKAGE.name}
+                      </h4>
+                      <p className="text-sm text-gray-500">No active package</p>
+                    </div>
+                    <span className="px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white group-hover:bg-btcl-primary group-hover:text-white transition-all whitespace-nowrap">
+                      Buy Now
+                    </span>
+                  </a>
+                )}
+                <ComingSoonTile name="Alaap Cloud IP PBX" iconPath={SERVICE_ICONS.pbx} />
+                <ComingSoonTile name="Alaap Cloud Contact Center" iconPath={SERVICE_ICONS.hcc} />
+                <ComingSoonTile name="Alaap Cloud Voice Broadcasting Service" iconPath={SERVICE_ICONS.vbs} />
+                <ComingSoonTile name="Bulk SMS" iconPath={SERVICE_ICONS.sms} tag={<AggregatorTag />} />
+              </>
+            ) : (
+              <>
             {/* PBX Portal */}
             {serviceData.pbx.valid ? (
               <div className="flex flex-col gap-2">
@@ -1388,7 +1487,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </a>
                 <RenewPill label="↻ Renew" />
               </div>
-            ) : isIndividual ? null : serviceHistory.pbx ? (
+            ) : serviceHistory.pbx ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
@@ -1495,7 +1594,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </button>
                 <RenewPill label="↻ Renew" />
               </div>
-            ) : isIndividual ? null : serviceHistory.hcc ? (
+            ) : serviceHistory.hcc ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
@@ -1595,7 +1694,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </a>
                 <RenewPill label="↻ Renew" />
               </div>
-            ) : isIndividual ? null : serviceHistory.vbs ? (
+            ) : serviceHistory.vbs ? (
               <a
                 href="/en/pricing"
                 onClick={handleBuyNow}
@@ -1698,7 +1797,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 </a>
                 <RenewPill label="+ Buy more" />
               </div>
-            ) : isIndividual ? null : serviceHistory.sms ? (
+            ) : serviceHistory.sms ? (
               <a
                 href="/en/pricing#bulk-sms"
                 onClick={handleBuyNow}
@@ -1764,6 +1863,8 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                   Buy Now
                 </span>
               </a>
+            )}
+              </>
             )}
           </div>
         </div>

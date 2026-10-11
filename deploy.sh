@@ -21,6 +21,67 @@ CONTAINER_NAME="Services"
 DEPLOY_PATH="/var/www/btcl-sms-portal"
 APP_NAME="btcl-sms-portal"
 PM2_APP_NAME="btcl-portal"
+DEPLOY_BRANCH="main"
+
+# Step 0: deploy only what is on GitHub's main.
+#
+# The build is made from this copy, whatever it holds. On 2026-10-11 a copy older than
+# 2026-09-17 was deployed: production went back to Next.js 15.5.2, the version a crypto
+# miner got in through, and lost the 31 commits made since. So a copy that is not exactly
+# origin/main with nothing uncommitted is refused. FORCE_DEPLOY=1 deploys it anyway, for an
+# emergency such as GitHub being unreachable, and says what it is skipping.
+check_deploy_source() {
+    local problems=()
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo -e "${RED}Error: not a git checkout - cannot tell what would be deployed${NC}"
+        return 1
+    fi
+
+    local branch
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$branch" != "$DEPLOY_BRANCH" ]; then
+        problems+=("on branch '$branch', not '$DEPLOY_BRANCH'")
+    fi
+
+    # next-env.d.ts is rewritten by next build itself; nobody changed it.
+    local dirty
+    dirty=$(git status --porcelain | grep -v ' next-env.d.ts$' || true)
+    if [ -n "$dirty" ]; then
+        problems+=("uncommitted changes (they would go live without being on GitHub):"$'\n'"$(sed 's/^/        /' <<<"$dirty")")
+    fi
+
+    if git fetch --quiet origin "$DEPLOY_BRANCH" 2>/dev/null; then
+        local behind ahead
+        behind=$(git rev-list --count "HEAD..origin/$DEPLOY_BRANCH")
+        ahead=$(git rev-list --count "origin/$DEPLOY_BRANCH..HEAD")
+        if [ "$behind" -gt 0 ]; then
+            problems+=("$behind commit(s) behind origin/$DEPLOY_BRANCH - run: git pull")
+        fi
+        if [ "$ahead" -gt 0 ]; then
+            problems+=("$ahead commit(s) not on GitHub - push them first")
+        fi
+    else
+        problems+=("could not fetch origin/$DEPLOY_BRANCH to compare against")
+    fi
+
+    if [ ${#problems[@]} -eq 0 ]; then
+        echo -e "${GREEN}Deploying $(git rev-parse --short HEAD), which is origin/$DEPLOY_BRANCH${NC}"
+        return 0
+    fi
+    echo -e "${RED}Refusing to deploy this copy:${NC}"
+    local p
+    for p in "${problems[@]}"; do
+        echo "  - $p"
+    done
+    if [ "$FORCE_DEPLOY" = "1" ]; then
+        echo -e "${YELLOW}FORCE_DEPLOY=1 - deploying it anyway. Production will not match origin/$DEPLOY_BRANCH.${NC}"
+        return 0
+    fi
+    echo "Fix the above and run again. FORCE_DEPLOY=1 deploys anyway - for emergencies only."
+    return 1
+}
+
+check_deploy_source || exit 1
 
 # Load credentials from .env.deploy, if there are any to load.
 # A password is only one of two ways in: with the deploying machine's key authorised on
@@ -85,6 +146,17 @@ if grep -rqs "localhost:5055" .next/static; then
 fi
 
 echo -e "${GREEN}Build successful!${NC}"
+
+# Say in the build which commit it is, so what is live can be read off the server
+# (cat /var/www/btcl-sms-portal/.next/DEPLOY_INFO) instead of being worked out.
+{
+    echo "commit=$(git rev-parse HEAD)"
+    echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "built_by=$(git config user.name)"
+    if [ "$FORCE_DEPLOY" = "1" ]; then
+        echo "forced=1 (did not match origin/$DEPLOY_BRANCH)"
+    fi
+} > .next/DEPLOY_INFO
 
 # Step 2: Create deployment package
 echo -e "\n${YELLOW}Step 2: Creating deployment package...${NC}"

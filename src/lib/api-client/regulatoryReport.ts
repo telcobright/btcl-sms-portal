@@ -73,11 +73,20 @@ export interface PopRow {
 }
 
 // ── C. Bi-lateral SMS connectivity ───────────────────────────────────────────
+/**
+ * One ANS/PSTN counterparty on Section C of the IPTSP form.
+ *
+ * e1, intlSmsIn and intlSmsOut are nullable deliberately. No table on either database server
+ * records E1 counts for an SMS link, and the backend reports international as null whenever it
+ * cannot be established rather than as a zero — the dedicated international summary tables have
+ * never been written, so no traffic and no measurement look identical. A null is exported as an
+ * empty cell for someone to complete by hand; neither may be invented on a regulatory return.
+ */
 export interface BilateralSmsRow {
   ansPstnName: string;
-  e1: number;
-  intlSmsIn: number;
-  intlSmsOut: number;
+  e1: number | null;
+  intlSmsIn: number | null;
+  intlSmsOut: number | null;
   domSmsIn: number;
   domSmsOut: number;
 }
@@ -359,6 +368,10 @@ const OPERATOR_ORDER = ['Grameenphone', 'Robi', 'Banglalink', 'Teletalk'];
 const A2P_COLS = ['O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 const P2P_COLS = ['X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE'];
 
+// Section C of the IPTSP form (bi-lateral SMS connectivity) has five counterparty rows, 61–65.
+const SECTION_C_FIRST_ROW = 61;
+const SECTION_C_ROWS = 5;
+
 const smsRow = (rows: OperatorSmsRow[], operator: string): OperatorSmsRow =>
   rows.find((r) => r.operator === operator) ?? { operator, incoming: 0, outgoing: 0 };
 
@@ -456,6 +469,10 @@ export const downloadIptspXlsx = async (report: RegulatoryMonthlyReport): Promis
   const set = (cell: string, value: number | string) => {
     ws.getCell(cell).value = value;
   };
+  // A figure the system cannot establish is left blank, never written as a zero.
+  const setIfKnown = (cell: string, value: number | null | undefined) => {
+    if (value !== null && value !== undefined) set(cell, value);
+  };
 
   // Header (values are embedded in the label text on this form)
   set('A3', `Name of the IPTSP Operator: ${report.operatorName}`);
@@ -498,6 +515,20 @@ export const downloadIptspXlsx = async (report: RegulatoryMonthlyReport): Promis
   // 3.A ICX connectivity (rows 51+) and 3.B PoP & media gateways (rows 51+)
   report.icxConnectivity.forEach((c, i) => { set(`B${51 + i}`, c.icxName); set(`C${51 + i}`, c.e1); });
   report.pops.forEach((p, i) => { set(`F${51 + i}`, p.address); set(`H${51 + i}`, p.mediaGateways); });
+
+  // C. Bi-lateral SMS connectivity (rows 61–65): B name, C E1, D/E international in/out,
+  // F/G domestic in/out. Volumes are billable SMS units, which is what the SMS revenue share is
+  // settled on. E1 and an unestablished international figure arrive as null and are left as
+  // empty cells rather than written as zero — see BilateralSmsRow.
+  (report.bilateralSms ?? []).slice(0, SECTION_C_ROWS).forEach((b, i) => {
+    const row = SECTION_C_FIRST_ROW + i;
+    set(`B${row}`, b.ansPstnName);
+    setIfKnown(`C${row}`, b.e1);
+    setIfKnown(`D${row}`, b.intlSmsIn);
+    setIfKnown(`E${row}`, b.intlSmsOut);
+    set(`F${row}`, b.domSmsIn);
+    set(`G${row}`, b.domSmsOut);
+  });
 
   // ── companion summary sheets ────────────────────────────────────────────────
   // active = revenue-generating base, provisioned = all numbers; both are head counts.

@@ -6,13 +6,16 @@
  * offices, so a signed-in Individual is shown this package instead of them, on the pricing page
  * and the dashboard. PaymentGateWay refuses those packages to an Individual as well
  * (CustomerCategoryGuard), so hiding them here is presentation; the server is the control.
- *
- * A Government Individual is not included: postpaid IP PBX, with its security deposit, is
- * sold to exactly that category.
  */
 
+/**
+ * Whether this category is an Individual account: a private Individual or a Government
+ * Individual. A person rather than an organisation either way, and BTCL sells both the same
+ * one plan.
+ */
 export function isIndividualCategory(category: string | null | undefined): boolean {
-  return (category ?? '').trim().toUpperCase() === 'INDIVIDUAL';
+  const key = (category ?? '').trim().toUpperCase();
+  return key === 'INDIVIDUAL' || key === 'GOVERNMENT_INDIVIDUAL';
 }
 
 type Bilingual = { en: string; bn: string };

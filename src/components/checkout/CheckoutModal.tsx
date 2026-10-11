@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import CheckoutForm from './CheckoutForm';
 import DepositStep from './DepositStep';
+import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
 import OrderSummary from './OrderSummary';
 
 // Contact Center: billing counts a package's agents in this unit (TelcoREST AgentSeats).
@@ -171,7 +172,11 @@ export default function CheckoutModal({
         }
 
         const partnerData = await getPartnerById(partnerId, authToken);
-        const prePaidValue = partnerData.customerPrePaid || 1;
+        // The Individual plan is prepaid whatever the account's billing (its calls stop when
+        // the balance runs out), so a postpaid Government Individual pays for it online too,
+        // with no approval queue and no postpaid security deposit.
+        const prePaidValue =
+          pkg?.id === INDIVIDUAL_PACKAGE.slug ? 1 : partnerData.customerPrePaid || 1;
         setCustomerPrePaid(prePaidValue);
         if (prePaidValue === 2) {
           setDeposit(await getDepositStatus(partnerId, authToken));
@@ -895,9 +900,10 @@ export default function CheckoutModal({
       console.log('Service type:', serviceType);
       console.log('Customer PrePaid:', customerPrePaid);
 
-      // For VBS and SMS, always use payment gateway (even if customerPrePaid = 2)
+      // For VBS and SMS, always use payment gateway (even if customerPrePaid = 2), and for the
+      // Individual plan, which is prepaid whatever the account's billing.
       const effectivePrePaid =
-        ['voice-broadcast', 'bulk-sms'].includes(serviceType)
+        ['voice-broadcast', 'bulk-sms'].includes(serviceType) || pkg?.id === INDIVIDUAL_PACKAGE.slug
           ? 1
           : customerPrePaid;
 

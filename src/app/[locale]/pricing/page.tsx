@@ -25,7 +25,7 @@ import {
   describeServicePricingError,
   getServicePricing,
 } from '@/lib/api-client/servicePricing';
-import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
+import { DOCUMENT_LABELS, categoryLabel, requiredDocumentsFor } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE, isIndividualCategory } from '@/lib/individual-tariff';
 import {
   maxBuyableQuantity,
@@ -1336,8 +1336,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
           <p className="text-xl text-white mb-8 max-w-3xl mx-auto">
             {individualView
               ? locale === 'en'
-                ? 'Your account is registered as an Individual. This is the package available to you.'
-                : 'আপনার অ্যাকাউন্টটি ব্যক্তিগত হিসেবে নিবন্ধিত। আপনার জন্য প্রযোজ্য প্যাকেজ নিচে দেওয়া হলো।'
+                ? categoryLabel(customerCategory) === 'Individual'
+                  ? 'Your account is registered as an Individual. This is the package available to you.'
+                  : 'Your account is registered as a Government Individual. This is the package available to you.'
+                : categoryLabel(customerCategory) === 'Individual'
+                  ? 'আপনার অ্যাকাউন্টটি ব্যক্তিগত হিসেবে নিবন্ধিত। আপনার জন্য প্রযোজ্য প্যাকেজ নিচে দেওয়া হলো।'
+                  : 'আপনার অ্যাকাউন্টটি সরকারি ব্যক্তিগত হিসেবে নিবন্ধিত। আপনার জন্য প্রযোজ্য প্যাকেজ নিচে দেওয়া হলো।'
               : locale === 'en'
                 ? 'Transparent pricing for all our corporate communication services. Choose the plan that fits your business needs.'
                 : 'আমাদের সমস্ত কর্পোরেট যোগাযোগ সেবার জন্য স্বচ্ছ মূল্য। আপনার ব্যবসায়িক প্রয়োজন অনুযায়ী পরিকল্পনা চয়ন করুন।'}

@@ -1,6 +1,7 @@
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { IndividualTariff } from '@/components/pricing/IndividualTariff';
+import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
 import StartingFromPrice from '@/components/pricing/StartingFromPrice';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
@@ -344,7 +345,7 @@ function ServicesShowcaseSection({
               {locale === 'en' ? 'Individual' : 'ব্যক্তিগত'}
             </div>
             <h3 className="mb-3 text-2xl font-bold text-gray-900 md:text-3xl">
-              Alaap Individual IP-Telephone
+              {INDIVIDUAL_PACKAGE.name}
             </h3>
             <p className="mb-6 text-base leading-relaxed text-gray-600">
               {locale === 'en'

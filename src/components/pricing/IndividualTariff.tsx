@@ -2,7 +2,7 @@ import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
 import type { ReactNode } from 'react';
 
 /**
- * The Alaap Individual IP-Telephone plan card, drawn like the Alaap Cloud IP PBX plans on the
+ * The Alaap Cloud Individual IP-Telephone plan card, drawn like the Alaap Cloud IP PBX plans on the
  * pricing page: name, monthly price, the action, then a checked feature list, with the
  * free-talktime terms as a footnote. No hooks, so the home page can render it on the server.
  */

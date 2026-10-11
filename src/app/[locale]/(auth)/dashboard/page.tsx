@@ -48,7 +48,7 @@ const SERVICE_ICONS = {
 };
 
 /**
- * A service an Individual cannot buy yet. They are sold Alaap Individual IP-Telephone alone
+ * A service an Individual cannot buy yet. They are sold Alaap Cloud Individual IP-Telephone alone
  * (the payment service refuses the rest), so these say what is coming rather than offer a
  * Buy Now that could only end in a refusal. Not a link.
  */
@@ -370,7 +370,7 @@ export default function Dashboard() {
   };
 
 
-  // An Individual is sold Alaap Individual IP-Telephone, not the four services below, so their
+  // An Individual is sold Alaap Cloud Individual IP-Telephone, not the four services below, so their
   // dashboard offers that instead of Buy and Renew (see individual-tariff.ts).
   const isIndividual = isIndividualCategory(partnerExtra?.customerCategory);
   // The documents this customer's category must have approved before buying anything.
@@ -1378,7 +1378,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {isIndividual ? (
               <>
-                {/* Alaap Individual IP-Telephone: the one service an Individual can buy. It is
+                {/* Alaap Cloud Individual IP-Telephone: the one service an Individual can buy. It is
                     an IP PBX plan, so it counts as their PBX subscription and its portal is
                     the IP PBX portal. Bought and renewed on the pricing page, through
                     handleBuyNow so document review still blocks it. */}

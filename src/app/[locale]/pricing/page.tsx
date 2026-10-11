@@ -83,7 +83,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // The customer's category decides what they are sold: an Individual gets the Individual
   // IP-Telephone package, everyone else the packages below. Null until read, and for visitors and admins.
   const [customerCategory, setCustomerCategory] = useState<string | null>(null);
-  // An Individual is sold Alaap Individual IP-Telephone, never the packages on this page (see
+  // An Individual is sold Alaap Cloud Individual IP-Telephone, never the packages on this page (see
   // individual-tariff.ts). PaymentGateWay refuses those too; this is about not offering them.
   const individualView = !isAdmin && isIndividualCategory(customerCategory);
   // Read while rendering, so a signed-in customer's first frame already waits for their
@@ -1393,8 +1393,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
               {
                 id: 'iptsp-individual',
                 icon: '/alaap_cloud_ip_pbx.png',
-                en: 'Alaap Individual IP-Telephone',
-                bn: 'Alaap Individual IP-Telephone',
+                en: INDIVIDUAL_PACKAGE.name,
+                bn: INDIVIDUAL_PACKAGE.name,
               },
             ]
               .filter((s) =>
@@ -1925,14 +1925,14 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       </div>
       )}
 
-      {/* ── Alaap Individual IP-Telephone — laid out like the IP PBX section ── */}
+      {/* ── Alaap Cloud Individual IP-Telephone — laid out like the IP PBX section ── */}
       {showIndividualTariff && (
         <div id="iptsp-individual" className="py-20 bg-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl mb-4 bg-btcl-primaryLight/10 text-btcl-primaryDark">
                 <img src="/alaap_cloud_ip_pbx.png" alt="" className="h-10 w-10 object-contain" />
-                <h2 className="text-2xl font-bold">Alaap Individual IP-Telephone</h2>
+                <h2 className="text-2xl font-bold">{INDIVIDUAL_PACKAGE.name}</h2>
               </div>
               <p className="text-gray-600 text-lg">
                 {locale === 'en'

@@ -1,6 +1,5 @@
 /**
- * The one package BTCL sells a customer registered as an Individual: Alaap Individual
- * IP-Telephone.
+ * The one package BTCL sells a customer registered as an Individual: Alaap Cloud Individual IP-Telephone.
  *
  * IP PBX, Voice Broadcasting, Contact Center and Bulk SMS are for businesses and government
  * offices, so a signed-in Individual is shown this package instead of them, on the pricing page
@@ -34,7 +33,7 @@ export const INDIVIDUAL_PACKAGE: {
 } = {
   slug: 'individual',
   packageId: 10002,
-  name: 'Alaap Individual IP-Telephone',
+  name: 'Alaap Cloud Individual IP-Telephone',
   monthlyCharge: 100,
   features: [
     { en: '1 DID', bn: '১টি ডিআইডি' },

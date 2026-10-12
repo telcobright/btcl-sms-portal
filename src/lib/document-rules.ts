@@ -63,3 +63,20 @@ export const CATEGORY_LABELS: Record<CustomerCategory, string> = {
 export function categoryLabel(category: string | null | undefined): string {
   return CATEGORY_LABELS[normalise(category)] ?? 'Corporate (default)';
 }
+
+/**
+ * The one move each Individual type has, made by BTCL when the customer starts buying as a
+ * business: an Individual becomes Corporate, a Government Individual becomes Government
+ * Corporate. Nothing else moves, and nothing moves back. The server
+ * (CustomerCategoryMigrationService) enforces the same rule.
+ */
+const CATEGORY_MIGRATIONS: Partial<Record<CustomerCategory, CustomerCategory>> = {
+  INDIVIDUAL: 'CORPORATE',
+  GOVERNMENT_INDIVIDUAL: 'GOVERNMENT_CORPORATE',
+};
+
+export function migrationTargetFor(
+  category: string | null | undefined
+): CustomerCategory | null {
+  return CATEGORY_MIGRATIONS[normalise(category)] ?? null;
+}

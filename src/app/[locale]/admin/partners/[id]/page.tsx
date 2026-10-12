@@ -39,8 +39,10 @@ import { useCanEdit } from '@/hooks/useCanEdit';
 import {
   categoryLabel,
   DOCUMENT_LABELS,
+  migrationTargetFor,
   requiredDocumentsFor,
 } from '@/lib/document-rules';
+import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
 
 type TabType =
   | 'overview'
@@ -576,6 +578,11 @@ export default function PartnerDetailsPage() {
             isDeactivated={partner.status === 'DEACTIVATED'}
             partnerExtra={partnerExtra}
             users={users}
+            onCategoryChange={(category) =>
+              setPartnerExtra((e: any) =>
+                e ? { ...e, customerCategory: category } : e
+              )
+            }
           />
         )}
         {activeTab === 'users' && (
@@ -813,23 +820,94 @@ export default function PartnerDetailsPage() {
 /* ═══════════════════════════════════════════════════════════════════
    Overview Tab
    ═══════════════════════════════════════════════════════════════════ */
+/** The service databases holding a copy of the customer type, as an admin knows them. */
+const TYPE_COPY_NAMES: Record<string, string> = {
+  telcobright: 'IP PBX',
+  btcl_contact_center: 'Contact Center',
+  btcl_voicebroadcasting: 'Voice Broadcast',
+};
+
 function OverviewTab({
   partner,
   onPartnerUpdate,
   isDeactivated,
   partnerExtra,
   users,
+  onCategoryChange,
 }: {
   partner: Partner;
   onPartnerUpdate: (p: Partner) => void;
   isDeactivated?: boolean;
   partnerExtra?: any;
   users?: PartnerUser[];
+  onCategoryChange?: (category: string) => void;
 }) {
   const canEdit = useCanEdit();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partner>({ ...partner });
+  // The one move this account's type has, if any: Individual -> Corporate,
+  // Government Individual -> Government Corporate.
+  const migrationTarget = migrationTargetFor(partnerExtra?.customerCategory);
+  const [confirmMigration, setConfirmMigration] = useState(false);
+  const [migrating, setMigrating] = useState(false);
+
+  const handleMigrate = async () => {
+    if (!canEdit || !migrationTarget) return;
+    try {
+      setMigrating(true);
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+      const res = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.partner.changeCustomerCategory}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            partnerId: partner.idPartner,
+            toCategory: migrationTarget,
+          }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showApiError(data, { fallbackMessage: 'Could not migrate this account' });
+        return;
+      }
+      const newType = data.to ?? migrationTarget;
+      onCategoryChange?.(newType);
+      setConfirmMigration(false);
+
+      const asked: string[] = (data.documentsToUpload ?? []).map(
+        (t: string) => DOCUMENT_LABELS[t] ?? t
+      );
+      toast.success(
+        `Now ${categoryLabel(newType)}. ` +
+          (asked.length === 0
+            ? `Every document it needs is already on file${data.emailSent ? ', and the customer has been told.' : '.'}`
+            : data.emailSent
+              ? `Emailed ${data.emailedTo} to upload: ${asked.join(', ')}.`
+              : `There is no email address on file, so ask the customer to upload: ${asked.join(', ')}.`),
+        { duration: 8000 }
+      );
+      const failed = Object.entries(data.copies ?? {})
+        .filter(([, outcome]) => String(outcome).startsWith('failed'))
+        .map(([schema]) => TYPE_COPY_NAMES[schema] ?? schema);
+      if (failed.length > 0) {
+        toast.error(
+          `Could not update the ${failed.join(', ')} copy of the type, so that service's admin dashboard still shows the old one.`,
+          { duration: 10000 }
+        );
+      }
+    } catch (err) {
+      showApiError(err, { fallbackMessage: 'Could not migrate this account' });
+    } finally {
+      setMigrating(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!canEdit) return;
@@ -1028,10 +1106,26 @@ function OverviewTab({
               // Decides which documents were required at registration, so a verifier
               // needs it to know whether a missing trade licence is a problem or expected.
               label: 'Customer Type',
-              value: partnerExtra?.customerCategory
-                ? partnerExtra.customerCategory.charAt(0) +
-                  partnerExtra.customerCategory.slice(1).toLowerCase()
-                : null,
+              value: partnerExtra?.customerCategory ? (
+                <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {categoryLabel(partnerExtra.customerCategory)}
+                  {canEdit && migrationTarget && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmMigration(true)}
+                      disabled={isDeactivated}
+                      title={
+                        isDeactivated
+                          ? 'Reactivate partner before migrating'
+                          : undefined
+                      }
+                      className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#0D529E] border-[#0D529E] hover:bg-btcl-primaryLight/10'}`}
+                    >
+                      Migrate to {categoryLabel(migrationTarget)}
+                    </button>
+                  )}
+                </span>
+              ) : null,
             },
           ].map((item) => (
             <div key={item.label} className="py-2">
@@ -1143,6 +1237,78 @@ function OverviewTab({
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Migrate an Individual type to its business type */}
+      {confirmMigration && migrationTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => !migrating && setConfirmMigration(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="migrate-title"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              id="migrate-title"
+              className="text-lg font-semibold text-gray-900"
+            >
+              Migrate to {categoryLabel(migrationTarget)}?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              {partner.partnerName} is registered as{' '}
+              {categoryLabel(partnerExtra?.customerCategory)}. After the
+              migration:
+            </p>
+            <ul className="mt-3 space-y-2 text-sm text-gray-700 list-disc pl-5">
+              <li>
+                They are offered the regular packages instead of{' '}
+                {INDIVIDUAL_PACKAGE.name}.
+              </li>
+              <li>
+                A {categoryLabel(migrationTarget)} account needs{' '}
+                {requiredDocumentsFor(migrationTarget)
+                  .map((t) => DOCUMENT_LABELS[t] ?? t)
+                  .join(', ')}
+                . They are emailed to upload whichever BTCL does not have yet,
+                and cannot buy until all of them are approved.
+              </li>
+              <li>
+                A plan they already have keeps running until it ends, but the
+                Individual plan cannot be renewed.
+              </li>
+              <li>
+                This cannot be undone from the admin panel: no account is moved
+                back to an Individual type.
+              </li>
+            </ul>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmMigration(false)}
+                disabled={migrating}
+                className={btn.secondary}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleMigrate}
+                disabled={migrating}
+                className={btn.primary}
+              >
+                {migrating ? (
+                  <Spinner />
+                ) : (
+                  `Migrate to ${categoryLabel(migrationTarget)}`
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

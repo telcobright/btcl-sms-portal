@@ -129,6 +129,9 @@ export const API_ENDPOINTS = {
     getPartnerDocument: '/partner/get-partner-document',
     getDocumentStatuses: '/partner/get-document-statuses',
     updateDocumentStatus: '/partner/update-document-status',
+    // Admin: Individual -> Corporate, Government Individual -> Government Corporate, and the
+    // customer is emailed for the documents the new type needs.
+    changeCustomerCategory: '/partner/change-customer-category',
     updatePartner: '/partner/update-partner',
     updatePartnerDocument: '/partner/update-partner-document',
     deletePartnerDocument: '/partner/delete-partner-document',

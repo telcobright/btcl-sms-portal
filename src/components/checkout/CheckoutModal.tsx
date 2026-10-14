@@ -1356,14 +1356,18 @@ export default function CheckoutModal({
               onSelectPayment={handleSelectPayment}
               customerPrePaid={customerPrePaid}
             />
-          </div>
-          <div className="w-full md:w-[380px]">
+
             {/* First purchase of the Individual plan: the numbers it can come with, and that
                 the number is chosen afterwards on the IP PBX portal's My DID page. */}
             {pkg?.id === INDIVIDUAL_PACKAGE.slug &&
               !currentPackageLoading &&
-              purchaseAction === 'new' && <IndividualDidPreview locale={locale} />}
-
+              purchaseAction === 'new' && (
+                <div className="mt-8">
+                  <IndividualDidPreview locale={locale} />
+                </div>
+              )}
+          </div>
+          <div className="w-full md:w-[380px]">
             {/* Agent Quantity Selector for Contact Center */}
             {serviceType === 'contact-center' && (
               <div className="bg-white rounded-xl shadow-md p-6 mb-4">

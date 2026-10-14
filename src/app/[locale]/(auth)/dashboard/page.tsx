@@ -84,6 +84,16 @@ function ComingSoonTile({
 }
 
 // Map idPackage to human-readable names (backend returns packageName=null)
+/** Days before expiry when a plan offers Renew: the IP PBX portal's ExpiryBanner rule. */
+const RENEW_WINDOW_DAYS = 7;
+
+/** Whether a plan expiring on expireDate is in its renewal window. No date: nothing to renew. */
+function renewalDue(expireDate: string | null | undefined, now = Date.now()): boolean {
+  if (!expireDate) return false;
+  const daysLeft = Math.ceil((new Date(expireDate).getTime() - now) / 86_400_000);
+  return Number.isFinite(daysLeft) && daysLeft <= RENEW_WINDOW_DAYS;
+}
+
 const PACKAGE_NAMES: Record<number, string> = {
   9142: 'PBX Starter',
   9143: 'PBX Economy',
@@ -404,15 +414,31 @@ export default function Dashboard() {
   // makes this safe to offer. Routed through handleBuyNow so document review still blocks.
   // A client-side link, not a page load: a full load paints the public pricing page, every plan
   // included, before the customer's account decides what they are shown.
-  const RenewPill = ({ label, href = '/en/pricing' }: { label: string; href?: string }) => (
-    <Link
-      href={href}
-      onClick={handleBuyNow}
-      className="self-end px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white hover:bg-btcl-primary hover:text-white transition-all whitespace-nowrap"
-    >
-      {label}
-    </Link>
-  );
+  //
+  // A renewal is offered on the IP PBX portal's rule (ExpiryBanner): only in the last
+  // RENEW_WINDOW_DAYS before the plan expires, so a plan with weeks left shows none. An
+  // expired plan has its own Renew Now card instead. Pass the plan's expireDate to get that
+  // rule; leave it out for a top-up such as "+ Buy more", which is offered at any time.
+  const RenewPill = ({
+    label,
+    href = '/en/pricing',
+    expireDate,
+  }: {
+    label: string;
+    href?: string;
+    expireDate?: string | null;
+  }) => {
+    if (expireDate !== undefined && !renewalDue(expireDate)) return null;
+    return (
+      <Link
+        href={href}
+        onClick={handleBuyNow}
+        className="self-end px-3 py-1.5 text-xs font-bold rounded-full border-2 border-btcl-primary text-btcl-primary bg-white hover:bg-btcl-primary hover:text-white transition-all whitespace-nowrap"
+      >
+        {label}
+      </Link>
+    );
+  };
 
   const fetchDocStatuses = async (partnerId: number) => {
     const authToken = localStorage.getItem('authToken');
@@ -1403,7 +1429,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                       </div>
                       <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
                     </a>
-                    <RenewPill label="↻ Renew" href={`/${locale}/pricing#iptsp-individual`} />
+                    <RenewPill label="↻ Renew" href={`/${locale}/pricing#iptsp-individual`} expireDate={serviceData.pbx.expireDate} />
                   </div>
                 ) : serviceHistory.pbx ? (
                   <Link
@@ -1487,7 +1513,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                   </div>
                   <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
                 </a>
-                <RenewPill label="↻ Renew" />
+                <RenewPill label="↻ Renew" expireDate={serviceData.pbx.expireDate} />
               </div>
             ) : serviceHistory.pbx ? (
               <a
@@ -1594,7 +1620,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                 >
                   + Add agents
                 </button>
-                <RenewPill label="↻ Renew" />
+                <RenewPill label="↻ Renew" expireDate={serviceData.hcc.expireDate} />
               </div>
             ) : serviceHistory.hcc ? (
               <a
@@ -1694,7 +1720,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                   </div>
                   <ExternalLink className="w-5 h-5 text-btcl-primary group-hover:translate-x-1 transition-transform" />
                 </a>
-                <RenewPill label="↻ Renew" />
+                <RenewPill label="↻ Renew" expireDate={serviceData.vbs.expireDate} />
               </div>
             ) : serviceHistory.vbs ? (
               <a

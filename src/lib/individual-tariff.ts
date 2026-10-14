@@ -30,9 +30,18 @@ export const INDIVIDUAL_PACKAGE: {
   features: Bilingual[];
   /** Explains the asterisk on the free talktime line. */
   talktimeNote: Bilingual;
+  /**
+   * The IP PBX DID pool its numbers come from (BTCL INDIVIDUAL). The PBX backend serves this
+   * pool to Individual accounts only, so it is safe to ask for it by id.
+   */
+  didPoolId: number;
+  /** Where the subscriber picks their number once the plan is bought. */
+  myDidUrl: string;
 } = {
   slug: 'individual',
   packageId: 10002,
+  didPoolId: 3,
+  myDidUrl: 'https://ippbx.alaapcloud.gov.bd:5174/my-did',
   name: 'Alaap Cloud Individual IP-Telephone',
   monthlyCharge: 100,
   features: [

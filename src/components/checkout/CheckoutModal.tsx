@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 import CheckoutForm from './CheckoutForm';
 import DepositStep from './DepositStep';
 import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
+import IndividualDidPreview from './IndividualDidPreview';
 import OrderSummary from './OrderSummary';
 
 // Contact Center: billing counts a package's agents in this unit (TelcoREST AgentSeats).
@@ -1084,6 +1085,16 @@ export default function CheckoutModal({
                           : 'আপনার ইউজারনেম ও পাসওয়ার্ড ইমেইলে পাঠানো হয়েছে। নিরাপত্তার জন্য প্রথম লগইনের পর পাসওয়ার্ড পরিবর্তন করুন।'}
                       </p>
                     </div>
+                    {pkg?.id === INDIVIDUAL_PACKAGE.slug && (
+                      <div className="w-full p-3 bg-blue-50 rounded-lg border border-blue-200 text-left">
+                        <p className="text-xs text-blue-900">
+                          <strong>{locale === 'en' ? 'Next:' : 'পরবর্তী ধাপ:'}</strong>{' '}
+                          {locale === 'en'
+                            ? 'Log in to the IP PBX portal and choose your number on the My DID page.'
+                            : 'IP PBX পোর্টালে লগইন করে My DID পাতা থেকে আপনার নম্বর নির্বাচন করুন।'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* Renew / Upgrade / Downgrade: package summary */
@@ -1347,6 +1358,12 @@ export default function CheckoutModal({
             />
           </div>
           <div className="w-full md:w-[380px]">
+            {/* First purchase of the Individual plan: the numbers it can come with, and that
+                the number is chosen afterwards on the IP PBX portal's My DID page. */}
+            {pkg?.id === INDIVIDUAL_PACKAGE.slug &&
+              !currentPackageLoading &&
+              purchaseAction === 'new' && <IndividualDidPreview locale={locale} />}
+
             {/* Agent Quantity Selector for Contact Center */}
             {serviceType === 'contact-center' && (
               <div className="bg-white rounded-xl shadow-md p-6 mb-4">

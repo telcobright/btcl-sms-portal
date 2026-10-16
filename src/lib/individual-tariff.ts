@@ -63,3 +63,22 @@ export const INDIVIDUAL_PACKAGE: {
     bn: '*প্রতিটি মাসিক সাবস্ক্রিপশন চার্জ পরিশোধে মাসে ২৫০ মিনিট, ১ সেকেন্ড পালস, ৩০ দিন মেয়াদ, শুধুমাত্র দেশীয় কলের জন্য প্রযোজ্য। সাবস্ক্রিপশন ও কল চার্জে ভ্যাট প্রযোজ্য।',
   },
 };
+
+/** The reports' key for the Individual IP-Telephone line, beside pbx, hcc, vbs and sms. */
+export const INDIVIDUAL_SERVICE_KEY = 'individual';
+
+/**
+ * Whether a PBX sale belongs to the Individual IP-Telephone line: the Individual plan itself,
+ * whoever bought it, or anything an Individual customer bought (their top-ups). The same rule
+ * the payment gateway and the operator summary apply on the server.
+ */
+export function isIndividualLine(
+  service: string | null | undefined,
+  idPackage: number | string | null | undefined,
+  category: string | null | undefined
+): boolean {
+  return (
+    service === 'pbx' &&
+    (Number(idPackage) === INDIVIDUAL_PACKAGE.packageId || isIndividualCategory(category))
+  );
+}

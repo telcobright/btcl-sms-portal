@@ -28,6 +28,9 @@ export const STATUS_OPTIONS = [
  */
 export const SERVICE_OPTIONS = [
   { value: 'pbx', label: 'Hosted IP PBX' },
+  // PBX payments for the Individual plan and by Individual customers; the payment
+  // service reports them as a line of their own.
+  { value: 'individual', label: 'Alaap Cloud Individual IP-Telephone' },
   { value: 'vbs', label: 'Voice Broadcasting' },
   { value: 'cc', label: 'Hosted Contact Center' },
   { value: 'sms', label: 'A2P SMS' },

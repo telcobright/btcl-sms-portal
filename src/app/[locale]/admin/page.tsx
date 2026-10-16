@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { INDIVIDUAL_PACKAGE, INDIVIDUAL_SERVICE_KEY } from "@/lib/individual-tariff";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // The admin dashboard.
@@ -126,7 +127,10 @@ export default function AdminDashboard() {
   const [categoryCounts, setCategoryCounts] =
     useState<Awaited<ReturnType<typeof getPartnerCategoryCounts>>>(null);
   const [recent, setRecent] = useState<Partner[]>([]);
-  const [svc, setSvc] = useState({ pbx: EMPTY, hcc: EMPTY, vbs: EMPTY, sms: EMPTY });
+  const [svc, setSvc] = useState({ pbx: EMPTY, individual: EMPTY, hcc: EMPTY, vbs: EMPTY, sms: EMPTY });
+  // Whether the backend reports Individual IP-Telephone apart from IP PBX. Until it does,
+  // those customers are inside the PBX card and an Individual card would read zero.
+  const [individualSplit, setIndividualSplit] = useState(false);
   const [openSvc, setOpenSvc] = useState<ServiceCard | null>(null); // whose subscriber list is shown
   const [docReviews, setDocReviews] = useState<DocReviewItem[]>([]);
   const [reviewLoading, setReviewLoading] = useState(true);
@@ -165,6 +169,7 @@ export default function AdminDashboard() {
 
         const stats: Record<string, ServiceStats> = {
           pbx: { ...EMPTY },
+          [INDIVIDUAL_SERVICE_KEY]: { ...EMPTY },
           hcc: { ...EMPTY },
           vbs: { ...EMPTY },
           sms: { ...EMPTY },
@@ -266,6 +271,12 @@ export default function AdminDashboard() {
               stats[k] = cardFrom(product);
             }
           });
+          // Alaap Cloud Individual IP-Telephone: split out of IP PBX by the backend.
+          const individual = combined[INDIVIDUAL_SERVICE_KEY] as Record<string, unknown> | undefined;
+          if (individual) {
+            setIndividualSplit(true);
+            if (!individual.error) stats[INDIVIDUAL_SERVICE_KEY] = cardFrom(individual);
+          }
         } else
           await Promise.allSettled(
             urls.map(async ({ k, u }) => {
@@ -507,10 +518,10 @@ export default function AdminDashboard() {
       </div>
     );
 
-  const totalActive = svc.pbx.active + svc.hcc.active + svc.vbs.active + svc.sms.active;
-  const totalRev = svc.pbx.revenue + svc.hcc.revenue + svc.vbs.revenue + svc.sms.revenue;
-  const totalSubs =
-    svc.pbx.subscribers + svc.hcc.subscribers + svc.vbs.subscribers + svc.sms.subscribers;
+  const allCards = [svc.pbx, svc.individual, svc.hcc, svc.vbs, svc.sms];
+  const totalActive = allCards.reduce((sum, c) => sum + c.active, 0);
+  const totalRev = allCards.reduce((sum, c) => sum + c.revenue, 0);
+  const totalSubs = allCards.reduce((sum, c) => sum + c.subscribers, 0);
 
   const services: ServiceCard[] = [
     {
@@ -526,6 +537,24 @@ export default function AdminDashboard() {
       portal: "https://ippbx.alaapcloud.gov.bd:5174/",
       plans: "Bronze / Silver / Gold",
     },
+    // Sold as a PBX package, reported as a service of its own.
+    ...(individualSplit
+      ? [
+          {
+            k: INDIVIDUAL_SERVICE_KEY,
+            name: INDIVIDUAL_PACKAGE.name,
+            icon: "☎️",
+            grad: "from-sky-500 to-sky-600",
+            bg: "bg-sky-50",
+            border: "border-sky-200",
+            text: "text-sky-700",
+            ring: "ring-sky-500/25",
+            s: svc.individual,
+            portal: "https://ippbx.alaapcloud.gov.bd:5174/",
+            plans: `Individual plan, ৳${INDIVIDUAL_PACKAGE.monthlyCharge}/month`,
+          },
+        ]
+      : []),
     {
       k: "hcc",
       name: "Contact Center",
@@ -724,8 +753,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── The four services ─────────────────────────────────────────────── */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* ── The services ──────────────────────────────────────────────────── */}
+      <div className={`grid gap-3 sm:grid-cols-2 ${services.length > 4 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
         {services.map((sv) => {
           // Each service's share of revenue, which the live page leaves the reader
           // to work out from four separate numbers.

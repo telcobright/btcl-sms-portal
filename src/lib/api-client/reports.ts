@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { INDIVIDUAL_PACKAGE, INDIVIDUAL_SERVICE_KEY, isIndividualLine } from '@/lib/individual-tariff';
 
 /**
  * Sales reporting across every BTCL service.
@@ -49,6 +50,7 @@ interface SalesReportApiResponse {
     uid?: string;
     service?: string;
     serviceLabel?: string;
+    idPackage?: number | null;
     idPartner?: number;
     partnerName?: string | null;
     customerCategory?: string | null;
@@ -97,10 +99,11 @@ export const getAllSales = async (
       const price = toNumber(row.price);
       const vat = toNumber(row.vat);
       const ait = toNumber(row.ait);
+      const individual = isIndividualLine(row.service, row.idPackage, row.customerCategory);
       return {
         uid: row.uid || `${row.service}:${row.purchaseDate}`,
-        service: row.service || 'unknown',
-        serviceLabel: row.serviceLabel || 'Unknown service',
+        service: individual ? INDIVIDUAL_SERVICE_KEY : row.service || 'unknown',
+        serviceLabel: individual ? INDIVIDUAL_PACKAGE.name : row.serviceLabel || 'Unknown service',
         purchaseDate: row.purchaseDate as string,
         idPartner: row.idPartner,
         partnerName: row.partnerName || 'Unknown',
@@ -266,6 +269,7 @@ export const isPackageSale = (sale: SaleRecord): boolean =>
 /** Service columns of the BTCL daily report, in its column order. */
 export const PACKAGE_MATRIX_SERVICES = [
   { key: 'pbx', label: 'IPPBX' },
+  { key: INDIVIDUAL_SERVICE_KEY, label: 'Individual IP-Tel' },
   { key: 'sms', label: 'A2P SMS' },
   { key: 'vbs', label: 'VBS' },
   { key: 'hcc', label: 'CC' },

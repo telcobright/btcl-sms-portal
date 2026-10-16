@@ -10,10 +10,12 @@ const UNITS: Record<string, { label: string; unit: string }> = {
   OTH_pp: { label: 'Extension', unit: '' },
   OTH_pk: { label: 'IVR', unit: '' },
   OTH_cd: { label: 'Call Channel', unit: '' },
+  // Voice Broadcast: messages of up to one minute each.
+  OTH_box: { label: '1 Minute Voice', unit: '' },
 };
 
 /** The order a plan's balances are listed in: talktime first, then what the plan includes. */
-const ORDER = ['TF_min', 'OTH_pp', 'OTH_pk', 'OTH_cd'];
+const ORDER = ['TF_min', 'OTH_pp', 'OTH_pk', 'OTH_cd', 'OTH_box'];
 
 export function formatBalance(amount: number, uom?: string | null): string {
   const value = amount.toLocaleString(undefined, { maximumFractionDigits: 2 });

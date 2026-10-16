@@ -16,7 +16,7 @@ import {
   getPartnerTypeLabel,
   Partner,
 } from "@/lib/api-client/admin";
-import { formatBalance } from "@/lib/balance-units";
+import { formatBalance, formatBalances } from "@/lib/balance-units";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -55,6 +55,8 @@ interface PurchaseSummaryRow {
   plan: string | null;
   balance: number;
   uom: string | null;
+  /** Per unit, e.g. { TF_min: 248.4, OTH_pp: 1 }; absent from an older backend. */
+  balances?: Record<string, number>;
 }
 
 /** Runs `fn` over `items`, never more than `limit` at a time. */
@@ -245,9 +247,11 @@ export default function ClassicAdminDashboard() {
               name: partner?.partnerName || `#${row.idPartner}`,
               status: row.status || "—",
               plan: row.plan || "—",
-              balance: balance
-                ? formatBalance(balance, row.uom)
-                : "—",
+              balance: row.balances
+                ? formatBalances(row.balances)
+                : balance
+                  ? formatBalance(balance, row.uom)
+                  : "—",
             });
           });
           parts.sort((a, b) => a.name.localeCompare(b.name));
@@ -320,12 +324,12 @@ export default function ClassicAdminDashboard() {
                     // Build a one-line summary for this partner in this service.
                     const activeP = v.filter((x: any) => x.status === "ACTIVE");
                     const rows = activeP.length ? activeP : v;
-                    let balSum = 0;
-                    let uom = "";
+                    // Per unit: a plan's talktime is not added to its extension or channel counts.
+                    const byUom: Record<string, number> = {};
                     rows.forEach((x: any) =>
                       (x.packageAccounts || []).forEach((a: any) => {
-                        balSum += a.balanceAfter || 0;
-                        if (a.uom) uom = a.uom;
+                        const u = a.uom || "";
+                        byUom[u] = (byUom[u] || 0) + (a.balanceAfter || 0);
                       }),
                     );
                     parts.push({
@@ -333,9 +337,7 @@ export default function ClassicAdminDashboard() {
                       name: p.partnerName || `#${p.idPartner}`,
                       status: activeP.length ? "ACTIVE" : v[0]?.status || "—",
                       plan: (activeP[0] || v[0])?.packageName || "—",
-                      balance: balSum
-                        ? formatBalance(balSum, uom)
-                        : "—",
+                      balance: formatBalances(byUom),
                     });
                   }
                 }
@@ -372,9 +374,11 @@ export default function ClassicAdminDashboard() {
                   name: partner?.partnerName || `#${row.idPartner}`,
                   status: row.status || "—",
                   plan: row.plan || "—",
-                  balance: balance
-                    ? formatBalance(balance, row.uom)
-                    : "—",
+                  balance: row.balances
+                    ? formatBalances(row.balances)
+                    : balance
+                      ? formatBalance(balance, row.uom)
+                      : "—",
                 });
               });
             }

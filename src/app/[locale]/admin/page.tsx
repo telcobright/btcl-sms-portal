@@ -16,6 +16,7 @@ import {
   getPartnerTypeLabel,
   Partner,
 } from "@/lib/api-client/admin";
+import { formatBalance } from "@/lib/balance-units";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -249,7 +250,7 @@ export default function AdminDashboard() {
               name: partner?.partnerName || `#${row.idPartner}`,
               status: row.status || "—",
               plan: row.plan || "—",
-              balance: balance ? `${balance.toLocaleString()} ${row.uom ?? ""}`.trim() : "—",
+              balance: balance ? formatBalance(balance, row.uom) : "—",
             });
           });
           parts.sort((a, b) => a.name.localeCompare(b.name));
@@ -335,7 +336,7 @@ export default function AdminDashboard() {
                         name: p.partnerName || `#${p.idPartner}`,
                         status: activeP.length ? "ACTIVE" : v[0]?.status || "—",
                         plan: (activeP[0] || v[0])?.packageName || "—",
-                        balance: balSum ? `${balSum.toLocaleString()} ${uom}`.trim() : "—",
+                        balance: balSum ? formatBalance(balSum, uom) : "—",
                       });
                     }
                   }
@@ -372,7 +373,7 @@ export default function AdminDashboard() {
                     name: partner?.partnerName || `#${row.idPartner}`,
                     status: row.status || "—",
                     plan: row.plan || "—",
-                    balance: balance ? `${balance.toLocaleString()} ${row.uom ?? ""}`.trim() : "—",
+                    balance: balance ? formatBalance(balance, row.uom) : "—",
                   });
                 });
               }

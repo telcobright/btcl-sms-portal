@@ -16,6 +16,7 @@ import {
   getPartnerTypeLabel,
   Partner,
 } from "@/lib/api-client/admin";
+import { formatBalance } from "@/lib/balance-units";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -245,7 +246,7 @@ export default function ClassicAdminDashboard() {
               status: row.status || "—",
               plan: row.plan || "—",
               balance: balance
-                ? `${balance.toLocaleString()} ${row.uom ?? ""}`.trim()
+                ? formatBalance(balance, row.uom)
                 : "—",
             });
           });
@@ -333,7 +334,7 @@ export default function ClassicAdminDashboard() {
                       status: activeP.length ? "ACTIVE" : v[0]?.status || "—",
                       plan: (activeP[0] || v[0])?.packageName || "—",
                       balance: balSum
-                        ? `${balSum.toLocaleString()} ${uom}`.trim()
+                        ? formatBalance(balSum, uom)
                         : "—",
                     });
                   }
@@ -372,7 +373,7 @@ export default function ClassicAdminDashboard() {
                   status: row.status || "—",
                   plan: row.plan || "—",
                   balance: balance
-                    ? `${balance.toLocaleString()} ${row.uom ?? ""}`.trim()
+                    ? formatBalance(balance, row.uom)
                     : "—",
                 });
               });

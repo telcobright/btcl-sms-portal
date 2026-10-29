@@ -26,7 +26,7 @@ import {
   getServicePricing,
 } from '@/lib/api-client/servicePricing';
 import { DOCUMENT_LABELS, categoryLabel, requiredDocumentsFor } from '@/lib/document-rules';
-import { INDIVIDUAL_PACKAGE, isIndividualCategory } from '@/lib/individual-tariff';
+import { INDIVIDUAL_PACKAGE, RENEW_WINDOW_DAYS, isIndividualCategory } from '@/lib/individual-tariff';
 import {
   maxBuyableQuantity,
   quote,
@@ -68,6 +68,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   const [activePackages, setActivePackages] = useState<
     Record<string, string | null>
   >({});
+  // activeExpiry maps service → the active plan's expireDate, for the renewal window
+  const [activeExpiry, setActiveExpiry] = useState<Record<string, string | null>>({});
   // expiredPackages maps service → expired pkg id string
   const [expiredPackages, setExpiredPackages] = useState<
     Record<string, string | null>
@@ -280,6 +282,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
                   service,
                   slug: packageIdToSlug[active.idPackage] ?? null,
                   expiredSlug: null,
+                  expireDate: (active.expireDate as string | null) ?? null,
                 };
               }
             }
@@ -332,13 +335,16 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
         const activeMap: Record<string, string | null> = {};
         const expiredMap: Record<string, string | null> = {};
+        const expiryMap: Record<string, string | null> = {};
         results.forEach((r) => {
           if (r.status === 'fulfilled') {
             activeMap[r.value.service] = r.value.slug;
+            expiryMap[r.value.service] = (r.value as { expireDate?: string | null }).expireDate ?? null;
             expiredMap[r.value.service] = r.value.expiredSlug;
           }
         });
         setActivePackages(activeMap);
+        setActiveExpiry(expiryMap);
         setExpiredPackages(expiredMap);
       } catch (e) {
         console.error('Failed to fetch active packages:', e);
@@ -936,6 +942,36 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     // it restarted from today, and a dead button was the only thing stopping a customer
     // from losing the remainder — which also left the PBX portal telling them to "renew
     // before it expires" with nowhere to do it.
+    // The Individual plan is the exception: each renewal starts a fresh 250-minute allowance
+    // and drops what is left, so it opens only in the last RENEW_WINDOW_DAYS, as on the
+    // dashboard. PaymentGateWay refuses an earlier one (RenewalWindowGuard); this says when.
+    const renewOpens =
+      pkg.id === INDIVIDUAL_PACKAGE.slug && activeExpiry[serviceId]
+        ? new Date(new Date(activeExpiry[serviceId]!).getTime() - RENEW_WINDOW_DAYS * 86_400_000)
+        : null;
+    if (activePackages[serviceId] === pkg.id && renewOpens && renewOpens.getTime() > Date.now()) {
+      const opens = renewOpens.toLocaleDateString(locale === 'en' ? 'en-GB' : 'bn-BD', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+      return (
+        <div className="space-y-2">
+          <Button
+            disabled
+            className="w-full py-2.5 px-6 rounded-lg font-semibold text-sm bg-gray-300 text-gray-600 cursor-not-allowed"
+          >
+            ↻ {locale === 'en' ? `Renew from ${opens}` : `${opens} থেকে নবায়ন করা যাবে`}
+          </Button>
+          <p className="text-xs text-center text-gray-500">
+            ✓{' '}
+            {locale === 'en'
+              ? `Your current plan — renewal opens ${RENEW_WINDOW_DAYS} days before it expires`
+              : `আপনার বর্তমান প্ল্যান — মেয়াদ শেষের ${RENEW_WINDOW_DAYS} দিন আগে নবায়ন করা যাবে`}
+          </p>
+        </div>
+      );
+    }
     if (activePackages[serviceId] === pkg.id) {
       return (
         <div className="space-y-2">

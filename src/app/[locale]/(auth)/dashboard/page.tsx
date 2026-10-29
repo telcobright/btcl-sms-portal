@@ -16,7 +16,7 @@ import { showApiError } from '@/lib/api-error';
 import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
-import { INDIVIDUAL_PACKAGE, isIndividualCategory } from '@/lib/individual-tariff';
+import { INDIVIDUAL_PACKAGE, RENEW_WINDOW_DAYS, isIndividualCategory } from '@/lib/individual-tariff';
 import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import { jwtDecode } from 'jwt-decode';
 import {
@@ -84,8 +84,6 @@ function ComingSoonTile({
 }
 
 // Map idPackage to human-readable names (backend returns packageName=null)
-/** Days before expiry when a plan offers Renew: the IP PBX portal's ExpiryBanner rule. */
-const RENEW_WINDOW_DAYS = 7;
 
 /** Whether a plan expiring on expireDate is in its renewal window. No date: nothing to renew. */
 function renewalDue(expireDate: string | null | undefined, now = Date.now()): boolean {

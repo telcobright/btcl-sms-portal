@@ -82,3 +82,9 @@ export function isIndividualLine(
     (Number(idPackage) === INDIVIDUAL_PACKAGE.packageId || isIndividualCategory(category))
   );
 }
+
+/**
+ * Days before expiry when a plan offers Renew: the IP PBX portal's ExpiryBanner rule.
+ * PaymentGateWay refuses an earlier renewal of the Individual plan (RenewalWindowGuard).
+ */
+export const RENEW_WINDOW_DAYS = 7;

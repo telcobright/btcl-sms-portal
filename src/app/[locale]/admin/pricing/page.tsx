@@ -16,14 +16,20 @@ import {
   XCircle,
 } from 'lucide-react';
 import {
+  getFlatPricesForAdmin,
   getServicePricingForAdmin,
   servicePricingErrorMessage,
+  updateFlatPrice,
   updateServicePricing,
 } from '@/lib/api-client/servicePricing';
 import {
   firstProblem,
+  flatPriceProblem,
+  flatQuote,
   formatRange,
   quote,
+  VAT_PERCENT,
+  type FlatPrice,
   type PricedService,
   type PricingLimits,
   type PricingSlab,
@@ -134,6 +140,27 @@ const formatTime = (iso: string | null) => {
 const inputClass =
   'w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E] disabled:bg-gray-50 disabled:text-gray-500';
 
+/** The one flat-priced item edited here: each DID a hosted PBX customer buys after the free one. */
+const DID_ITEM = 'pbx_did';
+
+// Kept as text while typing, like the slab rows.
+interface FlatDraft {
+  price: string;
+  vatPercent: string;
+}
+
+const toFlatDraft = (p: FlatPrice): FlatDraft => ({
+  price: String(p.price),
+  vatPercent: String(p.vatPercent),
+});
+
+const emptyFlatDraft = (): FlatDraft => ({ price: '', vatPercent: String(VAT_PERCENT) });
+
+const findDid = (data: FlatPrice[]) => data.find((p) => p.item === DID_ITEM) ?? null;
+
+const formatTaka = (v: number) =>
+  `৳${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export default function AdminServicePricingPage() {
   const canEdit = useCanEdit();
   const [saved, setSaved] = useState<ServicePricingMap>({});
@@ -174,6 +201,39 @@ export default function AdminServicePricingPage() {
     setDrafts((prev) => ({ ...prev, [service]: fresh ? toDraft(fresh) : emptyDraft() }));
   };
 
+  // The DID price is loaded on its own, so a TelcoREST that does not have it yet (or fails on
+  // it) leaves the VBS / SMS sections working as before.
+  const [didSaved, setDidSaved] = useState<FlatPrice | null>(null);
+  const [didDraft, setDidDraft] = useState<FlatDraft>(emptyFlatDraft());
+  const [didLoading, setDidLoading] = useState(true);
+  const [didLoadError, setDidLoadError] = useState<string | null>(null);
+
+  const loadDid = useCallback(async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+    setDidLoading(true);
+    try {
+      const did = findDid(await getFlatPricesForAdmin(authToken));
+      setDidSaved(did);
+      setDidDraft(did ? toFlatDraft(did) : emptyFlatDraft());
+      setDidLoadError(null);
+    } catch (err) {
+      setDidLoadError(servicePricingErrorMessage(err, 'Could not load the DID price.'));
+    } finally {
+      setDidLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDid();
+  }, [loadDid]);
+
+  const onDidSaved = (data: FlatPrice[]) => {
+    const did = findDid(data);
+    setDidSaved(did);
+    setDidDraft(did ? toFlatDraft(did) : emptyFlatDraft());
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-gray-500">
@@ -197,7 +257,10 @@ export default function AdminServicePricingPage() {
           </p>
         </div>
         <button
-          onClick={load}
+          onClick={() => {
+            load();
+            loadDid();
+          }}
           className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-[#0D529E] hover:bg-gray-100 rounded-lg transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
@@ -231,7 +294,176 @@ export default function AdminServicePricingPage() {
           ))}
         </div>
       )}
+
+      <div className={loadError ? '' : 'mt-6'}>
+        <DidPriceCard
+          saved={didSaved}
+          draft={didDraft}
+          setDraft={setDidDraft}
+          loading={didLoading}
+          loadError={didLoadError}
+          canEdit={canEdit}
+          onSaved={onDidSaved}
+        />
+      </div>
     </div>
+  );
+}
+
+/**
+ * One-time price of each DID a hosted PBX customer buys after their free first one, kept in
+ * tenant_master.service_flat_price ("pbx_did"). The PBX checkout reads it at every purchase; a
+ * customer already paying keeps the price they were shown. Checked again by TelcoREST on save.
+ */
+function DidPriceCard({
+  saved,
+  draft,
+  setDraft,
+  loading,
+  loadError,
+  canEdit,
+  onSaved,
+}: {
+  saved: FlatPrice | null;
+  draft: FlatDraft;
+  setDraft: (d: FlatDraft) => void;
+  loading: boolean;
+  loadError: string | null;
+  canEdit: boolean;
+  onSaved: (data: FlatPrice[]) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [banner, setBanner] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const price = requiredNumber(draft.price);
+  const vatPercent = requiredNumber(draft.vatPercent);
+  const problem = flatPriceProblem(price, vatPercent);
+  const preview = problem ? null : flatQuote(price, vatPercent);
+  const dirty = !saved || price !== saved.price || vatPercent !== saved.vatPercent;
+
+  const update = (patch: Partial<FlatDraft>) => {
+    setBanner(null);
+    setDraft({ ...draft, ...patch });
+  };
+
+  const reset = () => {
+    setBanner(null);
+    setDraft(saved ? toFlatDraft(saved) : emptyFlatDraft());
+  };
+
+  const save = async () => {
+    if (!canEdit || !dirty || problem) return;
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+    setSaving(true);
+    setBanner(null);
+    try {
+      const data = await updateFlatPrice(DID_ITEM, price, vatPercent, authToken);
+      onSaved(data);
+      setBanner({ ok: true, text: 'Saved. The next DID checkout uses this price.' });
+    } catch (err) {
+      setBanner({ ok: false, text: servicePricingErrorMessage(err, 'The DID price could not be saved.') });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-base font-semibold text-[#1F3C71]">Additional DID (Hosted PBX)</h2>
+          <p className="text-sm text-gray-500">
+            One-time price of each DID a hosted PBX customer buys after their free first DID. Charged
+            from the next checkout; customers already paying keep the price they were shown.
+          </p>
+        </div>
+        {!loading && !loadError && (
+          <p className="text-xs text-gray-500">
+            {saved
+              ? `Last changed ${formatTime(saved.updatedAt)}${saved.updatedBy ? ` by ${saved.updatedBy}` : ''}`
+              : 'No price saved yet — the PBX checkout uses its configured default until one is.'}
+          </p>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center text-sm text-gray-500">
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          Loading the DID price…
+        </div>
+      ) : loadError ? (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{loadError}</span>
+        </div>
+      ) : (
+        <>
+          {banner && (
+            <div
+              className={`mb-4 flex items-start gap-2 p-3 rounded-lg border text-sm ${
+                banner.ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
+              }`}
+            >
+              {banner.ok ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+              <span>{banner.text}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <LimitField
+              label="Price (BDT, before VAT)"
+              value={draft.price}
+              onChange={(v) => update({ price: v })}
+              disabled={!canEdit}
+            />
+            <LimitField
+              label="VAT (%)"
+              value={draft.vatPercent}
+              onChange={(v) => update({ vatPercent: v })}
+              disabled={!canEdit}
+            />
+          </div>
+
+          {problem && (
+            <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{problem}</span>
+            </div>
+          )}
+
+          <div className="mt-5 p-4 rounded-lg bg-gray-50 border border-gray-200">
+            <span className="block text-xs font-semibold text-gray-600 mb-2">
+              What the customer pays at the price on screen
+            </span>
+            <span className="text-sm text-gray-700">
+              {preview
+                ? `${formatTaka(preview.price)} + VAT ${formatTaka(preview.vat)} = ${formatTaka(preview.total)} per DID`
+                : '—'}
+            </span>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+            <button
+              onClick={reset}
+              disabled={!canEdit || !dirty || saving}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Discard changes
+            </button>
+            <button
+              onClick={save}
+              disabled={!canEdit || !dirty || !!problem || saving}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#0D529E] rounded-lg hover:bg-[#1F3C71] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save DID price
+            </button>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 

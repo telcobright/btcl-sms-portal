@@ -166,10 +166,14 @@ export const API_ENDPOINTS = {
   // public (the pricing page is shown before login); the admin read and the update check the
   // caller's admin role. PaymentGateWay checks every VBS / SMS purchase against these slabs.
   // The admin read is "details", not "get": TelcoREST matches public paths by suffix.
+  // flat*: items sold at one price (an additional DID on the hosted PBX, "pbx_did"), admin only;
+  // the PBX checkout reads the saved price.
   servicePricing: {
     get: '/service-pricing/get',
     adminDetails: '/admin/service-pricing/details',
     update: '/admin/service-pricing/update',
+    flatDetails: '/admin/service-pricing/flat/details',
+    flatUpdate: '/admin/service-pricing/flat/update',
   },
 
   // Package endpoints

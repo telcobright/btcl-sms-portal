@@ -158,3 +158,44 @@ export const firstProblem = (limits: PricingLimits, slabs: PricingSlab[]): strin
 /** "0.40", "0.325", "0.3250" → at least two decimals, up to four, never rounded away. */
 export const formatRate = (rate: number) =>
   rate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+/**
+ * An item sold at one price rather than by slab: today only "pbx_did", each DID a hosted PBX
+ * customer buys after their free first one. The PBX checkout reads it from tenant_master.
+ */
+export interface FlatPrice {
+  item: string;
+  nameEn: string;
+  /** BDT before VAT, at most two decimals. */
+  price: number;
+  vatPercent: number;
+  vat: number;
+  total: number;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export const MAX_FLAT_PRICE = 1000000;
+
+const atMostTwoDecimals = (v: number) => Math.abs(v * 100 - Math.round(v * 100)) <= 1e-6;
+
+/** Same checks TelcoREST runs on save (ServicePricingRules.flatPriceProblem). */
+export const flatPriceProblem = (price: number, vatPercent: number): string | null => {
+  if (!Number.isFinite(price) || price <= 0) return 'The price must be greater than 0';
+  if (price > MAX_FLAT_PRICE) return `The price cannot be more than ৳${MAX_FLAT_PRICE.toLocaleString('en-US')}`;
+  if (!atMostTwoDecimals(price)) return 'The price can have at most 2 decimal places';
+  if (!Number.isFinite(vatPercent) || vatPercent < 0 || vatPercent > 100) return 'VAT must be between 0% and 100%';
+  if (!atMostTwoDecimals(vatPercent)) return 'VAT can have at most 2 decimal places';
+  return null;
+};
+
+/**
+ * VAT and total of a flat price as TelcoREST works them out: VAT to the paisa, rounded half up
+ * (unlike the slabs, whose VAT is rounded up to the taka). Done in whole paisa, so 15% of
+ * ৳1,000 is exactly ৳150.00.
+ */
+export const flatQuote = (price: number, vatPercent: number) => {
+  const pricePaisa = Math.round(price * 100);
+  const vatPaisa = Math.floor((pricePaisa * Math.round(vatPercent * 100) + 5000) / 10000);
+  return { price: pricePaisa / 100, vat: vatPaisa / 100, total: (pricePaisa + vatPaisa) / 100 };
+};

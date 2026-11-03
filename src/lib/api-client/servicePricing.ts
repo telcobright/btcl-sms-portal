@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 import type {
+  FlatPrice,
   PricedService,
   PricingLimits,
   PricingSlab,
@@ -9,7 +10,8 @@ import type {
 } from '@/lib/servicePricing';
 
 /**
- * Voice Broadcasting / Bulk SMS slab pricing (TelcoREST, tenant_master).
+ * Voice Broadcasting / Bulk SMS slab pricing, and flat prices such as an additional hosted PBX
+ * DID (TelcoREST, tenant_master).
  * See src/lib/servicePricing.ts for the shapes and the price arithmetic.
  */
 
@@ -78,6 +80,49 @@ export const updateServicePricing = async (
     { headers: authHeaders(authToken) }
   );
   return normalise(response.data);
+};
+
+type RawFlatPrice = Omit<FlatPrice, 'price' | 'vatPercent' | 'vat' | 'total'> & {
+  price: number | string;
+  vatPercent: number | string;
+  vat: number | string;
+  total: number | string;
+};
+
+const normaliseFlat = (raw: RawFlatPrice[]): FlatPrice[] =>
+  (Array.isArray(raw) ? raw : []).map((p) => ({
+    ...p,
+    price: num(p.price),
+    vatPercent: num(p.vatPercent),
+    vat: num(p.vat),
+    total: num(p.total),
+    updatedAt: p.updatedAt ?? null,
+    updatedBy: p.updatedBy ?? null,
+  }));
+
+/** Admin: items sold at one price (an additional hosted PBX DID), with who last changed each. */
+export const getFlatPricesForAdmin = async (authToken: string): Promise<FlatPrice[]> => {
+  const response = await axios.post<RawFlatPrice[]>(
+    `${API_BASE_URL}${API_ENDPOINTS.servicePricing.flatDetails}`,
+    {},
+    { headers: authHeaders(authToken) }
+  );
+  return normaliseFlat(response.data);
+};
+
+/** Admin: a new price (before VAT) and VAT rate for one item. Returns every item, freshly read. */
+export const updateFlatPrice = async (
+  item: string,
+  price: number,
+  vatPercent: number,
+  authToken: string
+): Promise<FlatPrice[]> => {
+  const response = await axios.post<RawFlatPrice[]>(
+    `${API_BASE_URL}${API_ENDPOINTS.servicePricing.flatUpdate}`,
+    { item, price, vatPercent },
+    { headers: authHeaders(authToken) }
+  );
+  return normaliseFlat(response.data);
 };
 
 /** The server's reason when it refuses, or a fallback. */

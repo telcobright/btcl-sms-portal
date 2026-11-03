@@ -43,6 +43,7 @@ import {
   requiredDocumentsFor,
 } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
+import { openInvoice } from '@/lib/invoice';
 
 type TabType =
   | 'overview'
@@ -593,7 +594,13 @@ export default function PartnerDetailsPage() {
             isDeactivated={partner.status === 'DEACTIVATED'}
           />
         )}
-        {activeTab === 'purchases' && <PurchasesTab purchases={purchases} />}
+        {activeTab === 'purchases' && (
+          <PurchasesTab
+            purchases={purchases}
+            isPrepaid={partner.customerPrePaid === 1}
+            partnerName={partner.partnerName || ''}
+          />
+        )}
         {activeTab === 'subscriptions' && (
           <SubscriptionsTab
             subscriptions={subscriptions}
@@ -1691,7 +1698,22 @@ function UsersTab({
 /* ═══════════════════════════════════════════════════════════════════
    Purchases Tab
    ═══════════════════════════════════════════════════════════════════ */
-function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
+function PurchasesTab({
+  purchases,
+  isPrepaid,
+  partnerName,
+}: {
+  purchases: PurchaseHistory[];
+  /** The customer's payment type, which decides whether the invoice has a due date. */
+  isPrepaid: boolean;
+  partnerName: string;
+}) {
+  // The same invoice the customer downloads from their dashboard (lib/invoice).
+  const downloadInvoice = (p: PurchaseHistory) =>
+    openInvoice(
+      { ...p, packageName: p.packageName || p.packageAccounts?.[0]?.name || null },
+      { isPrepaid, billTo: partnerName }
+    );
   if (purchases.length === 0)
     return (
       <p className="text-center text-gray-400 py-12 text-sm">
@@ -1703,13 +1725,14 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-xs text-gray-500 uppercase bg-gray-50">
-            <th className="text-left px-6 py-2 font-medium">Package</th>
-            <th className="text-left px-6 py-2 font-medium">Service</th>
-            <th className="text-left px-6 py-2 font-medium">Purchased</th>
-            <th className="text-left px-6 py-2 font-medium">Expires</th>
-            <th className="text-right px-6 py-2 font-medium">Price</th>
-            <th className="text-right px-6 py-2 font-medium">Total</th>
-            <th className="text-left px-6 py-2 font-medium">Status</th>
+            <th className="text-left px-4 py-2 font-medium">Package</th>
+            <th className="text-left px-4 py-2 font-medium">Service</th>
+            <th className="text-left px-4 py-2 font-medium">Purchased</th>
+            <th className="text-left px-4 py-2 font-medium">Expires</th>
+            <th className="text-right px-4 py-2 font-medium">Price</th>
+            <th className="text-right px-4 py-2 font-medium">Total</th>
+            <th className="text-left px-4 py-2 font-medium">Status</th>
+            <th className="text-right px-4 py-2 font-medium">Invoice</th>
           </tr>
         </thead>
         <tbody>
@@ -1718,34 +1741,47 @@ function PurchasesTab({ purchases }: { purchases: PurchaseHistory[] }) {
               key={`${p.service ?? 'main'}:${p.id}`}
               className="border-b border-gray-50 hover:bg-gray-50/50"
             >
-              <td className="px-6 py-3 font-medium text-gray-900">
+              <td className="px-4 py-3 font-medium text-gray-900">
                 {p.packageName || p.packageAccounts?.[0]?.name || 'N/A'}
               </td>
-              <td className="px-6 py-3 text-gray-500 uppercase text-xs">
+              <td className="px-4 py-3 text-gray-500 uppercase text-xs">
                 {p.service && p.service !== 'main' ? p.service : '--'}
               </td>
-              <td className="px-6 py-3 text-gray-500">
+              <td className="px-4 py-3 text-gray-500">
                 {p.purchaseDate
                   ? new Date(p.purchaseDate).toLocaleDateString()
                   : '--'}
               </td>
-              <td className="px-6 py-3 text-gray-500">
+              <td className="px-4 py-3 text-gray-500">
                 {p.expireDate
                   ? new Date(p.expireDate).toLocaleDateString()
                   : '--'}
               </td>
-              <td className="px-6 py-3 text-right text-gray-700">
+              <td className="px-4 py-3 text-right text-gray-700">
                 ৳{p.price?.toLocaleString() || 0}
               </td>
-              <td className="px-6 py-3 text-right font-medium text-gray-900">
+              <td className="px-4 py-3 text-right font-medium text-gray-900">
                 ৳{p.total?.toLocaleString() || 0}
               </td>
-              <td className="px-6 py-3">
+              <td className="px-4 py-3">
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded ${p.status === 'ACTIVE' ? 'bg-btcl-primaryLight/10 text-[#0D529E]' : p.status === 'EXPIRED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'}`}
                 >
                   {p.status}
                 </span>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <button
+                  type="button"
+                  onClick={() => downloadInvoice(p)}
+                  title="Download invoice (PDF)"
+                  className="inline-flex items-center gap-1 rounded-md border border-[#0D529E] px-2.5 py-1 text-xs font-medium text-[#0D529E] hover:bg-btcl-primaryLight/10"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  PDF
+                </button>
               </td>
             </tr>
           ))}

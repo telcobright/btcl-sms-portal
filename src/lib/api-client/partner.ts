@@ -733,18 +733,18 @@ export const createPartnerInService = async (
 };
 
 /**
- * The customer's category as recorded on the primary service.
- *
- * Returns null rather than throwing: a replicated partner missing its category is a
- * reporting gap, and refusing the purchase over one would be far worse.
+ * The customer's category as recorded on the primary service, or null when it could not be
+ * read. A successful answer can still carry no category: an account registered before
+ * categories existed has none, and is a business. Callers that decide what to sell must tell
+ * the two apart, which is why the result is wrapped.
  *
  * The body is `{ id }`, the key get-partner-extra reads. It used to send `{ idPartner }`,
  * which the endpoint ignores, so every call came back without a category.
  */
-export const getPrimaryCustomerCategory = async (
+export const readCustomerCategory = async (
   idPartner: number,
   authToken: string
-): Promise<string | null> => {
+): Promise<{ category: string | null } | null> => {
   try {
     const response = await axios.post(
       `${API_BASE_URL}${API_ENDPOINTS.partner.getPartnerExtra}`,
@@ -756,12 +756,24 @@ export const getPrimaryCustomerCategory = async (
         },
       }
     );
-    return response.data?.customerCategory ?? null;
+    return { category: response.data?.customerCategory ?? null };
   } catch (error) {
     console.warn('Could not read customer category from the primary service:', error);
     return null;
   }
 };
+
+/**
+ * The customer's category, null when unknown for any reason.
+ *
+ * For callers that only record it, such as copying a partner into a service: a replicated
+ * partner missing its category is a reporting gap, and refusing the purchase over one would
+ * be far worse. Deciding what to sell needs readCustomerCategory.
+ */
+export const getPrimaryCustomerCategory = async (
+  idPartner: number,
+  authToken: string
+): Promise<string | null> => (await readCustomerCategory(idPartner, authToken))?.category ?? null;
 
 /**
  * Ensure partner exists in target service before purchase

@@ -20,7 +20,7 @@ import {
   getServiceEligibility,
   type ServiceEligibilityState,
 } from '@/lib/api-client/admin';
-import { getPrimaryCustomerCategory } from '@/lib/api-client/partner';
+import { readCustomerCategory } from '@/lib/api-client/partner';
 import {
   describeServicePricingError,
   getServicePricing,
@@ -85,6 +85,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // The customer's category decides what they are sold: an Individual gets the Individual
   // IP-Telephone package, everyone else the packages below. Null until read, and for visitors and admins.
   const [customerCategory, setCustomerCategory] = useState<string | null>(null);
+  // Set when a signed-in customer's category could not be read. Which packages they may buy
+  // depends on it, so none are shown until it is known: showing the business packages by
+  // default offered an Individual everything (as when the gateway refused the lookup).
+  const [accountTypeUnknown, setAccountTypeUnknown] = useState(false);
+  // Bumped by "Try again" to read the account once more.
+  const [accountReload, setAccountReload] = useState(0);
   // An Individual is sold Alaap Cloud Individual IP-Telephone, never the packages on this page (see
   // individual-tariff.ts). PaymentGateWay refuses those too; this is about not offering them.
   const individualView = !isAdmin && isIndividualCategory(customerCategory);
@@ -162,6 +168,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         return;
       }
 
+      // Whether this signed-in account's category was established (an admin needs none).
+      let typeKnown = false;
       try {
         // Decode JWT token to get idPartner and roles
         const decodedToken = jwtDecode<DecodedToken>(authToken);
@@ -173,6 +181,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         );
         if (adminRole) {
           setIsAdmin(true);
+          typeKnown = true;
           // Admins are not blocked by doc validation
           setPurchaseBlocked(false);
         }
@@ -188,9 +197,12 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
         if (!adminRole) {
           const [eligibility, category] = await Promise.all([
             getServiceEligibility(idPartner, authToken),
-            getPrimaryCustomerCategory(idPartner, authToken),
+            readCustomerCategory(idPartner, authToken),
           ]);
-          setCustomerCategory(category);
+          if (category) {
+            setCustomerCategory(category.category);
+            typeKnown = true;
+          }
           if (eligibility) {
             setSmsEligibility(eligibility.sms);
             if (eligibility.rejected.length > 0) {
@@ -231,6 +243,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
       } catch (e) {
         console.error('Error fetching partner data:', e);
       } finally {
+        setAccountTypeUnknown(!typeKnown);
         setIsLoadingUserType(false);
       }
     };
@@ -353,7 +366,7 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
 
     fetchUserType();
     fetchActivePackages();
-  }, []);
+  }, [accountReload]);
 
   const handleBuyNow = (pkg: any, service: string) => {
     if (!isLoggedIn()) {
@@ -1330,10 +1343,18 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
   // A signed-in customer's plans wait for their account, so an Individual is not shown
   // packages that are not theirs to buy while it loads.
   const resolvingAccount = signedIn && isLoadingUserType;
-  const showRegularPlans = !resolvingAccount && !individualView;
+  // A signed-in customer whose category could not be read is shown no packages at all, rather
+  // than the business ones by default: what they may buy depends on it.
+  const accountTypeMissing = signedIn && !isAdmin && !resolvingAccount && accountTypeUnknown;
+  const showRegularPlans = !resolvingAccount && !accountTypeMissing && !individualView;
   // The Individual tariff is public; after sign-in it is shown to the customers it is for.
   const showIndividualTariff =
-    !resolvingAccount && (!signedIn || isAdmin || individualView);
+    !resolvingAccount && !accountTypeMissing && (!signedIn || isAdmin || individualView);
+  const retryAccount = () => {
+    setAccountTypeUnknown(false);
+    setIsLoadingUserType(true);
+    setAccountReload((n) => n + 1);
+  };
   // What the checkout needs to sell the Individual plan, in the shape of the IP PBX plans.
   const individualPlan = {
     id: INDIVIDUAL_PACKAGE.slug,
@@ -1511,6 +1532,31 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-btcl-primary border-t-transparent" />
             {locale === 'en' ? 'Loading your plans…' : 'আপনার প্ল্যান লোড হচ্ছে…'}
           </div>
+        </div>
+      )}
+
+      {accountTypeMissing && (
+        <div className="mx-auto max-w-xl px-4 py-20 text-center" role="alert">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {locale === 'en' ? 'We could not load your plans' : 'আপনার প্ল্যান লোড করা যায়নি'}
+          </h2>
+          <p className="mt-3 text-sm text-gray-600">
+            {locale === 'en'
+              ? 'Your account type could not be confirmed just now, so no packages are shown. Please try again in a moment.'
+              : 'এই মুহূর্তে আপনার অ্যাকাউন্টের ধরন নিশ্চিত করা যায়নি, তাই কোনো প্যাকেজ দেখানো হচ্ছে না। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।'}
+          </p>
+          <button
+            type="button"
+            onClick={retryAccount}
+            className="mt-6 rounded-lg bg-btcl-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-btcl-primaryDark"
+          >
+            {locale === 'en' ? 'Try again' : 'আবার চেষ্টা করুন'}
+          </button>
+          <p className="mt-4 text-xs text-gray-500">
+            {locale === 'en'
+              ? 'If this keeps happening, call the BTCL Call Center at 16402.'
+              : 'বারবার এমন হলে BTCL কল সেন্টারে ১৬৪০২ নম্বরে কল করুন।'}
+          </p>
         </div>
       )}
 

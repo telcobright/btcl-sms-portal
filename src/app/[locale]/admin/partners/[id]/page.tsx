@@ -859,7 +859,30 @@ function OverviewTab({
   const migrationTargets = migrationTargetsFor(partnerExtra?.customerCategory);
   const [confirmMigration, setConfirmMigration] = useState(false);
   const [migrationTarget, setMigrationTarget] = useState<string | null>(null);
+  const [migrationReason, setMigrationReason] = useState('');
   const [migrating, setMigrating] = useState(false);
+  // The one change made to this customer's type, with its reason. A type is changed only once,
+  // so once there is one the button goes and this is shown in its place.
+  const [typeChange, setTypeChange] = useState<{
+    from: string;
+    to: string;
+    reason: string;
+    changedBy: string | null;
+    changedAt: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken || !partner.idPartner) return;
+    fetch(`${API_BASE_URL}${API_ENDPOINTS.partner.categoryChange}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ id: partner.idPartner }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setTypeChange(d?.change ?? null))
+      .catch(() => setTypeChange(null));
+  }, [partner.idPartner]);
   // Only government accounts may be postpaid, so a postpaid account is switched to prepaid
   // before it becomes a private type. The server refuses it too.
   const blockedByPostpaid =
@@ -872,11 +895,12 @@ function OverviewTab({
     );
   const openMigration = () => {
     setMigrationTarget(migrationTargets[0] ?? null);
+    setMigrationReason('');
     setConfirmMigration(true);
   };
 
   const handleMigrate = async () => {
-    if (!canEdit || !migrationTarget || blockedByPostpaid) return;
+    if (!canEdit || !migrationTarget || blockedByPostpaid || !migrationReason.trim()) return;
     try {
       setMigrating(true);
       const authToken = localStorage.getItem('authToken');
@@ -892,6 +916,7 @@ function OverviewTab({
           body: JSON.stringify({
             partnerId: partner.idPartner,
             toCategory: migrationTarget,
+            reason: migrationReason.trim(),
           }),
         }
       );
@@ -902,6 +927,7 @@ function OverviewTab({
       }
       const newType = data.to ?? migrationTarget;
       onCategoryChange?.(newType);
+      if (data.change) setTypeChange(data.change);
       setConfirmMigration(false);
 
       const asked: string[] = (data.documentsToUpload ?? []).map(
@@ -1132,7 +1158,7 @@ function OverviewTab({
               value: partnerExtra?.customerCategory ? (
                 <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
                   {categoryLabel(partnerExtra.customerCategory)}
-                  {canEdit && migrationTargets.length > 0 && (
+                  {canEdit && migrationTargets.length > 0 && !typeChange && (
                     <button
                       type="button"
                       onClick={openMigration}
@@ -1146,6 +1172,18 @@ function OverviewTab({
                     >
                       Change type
                     </button>
+                  )}
+                  {typeChange && (
+                    <span className="block w-full text-xs text-gray-500">
+                      Changed from {categoryLabel(typeChange.from)} to{' '}
+                      {categoryLabel(typeChange.to)}
+                      {typeChange.changedAt
+                        ? ` on ${new Date(typeChange.changedAt.replace(' ', 'T')).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                        : ''}
+                      {typeChange.changedBy ? ` by ${typeChange.changedBy}` : ''}
+                      . Reason: {typeChange.reason}. A customer&apos;s type can be
+                      changed only once.
+                    </span>
                   )}
                 </span>
               ) : null,
@@ -1337,6 +1375,24 @@ function OverviewTab({
                   <li>As a government account it may be switched to postpaid.</li>
                 )}
             </ul>
+            <label className="mt-4 block text-sm font-medium text-gray-700" htmlFor="migration-reason">
+              Reason for the change <span className="text-red-600">*</span>
+            </label>
+            <textarea
+              id="migration-reason"
+              value={migrationReason}
+              onChange={(e) => setMigrationReason(e.target.value)}
+              maxLength={500}
+              rows={2}
+              disabled={migrating}
+              placeholder="e.g. The customer registered a company and sent its trade licence"
+              className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#0D529E] focus:ring-1 focus:ring-[#0D529E]"
+            />
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              A customer&apos;s type can be changed only once. After this, the type
+              stays {categoryLabel(migrationTarget)} and this record is kept with
+              your name and reason.
+            </p>
             {blockedByPostpaid && (
               <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
                 This account is postpaid, and only government accounts can be
@@ -1356,7 +1412,7 @@ function OverviewTab({
               <button
                 type="button"
                 onClick={handleMigrate}
-                disabled={migrating || blockedByPostpaid}
+                disabled={migrating || blockedByPostpaid || !migrationReason.trim()}
                 className={btn.primary}
               >
                 {migrating ? (

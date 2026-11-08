@@ -132,6 +132,8 @@ export const API_ENDPOINTS = {
     // Admin: Individual -> Corporate, Government Individual -> Government Corporate, and the
     // customer is emailed for the documents the new type needs.
     changeCustomerCategory: '/partner/change-customer-category',
+    // Admin: the one change made to a partner's type, with its reason, if any.
+    categoryChange: '/partner/category-change',
     updatePartner: '/partner/update-partner',
     updatePartnerDocument: '/partner/update-partner-document',
     deletePartnerDocument: '/partner/delete-partner-document',

@@ -39,7 +39,9 @@ import { useCanEdit } from '@/hooks/useCanEdit';
 import {
   categoryLabel,
   DOCUMENT_LABELS,
-  migrationTargetFor,
+  migrationTargetsFor,
+  PERSON_CATEGORIES,
+  POSTPAID_CATEGORIES,
   requiredDocumentsFor,
 } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
@@ -853,14 +855,28 @@ function OverviewTab({
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partner>({ ...partner });
-  // The one move this account's type has, if any: Individual -> Corporate,
-  // Government Individual -> Government Corporate.
-  const migrationTarget = migrationTargetFor(partnerExtra?.customerCategory);
+  // The types this account may be changed to (document-rules.ts), and the one picked.
+  const migrationTargets = migrationTargetsFor(partnerExtra?.customerCategory);
   const [confirmMigration, setConfirmMigration] = useState(false);
+  const [migrationTarget, setMigrationTarget] = useState<string | null>(null);
   const [migrating, setMigrating] = useState(false);
+  // Only government accounts may be postpaid, so a postpaid account is switched to prepaid
+  // before it becomes a private type. The server refuses it too.
+  const blockedByPostpaid =
+    !!migrationTarget &&
+    partner.customerPrePaid === 2 &&
+    !POSTPAID_CATEGORIES.includes(migrationTarget as (typeof POSTPAID_CATEGORIES)[number]);
+  const isPerson = (category: string | null | undefined) =>
+    PERSON_CATEGORIES.includes(
+      (category ?? '').trim().toUpperCase() as (typeof PERSON_CATEGORIES)[number]
+    );
+  const openMigration = () => {
+    setMigrationTarget(migrationTargets[0] ?? null);
+    setConfirmMigration(true);
+  };
 
   const handleMigrate = async () => {
-    if (!canEdit || !migrationTarget) return;
+    if (!canEdit || !migrationTarget || blockedByPostpaid) return;
     try {
       setMigrating(true);
       const authToken = localStorage.getItem('authToken');
@@ -1116,10 +1132,10 @@ function OverviewTab({
               value: partnerExtra?.customerCategory ? (
                 <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
                   {categoryLabel(partnerExtra.customerCategory)}
-                  {canEdit && migrationTarget && (
+                  {canEdit && migrationTargets.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setConfirmMigration(true)}
+                      onClick={openMigration}
                       disabled={isDeactivated}
                       title={
                         isDeactivated
@@ -1128,7 +1144,7 @@ function OverviewTab({
                       }
                       className={`${btn.outline} ${isDeactivated ? 'opacity-40 cursor-not-allowed text-gray-400 border-gray-300' : 'text-[#0D529E] border-[#0D529E] hover:bg-btcl-primaryLight/10'}`}
                     >
-                      Migrate to {categoryLabel(migrationTarget)}
+                      Change type
                     </button>
                   )}
                 </span>
@@ -1248,7 +1264,7 @@ function OverviewTab({
         </div>
       )}
 
-      {/* Migrate an Individual type to its business type */}
+      {/* Change the customer type, to one of the types it may become */}
       {confirmMigration && migrationTarget && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -1265,35 +1281,69 @@ function OverviewTab({
               id="migrate-title"
               className="text-lg font-semibold text-gray-900"
             >
-              Migrate to {categoryLabel(migrationTarget)}?
+              Change customer type
             </h3>
             <p className="mt-2 text-sm text-gray-600">
               {partner.partnerName} is registered as{' '}
-              {categoryLabel(partnerExtra?.customerCategory)}. After the
-              migration:
+              {categoryLabel(partnerExtra?.customerCategory)}. Change it to:
             </p>
-            <ul className="mt-3 space-y-2 text-sm text-gray-700 list-disc pl-5">
+            <div className="mt-3 space-y-2" role="radiogroup" aria-label="New customer type">
+              {migrationTargets.map((target) => (
+                <label
+                  key={target}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm ${migrationTarget === target ? 'border-[#0D529E] bg-btcl-primaryLight/10 text-gray-900' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <input
+                    type="radio"
+                    name="migration-target"
+                    value={target}
+                    checked={migrationTarget === target}
+                    onChange={() => setMigrationTarget(target)}
+                    disabled={migrating}
+                  />
+                  {categoryLabel(target)}
+                </label>
+              ))}
+            </div>
+            <p className="mt-4 text-sm font-medium text-gray-700">
+              As {categoryLabel(migrationTarget)}:
+            </p>
+            <ul className="mt-2 space-y-2 text-sm text-gray-700 list-disc pl-5">
+              {isPerson(partnerExtra?.customerCategory) && !isPerson(migrationTarget) && (
+                <li>
+                  They are offered the regular packages instead of{' '}
+                  {INDIVIDUAL_PACKAGE.name}. An Individual plan they already
+                  have keeps running until it ends, but cannot be renewed.
+                </li>
+              )}
+              {!isPerson(partnerExtra?.customerCategory) && isPerson(migrationTarget) && (
+                <li>
+                  They are offered only {INDIVIDUAL_PACKAGE.name}. Packages they
+                  already have keep running until they end but cannot be renewed,
+                  and Contact Center, Voice Broadcast and Bulk SMS balances cannot
+                  be topped up.
+                </li>
+              )}
               <li>
-                They are offered the regular packages instead of{' '}
-                {INDIVIDUAL_PACKAGE.name}.
-              </li>
-              <li>
-                A {categoryLabel(migrationTarget)} account needs{' '}
+                The account needs{' '}
                 {requiredDocumentsFor(migrationTarget)
                   .map((t) => DOCUMENT_LABELS[t] ?? t)
                   .join(', ')}
                 . They are emailed to upload whichever BTCL does not have yet,
                 and cannot buy until all of them are approved.
               </li>
-              <li>
-                A plan they already have keeps running until it ends, but the
-                Individual plan cannot be renewed.
-              </li>
-              <li>
-                This cannot be undone from the admin panel: no account is moved
-                back to an Individual type.
-              </li>
+              {POSTPAID_CATEGORIES.includes(migrationTarget as (typeof POSTPAID_CATEGORIES)[number]) &&
+                partner.customerPrePaid !== 2 && (
+                  <li>As a government account it may be switched to postpaid.</li>
+                )}
             </ul>
+            {blockedByPostpaid && (
+              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+                This account is postpaid, and only government accounts can be
+                postpaid. Switch it to prepaid first (Edit → Payment Type), then
+                change its type to {categoryLabel(migrationTarget)}.
+              </p>
+            )}
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
@@ -1306,13 +1356,13 @@ function OverviewTab({
               <button
                 type="button"
                 onClick={handleMigrate}
-                disabled={migrating}
+                disabled={migrating || blockedByPostpaid}
                 className={btn.primary}
               >
                 {migrating ? (
                   <Spinner />
                 ) : (
-                  `Migrate to ${categoryLabel(migrationTarget)}`
+                  `Change to ${categoryLabel(migrationTarget)}`
                 )}
               </button>
             </div>

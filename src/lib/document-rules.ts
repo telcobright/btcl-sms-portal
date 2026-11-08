@@ -65,18 +65,24 @@ export function categoryLabel(category: string | null | undefined): string {
 }
 
 /**
- * The one move each Individual type has, made by BTCL when the customer starts buying as a
- * business: an Individual becomes Corporate, a Government Individual becomes Government
- * Corporate. Nothing else moves, and nothing moves back. The server
- * (CustomerCategoryMigrationService) enforces the same rule.
+ * The types each type may be changed to by BTCL from the admin panel: a person between private
+ * and government, a business between private and government, a person to a business, and a
+ * private business to a private person. A government office never becomes a person. The
+ * server (CustomerCategoryMigrationService.MIGRATIONS) enforces the same table.
  */
-const CATEGORY_MIGRATIONS: Partial<Record<CustomerCategory, CustomerCategory>> = {
-  INDIVIDUAL: 'CORPORATE',
-  GOVERNMENT_INDIVIDUAL: 'GOVERNMENT_CORPORATE',
+const CATEGORY_MIGRATIONS: Record<CustomerCategory, CustomerCategory[]> = {
+  INDIVIDUAL: ['CORPORATE', 'GOVERNMENT_INDIVIDUAL'],
+  GOVERNMENT_INDIVIDUAL: ['GOVERNMENT_CORPORATE', 'INDIVIDUAL', 'CORPORATE'],
+  CORPORATE: ['GOVERNMENT_CORPORATE', 'INDIVIDUAL'],
+  GOVERNMENT_CORPORATE: ['CORPORATE'],
 };
 
-export function migrationTargetFor(
-  category: string | null | undefined
-): CustomerCategory | null {
-  return CATEGORY_MIGRATIONS[normalise(category)] ?? null;
+export function migrationTargetsFor(category: string | null | undefined): CustomerCategory[] {
+  return CATEGORY_MIGRATIONS[normalise(category)] ?? [];
 }
+
+/** The types that may be postpaid; a postpaid account is not moved to any other. */
+export const POSTPAID_CATEGORIES: CustomerCategory[] = ['GOVERNMENT_INDIVIDUAL', 'GOVERNMENT_CORPORATE'];
+
+/** The types that are a person, sold the Individual plan and nothing else. */
+export const PERSON_CATEGORIES: CustomerCategory[] = ['INDIVIDUAL', 'GOVERNMENT_INDIVIDUAL'];

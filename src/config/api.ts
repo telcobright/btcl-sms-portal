@@ -181,6 +181,10 @@ export const API_ENDPOINTS = {
   // Package endpoints
   package: {
     getPurchaseForPartner: '/package/getPurchaseForPartner',
+    // Who an invoice bills (the partner record) and how it was paid (the gateway payment, or
+    // CUSTOM). Asked of OUR OWN backend with the purchase's service: it reads each service's
+    // purchases, and the service's own backend would refuse this portal's token.
+    invoiceDetails: '/package/invoice-details',
     // Same figures for a list of partners in one call. The admin dashboard needs them
     // for every customer on every service, which one-at-a-time makes a request per
     // customer per service.

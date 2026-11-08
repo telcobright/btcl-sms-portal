@@ -3,6 +3,10 @@
  * partner page produces the same document. It opens as a page in a new window and the
  * print dialog saves it as PDF.
  *
+ * Bill To is the partner record (address, email, mobile) and Payment is the gateway payment
+ * the purchase was made with (method, TrnX number, TrnX time), or CUSTOM where there was none,
+ * both from /package/invoice-details.
+ *
  * Every value from the record is escaped. The invoice window shares the portal's origin, so
  * a customer name carrying markup would otherwise run as script in whoever opens the
  * invoice, an administrator included.
@@ -26,6 +30,28 @@ export interface InvoiceOptions {
   billTo?: string | null;
 }
 
+/** What the backend's /package/invoice-details answers: who is billed and how it was paid. */
+export interface InvoiceDetails {
+  billTo?: {
+    idPartner?: number | null;
+    name?: string | null;
+    address?: string | null;
+    email?: string | null;
+    mobile?: string | null;
+  } | null;
+  payment?: {
+    /** false: the payment could not be read. Not the same as CUSTOM, and not shown as it. */
+    available?: boolean;
+    /** No gateway payment: made by BTCL, approved postpaid, or a deployment without a gateway. */
+    custom?: boolean;
+    method?: string | null;
+    transactionId?: string | null;
+    bankTransactionId?: string | null;
+    /** Bangladesh time, as "2026-10-11T17:37:57". */
+    time?: string | null;
+  } | null;
+}
+
 const esc = (value: unknown): string =>
   String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -41,7 +67,79 @@ export function invoiceDueDate(purchaseDate: string | null | undefined, isPrepai
   return new Date(date.getFullYear(), date.getMonth() + 1, 1);
 }
 
-export function buildInvoiceHtml(purchase: InvoicePurchase, options: InvoiceOptions, origin: string): string {
+/** "2026-10-11T17:37:57" as "11 Oct 2026, 05:37 PM (BST)": read as written, never shifted to the viewer's zone. */
+export function formatBst(value: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(value ?? '');
+  if (!m) return '—';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const hour = Number(m[4]);
+  const h12 = String(hour % 12 === 0 ? 12 : hour % 12).padStart(2, '0');
+  return `${m[3]} ${months[Number(m[2]) - 1]} ${m[1]}, ${h12}:${m[5]} ${hour < 12 ? 'AM' : 'PM'} (BST)`;
+}
+
+/** The Bill To and Payment blocks. Missing details read "—"; nothing is invented. */
+function partiesHtml(
+  purchase: InvoicePurchase & { idPartner?: number | null },
+  partnerName: string,
+  details: InvoiceDetails | null | undefined
+): string {
+  const bill = details?.billTo ?? null;
+  const pay = details?.payment ?? null;
+  const dash = '—';
+  const row = (label: string, value: string, mono = false) =>
+    `<tr><td>${esc(label)}</td><td${mono ? ' class="mono"' : ''}>${value}</td></tr>`;
+  const text = (value: unknown) => (value === null || value === undefined || String(value).trim() === '' ? dash : esc(value));
+
+  const customerId = bill?.idPartner ?? purchase.idPartner ?? null;
+  const billTo = `
+    <div class="bill-to">
+      <h3>Bill To</h3>
+      <p><strong>${esc(bill?.name || partnerName)}</strong></p>
+      <table class="kv">
+        ${row('Customer ID', text(customerId))}
+        ${row('Address', text(bill?.address))}
+        ${row('Email', text(bill?.email))}
+        ${row('Mobile', text(bill?.mobile))}
+      </table>
+    </div>`;
+
+  let payment: string;
+  if (!pay || pay.available === false) {
+    payment = `<p class="muted-note">Payment details are not available for this invoice just now.</p>`;
+  } else if (pay.custom) {
+    payment = `
+      <table class="kv">
+        ${row('Payment Method', '<span class="tag-custom">CUSTOM</span>')}
+        ${row('TrnX Number', dash, true)}
+        ${row('TrnX Time', esc(formatBst(pay.time ?? purchase.purchaseDate)))}
+        ${row('Payment Status', 'Recorded by BTCL')}
+      </table>`;
+  } else {
+    payment = `
+      <table class="kv">
+        ${row('Payment Method', text(pay.method))}
+        ${row('TrnX Number', text(pay.transactionId), true)}
+        ${pay.bankTransactionId ? row('Bank TrnX ID', esc(pay.bankTransactionId), true) : ''}
+        ${row('TrnX Time', esc(formatBst(pay.time)))}
+        ${row('Payment Status', '<span class="tag-paid">PAID</span>')}
+      </table>`;
+  }
+  return `
+    <div class="bill-grid">
+      ${billTo}
+      <div class="bill-to">
+        <h3>Payment</h3>
+        ${payment}
+      </div>
+    </div>`;
+}
+
+export function buildInvoiceHtml(
+  purchase: InvoicePurchase & { idPartner?: number | null },
+  options: InvoiceOptions,
+  origin: string,
+  details?: InvoiceDetails | null
+): string {
   const { isPrepaid } = options;
   const paymentType = isPrepaid ? 'Prepaid' : 'Postpaid';
   const invoiceId = `INV-${purchase.id || '00000'}`;
@@ -104,6 +202,16 @@ export function buildInvoiceHtml(purchase: InvoicePurchase, options: InvoiceOpti
           .payment-type { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 10px; font-weight: 600; margin-left: 10px; border: 1px solid; text-transform: uppercase; letter-spacing: 0.5px; }
           .payment-type.prepaid { background: rgba(40, 168, 224, 0.15); color: #0D529E; border-color: rgba(40, 168, 224, 0.3); }
           .payment-type.postpaid { background: rgba(40, 168, 224, 0.25); color: #1F3C71; border-color: rgba(40, 168, 224, 0.5); }
+          .bill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+          .bill-grid .bill-to { margin-bottom: 0; }
+          .kv { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+          .kv td { padding: 3px 0; vertical-align: top; color: #1f2937; }
+          .kv td:first-child { color: #6b7280; width: 38%; white-space: nowrap; padding-right: 10px; }
+          .kv .mono { font-family: Consolas, monospace; font-size: 12px; word-break: break-all; }
+          .bill-to .muted-note { color: #6b7280; font-size: 13px; font-weight: 400; margin-top: 6px; }
+          .tag-custom { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; font-size: 11px; font-weight: 700; }
+          .tag-paid { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; font-size: 11px; font-weight: 700; }
+          @media (max-width: 600px) { .bill-grid { grid-template-columns: 1fr; } }
           .footer { background: rgba(40, 168, 224, 0.05); padding: 20px 32px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #E5F2FB; }
           .footer p { margin: 4px 0; }
           .footer h5 { color: #0D529E; font-weight: 600; }
@@ -112,7 +220,7 @@ export function buildInvoiceHtml(purchase: InvoicePurchase, options: InvoiceOpti
             .invoice { box-shadow: none; border-color: transparent; }
             .header { background: linear-gradient(135deg, #0D529E, #1F3C71) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .header::after { background: linear-gradient(90deg, #0D529E, #28A8E0) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .status, .payment-type, .bill-to, .items-table th, .footer { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .status, .payment-type, .bill-to, .items-table th, .footer, .tag-custom, .tag-paid { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           }
         </style>
       </head>
@@ -151,10 +259,7 @@ export function buildInvoiceHtml(purchase: InvoicePurchase, options: InvoiceOpti
               </div>
             </div>
 
-            <div class="bill-to">
-              <h3>Bill To</h3>
-              <p><strong>${esc(partnerName)}</strong></p>
-            </div>
+            ${partiesHtml(purchase, partnerName, details)}
 
             <table class="items-table">
               <thead>
@@ -209,13 +314,70 @@ export function buildInvoiceHtml(purchase: InvoicePurchase, options: InvoiceOpti
     `;
 }
 
-/** Open the invoice in a new window and bring up the print dialog, where it saves as PDF. */
-export function openInvoice(purchase: InvoicePurchase, options: InvoiceOptions): void {
-  const html = buildInvoiceHtml(purchase, options, window.location.origin);
+/**
+ * Open the invoice in a new window and bring up the print dialog, where it saves as PDF.
+ *
+ * The window opens at once, on the click, and the details are fetched into it: a window opened
+ * after a fetch is no longer the click's, and browsers block it as a popup.
+ */
+export async function openInvoice(
+  purchase: InvoicePurchase & { idPartner?: number | null },
+  options: InvoiceOptions,
+  loadDetails?: () => Promise<InvoiceDetails | null>
+): Promise<void> {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
+  printWindow.document.write(
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice</title></head>' +
+      '<body style="font-family: Segoe UI, Arial, sans-serif; color: #1F3C71; padding: 48px; text-align: center;">' +
+      'Preparing your invoice…</body></html>'
+  );
+  let details: InvoiceDetails | null = null;
+  if (loadDetails) {
+    try {
+      details = await loadDetails();
+    } catch {
+      details = null;
+    }
+  }
+  if (printWindow.closed) return;
+  const html = buildInvoiceHtml(purchase, options, window.location.origin, details);
+  printWindow.document.open();
   printWindow.document.write(html);
   printWindow.document.close();
   printWindow.focus();
   setTimeout(() => printWindow.print(), 500);
+}
+
+/**
+ * Who a purchase bills and how it was paid, from our own backend. Null when it cannot say,
+ * and the invoice then prints without those details rather than with wrong ones.
+ *
+ * @param service the service the purchase was bought from (pbx, hcc, vbs, sms); each numbers
+ *                its purchases on its own, so the id alone does not name one
+ */
+export async function fetchInvoiceDetails(
+  apiBaseUrl: string,
+  endpoint: string,
+  purchaseId: number,
+  service: string | null | undefined,
+  authToken: string | null
+): Promise<InvoiceDetails | null> {
+  if (!authToken || !purchaseId) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify(service ? { purchaseId, service } : { purchaseId }),
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as InvoiceDetails;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }

@@ -3,6 +3,7 @@
 import { Header } from '@/components/layout/Header';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import {
+  API_BASE_URL,
   API_ENDPOINTS,
   buildApiUrl,
   BULK_SMS_BASE_URL,
@@ -17,7 +18,7 @@ import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE, RENEW_WINDOW_DAYS, isIndividualCategory } from '@/lib/individual-tariff';
-import { openInvoice } from '@/lib/invoice';
+import { fetchInvoiceDetails, openInvoice } from '@/lib/invoice';
 import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import { jwtDecode } from 'jwt-decode';
 import {
@@ -211,6 +212,8 @@ interface PurchaseHistory {
   vat: number;
   ait: number;
   status: string;
+  /** The service it was bought from: each numbers its purchases on its own. */
+  service?: 'pbx' | 'hcc' | 'vbs' | 'sms';
 }
 
 
@@ -670,7 +673,7 @@ export default function Dashboard() {
                 p.packageName = PACKAGE_NAMES[p.idPackage] || 'Package';
               }
             });
-            allPurchases.push(...filteredList);
+            allPurchases.push(...filteredList.map((p: PurchaseHistory) => ({ ...p, service })));
           }
         } else {
           console.warn(
@@ -683,10 +686,11 @@ export default function Dashboard() {
       // Update service history state
       setServiceHistory(historyByService);
 
-      // Remove duplicates by id and sort
+      // Remove duplicates and sort. A duplicate is the same purchase of the same service:
+      // services number their purchases separately, so PBX 293 and SMS 293 are both kept.
       const uniquePurchases = allPurchases.reduce(
         (acc: PurchaseHistory[], current) => {
-          const exists = acc.find((item) => item.id === current.id);
+          const exists = acc.find((item) => item.id === current.id && item.service === current.service);
           if (!exists) {
             acc.push(current);
           }
@@ -738,8 +742,17 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
   };
 
   // The invoice is shared with the admin partner page (lib/invoice), which prints the same one.
+  // Bill To and Payment come from our own backend, named by the purchase's service.
   const handleDownloadInvoice = (purchase: PurchaseHistory) => {
-    openInvoice(purchase, { isPrepaid, billTo: partnerData?.partnerName });
+    void openInvoice(purchase, { isPrepaid, billTo: partnerData?.partnerName }, () =>
+      fetchInvoiceDetails(
+        API_BASE_URL,
+        API_ENDPOINTS.package.invoiceDetails,
+        purchase.id,
+        purchase.service,
+        localStorage.getItem('authToken')
+      )
+    );
   };
 
   const viewDocument = async (documentType: string, documentName: string) => {
@@ -2349,7 +2362,7 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
 
                       return (
                         <tr
-                          key={purchase.id || index}
+                          key={`${purchase.service ?? ''}:${purchase.id ?? index}`}
                           className="hover:bg-btcl-primaryLight/5 transition-all duration-200"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">

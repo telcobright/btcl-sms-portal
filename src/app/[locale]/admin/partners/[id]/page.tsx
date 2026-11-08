@@ -45,7 +45,7 @@ import {
   requiredDocumentsFor,
 } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
-import { openInvoice } from '@/lib/invoice';
+import { fetchInvoiceDetails, openInvoice } from '@/lib/invoice';
 
 type TabType =
   | 'overview'
@@ -1814,11 +1814,20 @@ function PurchasesTab({
   isPrepaid: boolean;
   partnerName: string;
 }) {
-  // The same invoice the customer downloads from their dashboard (lib/invoice).
+  // The same invoice the customer downloads from their dashboard (lib/invoice), with the
+  // same Bill To and Payment details, asked for by the purchase's service.
   const downloadInvoice = (p: PurchaseHistory) =>
-    openInvoice(
+    void openInvoice(
       { ...p, packageName: p.packageName || p.packageAccounts?.[0]?.name || null },
-      { isPrepaid, billTo: partnerName }
+      { isPrepaid, billTo: partnerName },
+      () =>
+        fetchInvoiceDetails(
+          API_BASE_URL,
+          API_ENDPOINTS.package.invoiceDetails,
+          p.id,
+          p.service,
+          localStorage.getItem('authToken')
+        )
     );
   if (purchases.length === 0)
     return (

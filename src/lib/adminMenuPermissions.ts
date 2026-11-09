@@ -49,10 +49,11 @@ export const ADMIN_MENU_CATALOG: AdminMenuCatalogEntry[] = [
   { menuKey: '/admin', label: 'Dashboard', section: 'Overview' },
   { menuKey: '/admin/partners', label: 'Partners', section: 'Management' },
   { menuKey: '/admin/approvals', label: 'Postpaid Approvals', section: 'Management' },
+  { menuKey: '/admin/invoices', label: 'Postpaid Invoices', section: 'Management' },
   { menuKey: '/admin/pricing', label: 'Service Pricing', section: 'Management' },
   { menuKey: '/admin/reports', label: 'Sales Reports', section: 'Management' },
   { menuKey: '/admin/regulatory-report', label: 'BTRC Report', section: 'Management' },
-  { menuKey: '/admin/revenue', label: 'Revenue (SSLCommerz)', section: 'Management' },
+  { menuKey: '/admin/sslcommerz-report', label: 'SSL Commerz Report', section: 'Management' },
   { menuKey: '/admin/recharge-report', label: 'Recharge Report', section: 'Management' },
   { menuKey: '/admin/emails', label: 'Sent Emails', section: 'Management' },
   { menuKey: '/admin/backend-guide', label: 'Backend Guide', section: 'System' },
@@ -62,6 +63,26 @@ export const ADMIN_MENU_CATALOG: AdminMenuCatalogEntry[] = [
 ];
 
 const CATALOG_KEYS = ADMIN_MENU_CATALOG.map((m) => m.menuKey);
+
+/**
+ * Routes that have been renamed since grants were first saved.
+ *
+ * A grant is stored server side as the route string, so renaming a route would
+ * otherwise orphan every row that names the old one and quietly take the page
+ * away from the admins who had it. Rows are read through here instead, and the
+ * next save rewrites them to the current key.
+ */
+const RENAMED_MENU_KEYS: Record<string, string> = {
+  '/admin/revenue': '/admin/sslcommerz-report',
+};
+
+/** The current catalog key for a stored one, which may predate a rename. */
+export const canonicalMenuKey = (menuKey: string): string =>
+  RENAMED_MENU_KEYS[menuKey] || menuKey;
+
+/** Stored rows, with renamed routes mapped onto their current keys. */
+export const canonicalizeRows = (rows: MenuPermissionRow[]): MenuPermissionRow[] =>
+  (rows || []).map((r) => ({ ...r, menuKey: canonicalMenuKey(r.menuKey) }));
 
 const LOCALES = ['en', 'bn'];
 
@@ -122,7 +143,7 @@ export const getAdminMenuPermissions = (): MenuPermissionRow[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? canonicalizeRows(parsed) : [];
   } catch {
     return [];
   }

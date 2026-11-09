@@ -6,6 +6,7 @@ import {
   ADMIN_MENU_CATALOG,
   LEVEL_FULL,
   LEVEL_READONLY,
+  canonicalizeRows,
   getAdminMenuLevel,
   isAdminMenuGatingActive,
   type MenuPermissionRow,
@@ -46,7 +47,7 @@ export default function UserMenuPermissionsModal({ userId, userName, onClose }: 
       setLoading(true);
       try {
         const token = localStorage.getItem('authToken') || '';
-        const rows = await getAdminUserMenuPermissions(userId, token);
+        const rows = canonicalizeRows(await getAdminUserMenuPermissions(userId, token));
         if (!alive) return;
         const next: Record<string, PermissionLevel> = {};
         rows.forEach((r) => {

@@ -19,7 +19,7 @@ import {
 /**
  * Revenue Office view of SSLCommerz recharges, across every store and service.
  *
- * Access is governed by the existing admin menu permission system: '/admin/revenue' is
+ * Access is governed by the existing admin menu permission system: '/admin/sslcommerz-report' is
  * registered in ADMIN_MENU_CATALOG, so an account can be granted 'readonly' (view) or
  * 'full' (view + export) without inventing a new role concept. The authoritative check
  * is server side; this page only renders.

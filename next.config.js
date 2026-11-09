@@ -19,6 +19,12 @@ const nextConfig = {
         has: [{ type: 'host', value: 'alaapcloud.gov.bd' }],
         destination: 'https://www.alaapcloud.gov.bd/:path*',
         permanent: true
+      },
+      // /admin/revenue became /admin/sslcommerz-report; keep the old bookmarks working.
+      {
+        source: '/:locale/admin/revenue',
+        destination: '/:locale/admin/sslcommerz-report',
+        permanent: true
       }
     ];
   },

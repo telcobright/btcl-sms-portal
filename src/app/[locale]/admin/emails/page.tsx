@@ -140,7 +140,8 @@ export default function AdminEmailsPage() {
       const toPayload = recipients.length > 1 ? recipients : recipients[0];
       const res = await fetch(`${API_BASE_URL}/api/v1/email/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // email/send is closed to anonymous callers (it was an open mail relay); an admin's token opens it.
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
         body: JSON.stringify({ to: toPayload, subject: form.subject.trim(), body: form.body, isHtml: form.isHtml }),
       });
       const result = await res.json().catch(() => ({}));
@@ -172,7 +173,8 @@ export default function AdminEmailsPage() {
       const toPayload = recipients.length > 1 ? recipients : recipients[0];
       const res = await fetch(`${API_BASE_URL}/api/v1/email/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // email/send is closed to anonymous callers (it was an open mail relay); an admin's token opens it.
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
         body: JSON.stringify({ to: toPayload, subject: entry.subject || '', body: entry.body || '', isHtml: entry.isHtml }),
       });
       const result = await res.json().catch(() => ({}));

@@ -2204,7 +2204,8 @@ function DocumentsTab({
 
       const res = await fetch(`${ROOT_URL}/FREESWITCHREST/api/v1/email/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // email/send is closed to anonymous callers (it was an open mail relay); an admin's token opens it.
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
         body: JSON.stringify({
           to: partnerEmail,
           subject: `[BTCL] Document(s) Rejected — Action Required`,

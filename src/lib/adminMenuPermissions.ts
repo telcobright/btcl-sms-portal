@@ -58,7 +58,7 @@ export const ADMIN_MENU_CATALOG: AdminMenuCatalogEntry[] = [
   { menuKey: '/admin/emails', label: 'Sent Emails', section: 'Management' },
   { menuKey: '/admin/backend-guide', label: 'Backend Guide', section: 'System' },
   { menuKey: '/admin/documentation', label: 'Documentation', section: 'System' },
-  { menuKey: '/admin/settings', label: 'Settings', section: 'System' },
+  { menuKey: '/admin/ec-nid-verification', label: 'EC NID Verification', section: 'System' },
   { menuKey: '/admin/service-details', label: 'Service Details', section: 'System' },
 ];
 
@@ -74,6 +74,7 @@ const CATALOG_KEYS = ADMIN_MENU_CATALOG.map((m) => m.menuKey);
  */
 const RENAMED_MENU_KEYS: Record<string, string> = {
   '/admin/revenue': '/admin/sslcommerz-report',
+  '/admin/settings': '/admin/ec-nid-verification',
 };
 
 /** The current catalog key for a stored one, which may predate a rename. */

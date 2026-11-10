@@ -25,6 +25,13 @@ const nextConfig = {
         source: '/:locale/admin/revenue',
         destination: '/:locale/admin/sslcommerz-report',
         permanent: true
+      },
+      // /admin/settings held nothing but the EC NID verification integration, so it is named
+      // for that now; keep the old bookmarks working.
+      {
+        source: '/:locale/admin/settings',
+        destination: '/:locale/admin/ec-nid-verification',
+        permanent: true
       }
     ];
   },

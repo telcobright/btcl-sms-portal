@@ -139,6 +139,76 @@ export const testNidCredential = async (
   }
 };
 
+/** One NID verification attempt, as the NIDVerification service recorded it. */
+export interface NidVerificationAttempt {
+  id: number;
+  /** ISO time with the +06:00 offset. */
+  at: string | null;
+  /** The full NID, decrypted for admins; null if it could not be read. */
+  nid: string | null;
+  nidLast4: string | null;
+  nidType: string | null;
+  /** What the applicant was told. */
+  verified: boolean;
+  reason: string | null;
+  detail: string | null;
+  /** Where the attempt ended: request (never sent to the EC), auth (our EC login), verify. */
+  stage: string | null;
+  // What the EC returned.
+  ecHttpStatus: number | null;
+  ecStatus: string | null;
+  ecStatusCode: string | null;
+  ecVerified: boolean | null;
+  ecError: string | null;
+  ecErrorField: string | null;
+  ecRequestId: string | null;
+  /** The EC's whole reply, as JSON text. */
+  ecResponse: string | null;
+  /** Our failure when the EC gave no answer (timeouts, refused login). */
+  error: string | null;
+  ecMs: number | null;
+  totalMs: number | null;
+  clientIp: string | null;
+  origin: string | null;
+}
+
+export interface NidVerificationLogQuery {
+  /** A NID, an EC request id, or a caller's IP. */
+  q?: string;
+  /** VERIFIED, FAILED or a reason code. */
+  result?: string;
+  /** yyyy-MM-dd, Dhaka dates, inclusive. */
+  from?: string;
+  to?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface NidVerificationLog {
+  /** False until the NIDVerification service has created its table. */
+  available: boolean;
+  /** False when TelcoREST has no key, so NIDs and EC replies cannot be shown. */
+  decryptable: boolean;
+  total: number;
+  page: number;
+  size: number;
+  /** Attempts per outcome for the same search and dates: VERIFIED or a reason code. */
+  counts: Record<string, number>;
+  rows: NidVerificationAttempt[];
+}
+
+export const getNidVerificationLog = async (
+  query: NidVerificationLogQuery,
+  authToken: string
+): Promise<NidVerificationLog> => {
+  const response = await axios.post<NidVerificationLog>(
+    `${API_BASE_URL}${API_ENDPOINTS.nidCredential.verificationLog}`,
+    query,
+    { headers: authHeaders(authToken) }
+  );
+  return response.data;
+};
+
 /** Turn an axios failure into something worth showing an admin. */
 export const nidCredentialErrorMessage = (error: unknown, fallback: string): string => {
   if (axios.isAxiosError(error)) {

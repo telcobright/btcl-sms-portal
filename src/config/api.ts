@@ -162,6 +162,9 @@ export const API_ENDPOINTS = {
     get: '/admin/nid-credential/get',
     update: '/admin/nid-credential/update',
     test: '/admin/nid-credential/test',
+    // One row per NID verification attempt: the NID, what the EC returned, what the
+    // applicant was told. Full NIDs, so TelcoREST verifies the token as well as the role.
+    verificationLog: '/admin/nid-credential/verification-log',
   },
 
   // Voice Broadcasting / Bulk SMS slab pricing, edited from /admin/pricing. The read is

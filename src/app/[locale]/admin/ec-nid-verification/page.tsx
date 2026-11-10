@@ -25,9 +25,11 @@ import {
 } from '@/lib/api-client/nidCredential';
 import { useCanEdit } from '@/hooks/useCanEdit';
 import ReadOnlyNotice from '../components/ReadOnlyNotice';
+import VerificationLog from './VerificationLog';
 
 /**
- * ROLE_ADMIN-only settings for the EC NID verification integration.
+ * ROLE_ADMIN-only page for the EC NID verification integration: its credentials, its health, and
+ * a log of every verification attempt with what the Election Commission returned.
  *
  * BTCL must rotate the Election Commission API password every month. That used to mean
  * editing application.properties inside the NIDVerification service, rebuilding the jar and
@@ -39,7 +41,7 @@ import ReadOnlyNotice from '../components/ReadOnlyNotice';
  * verifying NIDs. "Service reports" is the authoritative signal — it is written by the running
  * NID service after a real authentication attempt, not by this page.
  */
-export default function AdminSettingsPage() {
+export default function EcNidVerificationPage() {
   // Read only here means the credentials can be inspected and tested but not
   // rotated — Test only exercises what is already saved, so it stays available.
   const canEdit = useCanEdit();
@@ -159,7 +161,7 @@ export default function AdminSettingsPage() {
     return (
       <div className="flex items-center justify-center py-24 text-gray-500">
         <Loader2 className="w-6 h-6 animate-spin mr-2" />
-        Loading settings…
+        Loading EC NID verification…
       </div>
     );
   }
@@ -170,11 +172,11 @@ export default function AdminSettingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-[#1F3C71] flex items-center gap-2">
             <KeyRound className="w-6 h-6 text-[#0D529E]" />
-            NID Verification Settings
+            EC NID Verification
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Credentials for the Election Commission NID API. Changes apply without restarting the
-            service.
+            Credentials, health and a log of every check against the Election Commission NID API.
+            Credential changes apply without restarting the service.
           </p>
         </div>
         <button
@@ -454,6 +456,8 @@ export default function AdminSettingsPage() {
           </div>
         )}
       </section>
+
+      <VerificationLog />
     </div>
   );
 }

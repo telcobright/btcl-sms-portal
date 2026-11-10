@@ -115,9 +115,21 @@ export default function VerificationLog() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<number | null>(null);
 
+  // ?q=<NID> (linked from the Registration Log) opens the log already searched.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q')?.trim();
+    if (q) {
+      setSearch(q);
+      setApplied({ q, from: '', to: '' });
+      setTimeout(() => document.getElementById('verification-log')?.scrollIntoView({ behavior: 'smooth' }), 300);
+    }
+    setReady(true);
+  }, []);
+
   const load = useCallback(async () => {
     const authToken = localStorage.getItem('authToken');
-    if (!authToken) return;
+    if (!authToken || !ready) return;
     setLoading(true);
     try {
       const next = await getNidVerificationLog(
@@ -138,7 +150,7 @@ export default function VerificationLog() {
     } finally {
       setLoading(false);
     }
-  }, [applied, result, page]);
+  }, [applied, result, page, ready]);
 
   useEffect(() => {
     load();

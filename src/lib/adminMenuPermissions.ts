@@ -56,6 +56,7 @@ export const ADMIN_MENU_CATALOG: AdminMenuCatalogEntry[] = [
   { menuKey: '/admin/sslcommerz-report', label: 'SSL Commerz Report', section: 'Management' },
   { menuKey: '/admin/recharge-report', label: 'Recharge Report', section: 'Management' },
   { menuKey: '/admin/emails', label: 'Sent Emails', section: 'Management' },
+  { menuKey: '/admin/registration-log', label: 'Registration Log', section: 'Management' },
   { menuKey: '/admin/backend-guide', label: 'Backend Guide', section: 'System' },
   { menuKey: '/admin/documentation', label: 'Documentation', section: 'System' },
   { menuKey: '/admin/ec-nid-verification', label: 'EC NID Verification', section: 'System' },

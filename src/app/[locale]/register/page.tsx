@@ -17,6 +17,14 @@ import toast from 'react-hot-toast';
 import { showApiError } from '@/lib/api-error';
 import { findOversizedDocument, MAX_DOCUMENT_LABEL, pickDocument } from '@/lib/uploadLimits';
 import { FEATURE_FLAGS, API_BASE_URL, NID_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import {
+  documentSummary,
+  endRegistrationJourney,
+  formErrorSummary,
+  logRegistration,
+  logRegistrationFailure,
+  registrationJourneyId,
+} from '@/lib/registrationLog';
 
 // Country list with codes
 const countries = [
@@ -83,6 +91,9 @@ export default function RegisterPage() {
   const params = useParams();
   const locale = params.locale as string;
   const [step, setStep] = useState<number>(1);
+  // NIDs already reported as duplicates, so the field's validator (which runs on every change)
+  // reports each one to the registration log once.
+  const loggedDuplicateNids = useRef<Set<string>>(new Set());
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Email OTP states
@@ -262,6 +273,9 @@ export default function RegisterPage() {
 
   // Reset the form so the user can start over. Nothing to roll back server-side.
   const handleRollbackAndReset = async () => {
+    logRegistration('START_OVER', { step, outcome: 'INFO' });
+    endRegistrationJourney();
+    logRegistration('PAGE_OPENED', { step: 1, data: { restarted: true } });
     setStep(1);
     setEmailOtpSent(false);
     setEmailOtpVerified(false);
@@ -379,9 +393,69 @@ export default function RegisterPage() {
     return `${mm}:${ss}`;
   };
 
+  // ---- Registration log (admin "Registration Log"): one journey per attempt, step by step.
+  useEffect(() => {
+    logRegistration('PAGE_OPENED', {
+      step: 1,
+      data: { locale, referrer: document.referrer || undefined },
+    });
+    // A crash on this page is a registration failure nobody would otherwise hear about.
+    let reported = 0;
+    const onError = (event: ErrorEvent) => {
+      if (reported++ >= 5) return;
+      logRegistration('CLIENT_ERROR', {
+        outcome: 'FAIL',
+        message: event.message,
+        data: { source: event.filename ? `${event.filename}:${event.lineno}` : undefined },
+      });
+    };
+    const onRejection = (event: PromiseRejectionEvent) => {
+      if (reported++ >= 5) return;
+      const reason = event.reason as { message?: string } | undefined;
+      logRegistration('CLIENT_ERROR', {
+        outcome: 'FAIL',
+        message: reason?.message || String(event.reason),
+        data: { kind: 'unhandledrejection' },
+      });
+    };
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (step > 1) logRegistration('STEP_REACHED', { step, outcome: 'OK' });
+  }, [step]);
+
+  /** Who is registering, from what has been typed so far — for the registration log. */
+  const applicantForLog = () => {
+    const v = verificationForm.getValues();
+    return {
+      email: v.email || undefined,
+      phone: v.phone || undefined,
+      companyName: v.companyName || undefined,
+      category: v.customerCategory || undefined,
+    };
+  };
+
+  const logInvalidForm = (formStep: number, errors: Record<string, unknown>) => {
+    const fields = formErrorSummary(errors);
+    logRegistration('FORM_INVALID', {
+      step: formStep,
+      outcome: 'FAIL',
+      message: `Form has errors: ${Object.keys(fields).join(', ') || 'unknown'}`,
+      data: { fields },
+    });
+  };
+
   const handleNext = async () => {
     if (step === 1) {
       const isValid = await verificationForm.trigger(['companyName', 'email', 'phone']);
+      if (!isValid) logInvalidForm(1, verificationForm.formState.errors);
       if (isValid) {
         // Sequential flow: Email OTP first, then Phone OTP
         if (!emailOtpSent) {
@@ -400,11 +474,13 @@ export default function RegisterPage() {
       }
     } else if (step === 2) {
       const isValid = await personalInfoForm.trigger();
+      if (!isValid) logInvalidForm(2, personalInfoForm.formState.errors);
       if (isValid) {
         await handleNidVerification();
       }
     } else if (step === 3) {
       const isValid = await otherInfoForm.trigger();
+      if (!isValid) logInvalidForm(3, otherInfoForm.formState.errors);
       if (isValid) setStep((prev) => prev + 1);
     }
   };
@@ -423,6 +499,8 @@ export default function RegisterPage() {
 
   // Send Email OTP (Step 1a)
   const handleSendEmailOtp = async () => {
+    // Which call a thrown error belongs to, for the registration log.
+    let stage: 'VALIDATE' | 'EMAIL_OTP_SEND' = 'VALIDATE';
     try {
       setIsSubmitting(true);
       const phone = verificationForm.getValues('phone');
@@ -445,6 +523,12 @@ export default function RegisterPage() {
         setVerifiedEmail(email);
         setVerifiedPhone(phone);
         setOtpVerified(true);
+        logRegistration('EMAIL_OTP_SEND', {
+          step: 1,
+          outcome: 'INFO',
+          message: 'OTP verification is switched off; email and phone were not verified',
+          data: applicantForLog(),
+        });
         toast.success('OTP verification skipped (disabled in config)');
         setStep(2);
         return;
@@ -467,6 +551,13 @@ export default function RegisterPage() {
 
       if (!validateResponse.ok || validateData === false) {
         const apiMessage: string = validateData?.message || 'Validation failed. Please check your information.';
+        logRegistration('VALIDATE', {
+          step: 1,
+          outcome: 'FAIL',
+          message: apiMessage,
+          httpStatus: validateResponse.status,
+          data: { ...applicantForLog(), code: validateData?.errorCode },
+        });
 
         if (validateData?.errorCode === '400 BAD_REQUEST') {
           if (apiMessage === 'Mobile number already exists' || apiMessage === 'Telephone number already exists') {
@@ -488,15 +579,22 @@ export default function RegisterPage() {
       }
 
       // Send email OTP
+      logRegistration('VALIDATE', { step: 1, outcome: 'OK', data: applicantForLog() });
+      stage = 'EMAIL_OTP_SEND';
       console.log('Validation successful, sending email OTP...');
       const response = await sendEmailOtp(email, 'registration');
       console.log('Email OTP response:', response);
 
       if (response.success) {
+        logRegistration('EMAIL_OTP_SEND', { step: 1, outcome: 'OK', data: applicantForLog() });
         setEmailOtpSent(true);
         startTimer(300);
         toast.success('OTP sent to your email successfully!');
       } else {
+        logRegistrationFailure('EMAIL_OTP_SEND', response, 'Failed to send email OTP', {
+          step: 1,
+          data: { ...applicantForLog(), retryAfterSeconds: response.retryAfterSeconds },
+        });
         if (response.retryAfterSeconds) {
           toast.error(`Please wait ${response.retryAfterSeconds} seconds before requesting another OTP`);
         } else {
@@ -505,6 +603,10 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('Failed to send email OTP:', error);
+      logRegistrationFailure(stage, error, 'Failed to send email OTP. Please try again.', {
+        step: 1,
+        data: applicantForLog(),
+      });
       showApiError(error, { fallbackMessage: 'Failed to send email OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -521,16 +623,25 @@ export default function RegisterPage() {
 
       if (response.success) {
         console.log('Email OTP verified:', response);
+        logRegistration('EMAIL_OTP_VERIFY', { step: 1, outcome: 'OK', data: applicantForLog() });
         setEmailOtpVerified(true);
         setVerifiedEmail(email);
         toast.success('Email verified successfully! Now verify your phone.');
         // Automatically send phone OTP
         await handleSendPhoneOtp();
       } else {
+        logRegistrationFailure('EMAIL_OTP_VERIFY', response, 'Invalid email OTP. Please try again.', {
+          step: 1,
+          data: applicantForLog(),
+        });
         showApiError(response, { fallbackMessage: 'Invalid email OTP. Please try again.' });
       }
     } catch (error) {
       console.error('Failed to verify email OTP:', error);
+      logRegistrationFailure('EMAIL_OTP_VERIFY', error, 'Invalid email OTP. Please try again.', {
+        step: 1,
+        data: applicantForLog(),
+      });
       showApiError(error, { fallbackMessage: 'Invalid email OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -546,12 +657,17 @@ export default function RegisterPage() {
       console.log('Sending phone OTP...');
       const response = await sendOtp(phone);
       console.log('Phone OTP sent:', response);
+      logRegistration('PHONE_OTP_SEND', { step: 1, outcome: 'OK', data: applicantForLog() });
 
       setPhoneOtpSent(true);
       startTimer(300);
       toast.success('OTP sent to your phone successfully!');
     } catch (error) {
       console.error('Failed to send phone OTP:', error);
+      logRegistrationFailure('PHONE_OTP_SEND', error, 'Failed to send phone OTP. Please try again.', {
+        step: 1,
+        data: applicantForLog(),
+      });
       showApiError(error, { fallbackMessage: 'Failed to send phone OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -569,16 +685,25 @@ export default function RegisterPage() {
       // @ts-ignore
       if (response === 'OTP verified successfully.' || response.message === 'OTP verified successfully.') {
         console.log('Phone OTP verified:', response);
+        logRegistration('PHONE_OTP_VERIFY', { step: 1, outcome: 'OK', data: applicantForLog() });
         setPhoneOtpVerified(true);
         setVerifiedPhone(phone);
         setOtpVerified(true);
         toast.success('Phone verified successfully!');
         setStep(2);
       } else {
+        logRegistrationFailure('PHONE_OTP_VERIFY', response, 'Invalid phone OTP. Please try again.', {
+          step: 1,
+          data: applicantForLog(),
+        });
         showApiError(response, { fallbackMessage: 'Invalid phone OTP. Please try again.' });
       }
     } catch (error) {
       console.error('Failed to verify phone OTP:', error);
+      logRegistrationFailure('PHONE_OTP_VERIFY', error, 'Invalid phone OTP. Please try again.', {
+        step: 1,
+        data: applicantForLog(),
+      });
       showApiError(error, { fallbackMessage: 'Invalid phone OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -599,20 +724,30 @@ export default function RegisterPage() {
         const email = verificationForm.getValues('email');
         const response = await sendEmailOtp(email, 'registration');
         if (response.success) {
+          logRegistration('OTP_RESEND', { step: 1, outcome: 'OK', data: { ...applicantForLog(), channel: 'email' } });
           startTimer(300);
           toast.success('OTP resent to your email!');
         } else {
+          logRegistrationFailure('OTP_RESEND', response, 'Failed to resend email OTP', {
+            step: 1,
+            data: { ...applicantForLog(), channel: 'email', retryAfterSeconds: response.retryAfterSeconds },
+          });
           showApiError(response, { fallbackMessage: 'Failed to resend email OTP' });
         }
       } else if (!phoneOtpVerified) {
         // Resend phone OTP
         const phone = verificationForm.getValues('phone');
         await sendOtp(phone);
+        logRegistration('OTP_RESEND', { step: 1, outcome: 'OK', data: { ...applicantForLog(), channel: 'phone' } });
         startTimer(300);
         toast.success('OTP resent to your phone!');
       }
     } catch (error) {
       console.error('Failed to resend OTP:', error);
+      logRegistrationFailure('OTP_RESEND', error, 'Failed to resend OTP. Please try again.', {
+        step: 1,
+        data: { ...applicantForLog(), channel: emailOtpVerified ? 'phone' : 'email' },
+      });
       showApiError(error, { fallbackMessage: 'Failed to resend OTP. Please try again.' });
     }
   };
@@ -624,6 +759,11 @@ export default function RegisterPage() {
       // Check if NID verification is enabled
       if (!FEATURE_FLAGS.NID_VERIFICATION_ENABLED) {
         // Skip NID verification
+        logRegistration('NID_VERIFY', {
+          step: 2,
+          outcome: 'INFO',
+          message: 'NID verification is switched off; the NID was not checked with the EC',
+        });
         await new Promise(resolve => setTimeout(resolve, 2000));
         setNidVerified(true);
         setNidVerificationFailed(false);
@@ -666,9 +806,17 @@ export default function RegisterPage() {
 
       const data = await response.json();
       console.log('NID verification response:', data);
+      const nidForLog = {
+        nid: nidNumber,
+        nidType: nidDigitType,
+        fullName,
+        reason: data.reason,
+        requestId: data.requestId,
+      };
 
       // Check verification status based on the new simplified response
       if (data.status === true) {
+        logRegistration('NID_VERIFY', { step: 2, outcome: 'OK', httpStatus: response.status, data: nidForLog });
         // NID verified successfully
         setNidVerified(true);
         setNidVerificationFailed(false);
@@ -680,6 +828,13 @@ export default function RegisterPage() {
         }, 2000);
       } else {
         // Verification failed - status is false
+        logRegistration('NID_VERIFY', {
+          step: 2,
+          outcome: 'FAIL',
+          message: data.detail || data.message || data.error || 'NID not verified',
+          httpStatus: response.status,
+          data: nidForLog,
+        });
         setNidVerified(false);
         setNidVerificationFailed(true);
         setNidVerificationData(null);
@@ -691,6 +846,15 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('NID verification error:', error);
+      // A browser that cannot reach the NID service at all (network, CORS) lands here — the
+      // one failure the NID service's own log can never see.
+      const { fullName, nidNumber, nidDigitType } = personalInfoForm.getValues();
+      logRegistrationFailure(
+        'NID_VERIFY',
+        error,
+        'We could not reach the verification service.',
+        { step: 2, data: { nid: nidNumber, nidType: nidDigitType, fullName, reachedService: false } }
+      );
       setNidVerified(false);
       setNidVerificationFailed(true);
       setNidVerificationData(null);
@@ -771,18 +935,22 @@ export default function RegisterPage() {
         ].filter(Boolean);
 
         if (extractedFields.length > 0) {
+          logRegistration('NID_OCR', { step: 2, outcome: 'OK', data: { fieldsFound: extractedFields } });
           toast.dismiss('ocr-loading');
           toast.success(`Extracted: ${extractedFields.join(', ')}`);
         } else {
+          logRegistration('NID_OCR', { step: 2, outcome: 'FAIL', message: 'Nothing could be read from the NID image' });
           toast.dismiss('ocr-loading');
           toast.error('Could not extract data. Please enter manually.');
         }
       } else {
+        logRegistration('NID_OCR', { step: 2, outcome: 'FAIL', message: 'The NID image could not be read' });
         toast.dismiss('ocr-loading');
         toast.error('Failed to extract data. Please enter manually.');
       }
     } catch (error) {
       console.error('OCR extraction error:', error);
+      logRegistrationFailure('NID_OCR', error, 'OCR extraction failed.', { step: 2 });
       toast.dismiss('ocr-loading');
       showApiError(error, { fallbackMessage: 'OCR extraction failed. Please enter data manually.' });
     } finally {
@@ -826,6 +994,7 @@ export default function RegisterPage() {
       const customerPrePaidValue = otherInfoData.customerType === 'prepaid' ? 1 : 2;
 
       const registrationPayload = {
+        registrationJourneyId: registrationJourneyId(),
         // partner
         partnerName: companyName ?? '',
         alternateNameOther: personalInfoData.alternateNameOther || fullName,
@@ -884,11 +1053,45 @@ export default function RegisterPage() {
         'VAT / joint stock document': registrationPayload.vatDoc,
         'SLA': registrationPayload.sla,
       });
+      const documentsForLog = documentSummary({
+        nidFront: registrationPayload.nidFront,
+        nidBack: registrationPayload.nidBack,
+        photo: registrationPayload.photo,
+        tradeLicense: registrationPayload.tradeLicense,
+        tinCertificate: registrationPayload.tinCertificate,
+        binCertificate: registrationPayload.binCertificate,
+        govtAuthorization: registrationPayload.govtAuthorization,
+        btrcRegistration: registrationPayload.btrcRegistration,
+        lastTaxReturn: registrationPayload.lastTaxReturn,
+        vatDoc: registrationPayload.vatDoc,
+        sla: registrationPayload.sla,
+      });
       if (oversized) {
+        logRegistration('DOCUMENT_TOO_LARGE', {
+          step: 4,
+          outcome: 'FAIL',
+          message: oversized,
+          data: { documents: documentsForLog },
+        });
         toast.error(oversized, { duration: 6000 });
         return;
       }
 
+      logRegistration('SUBMIT', {
+        step: 4,
+        outcome: 'INFO',
+        message: 'Registration sent',
+        data: {
+          email: verifiedEmail,
+          phone: verifiedPhone,
+          companyName: companyName ?? undefined,
+          fullName,
+          category: customerCategory,
+          nid: personalInfoData.nidNumber,
+          customerType: otherInfoData.customerType,
+          documents: documentsForLog,
+        },
+      });
       const partnerResponse = await registerPartner(registrationPayload);
       const idPartner = partnerResponse?.idPartner || partnerResponse?.id || null;
       if (!idPartner) {
@@ -896,6 +1099,7 @@ export default function RegisterPage() {
         throw new Error('Partner ID missing in registration response');
       }
       console.log('✅ Partner registered with ID:', idPartner);
+      logRegistration('REGISTER', { step: 4, outcome: 'OK', message: `Partner ${idPartner} created`, data: { idPartner } });
 
       // 3. Auto-login for the main app
       console.log('\n🔵 STEP 3: Auto-login to main app...');
@@ -923,6 +1127,8 @@ export default function RegisterPage() {
         const customerType = otherInfoData.customerType;
         localStorage.setItem('customerType', customerType);
 
+        logRegistration('AUTO_LOGIN', { step: 4, outcome: 'OK' });
+        endRegistrationJourney();
         toast.success(
           'Registration completed successfully!'
         );
@@ -931,6 +1137,8 @@ export default function RegisterPage() {
         setShowSuccessPopup(true);
       } catch (loginError) {
         console.error('⚠️ Auto login failed:', loginError);
+        logRegistrationFailure('AUTO_LOGIN', loginError, 'Automatic sign-in failed after registering', { step: 4 });
+        endRegistrationJourney();
         // Still show success message but redirect to login page
         toast.success(
           'Registration completed successfully! Please login with your credentials.'
@@ -939,6 +1147,7 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('❌ Registration failed:', error);
+      logRegistrationFailure('REGISTER', error, 'Registration failed. Please try again.', { step: 4 });
       // No client-side rollback: /partner/register is atomic, so a failure here means
       // the server already undid everything (or never created anything). Attempting a
       // rollback from the browser is what used to be unreliable — it depended on state
@@ -1798,6 +2007,15 @@ export default function RegisterPage() {
                             });
                             const data = await res.json();
                             if (data.exists) {
+                              if (!loggedDuplicateNids.current.has(value)) {
+                                loggedDuplicateNids.current.add(value);
+                                logRegistration('NID_DUPLICATE', {
+                                  step: 2,
+                                  outcome: 'FAIL',
+                                  message: 'This NID is already registered',
+                                  data: { nid: value },
+                                });
+                              }
                               return 'This NID is already registered';
                             }
                           } catch {

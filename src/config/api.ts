@@ -154,6 +154,14 @@ export const API_ENDPOINTS = {
     checkNid: '/partner/check-nid',
   },
 
+  // Registration log. `event` is public (the applicant has no login yet; rate-limited, write
+  // only) and is reported to by the registration page; the admin reads verify the token and role.
+  registrationLog: {
+    event: '/registration-log/event',
+    journeys: '/admin/registration-log/journeys',
+    events: '/admin/registration-log/events',
+  },
+
   // Admin management of the EC NID API credentials.
   // These live on TelcoREST (behind gateway auth), not on the NID service itself —
   // nginx proxies the whole /NID/ prefix with no authentication, so a write endpoint

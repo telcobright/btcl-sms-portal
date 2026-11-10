@@ -263,6 +263,8 @@ export const createPartner = async (payload: {
 // ---------------------- ATOMIC REGISTRATION ----------------------
 
 export interface RegisterPartnerPayload {
+  /** The registration page's attempt id, so the server's outcome joins the admin Registration Log. */
+  registrationJourneyId?: string;
   // partner
   partnerName: string;
   alternateNameInvoice?: string | null;

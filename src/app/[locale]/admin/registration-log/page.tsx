@@ -74,6 +74,16 @@ const STATE_STYLE: Record<string, { text: string; tone: string }> = {
 
 const PAGE_SIZE = 50;
 
+/** The status filter; the server's state names. The summary cards set the same value. */
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'All statuses' },
+  { value: 'REGISTERED', label: 'Registered' },
+  { value: 'IN_PROGRESS', label: 'In progress' },
+  { value: 'ABANDONED', label: 'Not registered (stopped)' },
+  { value: 'NOT_REGISTERED', label: 'Not registered (any)' },
+  { value: 'WITH_ERRORS', label: 'Hit an error' },
+];
+
 const formatBst = (value: string | null, withSeconds = false) => {
   if (!value) return '—';
   const d = new Date(value);
@@ -262,6 +272,20 @@ export default function RegistrationLogPage() {
             </div>
           </label>
           <label>
+            <span className="block text-xs font-medium text-gray-600 mb-1">Status</span>
+            <select
+              value={state}
+              onChange={(e) => chooseState(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0D529E]/30 focus:border-[#0D529E]"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             <span className="block text-xs font-medium text-gray-600 mb-1">From</span>
             <input
               type="date"
@@ -289,13 +313,14 @@ export default function RegistrationLogPage() {
             <Search className="w-4 h-4" />
             Search
           </button>
-          {(applied.q || applied.from || applied.to) && (
+          {(applied.q || applied.from || applied.to || state) && (
             <button
               type="button"
               onClick={() => {
                 setSearch('');
                 setFrom('');
                 setTo('');
+                setState('');
                 setOpen(null);
                 setPage(0);
                 setApplied({ q: '', from: '', to: '' });

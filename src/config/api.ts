@@ -196,6 +196,8 @@ export const API_ENDPOINTS = {
     // CUSTOM). Asked of OUR OWN backend with the purchase's service: it reads each service's
     // purchases, and the service's own backend would refuse this portal's token.
     invoiceDetails: '/package/invoice-details',
+    // The period each purchase paid for, for the purchase tables (a renewal moves the plan's own expiry).
+    purchasePeriods: '/package/purchase-periods',
     // Same figures for a list of partners in one call. The admin dashboard needs them
     // for every customer on every service, which one-at-a-time makes a request per
     // customer per service.

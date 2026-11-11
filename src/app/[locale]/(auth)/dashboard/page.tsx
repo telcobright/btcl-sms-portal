@@ -18,7 +18,7 @@ import DocumentViewer from '@/components/ui/DocumentViewer';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { DOCUMENT_LABELS, requiredDocumentsFor } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE, RENEW_WINDOW_DAYS, isIndividualCategory } from '@/lib/individual-tariff';
-import { fetchInvoiceDetails, openInvoice } from '@/lib/invoice';
+import { fetchInvoiceDetails, fetchPurchasePeriods, openInvoice, periodStartIfLater, type PurchasePeriod } from '@/lib/invoice';
 import { detectFileKind, withDetectedExt } from '@/lib/file-detect';
 import { jwtDecode } from 'jwt-decode';
 import {
@@ -263,6 +263,8 @@ export default function Dashboard() {
   } | null>(null);
   const [partnerID, setPartnerID] = useState<string | null>(null);
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([]);
+  // The period each purchase paid for (a renewal moves the plan's own expiry), by "service:id".
+  const [purchasePeriods, setPurchasePeriods] = useState<Record<string, PurchasePeriod>>({});
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const [serviceHistory, setServiceHistory] = useState<{
@@ -707,6 +709,13 @@ export default function Dashboard() {
       });
 
       setPurchaseHistory(uniquePurchases);
+      void fetchPurchasePeriods(
+        API_BASE_URL,
+        API_ENDPOINTS.package.purchasePeriods,
+        partnerId,
+        uniquePurchases.map((p) => p.service),
+        authToken
+      ).then(setPurchasePeriods);
     } catch (err) {
       console.error('Error fetching purchase history:', err);
     } finally {
@@ -2348,7 +2357,11 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                       const invoiceId = `INV-${purchase.id || (index + 1).toString().padStart(5, '0')}`;
                       const pkgName = purchase.packageName || 'Package';
                       const purchaseDate = purchase.purchaseDate;
-                      const expireDate = purchase.expireDate;
+                      // The period this payment bought; the status below still follows the
+                      // plan's own expiry.
+                      const period = purchasePeriods[`${purchase.service ?? 'main'}:${purchase.id}`];
+                      const expireDate = period?.end ?? purchase.expireDate;
+                      const periodFrom = periodStartIfLater(period, purchaseDate);
                       const amount = purchase.price || 0;
                       const vat = purchase.vat || 0;
                       const total = amount + vat;
@@ -2420,6 +2433,16 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
                                   )
                                 : '-'}
                             </span>
+                            {periodFrom && (
+                              <span className="block text-xs text-gray-400">
+                                from{' '}
+                                {new Date(periodFrom).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm text-gray-700">

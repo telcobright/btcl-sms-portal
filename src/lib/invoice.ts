@@ -398,3 +398,58 @@ export async function fetchInvoiceDetails(
     clearTimeout(timer);
   }
 }
+
+/** The period one purchase paid for, in Bangladesh time, as "2026-11-14T19:51:34". */
+export interface PurchasePeriod {
+  start?: string | null;
+  end?: string | null;
+}
+
+/**
+ * The period each of a partner's purchases paid for, keyed "service:id" (service "main" for
+ * the main backend's own). A renewal moves the plan's own expiry forward, so the first
+ * purchase of a renewed plan no longer says when its month ended; the tables show this
+ * instead. Services that cannot answer are left out, and their rows keep their own dates.
+ */
+export async function fetchPurchasePeriods(
+  apiBaseUrl: string,
+  endpoint: string,
+  idPartner: number | null | undefined,
+  services: Array<string | null | undefined>,
+  authToken: string | null
+): Promise<Record<string, PurchasePeriod>> {
+  const out: Record<string, PurchasePeriod> = {};
+  if (!authToken || !idPartner) return out;
+  const distinct = Array.from(new Set(services.map((s) => (s && s !== 'main' ? s : 'main'))));
+  await Promise.all(
+    distinct.map(async (service) => {
+      try {
+        const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify(service === 'main' ? { idPartner } : { idPartner, service }),
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { periods?: Record<string, PurchasePeriod> };
+        Object.entries(data.periods ?? {}).forEach(([id, period]) => {
+          out[`${service}:${id}`] = period;
+        });
+      } catch {
+        // This service's rows keep their own dates.
+      }
+    })
+  );
+  return out;
+}
+
+/** The start of a period when it is a different day from the purchase: an early renewal. */
+export function periodStartIfLater(
+  period: PurchasePeriod | undefined,
+  purchaseDate: string | null | undefined
+): string | null {
+  if (!period?.start || !purchaseDate) return null;
+  const start = new Date(period.start);
+  const bought = new Date(purchaseDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(bought.getTime())) return null;
+  return start.toDateString() !== bought.toDateString() && start > bought ? period.start : null;
+}

@@ -45,7 +45,7 @@ import {
   requiredDocumentsFor,
 } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
-import { fetchInvoiceDetails, openInvoice } from '@/lib/invoice';
+import { fetchInvoiceDetails, fetchPurchasePeriods, openInvoice, periodStartIfLater, type PurchasePeriod } from '@/lib/invoice';
 
 type TabType =
   | 'overview'
@@ -1814,6 +1814,26 @@ function PurchasesTab({
   isPrepaid: boolean;
   partnerName: string;
 }) {
+  // The period each purchase paid for: a renewal moves the plan's own expiry, so the first
+  // purchase of a renewed plan would otherwise show the renewed date.
+  const [periods, setPeriods] = useState<Record<string, PurchasePeriod>>({});
+  useEffect(() => {
+    let cancelled = false;
+    const idPartner = purchases.find((p) => p.idPartner)?.idPartner;
+    void fetchPurchasePeriods(
+      API_BASE_URL,
+      API_ENDPOINTS.package.purchasePeriods,
+      idPartner,
+      purchases.map((p) => p.service),
+      localStorage.getItem('authToken')
+    ).then((found) => {
+      if (!cancelled) setPeriods(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [purchases]);
+
   // The same invoice the customer downloads from their dashboard (lib/invoice), with the
   // same Bill To and Payment details, asked for by the purchase's service.
   const downloadInvoice = (p: PurchaseHistory) =>
@@ -1868,9 +1888,21 @@ function PurchasesTab({
                   : '--'}
               </td>
               <td className="px-4 py-3 text-gray-500">
-                {p.expireDate
-                  ? new Date(p.expireDate).toLocaleDateString()
-                  : '--'}
+                {(() => {
+                  const period = periods[`${p.service && p.service !== 'main' ? p.service : 'main'}:${p.id}`];
+                  const end = period?.end ?? p.expireDate;
+                  const from = periodStartIfLater(period, p.purchaseDate);
+                  return (
+                    <>
+                      {end ? new Date(end).toLocaleDateString() : '--'}
+                      {from && (
+                        <span className="block text-xs text-gray-400">
+                          from {new Date(from).toLocaleDateString()}
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
               </td>
               <td className="px-4 py-3 text-right text-gray-700">
                 ৳{p.price?.toLocaleString() || 0}

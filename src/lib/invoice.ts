@@ -50,6 +50,16 @@ export interface InvoiceDetails {
     /** Bangladesh time, as "2026-10-11T17:37:57". */
     time?: string | null;
   } | null;
+  /**
+   * Price and VAT as checkout charged them (250 + 38 = 288). Purchases used to be recorded as
+   * total / 1.15 (250.43 + 37.57); these print the old ones cleanly. Absent: the purchase row.
+   */
+  amounts?: { price?: number | null; vat?: number | null; total?: number | null } | null;
+  /**
+   * The service period this payment bought, in Bangladesh time. A renewal moves the plan's own
+   * expiry forward, so the first purchase's row no longer says when its month ended.
+   */
+  period?: { start?: string | null; end?: string | null } | null;
 }
 
 const esc = (value: unknown): string =>
@@ -146,12 +156,16 @@ export function buildInvoiceHtml(
   const pkgName = purchase.packageName || 'Package';
   const partnerName = purchase.partnerName || options.billTo || 'Customer';
   const purchaseDate = purchase.purchaseDate ?? null;
-  const expireDate = purchase.expireDate ?? null;
-  const amount = Number(purchase.price) || 0;
-  const vat = Number(purchase.vat) || 0;
+  // The package's state comes from its own expiry; the dates printed are this payment's period.
+  const packageExpiry = purchase.expireDate ?? null;
+  const expireDate = details?.period?.end ?? packageExpiry;
+  const periodStart = details?.period?.start ?? null;
+  const charged = details?.amounts ?? null;
+  const amount = Number(charged?.price ?? purchase.price) || 0;
+  const vat = Number(charged?.vat ?? purchase.vat) || 0;
   const ait = Number(purchase.ait) || 0;
   const total = amount + vat + ait;
-  const status = expireDate && new Date(expireDate) < new Date() ? 'EXPIRED' : 'ACTIVE';
+  const status = packageExpiry && new Date(packageExpiry) < new Date() ? 'EXPIRED' : 'ACTIVE';
   const invoiceDue = invoiceDueDate(purchaseDate, isPrepaid);
 
   const formatDate = (dateStr: string | null) => {
@@ -277,6 +291,9 @@ export function buildInvoiceHtml(
                   <td>
                     <strong style="color: #1f2937;">${esc(pkgName)}</strong><br>
                     <span style="color: #6b7280; font-size: 12px;">Package Subscription</span>
+                    ${periodStart && expireDate
+                      ? `<br><span style="color: #6b7280; font-size: 12px;">Service period: ${esc(formatDate(periodStart))} – ${esc(formatDate(expireDate))}</span>`
+                      : ''}
                   </td>
                   <td>${esc(formatDate(purchaseDate))}</td>
                   <td>${esc(formatDate(expireDate))}</td>

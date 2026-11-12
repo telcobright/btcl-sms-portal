@@ -44,13 +44,6 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
         : 'ক্রমিক, একযোগে বা রাউন্ড-রবিন কৌশল সহ রিং গ্রুপ তৈরি করুন। উন্নত কল সারি ব্যবস্থাপনা',
     },
     {
-      icon: '📧',
-      title: locale === 'en' ? 'Voicemail to Email' : 'ভয়েসমেল টু ইমেইল',
-      description: locale === 'en'
-        ? 'Automatic voicemail delivery to email with audio file attachments and optional transcription'
-        : 'অডিও ফাইল সংযুক্তি এবং ঐচ্ছিক ট্রান্সক্রিপশন সহ ইমেইলে স্বয়ংক্রিয় ভয়েসমেল ডেলিভারি',
-    },
-    {
       icon: '🎙️',
       title: locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
       description: locale === 'en'
@@ -99,13 +92,8 @@ export default async function HostedPBXPage({ params }: HostedPBXPageProps) {
         ? 'Upload custom music or announcements for callers on hold with multiple playlist support'
         : 'একাধিক প্লেলিস্ট সাপোর্ট সহ হোল্ডে থাকা কলকারীদের জন্য কাস্টম সংগীত বা ঘোষণা আপলোড করুন',
     },
-    {
-      icon: '📠',
-      title: locale === 'en' ? 'Virtual Fax Server' : 'ভার্চুয়াল ফ্যাক্স সার্ভার',
-      description: locale === 'en'
-        ? 'Send and receive faxes through email with automatic PDF conversion and archiving'
-        : 'স্বয়ংক্রিয় PDF রূপান্তর এবং সংরক্ষণাগার সহ ইমেইলের মাধ্যমে ফ্যাক্স পাঠান এবং গ্রহণ করুন',
-    },
+    // "Voicemail to Email" and "Virtual Fax Server" were taken off this list on request
+    // (2026-11-12); they are not offered on the service page.
   ]
 
   return (

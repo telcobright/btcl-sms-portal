@@ -3,6 +3,7 @@ import { Header } from '@/components/layout/Header';
 import { IndividualTariff } from '@/components/pricing/IndividualTariff';
 import { INDIVIDUAL_PACKAGE } from '@/lib/individual-tariff';
 import StartingFromPrice from '@/components/pricing/StartingFromPrice';
+import { pbxStartingFrom } from '@/lib/pbx-plans';
 import { AggregatorTag } from '@/components/ui/AggregatorTag';
 import { Button } from '@/components/ui/Button';
 import { pageMetadata } from '@/config/seo';
@@ -637,20 +638,19 @@ function FeaturesSection({ features, t }: { features: Feature[]; t: any }) {
 
 // Pricing Preview Section Component
 function PricingPreviewSection({ locale, t }: { locale: string; t: any }) {
+  // The cheapest IP PBX plan, from the same list the pricing page shows.
+  const pbxFrom = pbxStartingFrom(locale);
+
   // Pricing data - Order: Alaap Cloud IP PBX, Voice Broadcast, Contact Center, Bulk SMS
   const servicePricing = [
     {
       id: 'hosted-pbx',
       icon: '/alaap_cloud_ip_pbx.png',
       name: locale === 'en' ? 'Alaap Cloud IP PBX' : 'Alaap Cloud IP PBX',
-      price: '৳1,200',
+      price: pbxFrom.price,
       unit: locale === 'en' ? '/month' : '/মাস',
       description: locale === 'en' ? 'Starting from' : 'শুরু হচ্ছে',
-      features: [
-        locale === 'en' ? '10 Extensions' : '১০ এক্সটেনশন',
-        locale === 'en' ? '500 Min Free Talktime*' : '৫০০ মিনিট ফ্রি টকটাইম*',
-        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
-      ],
+      features: pbxFrom.features,
       color: 'from-btcl-primary to-btcl-primary',
     },
     {

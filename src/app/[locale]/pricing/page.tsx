@@ -27,6 +27,7 @@ import {
 } from '@/lib/api-client/servicePricing';
 import { DOCUMENT_LABELS, categoryLabel, requiredDocumentsFor } from '@/lib/document-rules';
 import { INDIVIDUAL_PACKAGE, RENEW_WINDOW_DAYS, isIndividualCategory } from '@/lib/individual-tariff';
+import { pbxPackagesFor } from '@/lib/pbx-plans';
 import {
   maxBuyableQuantity,
   quote,
@@ -565,138 +566,8 @@ const PricingPage = ({ params }: { params: Promise<{ locale: string }> }) => {
     },
   ];
 
-  // Hosted PBX Pricing
-  const pbxPackages = [
-    {
-      id: 'starter',
-      name: locale === 'en' ? 'Starter' : 'স্টার্টার',
-      extensions: 3,
-      callChannels: 2,
-      ivr: 1,
-      freeTalktime: 60,
-      callCharge: 0.45,
-      price: 250,
-      postpaidCredit: 1000,
-      popular: false,
-      features: [
-        locale === 'en' ? '3 Extensions' : '৩টি এক্সটেনশন',
-        locale === 'en' ? '2 Call Channels' : '২টি কল চ্যানেল',
-        locale === 'en' ? '1 IVR' : '১টি IVR',
-        locale === 'en' ? '60 Minutes Free Talktime*' : '৬০ মিনিট ফ্রি টকটাইম*',
-        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
-        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
-        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
-        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
-        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
-        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
-        locale === 'en' ? '৳0.45/min Call Charge' : '৳০.৪৫/মিনিট কল চার্জ',
-      ],
-    },
-    {
-      id: 'economy',
-      name: locale === 'en' ? 'Economy' : 'ইকোনমি',
-      extensions: 5,
-      callChannels: 2,
-      ivr: 1,
-      freeTalktime: 120,
-      callCharge: 0.45,
-      price: 450,
-      postpaidCredit: 2000,
-      popular: false,
-      features: [
-        locale === 'en' ? '5 Extensions' : '৫টি এক্সটেনশন',
-        locale === 'en' ? '2 Call Channels' : '২টি কল চ্যানেল',
-        locale === 'en' ? '1 IVR' : '১টি IVR',
-        locale === 'en' ? '120 Minutes Free Talktime*' : '১২০ মিনিট ফ্রি টকটাইম*',
-        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
-        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
-        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
-        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
-        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
-        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
-        locale === 'en' ? '৳0.45/min Call Charge' : '৳০.৪৫/মিনিট কল চার্জ',
-      ],
-    },
-    {
-      id: 'bronze',
-      name: locale === 'en' ? 'Bronze' : 'ব্রোঞ্জ',
-      extensions: 10,
-      callChannels: 5,
-      ivr: 2,
-      freeTalktime: 500,
-      callCharge: 0.45,
-      price: 1200,
-      postpaidCredit: 5000,
-      popular: true,
-      features: [
-        locale === 'en' ? '10 Extensions' : '১০টি এক্সটেনশন',
-        locale === 'en' ? '5 Call Channels' : '৫টি কল চ্যানেল',
-        locale === 'en' ? '2 IVR' : '২টি IVR',
-        locale === 'en' ? '500 Minutes Free Talktime*' : '৫০০ মিনিট ফ্রি টকটাইম*',
-        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
-        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
-        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
-        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
-        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
-        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
-        locale === 'en' ? '৳0.45/min Call Charge' : '৳০.৪৫/মিনিট কল চার্জ',
-      ],
-    },
-    {
-      id: 'silver',
-      name: locale === 'en' ? 'Silver' : 'সিলভার',
-      extensions: 30,
-      callChannels: 7,
-      ivr: 5,
-      freeTalktime: 1000,
-      callCharge: 0.4,
-      price: 2500,
-      postpaidCredit: 10000,
-      popular: false,
-      features: [
-        locale === 'en' ? '30 Extensions' : '৩০টি এক্সটেনশন',
-        locale === 'en' ? '7 Call Channels' : '৭টি কল চ্যানেল',
-        locale === 'en' ? '5 IVR' : '৫টি IVR',
-        locale === 'en'
-          ? '1000 Minutes Free Talktime*'
-          : '১০০০ মিনিট ফ্রি টকটাইম*',
-        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
-        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
-        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
-        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
-        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
-        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
-        locale === 'en' ? '৳0.40/min Call Charge' : '৳০.৪০/মিনিট কল চার্জ',
-      ],
-    },
-    {
-      id: 'gold',
-      name: locale === 'en' ? 'Gold' : 'গোল্ড',
-      extensions: locale === 'en' ? 'Up to 100' : '১০০ পর্যন্ত',
-      callChannels: 15,
-      ivr: 10,
-      freeTalktime: 3000,
-      callCharge: 0.35,
-      price: 4500,
-      postpaidCredit: 20000,
-      popular: false,
-      features: [
-        locale === 'en' ? 'Up to 100 Extensions' : '১০০টি পর্যন্ত এক্সটেনশন',
-        locale === 'en' ? '15 Call Channels' : '১৫টি কল চ্যানেল',
-        locale === 'en' ? '10 IVR' : '১০টি IVR',
-        locale === 'en'
-          ? '3000 Minutes Free Talktime*'
-          : '৩০০০ মিনিট ফ্রি টকটাইম*',
-        locale === 'en' ? 'Call Monitoring' : 'কল মনিটরিং',
-        locale === 'en' ? 'Voice Message to Email' : 'ভয়েস মেসেজ টু ইমেইল',
-        locale === 'en' ? 'Call Forwarding' : 'কল ফরওয়ার্ডিং',
-        locale === 'en' ? 'Conference Calling' : 'কনফারেন্স কলিং',
-        locale === 'en' ? 'Multi-Device Support' : 'মাল্টি-ডিভাইস সাপোর্ট',
-        locale === 'en' ? 'Call Recording' : 'কল রেকর্ডিং',
-        locale === 'en' ? '৳0.35/min Call Charge' : '৳০.৩৫/মিনিট কল চার্জ',
-      ],
-    },
-  ];
+  // Hosted PBX plans: shared with the homepage, which shows the cheapest as "Starting from".
+  const pbxPackages = pbxPackagesFor(locale);
 
   // Voice Broadcast: slabs and limits come from the admin panel (see loadServicePricing).
   const [vbsQuantity, setVbsQuantity] = useState<number | ''>('');

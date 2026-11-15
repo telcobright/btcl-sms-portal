@@ -52,6 +52,7 @@ export const ADMIN_MENU_CATALOG: AdminMenuCatalogEntry[] = [
   { menuKey: '/admin/invoices', label: 'Postpaid Invoices', section: 'Management' },
   { menuKey: '/admin/pricing', label: 'Service Pricing', section: 'Management' },
   { menuKey: '/admin/reports', label: 'Sales Reports', section: 'Management' },
+  { menuKey: '/admin/service-summary', label: 'Service Summary Report', section: 'Management' },
   { menuKey: '/admin/regulatory-report', label: 'BTRC Report', section: 'Management' },
   { menuKey: '/admin/sslcommerz-report', label: 'SSL Commerz Report', section: 'Management' },
   { menuKey: '/admin/recharge-report', label: 'Recharge Report', section: 'Management' },

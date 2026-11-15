@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:section-c": "node scripts/section-c.test.js"
+    "test:section-c": "node scripts/section-c.test.js",
+    "test:service-summary": "node scripts/service-summary.test.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",

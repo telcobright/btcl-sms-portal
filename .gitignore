@@ -41,3 +41,6 @@ next-env.d.ts
 
 # production env (contains secrets — uploaded by deploy.sh, never committed)
 .env.production
+
+# the internal handover document, kept out of this public repo
+SERVICE_SUMMARY_REPORT.md

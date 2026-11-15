@@ -221,6 +221,11 @@ export const API_ENDPOINTS = {
     // Monthly IPTSP / BTRC regulatory return, computed by the backend from the CDR/summary
     // databases. Admin-only; consumed by /admin/regulatory-report.
     iptspMonthly: '/admin/reports/iptsp-monthly',
+    // Per-service call and message traffic from each service's billing summary tables, with
+    // the switch dashboard's own groupings. Admin-only; consumed by /admin/service-summary.
+    serviceTraffic: '/admin/reports/service-traffic',
+    trafficServices: '/admin/reports/traffic-services',
+    trafficPartners: '/admin/reports/traffic-partners',
   },
 
   // User/Dashboard endpoints

@@ -753,7 +753,10 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
   // The invoice is shared with the admin partner page (lib/invoice), which prints the same one.
   // Bill To and Payment come from our own backend, named by the purchase's service.
   const handleDownloadInvoice = (purchase: PurchaseHistory) => {
-    void openInvoice(purchase, { isPrepaid, billTo: partnerData?.partnerName }, () =>
+    void openInvoice(
+      purchase,
+      { isPrepaid, billTo: partnerData?.partnerName, customerCategory: partnerExtra?.customerCategory },
+      () =>
       fetchInvoiceDetails(
         API_BASE_URL,
         API_ENDPOINTS.package.invoiceDetails,

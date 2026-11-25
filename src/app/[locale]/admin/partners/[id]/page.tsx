@@ -601,6 +601,7 @@ export default function PartnerDetailsPage() {
             purchases={purchases}
             isPrepaid={partner.customerPrePaid === 1}
             partnerName={partner.partnerName || ''}
+            customerCategory={partnerExtra?.customerCategory ?? null}
           />
         )}
         {activeTab === 'subscriptions' && (
@@ -1808,11 +1809,14 @@ function PurchasesTab({
   purchases,
   isPrepaid,
   partnerName,
+  customerCategory,
 }: {
   purchases: PurchaseHistory[];
   /** The customer's payment type, which decides whether the invoice has a due date. */
   isPrepaid: boolean;
   partnerName: string;
+  /** Prints as the invoice's Category and Subscriber Type. */
+  customerCategory: string | null;
 }) {
   // The period each purchase paid for: a renewal moves the plan's own expiry, so the first
   // purchase of a renewed plan would otherwise show the renewed date.
@@ -1839,7 +1843,7 @@ function PurchasesTab({
   const downloadInvoice = (p: PurchaseHistory) =>
     void openInvoice(
       { ...p, packageName: p.packageName || p.packageAccounts?.[0]?.name || null },
-      { isPrepaid, billTo: partnerName },
+      { isPrepaid, billTo: partnerName, customerCategory },
       () =>
         fetchInvoiceDetails(
           API_BASE_URL,

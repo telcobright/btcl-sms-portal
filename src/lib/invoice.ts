@@ -159,6 +159,11 @@ export function didSummary(dids: Array<string | null | undefined> | null | undef
   return list.length === 1 ? list[0] : `${list[0]} + ${list.length - 1} more`;
 }
 
+/** The country code the partner record keeps ("…, 1207, BD") written out: "…, 1207, Bangladesh". */
+function countryInFull(address: string | null | undefined): string | null | undefined {
+  return address?.replace(/(^|,\s*)BD(?=\s*(,|$))/g, '$1Bangladesh');
+}
+
 const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** The product the bill is for, as the header's second line names it. */
@@ -282,7 +287,7 @@ export function buildInvoiceHtml(
   .head .title .inv { margin-top: 4px; font-size: 11.5px; color: #333; white-space: nowrap; }
   .head .title .inv strong { font-weight: 700; }
   .badge-type { display: inline-block; margin-left: 6px; padding: 1px 9px; border: 1.2px solid ${blue}; border-radius: 999px; color: ${blue}; font-weight: 700; font-size: 9.5px; background: #fff; }
-  .head .seal { height: 58px; width: 58px; flex: none; }
+  .head .seal { height: 60px; width: 58px; flex: none; object-fit: contain; }
 
   .office { text-align: center; padding: 7px 10px; font-size: 10px; line-height: 1.6; border-bottom: 1px solid ${blue}; color: #222; }
   .office strong { font-weight: 700; }
@@ -384,7 +389,7 @@ export function buildInvoiceHtml(
         <div class="address">
           <div class="lbl">Subscriber's Name and Address :</div>
           <div class="name">${esc(partnerName)}</div>
-          <div class="addr">${text(bill?.address)}</div>
+          <div class="addr">${text(countryInFull(bill?.address))}</div>
         </div>
 
         ${boxRow('Customer ID', text(customerId))}

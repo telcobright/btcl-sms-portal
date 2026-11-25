@@ -64,8 +64,16 @@ export interface InvoiceDetails {
    * expiry forward, so the first purchase's row no longer says when its month ended.
    */
   period?: { start?: string | null; end?: string | null } | null;
-  /** The subscriber's number and BTCL areas, when the backend sends them; blank otherwise. */
-  subscriber?: { ipTelephoneNo?: string | null; cgmArea?: string | null; dgmArea?: string | null } | null;
+  /**
+   * The subscriber's numbers (every DID assigned to the partner, earliest first) and BTCL
+   * areas, when the backend sends them; blank otherwise.
+   */
+  subscriber?: {
+    dids?: string[] | null;
+    ipTelephoneNo?: string | null;
+    cgmArea?: string | null;
+    dgmArea?: string | null;
+  } | null;
 }
 
 const esc = (value: unknown): string =>
@@ -142,6 +150,13 @@ export function takaInWords(amount: number): string {
   const taka = Math.floor(rounded / 100);
   const paisa = rounded % 100;
   return `${integerInWords(taka)} Taka${paisa ? ` and ${integerInWords(paisa)} Paisa` : ''} Only`;
+}
+
+/** ["09695000000", "09695000001", "09695000002"] as "09695000000 + 2 more". */
+export function didSummary(dids: Array<string | null | undefined> | null | undefined, fallback?: string | null): string | null {
+  const list = (dids ?? []).map((d) => (d ?? '').trim()).filter(Boolean);
+  if (list.length === 0) return fallback?.trim() || null;
+  return list.length === 1 ? list[0] : `${list[0]} + ${list.length - 1} more`;
 }
 
 const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -374,7 +389,7 @@ export function buildInvoiceHtml(
 
         ${boxRow('Customer ID', text(customerId))}
         ${boxRow('Invoice ID', esc(invoiceId))}
-        ${boxRow('IP-Telephone No.', text(subscriber?.ipTelephoneNo))}
+        ${boxRow('IP-Telephone No.', text(didSummary(subscriber?.dids, subscriber?.ipTelephoneNo)))}
         ${boxRow('Mobile No.', text(bill?.mobile))}
         ${boxRow('Email', text(bill?.email))}
 
@@ -492,8 +507,40 @@ export async function openInvoice(
 }
 
 /**
+ * Every DID assigned to a partner, earliest first, from the existing did_assignment API.
+ * Empty when there are none or they cannot be read; the invoice then prints "—".
+ */
+export async function fetchPartnerDids(
+  apiBaseUrl: string,
+  endpoint: string,
+  idPartner: number | null | undefined,
+  authToken: string | null
+): Promise<string[]> {
+  if (!authToken || !idPartner) return [];
+  try {
+    const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ idPartner }),
+    });
+    if (!response.ok) return [];
+    const rows = (await response.json()) as Array<{ id?: number; didNumber?: string | null; startDate?: string | null }>;
+    if (!Array.isArray(rows)) return [];
+    const sorted = [...rows].sort(
+      (a, b) => String(a.startDate ?? '').localeCompare(String(b.startDate ?? '')) || (a.id ?? 0) - (b.id ?? 0)
+    );
+    return Array.from(new Set(sorted.map((r) => (r.didNumber ?? '').trim()).filter(Boolean)));
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Who a purchase bills and how it was paid, from our own backend. Null when it cannot say,
  * and the invoice then prints without those details rather than with wrong ones.
+ *
+ * With didEndpoint and idPartner, the partner's DIDs are read alongside and added as
+ * subscriber.dids for the IP-Telephone No. field.
  *
  * @param service the service the purchase was bought from (pbx, hcc, vbs, sms); each numbers
  *                its purchases on its own, so the id alone does not name one
@@ -503,9 +550,18 @@ export async function fetchInvoiceDetails(
   endpoint: string,
   purchaseId: number,
   service: string | null | undefined,
-  authToken: string | null
+  authToken: string | null,
+  dids?: { endpoint: string; idPartner: number | null | undefined }
 ): Promise<InvoiceDetails | null> {
   if (!authToken || !purchaseId) return null;
+  if (dids) {
+    const [details, list] = await Promise.all([
+      fetchInvoiceDetails(apiBaseUrl, endpoint, purchaseId, service, authToken),
+      fetchPartnerDids(apiBaseUrl, dids.endpoint, dids.idPartner, authToken),
+    ]);
+    if (!details) return null;
+    return { ...details, subscriber: { ...(details.subscriber ?? {}), dids: list } };
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
   try {

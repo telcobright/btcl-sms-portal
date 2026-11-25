@@ -762,7 +762,8 @@ table{border-collapse:collapse;margin-top:24px;width:100%;max-width:560px}td{pad
         API_ENDPOINTS.package.invoiceDetails,
         purchase.id,
         purchase.service,
-        localStorage.getItem('authToken')
+        localStorage.getItem('authToken'),
+        { endpoint: API_ENDPOINTS.package.didAssignmentsByPartner, idPartner: purchase.idPartner }
       )
     );
   };

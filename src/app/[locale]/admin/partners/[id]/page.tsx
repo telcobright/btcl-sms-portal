@@ -1850,8 +1850,7 @@ function PurchasesTab({
           API_ENDPOINTS.package.invoiceDetails,
           p.id,
           p.service,
-          localStorage.getItem('authToken'),
-          { endpoint: API_ENDPOINTS.package.didAssignmentsByPartner, idPartner: p.idPartner }
+          localStorage.getItem('authToken')
         )
     );
   if (purchases.length === 0)
